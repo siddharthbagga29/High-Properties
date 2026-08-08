@@ -38,12 +38,9 @@
      from also driving layout, which would overflow the document. */
   canvas { max-width: 100%; }
 
-  /* Lenis owns scrolling once active, so native smooth-behavior must stand
-     down or the two fight over scrollTop. */
-  html.lenis-on { scroll-behavior: auto; }
-  html.lenis-on, html.lenis-on body { height: auto; }
-  .lenis-on.lenis-stopped { overflow: clip; }
-  .lenis-on [data-lenis-prevent] { overscroll-behavior: contain; }
+  /* Filled in at boot with the shader's single rendered frame. */
+  .bg-backdrop { background-size: cover; background-position: center; }
+
 
   /* Centered figure: keep the middle clear so the robot reads, and fall off
      toward the edges so nothing competes with the copy panel over its torso. */

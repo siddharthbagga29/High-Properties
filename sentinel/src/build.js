@@ -19,7 +19,6 @@ const css = fs.readFileSync(cssOut, 'utf8');
 fs.unlinkSync(cssOut);
 
 const chartjs = fs.readFileSync(path.join(NM, 'chart.js/dist/chart.umd.min.js'), 'utf8');
-const lenis   = fs.readFileSync(path.join(NM, 'lenis/dist/lenis.min.js'), 'utf8');
 const app     = fs.readFileSync(path.join(D, 'app.js'), 'utf8');
 const mc      = fs.readFileSync(path.join(MC, 'mc_v2.json'), 'utf8');
 const ev      = fs.readFileSync(path.join(MC, 'evidence.json'), 'utf8');
@@ -29,7 +28,6 @@ const pr      = fs.readFileSync(path.join(MC, 'pricing.json'), 'utf8');
 const safe = s => s.replace(/<\/script/gi, '<\\/script');
 const chartjsSafe = safe(chartjs);
 const appSafe     = safe(app);
-const lenisSafe   = safe(lenis);
 
 const bootstrap = "document.documentElement.classList.add('js-ready');";
 
@@ -40,7 +38,6 @@ for (const [k, v] of [
   ['/*__EVIDENCE__*/', safe(ev)],
   ['/*__PRICING__*/', safe(pr)],
   ['/*__CHARTJS__*/', chartjsSafe],
-  ['/*__LENIS__*/', lenisSafe],
   ['/*__APP__*/', appSafe],
 ]) {
   if (!html.includes(k)) { console.error(`FATAL: missing placeholder ${k}`); process.exit(1); }
@@ -53,7 +50,7 @@ for (const [k, v] of [
    byte-identical to the inert source, so the same hash validates it.
    frame-ancestors / sandbox are ignored inside <meta> per spec; they ship as
    real headers in _headers. */
-const scriptHashes = [sha256(bootstrap), sha256(lenisSafe), sha256(appSafe), sha256(chartjsSafe)];
+const scriptHashes = [sha256(bootstrap), sha256(appSafe), sha256(chartjsSafe)];
 const metaOnlyDrop = new Set(['frame-ancestors']);
 const csp = [
   "default-src 'none'",
@@ -81,7 +78,7 @@ html = html.replace('<!--__CSP__-->',
 if (!html.includes(`<script>${bootstrap}</script>`)) {
   console.error('FATAL: bootstrap script text drifted from the hashed value'); process.exit(1);
 }
-if (/__CSS__|__MCDATA__|__EVIDENCE__|__PRICING__|__CHARTJS__|__LENIS__|__APP__|__CSP__/.test(html)) {
+if (/__CSS__|__MCDATA__|__EVIDENCE__|__PRICING__|__CHARTJS__|__APP__|__CSP__/.test(html)) {
   console.error('FATAL: placeholder survived substitution'); process.exit(1);
 }
 /* Tag-balance check.
@@ -105,10 +102,12 @@ if (inlineStyle.length) {
   process.exit(1);
 }
 
-/* Single output named index.html. Every static host serves index.html at the
-   root, so shipping the hardened build under any other name guarantees the
-   stale one gets deployed instead. */
+/* Two identical outputs, written from the same bytes.
+   index.html  — what every static host serves at the root.
+   index2.html — the name already in circulation locally.
+   They can never diverge because both are written here, in one step. */
 fs.writeFileSync(path.join(D, 'index.html'), html);
+fs.writeFileSync(path.join(D, 'index2.html'), html);
 
 /* Real HTTP headers. Netlify and Cloudflare Pages both read _headers.
    frame-ancestors only works as a header, which is why it is repeated here. */
@@ -124,8 +123,8 @@ fs.writeFileSync(path.join(D, '_headers'), `/*
   Cache-Control: public, max-age=0, must-revalidate
 `);
 
-console.log(`built index.html — ${(html.length / 1024).toFixed(0)} KB`);
+console.log(`built index.html + index2.html (identical) — ${(html.length / 1024).toFixed(0)} KB each`);
 console.log(`  css ${(css.length/1024).toFixed(0)}KB · chart ${(chartjs.length/1024).toFixed(0)}KB (inert) · ` +
-            `lenis ${(lenis.length/1024).toFixed(0)}KB · app ${(app.length/1024).toFixed(0)}KB · data ${((mc.length+ev.length+pr.length)/1024).toFixed(0)}KB`);
+            `app ${(app.length/1024).toFixed(0)}KB · data ${((mc.length+ev.length+pr.length)/1024).toFixed(0)}KB`);
 console.log(`  CSP: ${scriptHashes.length} script hashes, 1 style hash, no 'unsafe-inline'`);
 console.log('  _headers written');

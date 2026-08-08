@@ -14,7 +14,7 @@ and it is live. It also opens correctly straight from disk (`file://`).
 
 | Path | What it is |
 |---|---|
-| `index.html` | The built page. 378 KB, self-contained. The only HTML file, on purpose. |
+| `index.html`, `index2.html` | The built page, 367 KB, self-contained. Byte-identical by construction. |
 | `_headers` | Netlify / Cloudflare Pages security headers. |
 | `audit.js` | Core Web Vitals, CLS, idle GPU, leak probe, CSP. `node audit.js`. |
 | `src/src.html` | Markup with `/*__CSS__*/`, `/*__APP__*/` and JSON placeholders. |
@@ -24,7 +24,7 @@ and it is live. It also opens correctly straight from disk (`file://`).
 | `evidence.json` | 29 claims, graded A/B/C/D, each with sources and a plain-English gloss. |
 | `montecarlo_v2.py` → `mc_v2.json` | Strategy viability. 60,000 trials, seed 20260808. |
 | `pricing.py` → `pricing.json` | Actuarial pricing. 400,000 simulations, seed 4711. |
-| `backtest.js` | 106 headless assertions. `node backtest.js` (needs playwright-core). |
+| `backtest.js` | 115 headless assertions. `node backtest.js` (needs playwright-core). |
 
 Full rebuild:
 
@@ -87,6 +87,77 @@ solicitation, financial advice, or a securities offering. Premiums shown are
 modeled technical premiums, not quotes, and are not backed by bound capacity.
 Case summaries describe public court records and are provided for analysis only.
 
+## The build
+
+`index.html` and `index2.html` are **byte-identical**, written from the same
+bytes in one build step so they can never diverge. Hosts serve `index.html` at
+the root; `index2.html` exists because that name was already in circulation.
+
+## The pinned figure
+
+The core section assembles a **humanoid robot from particles** as you scroll:
+head with antenna and visor band, shoulder pauldrons, a closed chest plate,
+chest core, two arms with elbows and hands, pelvis, two legs with knee joints
+and feet. 247 nodes, 217 bones. Particles fly in from scattered origins and lock
+into limbs in waves; the figure is complete by 78% depth.
+
+Five failure modes are mounted on the body part each one is actually about:
+
+| Body part | Failure mode | Cost |
+|---|---|---|
+| Eye | Hallucination — it sees what is not there | $5,000 + sanctions |
+| Mouth | Misrepresentation — what it says binds you | Company held bound |
+| Hand | Disparate impact — it sorts people | Nationwide collective |
+| Foot | Physical control — it moves in the world | $243,000,000 |
+| Chest core | Training data — what it is made of | $1,500,000,000 |
+
+The copy panel sits over the torso, narrower and shorter than the figure, and
+shows **one failure at a time**. Geometry is authored y-up and flipped once at
+draw time; sizing is solved from the figure's own extents so a narrow screen
+gets a properly proportioned figure with the arms tucked in.
+
+The backtest samples the canvas in five bands and requires ink in the head, both
+arms and the legs — a NaN in any coordinate term collapses the figure to nothing
+while the chest bloom still paints, so "the canvas has pixels" is not enough.
+
+## Scrolling: how the lag was actually fixed
+
+Three rounds of frame timing during real wheel gestures, at Retina resolution:
+
+| Configuration | p50 frame | Effective |
+|---|---|---|
+| Animated fullscreen canvas | 100 ms | 10 fps |
+| Shader cut 15 → 3 octaves, 6 fps cap | 33 ms | 30 fps |
+| Canvas static, still in the DOM | 33 ms | 30 fps |
+| **Canvas → cached background image** | **17 ms** | **60 fps** |
+| No backdrop at all | 17 ms | 60 fps |
+
+The decisive row is the fourth. A `<canvas>` element sits in the compositing
+path and is re-rastered as the page scrolls above it **even when its pixels
+never change**. A plain image layer is cached by the compositor and costs
+nothing. So the shader now runs exactly once into a detached canvas at boot, and
+its output is handed to a div as a background image. The visual is identical —
+it *is* the shader's output — and the scroll cost is zero.
+
+Two things that were **not** the cause, and were measured rather than assumed:
+`backdrop-filter` on 31 panels (disabling it changed nothing) and the canvas
+size (shrinking it changed nothing).
+
+A JS smooth-scroll library was also tried and removed. Native scrolling is
+driven by the compositor thread and stays smooth when the main thread is busy;
+any JS scroll library moves scrolling onto the main thread, where it competes
+with canvas work. Measured inside the pinned section: **Lenis ON 30 fps, Lenis
+OFF 60 fps.**
+
+## Frame budget
+
+- **Scroll-linked robot** — native refresh rate, never capped. Glows are
+  pre-baked sprites (a `createRadialGradient` per node per frame cost 30 fps);
+  edges are batched into five paths instead of ~217 stroke calls; the backing
+  store is capped at 1.5× rather than 2×.
+- **Backdrop** — rendered once, then a cached image.
+- **Idle** — nothing. Zero rAF, zero GPU, measured over a clean sample.
+
 ## The hardened build
 
 `index.html` **is** the hardened build. There is deliberately only one HTML file:
@@ -94,7 +165,7 @@ every static host serves `index.html` at the root, so shipping the good build
 under any other name guarantees the stale one gets deployed instead. The prior
 staging build is in git history, not in this folder.
 
-| | index.html | index2.html |
+| | Original staging build | Current build |
 |---|---|---|
 | CSP | none | `default-src 'none'` + SHA-256 hashes, no `unsafe-inline` |
 | HTTP headers | none | `_headers`: frame-ancestors, HSTS, nosniff, Permissions-Policy |
@@ -103,10 +174,10 @@ staging build is in git history, not in this folder.
 | Charts built | 5 at load | lazily, per section |
 | Below-fold DOM | built at load | `deferBuild` — IO-near or idle, whichever first |
 | Animation loops | boot, 60fps, always on, two competing rAF loops | one shared ticker; scroll-linked at native rate, ambient dual-rate, idle-paused |
-| Scrolling | native, stepped | Lenis inertia, ~1.05 s eased tail |
-| Background shader | 15 noise octaves/px at 0.62× | 3 octaves at 0.34× |
+| Scrolling | native | native (a JS scroll library was tried and measured out) |
+| Backdrop | animated canvas, 15 octaves/px | rendered once, cached as an image |
 | Scroll frame rate | **10 fps** | **60 fps** |
-| Pinned figure | concentric rings (read as an atom) | a robot, with failures mounted per body part |
+| Pinned figure | concentric rings (read as an atom) | humanoid robot, 247 particles, failures mounted per body part |
 | Idle GPU | continuous | **0 draws** |
 | innerHTML | 8 sites | **0** — every node built with textContent |
 | Globals | `__MC__ __EV__ __PR__ __GL_OK__ __CORE_OK__` | one frozen `sentinelDiagnostics` |
@@ -120,17 +191,17 @@ staging build is in git history, not in this folder.
 
 ### Measured
 
-| Metric | index.html | index2.html |
+| Metric | Original | Current |
 |---|---|---|
 | CLS | 0.0000 | 0.0000 |
 | FCP | 292 ms | ~300 ms |
 | DOMContentLoaded | 813 ms | ~250 ms |
-| Total blocking time | 2,487 ms | **89 ms** |
-| Longest task | 391 ms | 132 ms |
+| Total blocking time | 2,487 ms | **138 ms** |
+| Longest task | 391 ms | 121 ms |
 | **ScriptDuration (CDP, 3.5 s)** | — | **66 ms** |
 | JS heap at boot | 4.2 MB | 1.7 MB |
 | Idle GPU draws | continuous | 0 |
-| Functional checks | 70 | **106** |
+| Functional checks | 70 | **115** |
 
 TBT is now inside Google's "good" threshold even under headless swiftshader,
 where canvas rasterization runs on the CPU.

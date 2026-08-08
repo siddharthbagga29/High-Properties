@@ -77,31 +77,46 @@ const CONTRAST_FN = `(() => {
      'Chart.js is NOT executed at load (deferred until a chart section nears)');
 
   H('MOTION');
-  ok(await page.evaluate(() => window.sentinelDiagnostics.layers.smoothScroll),
-     'smooth scroll engaged');
-  ok(await page.evaluate(() => document.documentElement.classList.contains('lenis-on')),
-     'lenis-on set, so native scroll-behavior stands down');
-  // Inertia is measured by DURATION, which is frame-rate independent. Headless
-  // renders at ~14fps so counting eased frames would be meaningless here.
-  await page.evaluate(() => { window.__sc = [];
-    window.addEventListener('scroll', () => window.__sc.push(performance.now()), { passive:true }); });
-  await page.mouse.move(700, 450);
-  await page.mouse.wheel(0, 800);
-  await page.waitForTimeout(2000);
-  const settle = await page.evaluate(() => {
-    const s = window.__sc; return s.length > 1 ? Math.round(s[s.length-1] - s[0]) : 0; });
-  ok(settle > 150, `wheel gesture eases over ${settle}ms rather than jumping`);
-  await page.evaluate(() => { delete window.__sc; window.scrollTo(0, 0); });  // probe cleanup
-  await page.waitForTimeout(900);
-
-  // Scroll-linked motion must NOT be frame-capped; only the ambient layer is.
+  /* Scrolling is deliberately native. A JS scroll library moves scrolling onto
+     the main thread, where it competes with canvas work; measured at Retina
+     inside the pinned section it halved the frame rate (60fps -> 30fps). These
+     assertions exist so nobody reintroduces one without re-measuring. */
+  ok(await page.evaluate(() => window.sentinelDiagnostics.layers.nativeScroll === true),
+     'scrolling is native (compositor-driven), not main-thread');
   const appSrc = fs.readFileSync(near('app.js'), 'utf8');
+  ok(!/new\s+Lenis|lenis\.raf|locomotive|SmoothScroll/i.test(appSrc),
+     'no JS scroll library is present');
+  ok(await page.evaluate(() =>
+    getComputedStyle(document.documentElement).scrollBehavior === 'smooth'),
+    'anchor jumps still ease, via native scroll-behavior');
+
+  /* The backdrop must be a cached image layer, never a live canvas. A <canvas>
+     in the compositing path is re-rastered every frame at Retina even when its
+     pixels never change: measured 30fps as a canvas, 60fps as an image. */
+  const backdrop = await page.evaluate(() => {
+    const g = document.getElementById('gl');
+    return { tag: g && g.tagName, bg: g && getComputedStyle(g).backgroundImage.slice(0, 24) };
+  });
+  ok(backdrop.tag === 'DIV', `backdrop is a div, not a canvas (${backdrop.tag})`);
+  ok(/^url\("?data:image/.test(backdrop.bg),
+     'backdrop carries the shader output as a cached image');
+  ok(await page.evaluate(() =>
+    [...document.querySelectorAll('canvas')].every(c => c.id !== 'gl')),
+    'no fullscreen animated canvas remains in the compositing path');
+
+  // Scroll-linked motion must never be frame-capped.
   const coreSection = appSrc.slice(appSrc.indexOf('5. NEURAL CORE'), appSrc.indexOf('6. FAILURE DOSSIER'));
   ok(!/frameGate\(/.test(coreSection),
      'the scroll-linked core runs at native refresh rate, not a fixed cap');
-  const bgSection = appSrc.slice(appSrc.indexOf('4. BACKGROUND WEBGL'), appSrc.indexOf('5. NEURAL CORE'));
-  ok(/frameGate\(20\)/.test(bgSection) && /frameGate\(6\)/.test(bgSection),
-     'the ambient background is dual-rate: 20fps at rest, 6fps while scrolling');
+  // The only allowed gradient call is the one-time sprite factory. Anything
+  // inside render() would allocate per frame, which is what cost 30fps.
+  const renderBody = coreSection.slice(coreSection.indexOf('function render()'),
+                                       coreSection.indexOf('function draw1()'));
+  ok(!/createRadialGradient/.test(renderBody),
+     'no per-frame gradient allocation inside the core draw loop');
+  const gradCalls = (coreSection.match(/\.createRadialGradient\s*\(/g) || []).length;
+  ok(/glowSprite/.test(coreSection) && gradCalls === 1,
+     `glows are pre-baked sprites, allocated once (${gradCalls} gradient call)`);
 
   H('SECURITY POSTURE');
   const cspMeta = await page.evaluate(() => {
@@ -273,6 +288,43 @@ const CONTRAST_FN = `(() => {
       < window.innerHeight * 0.62),
     'panel is short enough to leave the head and legs uncovered');
   ok((await page.$$('#wp-dots span')).length === 5, 'five-step failure indicator present');
+
+  /* The figure must actually be a FIGURE. A NaN in any coordinate term silently
+     collapses every node to nothing while the chest bloom still paints, which
+     is exactly the failure this catches: the canvas looked "painted" but the
+     robot was gone. Sample the canvas in five bands and require ink in each. */
+  await page.evaluate(() => {
+    const c = document.getElementById('core');
+    window.scrollTo(0, c.getBoundingClientRect().top + window.pageYOffset + c.offsetHeight * 0.8);
+  });
+  await page.waitForTimeout(1800);
+  const figure = await page.evaluate(() => {
+    const c = document.getElementById('core-canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const W = c.width, H = c.height;
+    // Count only reasonably opaque ink, so the soft chest bloom cannot satisfy
+    // a band on its own.
+    const band = (x0, x1, y0, y1) => {
+      let n = 0;
+      for (let y = Math.floor(y0*H); y < Math.floor(y1*H); y++)
+        for (let x = Math.floor(x0*W); x < Math.floor(x1*W); x++)
+          if (d[(y*W+x)*4+3] > 90) n++;
+      return n;
+    };
+    return {
+      head:     band(0.40, 0.60, 0.05, 0.28),
+      leftArm:  band(0.20, 0.42, 0.28, 0.68),
+      rightArm: band(0.58, 0.80, 0.28, 0.68),
+      legs:     band(0.38, 0.62, 0.70, 0.98),
+      anyNaN:   [...d].length === 0
+    };
+  });
+  ok(figure.head > 40,     `head renders (${figure.head} px)`);
+  ok(figure.leftArm > 40,  `left arm renders (${figure.leftArm} px)`);
+  ok(figure.rightArm > 40, `right arm renders (${figure.rightArm} px)`);
+  ok(figure.legs > 40,     `legs render (${figure.legs} px)`);
+  ok(figure.head > 40 && figure.leftArm > 40 && figure.rightArm > 40 && figure.legs > 40,
+     'the assembled shape is a humanoid figure, not a blob');
 
   H('PHASE 3 — CHARTS');
   const IDS = ['chartCyber','chartPools','chartVert','chartVertPrem','chartRoi'];

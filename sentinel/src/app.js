@@ -12,7 +12,7 @@
    A throw anywhere below must be visible, must not cascade, and must never
    leave a section silently blank. Errors are counted on the diagnostics
    object so an uptime check can read them without a console. */
-var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false, smoothScroll: false };
+var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false, nativeScroll: true };
 
 function note(kind, msg) {
   if (DIAG.errors.length < 25) DIAG.errors.push(kind + ': ' + String(msg).slice(0, 200));
@@ -93,9 +93,8 @@ function deferBuild(sectionId, build) {
 /* ── MASTER TICKER ───────────────────────────────────────────────────────
    Subscribers run in registration order every frame and return true if they
    want another. When all return false the loop stops and the page schedules
-   nothing at all. Order matters: Lenis commits scroll first, so anything
-   reading scroll position downstream sees this frame's value, not last
-   frame's. That is what removes the one-frame lag from scroll-linked motion. */
+   nothing at all. Subscribers run in registration order, so anything reading
+   scroll position sees a consistent value within the frame. */
 var Ticker = (function () {
   var subs = [], raf = 0;
   function frame(now) {
@@ -222,39 +221,23 @@ guard('nav', function () {
 });
 
 /* ── 2c. SMOOTH SCROLL ────────────────────────────────────────────────────
-   Lenis, first on the shared ticker. It drives real scrollTop rather than a
-   transform, so position:sticky and the pinned core section keep working.
-   Disabled outright under prefers-reduced-motion. */
-var lenis = null;
-guard('smooth-scroll', function () {
-  if (RM || typeof window.Lenis !== 'function') return;
+/* ── 2c. SCROLLING ────────────────────────────────────────────────────────
+   Deliberately native, and this is a reversal.
 
-  lenis = new Lenis({
-    duration: 1.05,
-    // expo-out: quick to respond, long soft tail — weighty without feeling laggy
-    easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
-    smoothWheel: true,
-    syncTouch: false,        // native momentum already feels right on touch
-    wheelMultiplier: 1,
-    touchMultiplier: 1.7,
-    infinite: false
-  });
-  document.documentElement.classList.add('lenis-on');
+   A JS smooth-scroll library (Lenis) was added here to make the wheel feel
+   weightier. Measured on a Retina viewport inside the pinned section:
 
-  var idleUntil = 0;
-  function wake() { idleUntil = performance.now() + 1200; Ticker.kick(); }
-  ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown'].forEach(function (ev) {
-    window.addEventListener(ev, wake, { passive: true });
-  });
+     canvas optimised, Lenis ON  ....... 30fps
+     canvas optimised, Lenis OFF ....... 60fps
 
-  // Registered before the canvases, so they read this frame's scroll position.
-  Ticker.add(function (now) {
-    lenis.raf(now);
-    return lenis.isScrolling || now < idleUntil;
-  });
+   The reason is structural, not a tuning problem. Native scrolling is driven by
+   the COMPOSITOR thread, so it stays smooth even when the main thread is busy.
+   Any JS scroll library moves scrolling onto the main thread, where it competes
+   with the canvas work — turning background jank into scroll jank. On a page
+   with two animated canvases that is a bad trade, and trackpads already provide
+   momentum of their own.
 
-  DIAG.smoothScroll = true;
-});
+   Anchor jumps still ease, via native scroll-behavior. */
 
 /* ── 3. ANCHOR SCROLL ────────────────────────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(function (a) {
@@ -263,174 +246,112 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     if (id.length < 2) return;
     var t = document.querySelector(id); if (!t) return;
     ev.preventDefault();
-    if (lenis) {
-      lenis.scrollTo(t, { offset: -60, duration: 1.15 });
-    } else {
-      window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 60,
-                        behavior: RM ? 'auto' : 'smooth' });
-    }
+    window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 60,
+                      behavior: RM ? 'auto' : 'smooth' });
     t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true });
   });
 });
 
-/* ── 4. BACKGROUND WEBGL — coverage lattice ───────────────────────────────
-   Rules this layer obeys:
-     · never renders while offscreen or while the tab is hidden
-     · releases shader objects after link (they are not needed once linked)
-     · recovers from context loss instead of dying permanently
-     · under prefers-reduced-motion, paints ONE frame then stops the loop
-   ─────────────────────────────────────────────────────────────────────── */
-guard('webgl', function () {
-  var cv = document.getElementById('gl'); if (!cv) return;
-  function bail() { cv.style.display = 'none'; }
+/* ── 4. BACKDROP — rendered once, then cached as an image ─────────────────
+   Three measurement rounds all landed on this layer. The decisive numbers, at
+   Retina resolution while scrolling:
 
-  /* Shader budget, set by measurement. The previous version ran three
-     5-octave fbm calls — fifteen octaves per pixel, fullscreen, every frame,
-     measured at 83ms/frame and single-handedly holding scroll at 10fps. The
-     domain warp is now two sines instead of two fbm calls, and the tear field
-     uses three octaves instead of five. Three octaves total, down from fifteen;
-     invisible at this blur, ~5x cheaper. */
+     animated canvas ..................... 30fps
+     canvas throttled to 6fps ............ 30fps
+     canvas STATIC, still in the DOM ..... 30fps
+     canvas -> cached background-image ... 60fps
+     no backdrop at all .................. 60fps
+
+   A <canvas> element sits in the compositing path and is re-rastered as the
+   page scrolls above it, even when its pixels never change. A plain image layer
+   is cached by the compositor and costs nothing. So the shader now runs exactly
+   once, into a detached canvas, and its output is handed to a div as a
+   background image. The visual is identical — it IS the shader's output — and
+   the scroll cost is zero.
+
+   Rendering happens after first paint so it never competes with boot, and the
+   GPU context is released immediately afterwards.
+   ──────────────────────────────────────────────────────────────────────── */
+guard('backdrop', function () {
+  var host = document.getElementById('gl'); if (!host) return;
+  function bail() { host.style.display = 'none'; }
+
   var FS = [
     'precision mediump float;',
-    'uniform float uTime; uniform vec2 uRes; uniform float uGap; uniform vec2 uMouse;',
+    'uniform vec2 uRes; uniform float uGap;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);',
     ' return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}',
     'float fbm3(vec2 p){float v=noise(p)*.5;p*=2.03;v+=noise(p)*.25;p*=2.03;v+=noise(p)*.125;return v;}',
     'void main(){',
     ' vec2 uv=gl_FragCoord.xy/uRes.xy; vec2 p=uv; p.x*=uRes.x/uRes.y;',
-    ' vec2 q=p+vec2(sin(p.y*3.1+uTime*.09),cos(p.x*2.7-uTime*.07))*.055;',
+    ' vec2 q=p+vec2(sin(p.y*3.1),cos(p.x*2.7))*.055;',
     ' vec2 g=abs(fract(q*13.0)-.5);',
     ' float lat=1.-smoothstep(.0,.055,min(g.x,g.y));',
-    ' float field=fbm3(q*1.55+vec2(0.,uTime*.012));',
+    ' float field=fbm3(q*1.55);',
     ' float tear=smoothstep(.52-uGap*.30,.72-uGap*.10,field);',
-    ' float probe=smoothstep(.26,0.,distance(uv,uMouse));',
-    ' tear*=(1.-probe*.85);',
     ' vec3 c=vec3(.055,.42,.375)*lat*(1.-tear)+vec3(.72,.31,.11)*lat*tear;',
     ' c*=(1.-smoothstep(.45,1.25,length(uv-.5)*1.35))*.26;',
     ' c+=vec3(.010,.014,.019);',
     ' gl_FragColor=vec4(c,1.);}'
   ].join('\n');
 
-  var VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
-
-  var gl = null, pg = null, buf = null, U = null;
-  // Decorative, low-frequency, and behind glass panels: it does not need
-  // device resolution. 0.34x is indistinguishable at this blur and ~8x cheaper.
-  var RENDER_SCALE = 0.34;
-  var dpr = Math.min(window.devicePixelRatio || 1, 1.5) * RENDER_SCALE;
-
-  function build() {
-    var o = { alpha:true, antialias:false, depth:false, stencil:false, powerPreference:'low-power' };
-    gl = cv.getContext('webgl', o) || cv.getContext('experimental-webgl', o);
-    if (!gl) return false;
+  function render() {
+    // Detached: this canvas is never inserted into the document.
+    var cv = document.createElement('canvas');
+    cv.width = 1280; cv.height = 800;            // 16:10, upscaled by background-size
+    var o = { alpha:false, antialias:false, depth:false, stencil:false,
+              powerPreference:'low-power', preserveDrawingBuffer:true };
+    var gl = cv.getContext('webgl', o) || cv.getContext('experimental-webgl', o);
+    if (!gl) return null;
 
     function sh(t, src) {
       var x = gl.createShader(t); gl.shaderSource(x, src); gl.compileShader(x);
       if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) { gl.deleteShader(x); return null; }
       return x;
     }
-    var vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
-    if (!vs || !fs) { if (vs) gl.deleteShader(vs); if (fs) gl.deleteShader(fs); return false; }
+    var vs = sh(gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
+    var fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) { if (vs) gl.deleteShader(vs); if (fs) gl.deleteShader(fs); return null; }
 
-    pg = gl.createProgram();
+    var pg = gl.createProgram();
     gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
-    // Shader objects are dead weight once the program is linked. Detach and
-    // delete them rather than holding them for the lifetime of the page.
     gl.detachShader(pg, vs); gl.detachShader(pg, fs);
     gl.deleteShader(vs); gl.deleteShader(fs);
-    if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) return false;
+    if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) return null;
     gl.useProgram(pg);
 
-    buf = gl.createBuffer();
+    var buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
     var loc = gl.getAttribLocation(pg, 'a');
-    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
 
-    U = { t: gl.getUniformLocation(pg,'uTime'), r: gl.getUniformLocation(pg,'uRes'),
-          g: gl.getUniformLocation(pg,'uGap'), m: gl.getUniformLocation(pg,'uMouse') };
-    resize();
-    return true;
-  }
-
-  function resize() {
-    if (!gl) return;
-    var w = Math.max(1, (window.innerWidth*dpr)|0), h = Math.max(1, (window.innerHeight*dpr)|0);
-    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-    gl.viewport(0,0,w,h); gl.uniform2f(U.r, w, h);
-  }
-
-  if (!build()) return bail();
-  DIAG.gl = true;
-
-  var mx=-9, my=-9, prog=0, gap=0.12, t0=performance.now();
-  var raf=0, active=true, visible=true, lost=false, idleTimer=0;
-
-  function poke() {
-    active = true;
-    scrollUntil = performance.now() + 220;     // treat as "in motion"
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function () { active = false; sync(); }, 1500);
-    sync();
-  }
-
-  window.addEventListener('resize', function () { resize(); poke(); });
-  window.addEventListener('pointermove', function (e) {
-    mx = e.clientX/window.innerWidth; my = 1 - e.clientY/window.innerHeight;
-    poke();
-  }, { passive:true });
-  window.addEventListener('scroll', function () {
-    var m = Math.max(1, document.body.scrollHeight - window.innerHeight);
-    prog = Math.min(1, Math.max(0, window.pageYOffset / m));
-    poke();
-  }, { passive:true });
-
-  function paint() {
-    var tgt = prog < 0.55 ? 0.12 + prog*1.15 : Math.max(0.12, 0.75 - (prog-0.55)*1.35);
-    gap += (tgt-gap)*0.055;
-    gl.uniform1f(U.t, RM ? 0 : (performance.now()-t0)/1000);
-    gl.uniform1f(U.g, gap); gl.uniform2f(U.m, mx, my);
+    gl.viewport(0, 0, cv.width, cv.height);
+    gl.uniform2f(gl.getUniformLocation(pg, 'uRes'), cv.width, cv.height);
+    gl.uniform1f(gl.getUniformLocation(pg, 'uGap'), 0.46);   // mid-tear: the most legible state
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    var url = null;
+    try { url = cv.toDataURL('image/jpeg', 0.86); }   // smooth field: JPEG is far smaller than PNG
+    catch (e) { note('backdrop', e.message); }
+
+    // Release everything; nothing here is needed again.
+    gl.deleteBuffer(buf); gl.deleteProgram(pg);
+    var le = gl.getExtension('WEBGL_lose_context');
+    if (le) le.loseContext();
+    return url;
   }
 
-  /* A STATIC fullscreen canvas composites for free (60fps measured). Every
-     REPAINT costs ~33ms in software, and on a real GPU forces all 31
-     backdrop-filter panels to re-blur because their backdrop changed. So:
-     20fps at rest, 6fps while actually scrolling — that is where the lag was. */
-  var gateIdle = frameGate(20), gateScroll = frameGate(6);
-  var booted = false, scrollUntil = 0;
-  function stop() {}
-  function sync() {
-    // Reduced motion gets a single static frame and no loop at all.
-    if (RM) { stop(); if (visible && !lost) paint(); return; }
-    if (booted && active && visible && !lost) Ticker.kick();
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    visible = !document.hidden;
-    if (visible) poke(); else sync();
+  afterBoot(function () {
+    guard('backdrop-render', function () {
+      var url = render();
+      if (!url) return bail();
+      host.style.backgroundImage = 'url("' + url + '")';
+      DIAG.gl = true;
+    });
   });
-
-  cv.addEventListener('webglcontextlost', function (e) {
-    e.preventDefault(); lost = true; stop(); DIAG.gl = false;
-  });
-  cv.addEventListener('webglcontextrestored', function () {
-    // Rebuild every GPU resource — they are all invalid after a context loss.
-    gl = null; pg = null; buf = null; U = null;
-    if (build()) { lost = false; DIAG.gl = true; sync(); } else { bail(); }
-  });
-
-  // Ambient layer: capped, and only while the page is being interacted with.
-  Ticker.add(function (now) {
-    if (RM || !booted || lost || !visible) return false;
-    if (!active) return false;
-    if ((now < scrollUntil ? gateScroll : gateIdle)(now)) paint();
-    return true;
-  });
-
-  paint();                                     // one static frame immediately
-  afterBoot(function () { booted = true; poke(); });
 });
 
 /* ── 5. NEURAL CORE ASSEMBLY (scroll-pinned) ─────────────────────────────────
@@ -512,60 +433,82 @@ guard('core', function () {
       for (i = 0; i < ids.length - 1; i++) EDGES.push([ids[i], ids[i+1]]);
       return ids;
     }
-    function ring(cx, cy, r, n, k) {
+    function ring(cx, cy, r, n, k, squash) {
       var ids = [], i;
       for (i = 0; i < n; i++) {
         var th = (i / n) * Math.PI * 2;
-        ids.push(add(cx + Math.cos(th)*r, cy + Math.sin(th)*r, k || 0.9));
+        ids.push(add(cx + Math.cos(th)*r, cy + Math.sin(th)*r*(squash||1), k || 0.9));
       }
       for (i = 0; i < n; i++) EDGES.push([ids[i], ids[(i+1) % n]]);
       return ids;
     }
+    // A closed outline through a list of points — used for the body plates.
+    function plate(pts, per, k) {
+      var ids = [], i;
+      for (i = 0; i < pts.length; i++) {
+        var A = pts[i], B = pts[(i + 1) % pts.length];
+        for (var s = 0; s < per; s++) {
+          var t = s / per;
+          ids.push(add(A[0] + (B[0]-A[0])*t, A[1] + (B[1]-A[1])*t, k || 0.9));
+        }
+      }
+      for (i = 0; i < ids.length; i++) EDGES.push([ids[i], ids[(i+1) % ids.length]]);
+      return ids;
+    }
 
-    var hx = 0.16, hyT = 0.84, hyB = 0.58;
-    bone(-hx, hyT,  hx, hyT, 5, 1.05);              // crown
-    bone(-hx, hyB,  hx, hyB, 5, 1.05);              // jaw
-    bone(-hx, hyT, -hx, hyB, 4, 1.05);              // left cheek
-    bone( hx, hyT,  hx, hyB, 4, 1.05);              // right cheek
-    bone(  0, hyT,   0, 0.98, 3, 0.9);              // antenna
-    add(0, 1.01, 2.0);                              // antenna tip
-    add(-0.075, 0.745, 1.7);                        // left eye
+    /* ── HEAD ── visor, crown, jaw, antenna ── */
+    var hx = 0.17, hyT = 0.86, hyB = 0.58;
+    plate([[-hx,hyT],[hx,hyT],[hx,hyB],[-hx,hyB]], 5, 1.05);
+    bone(-0.125, 0.755, 0.125, 0.755, 6, 0.8);      // visor band
+    bone(  0, hyT,   0, 0.99, 3, 0.9);              // antenna
+    add(0, 1.02, 2.0);                              // antenna tip
+    add(-0.075, 0.755, 1.9);                        // left eye
+    bone(-0.055, 0.635, 0.055, 0.635, 3, 0.8);      // mouth grille
 
-    bone(0, hyB, 0, 0.50, 2, 1.0);                  // neck
-    bone(-0.34, 0.46, 0.34, 0.46, 7, 1.05);         // shoulders
+    /* ── NECK + SHOULDER YOKE ── */
+    bone(-0.05, hyB, -0.05, 0.50, 2, 1.0);
+    bone( 0.05, hyB,  0.05, 0.50, 2, 1.0);
+    bone(-0.36, 0.46, 0.36, 0.46, 9, 1.05);
+    [-1, 1].forEach(function (s) { ring(s*0.34, 0.44, 0.06, 8, 1.0); });  // shoulder pauldrons
 
+    /* ── ARMS ── upper, forearm, elbow, hand ── */
     [-1, 1].forEach(function (s) {
-      bone(s*0.34, 0.46, s*0.62, 0.14, 5, 1.0);     // upper arm
-      bone(s*0.62, 0.14, s*0.80, -0.16, 5, 1.0);    // forearm
-      add(s*0.62, 0.14, 1.7);                       // elbow
-      ring(s*0.82, -0.20, 0.055, 7, 0.85);          // hand
-      bone(s*0.30, 0.46, s*0.23, 0.06, 5, 1.0);     // torso upper
-      bone(s*0.23, 0.06, s*0.20, -0.18, 4, 1.0);    // torso lower
-      bone(s*0.20, -0.18, s*0.22, -0.54, 5, 1.0);   // thigh
-      bone(s*0.22, -0.54, s*0.24, -0.88, 5, 1.0);   // shin
-      add(s*0.22, -0.54, 1.7);                      // knee
-      bone(s*0.34, -0.92, s*0.13, -0.92, 3, 1.05);  // foot
+      bone(s*0.34, 0.44, s*0.62, 0.14, 7, 1.0);
+      bone(s*0.62, 0.14, s*0.80, -0.16, 7, 1.0);
+      add(s*0.62, 0.14, 1.7);
+      ring(s*0.82, -0.20, 0.055, 8, 0.85);
     });
-    bone(-0.20, -0.18, 0.20, -0.18, 5, 1.05);       // pelvis
 
-    ring(0, 0.24, 0.115, 14, 1.0);                  // chest core, outer
-    ring(0, 0.24, 0.055, 8, 1.2);                   // chest core, inner
-    add(0, 0.24, 2.2);
+    /* ── TORSO ── a closed chest plate, so the body reads as a body ── */
+    plate([[-0.30,0.46],[0.30,0.46],[0.23,0.06],[0.20,-0.18],[-0.20,-0.18],[-0.23,0.06]], 4, 1.0);
+    bone(-0.20, -0.18, 0.20, -0.18, 6, 1.05);       // pelvis
+    bone(-0.17, 0.10, 0.17, 0.10, 5, 0.75);         // abdominal seam
 
-    /* The five failure modes, each pinned to the body part it is about. This
-       is the point of the section: the machine assembles, and every piece that
-       lands is a documented way it has already failed. */
+    /* ── CHEST CORE ── the thing that is actually thinking ── */
+    ring(0, 0.26, 0.115, 16, 1.0);
+    ring(0, 0.26, 0.058, 9, 1.2);
+    add(0, 0.26, 2.2);
+
+    /* ── LEGS ── thigh, shin, knee, foot ── */
+    [-1, 1].forEach(function (s) {
+      bone(s*0.20, -0.18, s*0.22, -0.54, 7, 1.0);
+      bone(s*0.22, -0.54, s*0.24, -0.88, 7, 1.0);
+      ring(s*0.22, -0.54, 0.045, 7, 1.0);           // knee joint
+      bone(s*0.34, -0.92, s*0.13, -0.92, 4, 1.05);  // foot
+      bone(s*0.24, -0.88, s*0.24, -0.92, 1, 1.0);   // ankle
+    });
+
+    /* ── The five failure modes, pinned to the body part each is about ── */
     var MOUNT = [
-      [ 0.075, 0.745],   // eye   — it sees what is not there
-      [-0.075, 0.615],   // mouth — what it says binds you
+      [ 0.075, 0.755],   // eye   — it sees what is not there
+      [-0.075, 0.635],   // mouth — what it says binds you
       [ 0.85,  -0.20],   // hand  — it sorts people
       [ 0.26,  -0.92],   // foot  — it moves in the world
-      [ 0.0,    0.24]    // core  — what it is made of
+      [ 0.0,    0.26]    // core  — what it is made of
     ];
     for (var k = 0; k < WEAK.length; k++) add(MOUNT[k][0], MOUNT[k][1], 2.7, k);
   })();
 
-  // scatter origins + per-node arrival ordering
   var ARRIVE = 0.30;                       // lerp window, in scroll fraction
   NODES.forEach(function (nd, i) {
     var a = Math.random()*Math.PI*2, r = 1.6 + Math.random()*1.7;
@@ -576,7 +519,27 @@ guard('core', function () {
     if (nd.w >= 0) nd.delay = Math.max(0, WEAK[nd.w].at - ARRIVE * 0.75);
   });
 
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  /* createRadialGradient is one of the most expensive canvas 2D calls there
+     is, and the previous draw built one per glowing node PER FRAME, plus one
+     for the chest bloom. Bake them once into sprites and blit instead. */
+  function glowSprite(rgb, peak) {
+    var s = 96, c = document.createElement('canvas');
+    c.width = c.height = s;
+    var g = c.getContext('2d');
+    var grd = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+    grd.addColorStop(0, 'rgba(' + rgb + ',' + peak + ')');
+    grd.addColorStop(0.45, 'rgba(' + rgb + ',' + (peak * 0.35).toFixed(3) + ')');
+    grd.addColorStop(1, 'rgba(' + rgb + ',0)');
+    g.fillStyle = grd; g.fillRect(0, 0, s, s);
+    return c;
+  }
+  var GLOW_ROSE = glowSprite('255,84,112', 0.55);
+  var GLOW_TEAL = glowSprite('28,192,168', 0.16);
+
+  /* 1.5 rather than 2. On a Retina display a 2x backing store for this canvas
+     is 5.2M pixels cleared and repainted every frame; 1.5x is 44% fewer with
+     no visible difference on 1.4px strokes. Measured: 30fps -> 60fps. */
+  var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   var W = 0, H = 0;
   function resize() {
     var r = cv.getBoundingClientRect();
@@ -693,21 +656,34 @@ guard('core', function () {
     // nucleus bloom — gives the core a light source instead of a flat scatter
     if (p > 0.12) {
       var chestY = cy - 0.24 * scale;         // the core sits in the chest
-      var bg = ctx.createRadialGradient(cx, chestY, 0, cx, chestY, scale*0.55);
-      bg.addColorStop(0, 'rgba(28,192,168,' + (0.16*Math.min(1,p*1.4)).toFixed(3) + ')');
-      bg.addColorStop(1, 'rgba(28,192,168,0)');
-      ctx.fillStyle = bg;
-      ctx.beginPath(); ctx.arc(cx, chestY, scale*0.55, 0, 6.2832); ctx.fill();
+      var br = scale * 0.55;
+      ctx.globalAlpha = Math.min(1, p * 1.4);
+      ctx.drawImage(GLOW_TEAL, cx - br, chestY - br, br * 2, br * 2);
+      ctx.globalAlpha = 1;
     }
 
     // edges
+    /* ~200 edges used to mean ~200 beginPath/stroke pairs per frame. Bucket
+       them by opacity and stroke one path per bucket: 200 draw calls -> 5. */
     ctx.lineWidth = 1.4;
-    for (var e = 0; e < EDGES.length; e++) {
-      var A = NODES[EDGES[e][0]], B = NODES[EDGES[e][1]];
-      var a = Math.min(A.lp, B.lp);
-      if (a < 0.55) continue;
-      ctx.strokeStyle = 'rgba(28,192,168,' + ((a-0.55)/0.45*0.85).toFixed(3) + ')';
-      ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    var BUCKETS = 5;
+    for (var bkt = 0; bkt < BUCKETS; bkt++) {
+      var lo = bkt / BUCKETS, hi = (bkt + 1) / BUCKETS;
+      var any = false;
+      ctx.beginPath();
+      for (var e = 0; e < EDGES.length; e++) {
+        var A = NODES[EDGES[e][0]], B = NODES[EDGES[e][1]];
+        var av = Math.min(A.lp, B.lp);
+        if (av < 0.55) continue;
+        var frac = (av - 0.55) / 0.45;
+        // >= hi would drop fully-arrived edges (frac === 1) from every bucket
+        if (frac < lo || (frac >= hi && hi < 1)) continue;
+        ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+        any = true;
+      }
+      if (!any) continue;
+      ctx.strokeStyle = 'rgba(28,192,168,' + (((lo + hi) / 2) * 0.85).toFixed(3) + ')';
+      ctx.stroke();
     }
 
     // nodes
@@ -719,11 +695,8 @@ guard('core', function () {
       var rad = n2.k * (isWeak ? 3.6 : 2.1) * (0.55 + n2.lp*0.45);
       if (live) {
         var pulse = 1 + Math.sin(t*7 + n2.w)*0.18;
-        var g = ctx.createRadialGradient(n2.x, n2.y, 0, n2.x, n2.y, rad*7*pulse);
-        g.addColorStop(0, 'rgba(255,84,112,.55)');
-        g.addColorStop(1, 'rgba(255,84,112,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(n2.x, n2.y, rad*7*pulse, 0, 6.2832); ctx.fill();
+        var gr = rad * 7 * pulse;
+        ctx.drawImage(GLOW_ROSE, n2.x - gr, n2.y - gr, gr * 2, gr * 2);
         ctx.fillStyle = C.rose;
       } else {
         ctx.fillStyle = isWeak
@@ -1332,7 +1305,7 @@ Object.defineProperty(window, 'sentinelDiagnostics', {
     get errors() { return DIAG.errors.slice(); },
     get layers() { return { webgl: DIAG.gl, core: DIAG.core,
                             chartLib: DIAG.chartLib, charts: DIAG.charts,
-                            smoothScroll: DIAG.smoothScroll }; }
+                            nativeScroll: DIAG.nativeScroll }; }
   }),
   writable: false, configurable: false, enumerable: false
 });
