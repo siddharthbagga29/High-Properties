@@ -1,6 +1,6 @@
 {
   "compiled": "2026-08-08",
-  "method": "Every claim was independently searched. Each is graded A (court record, regulator, statistical agency, standards body), B (named-company disclosure or reputable trade/major press), C (self-interested vendor survey - usable but labelled), or D (syndicated report-mill with no traceable primary basis - DISCARDED). Nothing graded D appears on the site.",
+  "method": "Every claim was independently searched. Each is graded A (court record, regulator, statistical agency, standards body), B (named-company disclosure or reputable trade/major press), C (self-interested vendor survey - usable but labeled), or D (syndicated report-mill with no traceable primary basis - DISCARDED). Nothing graded D appears on the site.",
   "tiers": {
     "A": "Primary: court docket, regulator, national statistical agency, standards body",
     "B": "Named-company disclosure or reputable trade / major business press",
@@ -13,7 +13,7 @@
       "tier": "A",
       "claim": "A company was held legally liable for what its AI chatbot told a customer.",
       "detail": "Moffatt v. Air Canada, 2024 BCCRT 149 (British Columbia Civil Resolution Tribunal, Feb 2024). Air Canada's chatbot told Jake Moffatt he could claim a bereavement fare retroactively; the airline refused. The Tribunal found negligent misrepresentation and rejected Air Canada's argument that the chatbot was 'a separate legal entity responsible for its own actions'. Awarded CAD $650.88 damages, $36.14 pre-judgment interest, $125 tribunal fees.",
-      "layman": "An airline's chatbot made up a refund policy. A court said the airline had to honour it. The bill was small - the precedent is not.",
+      "layman": "An airline's chatbot made up a refund policy. A court said the airline had to honor it. The bill was small - the precedent is not.",
       "verdict": "VERIFIED",
       "sources": [
         "https://www.americanbar.org/groups/business_law/resources/business-law-today/2024-february/bc-tribunal-confirms-companies-remain-liable-information-provided-ai-chatbot/",
@@ -37,7 +37,7 @@
       "id": "mobley-workday",
       "tier": "A",
       "claim": "AI screening software is facing a nationwide discrimination collective action.",
-      "detail": "Mobley v. Workday, Inc., No. 3:23-cv-00770 (N.D. Cal.). On May 16, 2025 Judge Rita Lin granted preliminary certification of a nationwide ADEA collective covering applicants aged 40+ rejected via Workday's platform since Sept 24, 2020. The court dismissed the intentional-discrimination claim but allowed disparate impact. On Feb 17, 2026 the court formally authorised collective notice. Race and disability claims proceed separately.",
+      "detail": "Mobley v. Workday, Inc., No. 3:23-cv-00770 (N.D. Cal.). On May 16, 2025 Judge Rita Lin granted preliminary certification of a nationwide ADEA collective covering applicants aged 40+ rejected via Workday's platform since Sept 24, 2020. The court dismissed the intentional-discrimination claim but allowed disparate impact. On Feb 17, 2026 the court formally authorized collective notice. Race and disability claims proceed separately.",
       "layman": "A hiring tool is being sued by potentially millions of older job applicants at once. The vendor - not just the employers - is the defendant.",
       "verdict": "VERIFIED",
       "sources": [
@@ -154,7 +154,7 @@
       "id": "iso-42001",
       "tier": "A",
       "claim": "There is a certifiable international standard for AI management systems.",
-      "detail": "ISO/IEC 42001:2023, published December 2023, is the first international AI management system standard. It is auditable and certifiable, giving buyers an objective artefact to demand from vendors.",
+      "detail": "ISO/IEC 42001:2023, published December 2023, is the first international AI management system standard. It is auditable and certifiable, giving buyers an objective artifact to demand from vendors.",
       "layman": "There is now an official, auditable badge for 'we manage our AI properly'. Badges create audit markets.",
       "verdict": "VERIFIED (standard exists and is certifiable; no reliable public count of certificates issued)",
       "sources": ["https://www.iso.org/standard/42001", "https://www.iso.org/home/insights-news/resources/iso-42001-explained-what-it-is.html"]
@@ -175,20 +175,20 @@
       "id": "armilla",
       "tier": "B",
       "claim": "A dedicated AI-liability MGA exists at Lloyd's and is well funded.",
-      "detail": "Armilla AI: first standalone AI liability policy written at Lloyd's, April 2025, underwritten by syndicates including Chaucer. Lloyd's coverholder dedicated to AI liability; Lloyd's Lab alumnus. Raised $25M in January 2026. Limits of $25M+ per organisation as of Jan-Mar 2026. February 2026: launched 'Vanguard AI' with Chaucer pairing cyber/tech E&O with standalone AI liability. Covers AI regulatory violations, non-breach privacy incidents, data leakage, model error, harmful outputs, AI agent failures and defence costs under the EU AI Act and Colorado AI Act.",
+      "detail": "Armilla AI: first standalone AI liability policy written at Lloyd's, April 2025, underwritten by syndicates including Chaucer. Lloyd's coverholder dedicated to AI liability; Lloyd's Lab alumnus. Raised $25M in January 2026. Limits of $25M+ per organization as of Jan-Mar 2026. February 2026: launched 'Vanguard AI' with Chaucer pairing cyber/tech E&O with standalone AI liability. Covers AI regulatory violations, non-breach privacy incidents, data leakage, model error, harmful outputs, AI agent failures and defense costs under the EU AI Act and Colorado AI Act.",
       "layman": "The category already has a funded, Lloyd's-backed leader. We are not first, and pretending otherwise would be a lie.",
       "verdict": "VERIFIED",
       "sources": [
         "https://fintech.global/2026/01/23/armilla-ai-raises-25m-to-expand-ai-liability-coverage/",
         "https://www.armilla.ai/ai-insurance",
-        "https://www.lloyds.com/insights/lloyds-lab/programmes-and-initiatives/lloyds-lab-accelerator/alumni/armilla-ai"
+        "https://www.lloyds.com/insights/lloyds-lab/programs-and-initiatives/lloyds-lab-accelerator/alumni/armilla-ai"
       ]
     },
     {
       "id": "testudo",
       "tier": "B",
       "claim": "A second Lloyd's-backed AI liability MGA launched in January 2026.",
-      "detail": "Testudo: Lloyd's Lab-backed, founded by former Goldman Sachs technologists, launched as an MGA Jan 2026 targeting mid-market US enterprises. Underwriting panel: Apollo Underwriting, Atrium, QBE. Lloyd's paper rated A+ (Superior) by AM Best. Limits $9.25M per insured as of March 2026. Covers third-party claims from generative AI outputs: financial loss, defamation, IP infringement, unauthorised data disclosure, physical harm. Also launched cover for AI regulatory proceedings.",
+      "detail": "Testudo: Lloyd's Lab-backed, founded by former Goldman Sachs technologists, launched as an MGA Jan 2026 targeting mid-market US enterprises. Underwriting panel: Apollo Underwriting, Atrium, QBE. Lloyd's paper rated A+ (Superior) by AM Best. Limits $9.25M per insured as of March 2026. Covers third-party claims from generative AI outputs: financial loss, defamation, IP infringement, unauthorized data disclosure, physical harm. Also launched cover for AI regulatory proceedings.",
       "layman": "A second Lloyd's-backed competitor launched this year. The window for 'nobody is doing this' has closed.",
       "verdict": "VERIFIED",
       "sources": ["https://www.testudo.co/", "https://www.quotesweep.com/insurtech/testudo"]
@@ -269,7 +269,7 @@
       "id": "ibm-breach-cost",
       "tier": "B",
       "claim": "AI-involved breaches cost measurably more than ordinary ones.",
-      "detail": "IBM Cost of a Data Breach 2026 (organisations breached Mar 2025 - Feb 2026): global average breach cost $4.99M; AI-driven breaches averaged ~$5.9M. More than half of organisations breached through an AI system reported direct financial loss.",
+      "detail": "IBM Cost of a Data Breach 2026 (organizations breached Mar 2025 - Feb 2026): global average breach cost $4.99M; AI-driven breaches averaged ~$5.9M. More than half of organizations breached through an AI system reported direct financial loss.",
       "layman": "When AI is involved in a breach, it costs about a million dollars more than when it isn't.",
       "verdict": "VERIFIED",
       "sources": ["https://www.helpnetsecurity.com/2026/07/30/ibm-cost-of-a-data-breach-2026/"]
@@ -280,7 +280,7 @@
       "claim": "Over 40% of enterprises say AI incidents cost them $2M+ in the past year.",
       "detail": "WitnessAI survey of enterprise decision-makers. 21% said their single most significant AI-related security incident cost $1M or more; 17% put total annual AI-incident cost at $10M-$24.9M. WitnessAI sells AI security software, so the survey is self-interested.",
       "layman": "A security vendor's survey says AI incidents are expensive. It is directionally useful and commercially motivated - treat it as a hint, not a number.",
-      "verdict": "REAL SURVEY, VENDOR-SPONSORED - shown labelled, never used as a modelling input",
+      "verdict": "REAL SURVEY, VENDOR-SPONSORED - shown labeled, never used as a modeling input",
       "sources": ["https://www.prnewswire.com/news-releases/new-witnessai-report-reveals-the-financial-cost-and-risk-factors-of-enterprise-ai-adoption-302831518.html"]
     },
     {

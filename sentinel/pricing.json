@@ -1,0 +1,364 @@
+{
+  "generated": "2026-08-08",
+  "trials": 400000,
+  "assumptions": {
+    "base_freq": 0.06,
+    "expense": 0.28,
+    "profit": 0.1,
+    "risk_load_k": 0.16,
+    "telemetry_freq_credit": 0.62,
+    "telemetry_sev_credit": 0.82
+  },
+  "severity_check": {
+    "quantiles": {
+      "p50": 82479.18216348859,
+      "p75": 288243.82247584156,
+      "p90": 1307268.3570177031,
+      "p99": 31575309.51262174,
+      "p99.9": 335693320.3927687,
+      "p99.99": 1226046093.4759862
+    },
+    "max": 9744550836.189972,
+    "share_over_1m": 0.11912166666666667,
+    "share_over_100m": 0.004148333333333334
+  },
+  "matrix": [
+    {
+      "band": "SMB  $5M\u2013$50M",
+      "cells": [
+        {
+          "limit": 1000000.0,
+          "attach": 25000,
+          "unmonitored": 14700.0,
+          "monitored": 8000.0,
+          "saving": 6700.0,
+          "saving_pct": 0.4572,
+          "rol": 0.008,
+          "cv": 16.57,
+          "offered": true
+        },
+        {
+          "limit": 5000000.0,
+          "attach": 100000,
+          "unmonitored": 24900.0,
+          "monitored": 13800.0,
+          "saving": 11000.0,
+          "saving_pct": 0.4446,
+          "rol": 0.00276,
+          "cv": 26.46,
+          "offered": true
+        },
+        {
+          "limit": 10000000.0,
+          "attach": 250000,
+          "unmonitored": 28200.0,
+          "monitored": 14500.0,
+          "saving": 13700.0,
+          "saving_pct": 0.4853,
+          "rol": 0.00145,
+          "cv": 36.52,
+          "offered": true
+        },
+        {
+          "limit": 25000000.0,
+          "attach": 500000,
+          "unmonitored": 41300.0,
+          "monitored": 22400.0,
+          "saving": 18900.0,
+          "saving_pct": 0.4584,
+          "rol": 0.00089,
+          "cv": 47.39,
+          "offered": true
+        }
+      ]
+    },
+    {
+      "band": "Mid-market $50M\u2013$500M",
+      "cells": [
+        {
+          "limit": 1000000.0,
+          "attach": 25000,
+          "unmonitored": 42900.0,
+          "monitored": 23300.0,
+          "saving": 19500.0,
+          "saving_pct": 0.4554,
+          "rol": 0.02334,
+          "cv": 9.85,
+          "offered": true
+        },
+        {
+          "limit": 5000000.0,
+          "attach": 100000,
+          "unmonitored": 82600.0,
+          "monitored": 44100.0,
+          "saving": 38500.0,
+          "saving_pct": 0.4657,
+          "rol": 0.00883,
+          "cv": 15.07,
+          "offered": true
+        },
+        {
+          "limit": 10000000.0,
+          "attach": 250000,
+          "unmonitored": 97500.0,
+          "monitored": 54400.0,
+          "saving": 43100.0,
+          "saving_pct": 0.4425,
+          "rol": 0.00544,
+          "cv": 19.32,
+          "offered": true
+        },
+        {
+          "limit": 25000000.0,
+          "attach": 500000,
+          "unmonitored": 130900.0,
+          "monitored": 68600.0,
+          "saving": 62300.0,
+          "saving_pct": 0.476,
+          "rol": 0.00274,
+          "cv": 26.36,
+          "offered": true
+        }
+      ]
+    },
+    {
+      "band": "Enterprise $500M+",
+      "cells": [
+        {
+          "limit": 1000000.0,
+          "attach": 25000,
+          "unmonitored": 112200.0,
+          "monitored": 71000.0,
+          "saving": 41200.0,
+          "saving_pct": 0.3668,
+          "rol": 0.07103,
+          "cv": 5.74,
+          "offered": false
+        },
+        {
+          "limit": 5000000.0,
+          "attach": 100000,
+          "unmonitored": 271200.0,
+          "monitored": 151300.0,
+          "saving": 119900.0,
+          "saving_pct": 0.4422,
+          "rol": 0.03026,
+          "cv": 8.47,
+          "offered": true
+        },
+        {
+          "limit": 10000000.0,
+          "attach": 250000,
+          "unmonitored": 345800.0,
+          "monitored": 188000.0,
+          "saving": 157800.0,
+          "saving_pct": 0.4563,
+          "rol": 0.0188,
+          "cv": 10.53,
+          "offered": true
+        },
+        {
+          "limit": 25000000.0,
+          "attach": 500000,
+          "unmonitored": 478200.0,
+          "monitored": 258900.0,
+          "saving": 219300.0,
+          "saving_pct": 0.4587,
+          "rol": 0.01036,
+          "cv": 13.8,
+          "offered": true
+        }
+      ]
+    }
+  ],
+  "verticals": [
+    {
+      "vertical": "Automotive & physical",
+      "mult": 2.4,
+      "anchor": "Benavides v. Tesla \u2014 $243M verdict, upheld Feb 2026",
+      "freq": 0.144,
+      "premium_unmonitored": 195900.0,
+      "premium_monitored": 104600.0,
+      "expected_loss": 33100.0,
+      "rol": 0.02092
+    },
+    {
+      "vertical": "Employment & HR",
+      "mult": 2.1,
+      "anchor": "Mobley v. Workday \u2014 nationwide ADEA collective certified",
+      "freq": 0.126,
+      "premium_unmonitored": 173300.0,
+      "premium_monitored": 90200.0,
+      "expected_loss": 28500.0,
+      "rol": 0.01804
+    },
+    {
+      "vertical": "Healthcare",
+      "mult": 1.9,
+      "anchor": "Bodily-injury exposure plus health-privacy regimes",
+      "freq": 0.114,
+      "premium_unmonitored": 156200.0,
+      "premium_monitored": 81600.0,
+      "expected_loss": 25800.0,
+      "rol": 0.01631
+    },
+    {
+      "vertical": "Financial services",
+      "mult": 1.7,
+      "anchor": "Conduct, suitability and disparate-impact exposure",
+      "freq": 0.102,
+      "premium_unmonitored": 134500.0,
+      "premium_monitored": 74200.0,
+      "expected_loss": 23500.0,
+      "rol": 0.01485
+    },
+    {
+      "vertical": "Legal & professional",
+      "mult": 1.6,
+      "anchor": "Mata v. Avianca \u2014 sanctions for fabricated citations",
+      "freq": 0.096,
+      "premium_unmonitored": 128000.0,
+      "premium_monitored": 70000.0,
+      "expected_loss": 22100.0,
+      "rol": 0.014
+    },
+    {
+      "vertical": "Software & platforms",
+      "mult": 1.2,
+      "anchor": "Bartz v. Anthropic \u2014 $1.5B training-data settlement",
+      "freq": 0.072,
+      "premium_unmonitored": 95600.0,
+      "premium_monitored": 52200.0,
+      "expected_loss": 16500.0,
+      "rol": 0.01043
+    },
+    {
+      "vertical": "Other commercial",
+      "mult": 1.0,
+      "anchor": "Baseline",
+      "freq": 0.06,
+      "premium_unmonitored": 78400.0,
+      "premium_monitored": 43600.0,
+      "expected_loss": 13800.0,
+      "rol": 0.00871
+    },
+    {
+      "vertical": "Retail & marketing",
+      "mult": 0.9,
+      "anchor": "Coverage B advertising-injury exposure (ISO CG 40 48)",
+      "freq": 0.054,
+      "premium_unmonitored": 72500.0,
+      "premium_monitored": 39900.0,
+      "expected_loss": 12600.0,
+      "rol": 0.00798
+    }
+  ],
+  "tiers": [
+    {
+      "key": "assay",
+      "name": "Assay",
+      "price": "$24,000",
+      "cadence": "one-time",
+      "lead": "Point-in-time AI risk assessment mapped to ISO/IEC 42001.",
+      "value": "Produces the procurement artifact that unblocks enterprise deals. Buyers increasingly require it; without it, deals stall.",
+      "includes": [
+        "Model inventory and exposure mapping",
+        "Red-team probe set (250 adversarial cases)",
+        "Control-gap report against ISO/IEC 42001",
+        "Board-ready risk memo",
+        "Insurability opinion"
+      ],
+      "math": "Priced at roughly 2 consultant-weeks. Displaces a $60k\u2013$120k Big-4 AI readiness engagement that yields no ongoing telemetry."
+    },
+    {
+      "key": "telemetry",
+      "name": "Telemetry",
+      "price": "$58,000",
+      "cadence": "per year",
+      "lead": "Continuous behavioral monitoring of production AI systems.",
+      "value": "Cuts modeled claim frequency by 38% and detection time from weeks to hours. That is the difference between a correction and a lawsuit.",
+      "includes": [
+        "Always-on output capture and drift detection",
+        "Hallucination and refusal-rate baselining",
+        "Jailbreak and prompt-injection alerting",
+        "Quarterly re-certification",
+        "Immutable audit log for regulators and litigation"
+      ],
+      "math": "Modeled expected annual loss avoided at mid-market: $38,500 in pure premium alone, before counting uninsured first-party cost and deal velocity."
+    },
+    {
+      "key": "covered",
+      "name": "Covered",
+      "price": "$58,000+",
+      "cadence": "per year, plus premium",
+      "lead": "Telemetry plus attached AI liability cover. Monitored risks only.",
+      "value": "Mid-market $5M xs $100k: $44,100 monitored versus $82,600 unmonitored \u2014 a 47% credit earned by the telemetry, which more than pays for the subscription.",
+      "includes": [
+        "Everything in Telemetry",
+        "$1M\u2013$25M limits, $25k\u2013$500k attachment",
+        "Third-party AI liability: financial loss, defamation, IP, privacy",
+        "Regulatory proceedings defense",
+        "Priority claims handling"
+      ],
+      "math": "Technical premium built from Poisson frequency \u00d7 calibrated lognormal severity, ceded to layer, loaded 28% expense / 10% profit / CV risk load."
+    },
+    {
+      "key": "enterprise",
+      "name": "Enterprise",
+      "price": "Bespoke",
+      "cadence": "from $340,000",
+      "lead": "Portfolio telemetry, captive structuring, and risk participation.",
+      "value": "For carriers, platforms, and multi-system deployers who want to own part of the economics rather than only transfer the risk.",
+      "includes": [
+        "Unlimited systems and business units",
+        "Dedicated actuarial support",
+        "Captive or cell structuring",
+        "Profit-commission participation",
+        "Loss-data licensing"
+      ],
+      "math": "Priced on exposure, not seats. Floor set at the point where dedicated actuarial and claims resource is economic."
+    }
+  ],
+  "competitors": [
+    {
+      "name": "Armilla AI",
+      "paper": "Lloyd's (Chaucer)",
+      "limit": "$25M+",
+      "verified": true,
+      "telemetry": "No \u2014 assessment at inception",
+      "rate_note": "SIMULATED: ~1.4\u20132.2% RoL inferred from cyber analogues"
+    },
+    {
+      "name": "Testudo",
+      "paper": "Lloyd's (Apollo, Atrium, QBE)",
+      "limit": "$9.25M",
+      "verified": true,
+      "telemetry": "No",
+      "rate_note": "SIMULATED: ~1.6\u20132.4% RoL"
+    },
+    {
+      "name": "AIUC",
+      "paper": "Beazley",
+      "limit": "$50M",
+      "verified": true,
+      "telemetry": "Audit-based (AIUC-1), point-in-time",
+      "rate_note": "SIMULATED: ~1.2\u20132.0% RoL, audit-credited"
+    },
+    {
+      "name": "HSB / Munich Re",
+      "paper": "Own + white-label",
+      "limit": "SMB",
+      "verified": true,
+      "telemetry": "No",
+      "rate_note": "SIMULATED: bundled into host policy"
+    },
+    {
+      "name": "Sentinel",
+      "paper": "Coverholder (target)",
+      "limit": "$1M\u2013$25M",
+      "verified": false,
+      "telemetry": "Yes \u2014 continuous, required",
+      "rate_note": "MODELED: 0.88% RoL at $5M monitored"
+    }
+  ]
+}

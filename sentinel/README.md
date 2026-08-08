@@ -1,60 +1,86 @@
-# Sentinel — Evidence Dossier
+# Sentinel — AI Liability Telemetry & Coverage
 
-A self-contained research and strategy artefact for an AI assurance + liability
-business. Research was done first, every claim was source-checked, the
-simulation was re-anchored on what survived, and only then was the page built.
+A single self-contained page for an AI assurance and liability business.
+Research was verified first, the models were re-anchored on what survived, and
+the site was built from those outputs. Nothing on the page is hand-typed data.
 
 ## Deploy
 
-`index.html` has **no external dependencies** — no CDN, no fonts, no images, no
-network calls. Drag this folder onto <https://app.netlify.com/drop> and it is
-live. It also opens correctly straight from disk (`file://`).
+`index.html` has **no external dependencies** — no CDN, no web fonts, no images,
+no runtime network calls. Drag this folder onto <https://app.netlify.com/drop>
+and it is live. It also opens correctly straight from disk (`file://`).
 
-## Files
+## Layout
 
-| File | What it is |
+| Path | What it is |
 |---|---|
-| `index.html` | The built page. 102 KB, self-contained. |
-| `src.html` | Source template with `/*__MCDATA__*/` and `/*__EVIDENCE__*/` placeholders. |
-| `build.js` | Inlines the JSON into the template. `node build.js`. |
-| `evidence.json` | 29 claims, each graded A/B/C/D with sources and a plain-English gloss. |
-| `montecarlo_v2.py` | The model. 60,000 trials, 5-year horizon, seed 20260808. |
-| `mc_v2.json` | Model output consumed by the page. |
-| `backtest.js` | 40 headless assertions. `node backtest.js` (needs playwright-core). |
+| `index.html` | The built page. 344 KB, self-contained. |
+| `src/src.html` | Markup with `/*__CSS__*/`, `/*__APP__*/` and JSON placeholders. |
+| `src/app.js` | All behavior: reveal, WebGL, neural core, charts, pricing, form. |
+| `src/tw.css`, `src/tailwind.config.js` | Tailwind source and theme. |
+| `src/build.js` | Runs Tailwind, inlines Chart.js + app + JSON. `node src/build.js`. |
+| `evidence.json` | 29 claims, graded A/B/C/D, each with sources and a plain-English gloss. |
+| `montecarlo_v2.py` → `mc_v2.json` | Strategy viability. 60,000 trials, seed 20260808. |
+| `pricing.py` → `pricing.json` | Actuarial pricing. 400,000 simulations, seed 4711. |
+| `backtest.js` | 70 headless assertions. `node backtest.js` (needs playwright-core). |
 
-Rebuild loop: `python3 montecarlo_v2.py && node build.js && node backtest.js`
+Full rebuild:
 
-## How claims are graded
+```
+python3 montecarlo_v2.py && python3 pricing.py && node src/build.js && node backtest.js
+```
 
-- **A** — court docket, regulator, national statistical agency, standards body
-- **B** — named-company disclosure or reputable trade / major business press
-- **C** — vendor or self-interested survey; shown only with the conflict disclosed
-- **D** — syndicated report-mill projection with no traceable primary basis
+## How the pricing is derived
 
-Tier D claims are **kept in the ledger and displayed struck-through** rather than
-deleted, so a reader can see what was rejected and why. Four claims were
-discarded, including the widely-quoted "$6.8bn in 2025 → $34.2bn by 2034" AI
-liability market figure, which fails a sanity check against Munich Re's
-measurement of the *entire* global cyber insurance market at $15.3bn (2024).
+Standard excess-of-loss ratemaking, not a markup on a competitor's rate card:
 
-## The plain-English layer
+1. **Frequency** — Poisson, base 6% per insured per year, modified by sector
+   (0.9×–2.4×), revenue band, and whether the system is under telemetry.
+2. **Severity** — three-component lognormal mixture, calibrated so simulated
+   quantiles reproduce the five adjudicated outcomes on the page. Verified:
+   p50 $82k · p90 $1.3M · p99 $32M · p99.9 $336M · p99.99 $1.2B.
+3. **Layer** — Monte Carlo the aggregate annual loss ceded to (limit xs attachment).
+4. **Loading** — 28% expense, 10% profit, plus a risk load proportional to the
+   layer's coefficient of variation. A new line with no credible history has to
+   charge for parameter uncertainty.
 
-Every section carries a `.plain` element — a one- or two-sentence restatement in
-non-technical language. It is visible by default and subtle; the **Plain English**
-toggle in the nav raises its contrast and persists the choice to `localStorage`.
-The backtest asserts that no content section is missing one.
+Layers whose rate on line exceeds 4% are **declined rather than quoted** — at
+that burn rate the policy is a payment plan, not a risk transfer.
 
-## Rendering guarantees (asserted by the backtest)
+**Competitor rates are labeled SIMULATED.** Armilla, Testudo, AIUC and HSB write
+on Lloyd's and surplus-lines paper, where rates are not publicly filed. Limits
+and paper are verified from trade press; the rates are inferred from published
+cyber rate-on-line ranges and marked as such on the page.
 
-- `.reveal` only hides under `html.js-ready`, so **no-JS renders everything**.
-- A 1500 ms safety net is scheduled *before* observer setup, so a throwing
-  `IntersectionObserver` can never leave the page blank.
-- Dynamically injected content re-registers via `window.__scanReveal()`.
-- WebGL is raw WebGL1 (no library) and every failure path hides the canvas.
-- All 122 external links are `target="_blank" rel="noopener noreferrer"`, https.
+## Evidence grading
 
-## Not legal, financial or insurance advice
+- **A** — court docket, regulator, statistical agency, standards body
+- **B** — named-company disclosure or reputable trade / business press
+- **C** — vendor or self-interested survey, shown only with the conflict disclosed
+- **D** — syndicated report-mill projection with no traceable basis
 
-This is a strategy and research artefact. It is not an offer of insurance, a
-solicitation, financial advice, or a securities offering. Case summaries describe
-public court records and are provided for analysis only.
+Tier D claims stay in the ledger, struck through, so a reader can see what was
+rejected and why. Four were discarded, including the widely-quoted "$6.8B in
+2025 → $34.2B by 2034" AI liability market figure, which fails a sanity check
+against Munich Re's measurement of the *entire* global cyber market at $15.3B.
+
+## Guarantees asserted by the backtest
+
+- **Contrast** — every visible text node is measured against its *composited*
+  background (each ancestor alpha layered onto the page base) and must clear
+  WCAG AA. Current floor: 5.23:1 desktop, 5.36:1 mobile.
+- **Scroll mapping** — the neural core's reported progress is the raw scroll
+  fraction, not an eased value, so the narrative lands on exactly the depth it
+  claims. Verified monotonic 3% → 100% with all five failure modes firing in order.
+- **No-JS** — `.reveal` only hides under `html.js-ready`; a 1500 ms safety net is
+  armed before observer setup. 309k characters remain readable with JS disabled.
+- **No dead controls** — every slider, select, button and form field is asserted
+  to change something.
+- All 122 external links are https + `_blank` + `noopener noreferrer`.
+
+## Not legal, financial, or insurance advice
+
+This is a strategy and research artifact. It is not an offer of insurance, a
+solicitation, financial advice, or a securities offering. Premiums shown are
+modeled technical premiums, not quotes, and are not backed by bound capacity.
+Case summaries describe public court records and are provided for analysis only.
