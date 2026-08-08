@@ -14,7 +14,9 @@ and it is live. It also opens correctly straight from disk (`file://`).
 
 | Path | What it is |
 |---|---|
-| `index.html` | The built page. 344 KB, self-contained. |
+| `index.html` | The built page. 378 KB, self-contained. The only HTML file, on purpose. |
+| `_headers` | Netlify / Cloudflare Pages security headers. |
+| `audit.js` | Core Web Vitals, CLS, idle GPU, leak probe, CSP. `node audit.js`. |
 | `src/src.html` | Markup with `/*__CSS__*/`, `/*__APP__*/` and JSON placeholders. |
 | `src/app.js` | All behavior: reveal, WebGL, neural core, charts, pricing, form. |
 | `src/tw.css`, `src/tailwind.config.js` | Tailwind source and theme. |
@@ -22,7 +24,7 @@ and it is live. It also opens correctly straight from disk (`file://`).
 | `evidence.json` | 29 claims, graded A/B/C/D, each with sources and a plain-English gloss. |
 | `montecarlo_v2.py` → `mc_v2.json` | Strategy viability. 60,000 trials, seed 20260808. |
 | `pricing.py` → `pricing.json` | Actuarial pricing. 400,000 simulations, seed 4711. |
-| `backtest.js` | 70 headless assertions. `node backtest.js` (needs playwright-core). |
+| `backtest.js` | 103 headless assertions. `node backtest.js` (needs playwright-core). |
 
 Full rebuild:
 
@@ -85,10 +87,12 @@ solicitation, financial advice, or a securities offering. Premiums shown are
 modeled technical premiums, not quotes, and are not backed by bound capacity.
 Case summaries describe public court records and are provided for analysis only.
 
-## index2.html — the hardened build
+## The hardened build
 
-`index2.html` is the production build; `index.html` is kept as the prior staging
-build for comparison.
+`index.html` **is** the hardened build. There is deliberately only one HTML file:
+every static host serves `index.html` at the root, so shipping the good build
+under any other name guarantees the stale one gets deployed instead. The prior
+staging build is in git history, not in this folder.
 
 | | index.html | index2.html |
 |---|---|---|
@@ -98,7 +102,8 @@ build for comparison.
 | Chart.js | executed at load | inert `text/plain`, injected on demand |
 | Charts built | 5 at load | lazily, per section |
 | Below-fold DOM | built at load | `deferBuild` — IO-near or idle, whichever first |
-| Animation loops | boot, 60fps, always on | after boot, 30fps, idle-paused |
+| Animation loops | boot, 60fps, always on, two competing rAF loops | one shared ticker; scroll-linked at native rate, ambient capped at 30fps, idle-paused |
+| Scrolling | native, stepped | Lenis inertia, ~1.05 s eased tail |
 | Idle GPU | continuous | **0 draws** |
 | innerHTML | 8 sites | **0** — every node built with textContent |
 | Globals | `__MC__ __EV__ __PR__ __GL_OK__ __CORE_OK__` | one frozen `sentinelDiagnostics` |
@@ -122,7 +127,7 @@ build for comparison.
 | **ScriptDuration (CDP, 3.5 s)** | — | **66 ms** |
 | JS heap at boot | 4.2 MB | 1.7 MB |
 | Idle GPU draws | continuous | 0 |
-| Functional checks | 70 | **98** |
+| Functional checks | 70 | **103** |
 
 TBT here is measured under headless swiftshader, where canvas rasterization runs
 on the CPU. CDP attribution over the same window shows **66 ms ScriptDuration**
@@ -143,8 +148,33 @@ node backtest.js      # 98 functional assertions
 node audit.js         # CWV, CLS, idle GPU, leak probe, CSP, accessibility
 ```
 
+## Motion architecture
+
+Three things want animation frames: Lenis, the ambient background shader, and
+the scroll-linked core. Running three rAF loops means they tear against each
+other, and the core can read a scroll position Lenis has not yet committed —
+which reads as lag.
+
+One `Ticker` fixes it. Subscribers run in registration order (Lenis first, so
+downstream readers see this frame's scroll position), each returns whether it
+still wants frames, and the loop **stops entirely** when nobody does. That is
+how the page reaches zero idle rAF while still running smooth scroll.
+
+Frame budgets are set by what the layer actually is:
+
+- **Scroll-linked core — native refresh rate, never capped.** Capping this is
+  what makes scrolling feel broken on a 60/120 Hz display.
+- **Ambient background — 30 fps.** It drifts at `uTime * 0.02` behind glass
+  panels; nobody can tell, and it halves the rasterization cost.
+- **Idle — nothing.** 1.5 s after the last interaction the ticker stops.
+
+`prefers-reduced-motion` disables Lenis entirely and paints each canvas once.
+
 ### Deploying
 
-Drop this folder on Netlify or Cloudflare Pages — both read `_headers`. Rename
-`index2.html` to `index.html` to serve it at the root. `frame-ancestors` only
-works as a real header, which is why it ships there rather than in the meta tag.
+Drop this folder on Netlify or Cloudflare Pages — both read `_headers` and both
+serve `index.html` at the root, so there is nothing to rename. `frame-ancestors`
+only works as a real header, which is why it ships there rather than in the meta.
+
+Screenshots are off by default so test runs leave the tree clean. Set
+`SENTINEL_SHOTS=/some/dir node backtest.js` to capture them.

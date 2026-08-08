@@ -3,10 +3,11 @@
 const { chromium } = require('playwright-core');
 const path = require('path'), fs = require('fs');
 
-const FILE = 'file://' + path.join(__dirname, 'index2.html');
+const FILE = 'file://' + path.join(__dirname, 'index.html');
 /* Data lives beside the page in the shipped layout, and one level up in the
    source tree. Resolve either without caring which. */
-const near = f => [path.join(__dirname, f), path.join(__dirname, '..', f)]
+const near = f => [path.join(__dirname, f), path.join(__dirname, 'src', f),
+                   path.join(__dirname, '..', f)]
   .find(p => fs.existsSync(p)) || path.join(__dirname, f);
 const EV = JSON.parse(fs.readFileSync(near('evidence.json'), 'utf8'));
 const PR = JSON.parse(fs.readFileSync(near('pricing.json'), 'utf8'));
@@ -75,6 +76,32 @@ const CONTRAST_FN = `(() => {
   ok(await page.evaluate(() => typeof window.Chart === 'undefined'),
      'Chart.js is NOT executed at load (deferred until a chart section nears)');
 
+  H('MOTION');
+  ok(await page.evaluate(() => window.sentinelDiagnostics.layers.smoothScroll),
+     'smooth scroll engaged');
+  ok(await page.evaluate(() => document.documentElement.classList.contains('lenis-on')),
+     'lenis-on set, so native scroll-behavior stands down');
+  // Inertia is measured by DURATION, which is frame-rate independent. Headless
+  // renders at ~14fps so counting eased frames would be meaningless here.
+  await page.evaluate(() => { window.__sc = [];
+    window.addEventListener('scroll', () => window.__sc.push(performance.now()), { passive:true }); });
+  await page.mouse.move(700, 450);
+  await page.mouse.wheel(0, 800);
+  await page.waitForTimeout(2000);
+  const settle = await page.evaluate(() => {
+    const s = window.__sc; return s.length > 1 ? Math.round(s[s.length-1] - s[0]) : 0; });
+  ok(settle > 150, `wheel gesture eases over ${settle}ms rather than jumping`);
+  await page.evaluate(() => { delete window.__sc; window.scrollTo(0, 0); });  // probe cleanup
+  await page.waitForTimeout(900);
+
+  // Scroll-linked motion must NOT be frame-capped; only the ambient layer is.
+  const appSrc = fs.readFileSync(near('app.js'), 'utf8');
+  const coreSection = appSrc.slice(appSrc.indexOf('5. NEURAL CORE'), appSrc.indexOf('6. FAILURE DOSSIER'));
+  ok(!/frameGate\(/.test(coreSection),
+     'the scroll-linked core runs at native refresh rate, not a fixed cap');
+  ok(/frameGate\(30\)/.test(appSrc.slice(appSrc.indexOf('4. BACKGROUND WEBGL'), appSrc.indexOf('5. NEURAL CORE'))),
+     'the ambient background is capped at 30fps');
+
   H('SECURITY POSTURE');
   const cspMeta = await page.evaluate(() => {
     const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
@@ -93,7 +120,7 @@ const CONTRAST_FN = `(() => {
   ['frame-ancestors', 'X-Frame-Options: DENY', 'X-Content-Type-Options: nosniff',
    'Referrer-Policy', 'Permissions-Policy', 'Strict-Transport-Security'].forEach(h =>
     ok(headers.includes(h), `_headers ships ${h.split(':')[0]}`));
-  const shipped = fs.readFileSync(path.join(__dirname, 'index2.html'), 'utf8');
+  const shipped = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
   const litStyle = (shipped.slice(shipped.indexOf('<body')).match(/\sstyle="/g) || []).length;
   ok(litStyle === 0,
      `zero literal style attributes in the shipped markup (${litStyle}) — runtime CSSOM writes are not governed by style-src`);
@@ -491,15 +518,17 @@ const CONTRAST_FN = `(() => {
   await nj.close();
 
   await page.evaluate(() => window.scrollTo(0,0)); await page.waitForTimeout(600);
-  await page.screenshot({ path: path.join(__dirname,'shot-1-hero.png') });
+  const SHOTS = process.env.SENTINEL_SHOTS;   // set a directory to capture
+  const shot = f => SHOTS ? page.screenshot({ path: path.join(SHOTS, f) }) : Promise.resolve();
+  await shot('shot-1-hero.png');
   await page.evaluate(y => window.scrollTo(0, y), coreTop + coreH * 0.7);
   await page.waitForTimeout(900);
-  await page.screenshot({ path: path.join(__dirname,'shot-2-core.png') });
+  await shot('shot-2-core.png');
   for (const [id, f] of [['dashboard','shot-3-dash.png'],['research','shot-4-research.png'],
                           ['pricing','shot-5-pricing.png'],['contact','shot-6-contact.png']]) {
     await page.evaluate(i => document.getElementById(i).scrollIntoView(), id);
     await page.waitForTimeout(800);
-    await page.screenshot({ path: path.join(__dirname, f) });
+    await shot(f);
   }
 
   await browser.close();

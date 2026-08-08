@@ -1,6 +1,6 @@
 /* CTO AUDIT — runtime instrumentation of sentinel/index.html */
 const { chromium } = require('playwright-core');
-const F = 'file://' + require('path').join(__dirname, 'index2.html');
+const F = 'file://' + require('path').join(__dirname, 'index.html');
 
 (async () => {
   const b = await chromium.launch({

@@ -12,7 +12,7 @@
    A throw anywhere below must be visible, must not cascade, and must never
    leave a section silently blank. Errors are counted on the diagnostics
    object so an uptime check can read them without a console. */
-var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false };
+var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false, smoothScroll: false };
 
 function note(kind, msg) {
   if (DIAG.errors.length < 25) DIAG.errors.push(kind + ': ' + String(msg).slice(0, 200));
@@ -90,9 +90,33 @@ function deferBuild(sectionId, build) {
   else setTimeout(run, 900);
 }
 
-/* Neither canvas needs 60fps. The background drifts at uTime*0.02 and the core
-   is scroll-driven, so both are capped. This halves their rasterization cost
-   with no perceptible difference. */
+/* ── MASTER TICKER ───────────────────────────────────────────────────────
+   Subscribers run in registration order every frame and return true if they
+   want another. When all return false the loop stops and the page schedules
+   nothing at all. Order matters: Lenis commits scroll first, so anything
+   reading scroll position downstream sees this frame's value, not last
+   frame's. That is what removes the one-frame lag from scroll-linked motion. */
+var Ticker = (function () {
+  var subs = [], raf = 0;
+  function frame(now) {
+    raf = 0;
+    var need = false;
+    for (var i = 0; i < subs.length; i++) {
+      try { if (subs[i](now)) need = true; } catch (e) { note('ticker', e.message); }
+    }
+    if (need) raf = requestAnimationFrame(frame);
+  }
+  return {
+    add: function (fn) { subs.push(fn); },
+    kick: function () { if (!raf) raf = requestAnimationFrame(frame); },
+    stop: function () { if (raf) { cancelAnimationFrame(raf); raf = 0; } },
+    running: function () { return !!raf; }
+  };
+})();
+
+/* The ambient background drifts at uTime*0.02 and sits behind glass, so it is
+   capped. Scroll-LINKED motion is never capped — that is what makes scrolling
+   feel wrong. */
 function frameGate(fps) {
   var min = 1000 / fps, last = 0;
   return function (now) {
@@ -197,6 +221,41 @@ guard('nav', function () {
   setOpen(false);
 });
 
+/* ── 2c. SMOOTH SCROLL ────────────────────────────────────────────────────
+   Lenis, first on the shared ticker. It drives real scrollTop rather than a
+   transform, so position:sticky and the pinned core section keep working.
+   Disabled outright under prefers-reduced-motion. */
+var lenis = null;
+guard('smooth-scroll', function () {
+  if (RM || typeof window.Lenis !== 'function') return;
+
+  lenis = new Lenis({
+    duration: 1.05,
+    // expo-out: quick to respond, long soft tail — weighty without feeling laggy
+    easing: function (t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+    smoothWheel: true,
+    syncTouch: false,        // native momentum already feels right on touch
+    wheelMultiplier: 1,
+    touchMultiplier: 1.7,
+    infinite: false
+  });
+  document.documentElement.classList.add('lenis-on');
+
+  var idleUntil = 0;
+  function wake() { idleUntil = performance.now() + 1200; Ticker.kick(); }
+  ['wheel', 'touchstart', 'touchmove', 'keydown', 'pointerdown'].forEach(function (ev) {
+    window.addEventListener(ev, wake, { passive: true });
+  });
+
+  // Registered before the canvases, so they read this frame's scroll position.
+  Ticker.add(function (now) {
+    lenis.raf(now);
+    return lenis.isScrolling || now < idleUntil;
+  });
+
+  DIAG.smoothScroll = true;
+});
+
 /* ── 3. ANCHOR SCROLL ────────────────────────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(function (a) {
   a.addEventListener('click', function (ev) {
@@ -204,8 +263,12 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     if (id.length < 2) return;
     var t = document.querySelector(id); if (!t) return;
     ev.preventDefault();
-    window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 60,
-                      behavior: RM ? 'auto' : 'smooth' });
+    if (lenis) {
+      lenis.scrollTo(t, { offset: -60, duration: 1.15 });
+    } else {
+      window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 60,
+                        behavior: RM ? 'auto' : 'smooth' });
+    }
     t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true });
   });
 });
@@ -325,14 +388,11 @@ guard('webgl', function () {
   }
 
   var gate = frameGate(30), booted = false;
-  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
-  function loop(now) { raf = requestAnimationFrame(loop); if (gate(now || performance.now())) paint(); }
+  function stop() {}
   function sync() {
     // Reduced motion gets a single static frame and no loop at all.
     if (RM) { stop(); if (visible && !lost) paint(); return; }
-    if (!booted) return;                       // never animate during boot
-    if (active && visible && !lost) { if (!raf) loop(); }
-    else { if (raf) { stop(); if (visible && !lost) paint(); } }
+    if (booted && active && visible && !lost) Ticker.kick();
   }
 
   document.addEventListener('visibilitychange', function () {
@@ -347,6 +407,14 @@ guard('webgl', function () {
     // Rebuild every GPU resource — they are all invalid after a context loss.
     gl = null; pg = null; buf = null; U = null;
     if (build()) { lost = false; DIAG.gl = true; sync(); } else { bail(); }
+  });
+
+  // Ambient layer: capped, and only while the page is being interacted with.
+  Ticker.add(function (now) {
+    if (RM || !booted || lost || !visible) return false;
+    if (!active) return false;
+    if (gate(now)) paint();
+    return true;
   });
 
   paint();                                     // one static frame immediately
@@ -528,16 +596,11 @@ guard('core', function () {
     });
   }
 
-  var t = 0, raf = 0, onScreen = false, visible = true, booted = false;
-  var gate = frameGate(30);
-  function draw(now) {
-    raf = requestAnimationFrame(draw);
-    if (now !== undefined && !gate(now)) return;
-    render();
-  }
+  var t = 0, onScreen = false, visible = true, booted = false;
   function render() {
     var want = computeProgress();
-    progress += (want - progress) * 0.34;      // tuned for a 30fps cadence
+    // Frame-rate independent easing, so the feel is identical at 60Hz and 120Hz.
+    progress += (want - progress) * 0.18;
     if (Math.abs(want - progress) < 0.004) progress = want;   // snap, never stall
     t += 0.006;
 
@@ -625,15 +688,19 @@ guard('core', function () {
       ctx.textAlign = 'left';
     }
   }
-  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
   function draw1() { progress = computeProgress(); render(); }
   function sync() {
-    // No frames while the pinned section is offscreen. Under reduced motion the
-    // core is redrawn on scroll only, never looped.
-    if (RM) { stop(); if (onScreen && visible) draw1(); return; }
-    if (!booted) return;
-    if (onScreen && visible) { if (!raf) draw(); } else stop();
+    // Under reduced motion the core is redrawn on scroll only, never looped.
+    if (RM) { if (onScreen && visible) draw1(); return; }
+    if (booted && onScreen && visible) Ticker.kick();
   }
+
+  // Scroll-linked: runs at the display's native rate whenever it is on screen.
+  Ticker.add(function () {
+    if (RM || !booted || !onScreen || !visible) return false;
+    render();
+    return true;
+  });
 
   observeVisible(sec, function (v) { onScreen = v; sync(); }, '200px');
   document.addEventListener('visibilitychange', function () {
@@ -1201,7 +1268,8 @@ Object.defineProperty(window, 'sentinelDiagnostics', {
     get ok()     { return DIAG.errors.length === 0; },
     get errors() { return DIAG.errors.slice(); },
     get layers() { return { webgl: DIAG.gl, core: DIAG.core,
-                            chartLib: DIAG.chartLib, charts: DIAG.charts }; }
+                            chartLib: DIAG.chartLib, charts: DIAG.charts,
+                            smoothScroll: DIAG.smoothScroll }; }
   }),
   writable: false, configurable: false, enumerable: false
 });
