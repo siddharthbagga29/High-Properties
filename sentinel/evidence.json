@@ -1,0 +1,335 @@
+{
+  "compiled": "2026-08-08",
+  "method": "Every claim was independently searched. Each is graded A (court record, regulator, statistical agency, standards body), B (named-company disclosure or reputable trade/major press), C (self-interested vendor survey - usable but labelled), or D (syndicated report-mill with no traceable primary basis - DISCARDED). Nothing graded D appears on the site.",
+  "tiers": {
+    "A": "Primary: court docket, regulator, national statistical agency, standards body",
+    "B": "Named-company disclosure or reputable trade / major business press",
+    "C": "Vendor or self-interested survey - shown only with the conflict disclosed",
+    "D": "Syndicated report-mill projection - DISCARDED, fails sanity check"
+  },
+  "claims": [
+    {
+      "id": "air-canada",
+      "tier": "A",
+      "claim": "A company was held legally liable for what its AI chatbot told a customer.",
+      "detail": "Moffatt v. Air Canada, 2024 BCCRT 149 (British Columbia Civil Resolution Tribunal, Feb 2024). Air Canada's chatbot told Jake Moffatt he could claim a bereavement fare retroactively; the airline refused. The Tribunal found negligent misrepresentation and rejected Air Canada's argument that the chatbot was 'a separate legal entity responsible for its own actions'. Awarded CAD $650.88 damages, $36.14 pre-judgment interest, $125 tribunal fees.",
+      "layman": "An airline's chatbot made up a refund policy. A court said the airline had to honour it. The bill was small - the precedent is not.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://www.americanbar.org/groups/business_law/resources/business-law-today/2024-february/bc-tribunal-confirms-companies-remain-liable-information-provided-ai-chatbot/",
+        "https://www.mccarthy.ca/en/insights/blogs/techlex/moffatt-v-air-canada-misrepresentation-ai-chatbot",
+        "https://www.cbc.ca/amp/1.7116416"
+      ]
+    },
+    {
+      "id": "mata-avianca",
+      "tier": "A",
+      "claim": "A court has sanctioned professionals for relying on AI output that turned out to be fabricated.",
+      "detail": "Mata v. Avianca, Inc., 678 F. Supp. 3d 443 (S.D.N.Y., June 22, 2023). Attorney Steven Schwartz (Levidow, Levidow & Oberman) filed a brief citing six cases invented by ChatGPT, then submitted an affidavit attesting they were real after asking ChatGPT to confirm them. Judge P. Kevin Castel found bad faith - 'acts of conscious avoidance and false and misleading statements to the Court' - imposed a $5,000 Rule 11 sanction and ordered corrective letters to every judge named in the fabricated opinions.",
+      "layman": "Lawyers filed a brief full of court cases the AI had invented. The judge fined them and made them write to every real judge whose name the AI had faked.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://en.wikipedia.org/wiki/Mata_v._Avianca,_Inc.",
+        "https://www.law.berkeley.edu/wp-content/uploads/archive/2025/12/Mata-v-Avianca-Inc.pdf"
+      ]
+    },
+    {
+      "id": "mobley-workday",
+      "tier": "A",
+      "claim": "AI screening software is facing a nationwide discrimination collective action.",
+      "detail": "Mobley v. Workday, Inc., No. 3:23-cv-00770 (N.D. Cal.). On May 16, 2025 Judge Rita Lin granted preliminary certification of a nationwide ADEA collective covering applicants aged 40+ rejected via Workday's platform since Sept 24, 2020. The court dismissed the intentional-discrimination claim but allowed disparate impact. On Feb 17, 2026 the court formally authorised collective notice. Race and disability claims proceed separately.",
+      "layman": "A hiring tool is being sued by potentially millions of older job applicants at once. The vendor - not just the employers - is the defendant.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://www.hklaw.com/en/insights/publications/2025/05/federal-court-allows-collective-action-lawsuit-over-alleged",
+        "https://cases.justia.com/federal/district-courts/california/candce/3:2023cv00770/408645/128/0.pdf",
+        "https://www.maynardnexsen.com/publication-emerging-liability-for-ai-driven-hiring-tools-key-developments-in-mobley-v-workday-inc"
+      ]
+    },
+    {
+      "id": "tesla-benavides",
+      "tier": "A",
+      "claim": "An automated-driving failure has produced a nine-figure jury verdict that survived post-trial challenge.",
+      "detail": "Benavides v. Tesla / Angulo v. Tesla (S.D. Fla., Miami). Aug 1, 2025 federal jury returned ~$129M compensatory (Tesla apportioned 33%, approx $43M) plus $200M punitive against Tesla alone - $243M total - over a 2019 Key Largo crash that killed Naibel Benavides Leon and injured Dillon Angulo. On Feb 20, 2026 the court denied Tesla's motion to toss the verdict.",
+      "layman": "This is what the worst case actually costs. A jury put $243 million on a single automated-driving failure, and the judge let it stand.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://www.cnbc.com/2026/02/20/tesla-loses-bid-toss-243-million-verdict-autopilot-crash-suit.html",
+        "https://www.hansonbridgett.com/publications/250814-8509-tesla-verdict",
+        "https://techcrunch.com/2026/02/20/tesla-loses-bid-to-overturn-243m-autopilot-verdict/"
+      ]
+    },
+    {
+      "id": "anthropic-settlement",
+      "tier": "B",
+      "claim": "The largest AI-related recovery to date is a $1.5B copyright class settlement.",
+      "detail": "Bartz v. Anthropic - first settlement in the first certified copyright class action against an AI company; $1.5 billion recovery over use of copyrighted books in training data.",
+      "layman": "One AI company agreed to pay $1.5 billion over how it got its training data. Losses in this field are not theoretical.",
+      "verdict": "VERIFIED",
+      "sources": ["https://aibusiness.com/generative-ai/ai-lawsuits-in-2026-settlements-licensing-deals-litigation"]
+    },
+    {
+      "id": "character-ai",
+      "tier": "B",
+      "claim": "Character.AI and Google settled five wrongful-death / mental-health suits in Jan 2026.",
+      "detail": "January 2026 settlements with five families whose children died by suicide or suffered serious mental-health crises, in cases filed in Florida, Colorado, New York and Texas. Terms not disclosed.",
+      "layman": "Chatbot harm cases are being settled quietly rather than tried - which means nobody outside the parties knows what these losses really cost.",
+      "verdict": "VERIFIED (terms undisclosed)",
+      "sources": ["https://www.cnbc.com/2026/01/07/google-characterai-to-settle-suits-involving-suicides-ai-chatbots.html"]
+    },
+    {
+      "id": "iso-exclusions",
+      "tier": "A",
+      "claim": "Standard general-liability forms now carry off-the-shelf AI exclusions.",
+      "detail": "In January 2026 Verisk's ISO Core Lines Services made three new endorsements available to member carriers under a multistate filing. CG 40 47 (Generative AI Endorsement) removes Coverage A (bodily injury / property damage) AND Coverage B (personal and advertising injury) for loss arising out of generative AI. CG 40 48 removes Coverage B only. Generative AI is defined as a machine-based learning system trained on data able to create content or responses including text, images, audio, video or code. IMPORTANT NUANCE: adoption is OPTIONAL - each carrier chooses whether to attach them, so buyers must check their own endorsement schedule.",
+      "layman": "Your ordinary business insurance now comes with an optional switch that turns off cover for anything your AI does. More insurers are flipping it on at renewal.",
+      "verdict": "VERIFIED - with the correction that these are optional forms, not automatic",
+      "sources": [
+        "https://www.ajg.com/news-and-insights/iso-introduces-generative-ai-exclusion-in-commercial-general-liability-policies/",
+        "https://www.claimsjournal.com/news/national/2026/07/20/338950.htm",
+        "https://www.policyholderpulse.com/ai-exclusions-insurance-policies/"
+      ]
+    },
+    {
+      "id": "census-adoption",
+      "tier": "A",
+      "claim": "About one in five US businesses actually uses AI - not three in four.",
+      "detail": "US Census Bureau Business Trends and Outlook Survey (BTOS): AI use held between 17% and 20% from Dec 2025 to May 2026, at 19.8% as of May 2026. Roughly 37% of firms with 250+ employees and 32% of firms with 100-249 employees use AI; under 20% of firms with four or fewer employees do. Between 20% and 23% expect to adopt within six months.",
+      "layman": "The honest number: about 1 in 5 US businesses uses AI today, and the small ones lag badly. Anyone quoting 74% is quoting a marketing survey.",
+      "verdict": "VERIFIED - and it CONTRADICTS the widely-quoted 74% SMB figure",
+      "sources": [
+        "https://www.census.gov/library/stories/2026/05/ai-use-businesses.html",
+        "https://www.census.gov/programs-surveys/btos.html",
+        "https://www.federalreserve.gov/econres/notes/feds-notes/monitoring-ai-adoption-in-the-u-s-economy-20260403.html"
+      ]
+    },
+    {
+      "id": "hsb-survey-74",
+      "tier": "C",
+      "claim": "74% of SMBs use AI and 91% plan to expand (HSB survey).",
+      "detail": "Cited in HSB's own March 2026 product press release: a survey of 1,000 'main street category' businesses found 74% using AI programs and 91% planning to expand use. This is an insurer's marketing survey supporting a product launch, with an undefined bar for 'using AI programs'. It conflicts with the Census Bureau's 19.8% probability-sample estimate by a factor of nearly four.",
+      "layman": "An insurer's own survey says 74%. The government's says 20%. We plan against 20%.",
+      "verdict": "REAL SURVEY, UNRELIABLE AS A MARKET-SIZING INPUT - superseded by Census BTOS",
+      "sources": ["https://www.munichre.com/hsb/en/press-and-publications/press-releases/2026/2026-03-18-introducing-ai-liability-insurance-for-small-businesses.html"]
+    },
+    {
+      "id": "eu-ai-act-delay",
+      "tier": "A",
+      "claim": "EU AI Act high-risk obligations have been pushed back, not brought forward.",
+      "detail": "Aug 2, 2026 was the binding date for high-risk obligations (Arts. 9-17 providers, Art. 26 deployers). On May 7, 2026 EU institutions reached provisional political agreement on the Digital Omnibus on AI: Annex III (use-based) high-risk obligations move from 2 Aug 2026 to 2 Dec 2027 (+16 months); Annex I (product-regulated) from 2 Aug 2027 to 2 Aug 2028 (+12 months).",
+      "layman": "Europe just gave companies 16 more months before the strict AI rules bite. Any business plan that depended on that deadline to force sales just lost its trigger.",
+      "verdict": "VERIFIED - this is a HEADWIND, and we model it as one",
+      "sources": [
+        "https://www.gibsondunn.com/eu-ai-act-omnibus-agreement-postponed-high-risk-deadlines-and-other-key-changes/",
+        "https://www.lw.com/en/insights/ai-act-update-eu-resolves-to-change-rules-and-extend-deadlines",
+        "https://www.dataprotectionreport.com/2026/07/the-eu-ai-act-when-does-it-become-enforceable-now/"
+      ]
+    },
+    {
+      "id": "colorado-delay",
+      "tier": "A",
+      "claim": "The first US state AI act has been delayed twice and then blocked in federal court.",
+      "detail": "Colorado SB 24-205 (Colorado AI Act) was to take effect Feb 1, 2026. SB 25B-004, signed by Gov. Polis on Aug 28, 2025, pushed it to June 30, 2026. On Apr 27, 2026 a federal magistrate judge blocked enforcement of SB 205. On May 1, 2026 lawmakers introduced SB 189, a narrower notice-based replacement that repeals and reenacts SB 205 with an effective date of Jan 1, 2027.",
+      "layman": "The flagship US state AI law has slipped twice and been frozen by a court. Regulation is coming, but you cannot set your revenue clock by it.",
+      "verdict": "VERIFIED - second regulatory headwind",
+      "sources": [
+        "https://www.akingump.com/en/insights/ai-law-and-regulation-tracker/colorado-postpones-implementation-of-colorado-ai-act-sb-24-205",
+        "https://www.mcdermottlaw.com/insights/colorado-ai-law-in-flux-comprehensive-replacement-bill-signed-after-federal-court-blocks-predecessors-enforcement/",
+        "https://www.seyfarth.com/news-insights/colorado-enacts-artificial-intelligence-replacement-law.html"
+      ]
+    },
+    {
+      "id": "naic-bulletin",
+      "tier": "A",
+      "claim": "Most US states now hold insurers to an AI governance standard.",
+      "detail": "NAIC adopted the Model Bulletin on the Use of Artificial Intelligence Systems by Insurers in December 2023. Alaska adopted first (Feb 1, 2024). 24 states had adopted as of August 2025 (15 of them in H1 2024); by early 2026 more than half of all states had adopted it or substantially similar guidance.",
+      "layman": "Insurance regulators in most states already require insurers to document and govern their AI. The template for regulating AI in a whole industry already exists.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://content.naic.org/sites/default/files/cmte-h-big-data-artificial-intelligence-wg-map-ai-model-bulletin.pdf",
+        "https://www.quarles.com/newsroom/publications/nearly-half-of-states-have-now-adopted-naic-model-bulletin-on-insurers-use-of-ai"
+      ]
+    },
+    {
+      "id": "iso-42001",
+      "tier": "A",
+      "claim": "There is a certifiable international standard for AI management systems.",
+      "detail": "ISO/IEC 42001:2023, published December 2023, is the first international AI management system standard. It is auditable and certifiable, giving buyers an objective artefact to demand from vendors.",
+      "layman": "There is now an official, auditable badge for 'we manage our AI properly'. Badges create audit markets.",
+      "verdict": "VERIFIED (standard exists and is certifiable; no reliable public count of certificates issued)",
+      "sources": ["https://www.iso.org/standard/42001", "https://www.iso.org/home/insights-news/resources/iso-42001-explained-what-it-is.html"]
+    },
+    {
+      "id": "ai-index-incidents",
+      "tier": "A",
+      "claim": "Recorded AI incidents are rising ~55% a year.",
+      "detail": "Stanford HAI AI Index: the AI Incident Database recorded 233 incidents in 2024, up 56.4% on 2023. The 2026 AI Index reports 362 incidents in 2025, ~55% higher again.",
+      "layman": "The number of publicly recorded AI failures grows by more than half every year. Frequency is real and measurable.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://hai.stanford.edu/ai-index/2025-ai-index-report",
+        "https://hai.stanford.edu/ai-index/2026-ai-index-report/responsible-ai"
+      ]
+    },
+    {
+      "id": "armilla",
+      "tier": "B",
+      "claim": "A dedicated AI-liability MGA exists at Lloyd's and is well funded.",
+      "detail": "Armilla AI: first standalone AI liability policy written at Lloyd's, April 2025, underwritten by syndicates including Chaucer. Lloyd's coverholder dedicated to AI liability; Lloyd's Lab alumnus. Raised $25M in January 2026. Limits of $25M+ per organisation as of Jan-Mar 2026. February 2026: launched 'Vanguard AI' with Chaucer pairing cyber/tech E&O with standalone AI liability. Covers AI regulatory violations, non-breach privacy incidents, data leakage, model error, harmful outputs, AI agent failures and defence costs under the EU AI Act and Colorado AI Act.",
+      "layman": "The category already has a funded, Lloyd's-backed leader. We are not first, and pretending otherwise would be a lie.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://fintech.global/2026/01/23/armilla-ai-raises-25m-to-expand-ai-liability-coverage/",
+        "https://www.armilla.ai/ai-insurance",
+        "https://www.lloyds.com/insights/lloyds-lab/programmes-and-initiatives/lloyds-lab-accelerator/alumni/armilla-ai"
+      ]
+    },
+    {
+      "id": "testudo",
+      "tier": "B",
+      "claim": "A second Lloyd's-backed AI liability MGA launched in January 2026.",
+      "detail": "Testudo: Lloyd's Lab-backed, founded by former Goldman Sachs technologists, launched as an MGA Jan 2026 targeting mid-market US enterprises. Underwriting panel: Apollo Underwriting, Atrium, QBE. Lloyd's paper rated A+ (Superior) by AM Best. Limits $9.25M per insured as of March 2026. Covers third-party claims from generative AI outputs: financial loss, defamation, IP infringement, unauthorised data disclosure, physical harm. Also launched cover for AI regulatory proceedings.",
+      "layman": "A second Lloyd's-backed competitor launched this year. The window for 'nobody is doing this' has closed.",
+      "verdict": "VERIFIED",
+      "sources": ["https://www.testudo.co/", "https://www.quotesweep.com/insurtech/testudo"]
+    },
+    {
+      "id": "aiuc",
+      "tier": "B",
+      "claim": "The standards-then-audit-then-insurance sequence is being funded by serious investors.",
+      "detail": "Artificial Intelligence Underwriting Company (AIUC): launched July 2025 with a $15M seed led by Nat Friedman, with Emergence Capital, Terrain and angels including Anthropic co-founder Ben Mann. Founding team from Anthropic, McKinsey and METR. Built AIUC-1, a proprietary risk framework; sells standards, audits and insurance, with liability coverage priced off audit results. Secured Beazley paper (May 2026). Offering up to $50M product liability for AI vendors and their customers as of March 2026.",
+      "layman": "The closest thing to our model is already funded by the people who fund AI itself - and they built the audit first, the insurance second. That ordering is the whole strategy.",
+      "verdict": "VERIFIED - and it is direct third-party validation of the sequencing we recommend",
+      "sources": [
+        "https://www.prnewswire.com/news-releases/the-artificial-intelligence-underwriting-company-launches-with-15m-to-help-enterprises-deploy-ai-with-confidence-302512447.html",
+        "https://www.emcap.com/thoughts/aiuc-establishing-trust-risk-standards-for-enterprise-ai",
+        "https://www.theinsurer.com/ti/news/exclusive-ai-insurance-mga-aiuc-secures-beazley-paper-for-liability-product-2026-05-15/"
+      ]
+    },
+    {
+      "id": "hsb-launch",
+      "tier": "B",
+      "claim": "Munich Re has moved into the SME wedge via white-label distribution.",
+      "detail": "HSB (Hartford Steam Boiler, part of Munich Re) announced AI Liability Insurance for small and mid-sized businesses on March 18, 2026. It covers AI-related losses that some GL policies exclude, including bodily injury, property damage and advertising injury from AI-generated advertising, marketing, blogs and social media. Critically, it is distributed by being added to the business policies of HSB's partner carriers, pending regulatory approval - i.e. white-label, not direct.",
+      "layman": "Munich Re just took the small-business slot, and it did it by riding inside other insurers' policies. A startup cannot out-distribute that.",
+      "verdict": "VERIFIED - this specifically closes the SME-embedded strategy we had earlier considered open",
+      "sources": [
+        "https://www.munichre.com/hsb/en/press-and-publications/press-releases/2026/2026-03-18-introducing-ai-liability-insurance-for-small-businesses.html",
+        "https://www.businesswire.com/news/home/20260318144322/en/HSB-Introduces-AI-Liability-Insurance-for-Small-Businesses",
+        "https://www.reinsurancene.ws/munich-res-hsb-launches-ai-liability-insurance-for-small-businesses/"
+      ]
+    },
+    {
+      "id": "munichre-aisure",
+      "tier": "B",
+      "claim": "AI performance insurance is eight years old, not new.",
+      "detail": "Munich Re aiSure: first AI policy issued in 2018 for an anti-fraud model. aiSure backs an AI vendor's performance guarantee - if the AI underperforms, Munich Re compensates the vendor's customer for lost revenue, business interruption or legal damages. aiSelf is the vendor-side variant.",
+      "layman": "The idea of insuring AI performance was invented in 2018 by the world's largest reinsurer. We are entering an existing market, not creating one.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://www.munichre.com/en/solutions/for-industry-clients/insure-ai.html",
+        "https://emerj.com/creating-insurance-policies-for-ai-applications-with-munich-res-michael-berger/"
+      ]
+    },
+    {
+      "id": "other-entrants",
+      "tier": "B",
+      "claim": "The standalone market already has roughly eight identifiable participants with limits from $2M to $50M.",
+      "detail": "Beyond Armilla, Testudo, AIUC and HSB: Munich Re direct, plus Corgi, Mayflower Specialty and Embroker offering standalone AI liability with limits from $2M to $50M. Google Cloud's Risk Protection Program with Beazley and Chubb offers affirmative AI endorsements - extensions, not standalone products.",
+      "layman": "At least eight players are already writing this cover. The claim that only five exist worldwide is a blog post, not a fact.",
+      "verdict": "VERIFIED as a set; the widely-repeated 'only five exist worldwide' count is DISCARDED as unsourced",
+      "sources": ["https://www.theinsurer.com/program-manager/news/standalone-ai-liability-market-takes-shape-with-underwriting-discipline-key-to-2026-04-24/"]
+    },
+    {
+      "id": "cyber-analog",
+      "tier": "B",
+      "claim": "The honest ceiling test: all of global cyber insurance is only ~$15-16B after 25 years.",
+      "detail": "Munich Re: global cyber insurance premium totalled $15.3B in 2024, expected ~$16.3B by end-2025, projected to roughly double by 2030 (Munich Re publications cite ~$28B by 2030 and ~$29B by 2027 in different releases). That is under 1% of global P&C premium. North America is $10.6B, a 69% share.",
+      "layman": "Cyber insurance took 25 years to reach $15 billion worldwide. Any forecast that has AI insurance passing that within a decade should be treated as a sales document.",
+      "verdict": "VERIFIED - and used as the reality check that discards the report-mill forecasts below",
+      "sources": [
+        "https://www.insurancejournal.com/news/national/2025/04/14/819668.htm",
+        "https://industrialcyber.co/reports/munich-re-sees-untapped-potential-in-15-3b-cyber-insurance-market-amid-rising-threats-and-evolving-risks/",
+        "https://www.munichre.com/en/insights/cyber/cyber-protection-gap.html"
+      ]
+    },
+    {
+      "id": "gartner-governance",
+      "tier": "B",
+      "claim": "AI governance software is the only adjacent market with a hard, named-analyst growth curve.",
+      "detail": "Gartner press release, Feb 17, 2026: spending on AI governance platforms reaches $492M in 2026 and surpasses $1B by 2030. Gartner also sizes the broader AI Trust, Risk and Security Management (AI TRiSM) market at $3.1B in 2025 growing at ~35% CAGR to $13.8B by 2030, and forecasts that fragmented AI regulation will extend to 75% of the world's economies by 2030.",
+      "layman": "The software that proves your AI behaves is a real, named, measured market growing fast. The insurance on top of it is not yet.",
+      "verdict": "VERIFIED (Gartner press release; gartner.com is blocked by our network egress, so figures are taken from the press-release title and multiple independent secondary reports of it)",
+      "sources": [
+        "https://www.gartner.com/en/newsroom/press-releases/2026-02-17-gartner-global-ai-regulations-fuel-billion-dollar-market-for-ai-governance-platforms",
+        "https://digital.nemko.com/news/ai-governance-platforms-market-to-surpass-1-billion-by-2030"
+      ]
+    },
+    {
+      "id": "ibm-breach-cost",
+      "tier": "B",
+      "claim": "AI-involved breaches cost measurably more than ordinary ones.",
+      "detail": "IBM Cost of a Data Breach 2026 (organisations breached Mar 2025 - Feb 2026): global average breach cost $4.99M; AI-driven breaches averaged ~$5.9M. More than half of organisations breached through an AI system reported direct financial loss.",
+      "layman": "When AI is involved in a breach, it costs about a million dollars more than when it isn't.",
+      "verdict": "VERIFIED",
+      "sources": ["https://www.helpnetsecurity.com/2026/07/30/ibm-cost-of-a-data-breach-2026/"]
+    },
+    {
+      "id": "witnessai-survey",
+      "tier": "C",
+      "claim": "Over 40% of enterprises say AI incidents cost them $2M+ in the past year.",
+      "detail": "WitnessAI survey of enterprise decision-makers. 21% said their single most significant AI-related security incident cost $1M or more; 17% put total annual AI-incident cost at $10M-$24.9M. WitnessAI sells AI security software, so the survey is self-interested.",
+      "layman": "A security vendor's survey says AI incidents are expensive. It is directionally useful and commercially motivated - treat it as a hint, not a number.",
+      "verdict": "REAL SURVEY, VENDOR-SPONSORED - shown labelled, never used as a modelling input",
+      "sources": ["https://www.prnewswire.com/news-releases/new-witnessai-report-reveals-the-financial-cost-and-risk-factors-of-enterprise-ai-adoption-302831518.html"]
+    },
+    {
+      "id": "lloyds-lma",
+      "tier": "B",
+      "claim": "The Lloyd's market itself is scrambling to govern AI.",
+      "detail": "Lloyd's Market Association: AI adoption more than doubled across the Lloyd's market in 12 months, with 93% of survey respondents building governance frameworks. Based on firms representing over 60% of Lloyd's market stamp capacity. Lloyd's lists AI among systemic risks alongside geopolitics, cyber, climate and credit, and flags professional and product liability challenges.",
+      "layman": "Even the insurers are struggling to govern their own AI. The people who would underwrite this risk are living it.",
+      "verdict": "VERIFIED",
+      "sources": [
+        "https://lmalloyds.com/ai-adoption-more-than-doubles-across-the-lloyds-market-in-12-months-with-93-of-survey-respondents-building-governance-frameworks/",
+        "https://committees.parliament.uk/writtenevidence/140107/pdf/"
+      ]
+    },
+    {
+      "id": "DISCARD-market-6point8",
+      "tier": "D",
+      "claim": "DISCARDED: 'AI liability insurance was $6.8B in 2025, reaching $34.2B by 2034 at 19.6% CAGR.'",
+      "detail": "Traced to syndicated report vendors (Dataintelo, WiseGuyReports and re-publishers). No primary basis, no methodology, no carrier or regulator corroboration. Fails a hard sanity check: Munich Re measures the ENTIRE global cyber insurance market - a line 25 years old - at $15.3B in 2024. A standalone AI liability line of $6.8B in 2025 would already be 44% the size of all global cyber, at a time when the largest identified writers offer per-risk limits of $9.25M-$50M and the category's leading MGA had just raised a $25M Series A.",
+      "layman": "This number is everywhere online. We checked it and it does not survive contact with the actual insurance market, so we deleted it.",
+      "verdict": "DISCARDED - not used anywhere",
+      "sources": ["https://dataintelo.com/report/ai-liability-insurance-market"]
+    },
+    {
+      "id": "DISCARD-agent-liability-11point5",
+      "tier": "D",
+      "claim": "DISCARDED: 'AI agent liability services $0.3B (2025) to $11.5B (2036).'",
+      "detail": "Report-mill projection (Marketintelo / Fact.MR class). No traceable methodology or primary data.",
+      "layman": "Same problem. Deleted.",
+      "verdict": "DISCARDED - not used anywhere",
+      "sources": ["https://marketintelo.com/report/autonomous-ai-agent-liability-insurance-market"]
+    },
+    {
+      "id": "DISCARD-agentic-75b",
+      "tier": "D",
+      "claim": "DISCARDED: 'Agentic AI insurance $4.6B (2024) to $75B (2034) at 32.2% CAGR.'",
+      "detail": "Report-mill projection (Market.us). $75B would be roughly five times the entire current global cyber insurance market. No primary basis.",
+      "layman": "Same problem. Deleted.",
+      "verdict": "DISCARDED - not used anywhere",
+      "sources": ["https://market.us/report/agentic-ai-insurance-market/"]
+    },
+    {
+      "id": "DISCARD-five-worldwide",
+      "tier": "D",
+      "claim": "DISCARDED: 'Only five AI liability insurance products exist worldwide.'",
+      "detail": "Originates from a Medium post that is widely re-quoted. Our own enumeration from trade press found at least eight identifiable writers (Armilla, Testudo, AIUC, HSB, Munich Re direct, Corgi, Mayflower Specialty, Embroker) plus the Google Cloud RPP endorsement route.",
+      "layman": "A blog post said five. We counted at least eight. We used our count and showed our working.",
+      "verdict": "DISCARDED - replaced with an enumerated, individually-sourced list",
+      "sources": ["https://medium.com/@purdyhouse/the-first-ai-liability-insurance-product-has-25-million-in-coverage-five-exist-worldwide-575a2903b17b"]
+    }
+  ]
+}
