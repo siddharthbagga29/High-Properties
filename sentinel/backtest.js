@@ -3,9 +3,13 @@
 const { chromium } = require('playwright-core');
 const path = require('path'), fs = require('fs');
 
-const FILE = 'file://' + path.join(__dirname, 'index.html');
-const EV = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'evidence.json'), 'utf8'));
-const PR = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'pricing.json'), 'utf8'));
+const FILE = 'file://' + path.join(__dirname, 'index2.html');
+/* Data lives beside the page in the shipped layout, and one level up in the
+   source tree. Resolve either without caring which. */
+const near = f => [path.join(__dirname, f), path.join(__dirname, '..', f)]
+  .find(p => fs.existsSync(p)) || path.join(__dirname, f);
+const EV = JSON.parse(fs.readFileSync(near('evidence.json'), 'utf8'));
+const PR = JSON.parse(fs.readFileSync(near('pricing.json'), 'utf8'));
 
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ✓ ' + m))
@@ -61,9 +65,57 @@ const CONTRAST_FN = `(() => {
 
   H('INTEGRITY');
   ok(errs.length === 0, `no console or page errors${errs.length ? ' → ' + errs.slice(0,3).join(' | ') : ''}`);
-  ok(await page.evaluate(() => window.__GL_OK__ === true), 'background WebGL layer alive');
-  ok(await page.evaluate(() => window.__CORE_OK__ === true), 'neural-core canvas loop running');
-  ok(await page.evaluate(() => typeof Chart === 'function'), 'Chart.js vendored and executing');
+  const diag0 = await page.evaluate(() => window.sentinelDiagnostics
+    ? { ok: window.sentinelDiagnostics.ok, errors: window.sentinelDiagnostics.errors,
+        layers: window.sentinelDiagnostics.layers } : null);
+  ok(!!diag0, 'diagnostics surface exposed');
+  ok(diag0 && diag0.ok, `no guarded feature threw${diag0 && diag0.errors.length ? ' → ' + diag0.errors.slice(0,3) : ''}`);
+  ok(diag0 && diag0.layers.webgl, 'background WebGL layer alive');
+  ok(diag0 && diag0.layers.core, 'neural-core canvas alive');
+  ok(await page.evaluate(() => typeof window.Chart === 'undefined'),
+     'Chart.js is NOT executed at load (deferred until a chart section nears)');
+
+  H('SECURITY POSTURE');
+  const cspMeta = await page.evaluate(() => {
+    const m = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    return m ? m.getAttribute('content') : null;
+  });
+  ok(!!cspMeta, 'Content-Security-Policy meta present');
+  ok(cspMeta && /default-src 'none'/.test(cspMeta), "CSP sets default-src 'none'");
+  ok(cspMeta && !/unsafe-inline|unsafe-eval/.test(cspMeta), "CSP uses hashes, no 'unsafe-inline' or 'unsafe-eval'");
+  ok(cspMeta && (cspMeta.match(/sha256-/g) || []).length >= 4,
+     `CSP carries ${(cspMeta.match(/sha256-/g)||[]).length} SHA-256 hashes`);
+  ok(cspMeta && /base-uri 'none'/.test(cspMeta) && /object-src 'none'/.test(cspMeta),
+     "CSP locks base-uri and object-src");
+  ok(!cspMeta || !/frame-ancestors/.test(cspMeta),
+     'meta CSP omits frame-ancestors (spec-ignored there; shipped as a header)');
+  const headers = fs.readFileSync(path.join(__dirname, '_headers'), 'utf8');
+  ['frame-ancestors', 'X-Frame-Options: DENY', 'X-Content-Type-Options: nosniff',
+   'Referrer-Policy', 'Permissions-Policy', 'Strict-Transport-Security'].forEach(h =>
+    ok(headers.includes(h), `_headers ships ${h.split(':')[0]}`));
+  const shipped = fs.readFileSync(path.join(__dirname, 'index2.html'), 'utf8');
+  const litStyle = (shipped.slice(shipped.indexOf('<body')).match(/\sstyle="/g) || []).length;
+  ok(litStyle === 0,
+     `zero literal style attributes in the shipped markup (${litStyle}) — runtime CSSOM writes are not governed by style-src`);
+  const leaked = await page.evaluate(() =>
+    Object.keys(window)
+      .filter(k => /^__|^(MC|EV|PR|CHARTS|DIAG)$/.test(k))
+      .filter(k => k !== '__contrast'));   // injected by this harness, not the page
+  ok(leaked.length === 0, `no internals on window${leaked.length ? ' → ' + leaked : ''}`);
+  ok(await page.evaluate(() => {
+    try { window.sentinelDiagnostics = 1; } catch (e) { return true; }
+    return typeof window.sentinelDiagnostics === 'object';
+  }), 'diagnostics surface is not writable');
+
+  // Warm every lazily-built section before counting its contents.
+  for (const id of ['failures','dashboard','research','pricing','evidence','contact']) {
+    await page.evaluate(i => document.getElementById(i).scrollIntoView(), id);
+    await page.waitForTimeout(700);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(500);
+  ok(await page.evaluate(() => typeof window.Chart === 'function'),
+     'Chart.js loads on demand once a chart section is reached');
 
   /* ─────────────── PHASE 1 ─────────────── */
   H('PHASE 1 — COPY');
@@ -289,6 +341,10 @@ const CONTRAST_FN = `(() => {
   await page.waitForTimeout(250);
   ok(await page.evaluate(() => /valid work email/.test(document.getElementById('formErr').textContent)),
      'invalid email is caught');
+  ok(await page.evaluate(() =>
+    document.getElementById('fEmail').getAttribute('aria-invalid') === 'true' &&
+    document.getElementById('fName').getAttribute('aria-invalid') === null),
+    'aria-invalid marks only the offending field');
 
   await page.fill('#fEmail', 'buyer@example.com');
   await page.fill('#fCompany', 'Testco Ltd');
@@ -296,9 +352,12 @@ const CONTRAST_FN = `(() => {
   await page.waitForTimeout(400);
   ok(await page.evaluate(() => !document.getElementById('formOk').classList.contains('hidden')),
      'valid submit shows a success message');
-  const mailto = await page.evaluate(() => window.__LAST_MAILTO__);
+  const mailto = await page.evaluate(() => document.getElementById('quoteForm').getComposedMailto());
   ok(!!mailto && mailto.startsWith('mailto:') && /body=/.test(mailto),
      'valid submit composes a mailto carrying the form data');
+  ok(await page.evaluate(() =>
+    ['fName','fEmail','fConsent'].every(i => !document.getElementById(i).hasAttribute('aria-invalid'))),
+    'aria-invalid clears once the fields are corrected');
   ok(!!mailto && decodeURIComponent(mailto).indexOf('Test Buyer') > -1 &&
      decodeURIComponent(mailto).indexOf('Testco Ltd') > -1,
      'the mailto body carries the entered name, company, sector and quote');
@@ -356,11 +415,50 @@ const CONTRAST_FN = `(() => {
       parseFloat(getComputedStyle(e).opacity) < 0.9).length);
   ok(hidden === 0, 'nothing left invisible after reveal settles');
 
+  ok(await page.evaluate(() => {
+    const p = document.getElementById('core-progress');
+    return p && p.getAttribute('role') === 'progressbar' &&
+           p.hasAttribute('aria-valuenow') && p.hasAttribute('aria-valuemin') &&
+           p.hasAttribute('aria-valuemax');
+  }), 'assembly indicator is a labeled progressbar');
+  ok(await page.evaluate(() => {
+    const l = document.getElementById('core-live');
+    return l && l.getAttribute('aria-live') === 'polite';
+  }), 'failure modes are announced through a live region');
+  ok(await page.evaluate(() =>
+    document.querySelectorAll('dl').length >= 4 &&
+    document.querySelectorAll('dl dt').length >= 12),
+    'stat pairs use description lists');
+  ok(await page.evaluate(() =>
+    [...document.querySelectorAll('.chart-fallback')].length === 5 &&
+    [...document.querySelectorAll('.chart-fallback')].every(f => f.classList.contains('hidden'))),
+    'every chart has a fallback, and none is showing');
+
   H('MOBILE');
   const m = await browser.newPage({ viewport:{width:390,height:844}, isMobile:true, hasTouch:true, deviceScaleFactor:2 });
   const merr = []; m.on('pageerror', e => merr.push(e.message));
   await m.goto(FILE, { waitUntil:'load' }); await m.waitForTimeout(2000);
   await m.evaluate(CONTRAST_FN);
+  H('MOBILE NAVIGATION');
+  const navBtnOk = await m.evaluate(() => {
+    const b = document.getElementById('navBtn');
+    return !!b && b.offsetParent !== null && b.getAttribute('aria-expanded') === 'false'
+        && b.getAttribute('aria-controls') === 'navMenu';
+  });
+  ok(navBtnOk, 'disclosure button visible with aria-expanded and aria-controls');
+  await m.click('#navBtn'); await m.waitForTimeout(280);
+  const navLinks = await m.evaluate(() =>
+    [...document.querySelectorAll('nav a[href^="#"]')]
+      .filter(a => a.offsetParent !== null).map(a => a.getAttribute('href')));
+  ok(new Set(navLinks).size >= 6, `all destinations reachable at 390px (${new Set(navLinks).size})`);
+  ok(await m.evaluate(() => document.getElementById('navBtn').getAttribute('aria-expanded') === 'true'),
+     'aria-expanded flips on open');
+  await m.keyboard.press('Escape'); await m.waitForTimeout(220);
+  ok(await m.evaluate(() => document.getElementById('navBtn').getAttribute('aria-expanded') === 'false'
+     && document.activeElement.id === 'navBtn'),
+     'Escape closes the menu and returns focus to the trigger');
+
+  H('MOBILE');
   const ov = await m.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok(ov <= 1, `no horizontal overflow at 390px (${ov}px)`);

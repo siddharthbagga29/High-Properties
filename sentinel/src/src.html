@@ -7,6 +7,14 @@
 <meta name="description" content="Sentinel monitors production AI systems continuously, certifies them against ISO/IEC 42001, and attaches liability coverage priced off that telemetry. Monitored risks pay 45% less premium.">
 <meta property="og:title" content="Sentinel — AI Liability Telemetry &amp; Coverage">
 <meta property="og:description" content="Continuous AI monitoring that cuts modeled claim frequency 38% and premium 45%. Evidence-graded, actuarially priced.">
+<meta name="theme-color" content="#05070a">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="color-scheme" content="dark">
+<!-- CSP is emitted by build.js with SHA-256 hashes for every inline script and
+     the stylesheet, so no 'unsafe-inline' is required. frame-ancestors and
+     sandbox are ignored in <meta> per spec — they ship as real HTTP headers in
+     the _headers file alongside this page. -->
+<!--__CSP__-->
 <style>/*__CSS__*/</style>
 </head>
 <body>
@@ -14,7 +22,7 @@
 
 <a class="skip sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[200] focus:bg-teal focus:text-[#04120f] focus:px-4 focus:py-2.5 focus:rounded-sm focus:font-semibold focus:text-sm" href="#main">Skip to content</a>
 
-<canvas id="gl" class="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-60" aria-hidden="true"></canvas>
+<canvas id="gl" width="1440" height="900" class="fixed inset-0 w-full h-full z-0 pointer-events-none opacity-60" aria-hidden="true"></canvas>
 
 <!-- ═══════════ NAV ═══════════ -->
 <nav class="fixed top-0 inset-x-0 z-[60] glass border-x-0 border-t-0 rounded-none">
@@ -28,8 +36,12 @@
       <a href="#failures"  class="hidden md:inline text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Failures</a>
       <a href="#dashboard" class="hidden lg:inline text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Market</a>
       <a href="#research"  class="hidden lg:inline text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Research</a>
-      <a href="#pricing"   class="text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Pricing</a>
+      <a href="#pricing"   class="hidden md:inline text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Pricing</a>
       <a href="#evidence"  class="hidden md:inline text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors">Evidence</a>
+      <button id="navBtn" type="button" class="md:hidden flex items-center justify-center w-9 h-9 border border-white/15 rounded-sm text-dim hover:text-ink hover:border-teal transition-colors"
+              aria-expanded="false" aria-controls="navMenu" aria-label="Open navigation menu">
+        <span class="block w-4 h-px bg-current relative before:absolute before:inset-x-0 before:-top-1.5 before:h-px before:bg-current after:absolute after:inset-x-0 after:top-1.5 after:h-px after:bg-current" aria-hidden="true"></span>
+      </button>
       <button id="peBtn" type="button" aria-pressed="false"
         class="flex items-center gap-2 border border-white/15 text-dim hover:text-ink hover:border-teal font-sans text-[10.5px] tracking-[0.11em] uppercase px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap">
         <span id="peDot" class="w-1.5 h-1.5 rounded-full bg-faint transition-all shrink-0" aria-hidden="true"></span>
@@ -37,6 +49,14 @@
       </button>
       <a href="#contact" class="btn btn-primary no-underline hidden sm:inline-block">Get a quote</a>
     </div>
+  </div>
+  <div id="navMenu" hidden class="md:hidden glass-strong border-t border-white/10 px-5 pb-4 pt-1">
+    <a href="#failures"  class="block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]">Failures</a>
+    <a href="#dashboard" class="block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]">Market</a>
+    <a href="#research"  class="block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]">Research</a>
+    <a href="#pricing"   class="block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]">Pricing</a>
+    <a href="#evidence"  class="block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]">Evidence</a>
+    <a href="#contact"   class="block py-2.5 text-teal no-underline text-[13px] tracking-[0.08em] uppercase">Get a quote</a>
   </div>
 </nav>
 
@@ -55,14 +75,14 @@
         standard commercial general liability. Carriers are attaching them at renewal. Sentinel
         monitors your AI continuously, certifies it, and attaches coverage priced off that
         telemetry.</p>
-      <div class="grid sm:grid-cols-3 gap-3 mt-7">
-        <div class="glass p-4"><div class="stat-n">45%</div>
-          <div class="kicker mt-2">Lower premium, monitored vs unmonitored</div></div>
-        <div class="glass p-4"><div class="stat-n">38%</div>
-          <div class="kicker mt-2">Modeled reduction in claim frequency</div></div>
-        <div class="glass p-4"><div class="stat-n text-amber">$243M</div>
-          <div class="kicker mt-2">Largest upheld AI verdict to date</div></div>
-      </div>
+      <dl class="grid sm:grid-cols-3 gap-3 mt-7">
+        <div class="glass p-4"><dd class="stat-n">45%</dd>
+          <dt class="kicker mt-2">Lower premium, monitored vs unmonitored</dt></div>
+        <div class="glass p-4"><dd class="stat-n">38%</dd>
+          <dt class="kicker mt-2">Modeled reduction in claim frequency</dt></div>
+        <div class="glass p-4"><dd class="stat-n text-amber">$243M</dd>
+          <dt class="kicker mt-2">Largest upheld AI verdict to date</dt></div>
+      </dl>
       <p class="plain">Businesses are handing decisions to AI. Their insurance is being rewritten
         so it no longer pays when that AI gets something wrong. We watch the AI, prove it behaves,
         and sell insurance to the companies that pass — at roughly half the price of going in blind.</p>
@@ -77,10 +97,9 @@
 <!-- ═══════════ PHASE 2: NEURAL CORE ASSEMBLY (scroll-pinned) ═══════════ -->
 <section id="core" class="relative" aria-labelledby="core-h">
   <div class="sticky top-0 h-[100svh] overflow-hidden">
-    <canvas id="core-canvas" class="absolute inset-0 w-full h-full"
+    <canvas id="core-canvas" width="1440" height="900" class="absolute inset-0 w-full h-full"
             role="img" aria-label="Animated diagram: a neural core assembles as you scroll, with each component labeled as a documented AI failure mode"></canvas>
-    <div class="absolute inset-0 pointer-events-none"
-         style="background:linear-gradient(90deg, rgba(5,7,10,.94) 0%, rgba(5,7,10,.86) 34%, rgba(5,7,10,.30) 55%, rgba(5,7,10,.05) 72%, rgba(5,7,10,.45) 100%)"></div>
+    <div class="absolute inset-0 pointer-events-none core-scrim"></div>
 
     <div class="relative h-full max-w-content mx-auto px-5 sm:px-7 flex items-center pt-14">
       <div class="w-full lg:w-[46%]">
@@ -100,11 +119,14 @@
 
           <div class="mt-4 pt-4 border-t border-white/10">
             <div class="flex items-center justify-between gap-3 mb-2">
-              <span class="kicker">Assembly</span>
+              <span class="kicker" id="core-pct-label">Assembly</span>
               <span class="font-mono text-[11px] text-teal" id="core-pct">0%</span>
             </div>
-            <div class="h-1 bg-white/8 rounded-full overflow-hidden">
-              <div id="core-bar" class="h-full bg-gradient-to-r from-teal-deep to-teal rounded-full" style="width:0%"></div>
+            <p id="core-live" class="sr-only" role="status" aria-live="polite"></p>
+            <div class="h-1 bg-white/8 rounded-full overflow-hidden" id="core-progress"
+                 role="progressbar" aria-labelledby="core-pct-label"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="core-bar" class="h-full bg-gradient-to-r from-teal-deep to-teal rounded-full core-bar"></div>
             </div>
           </div>
         </div>
@@ -154,27 +176,27 @@
         are estimates.</p>
     </div>
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 reveal">
-      <div class="glass p-5"><div class="stat-n" data-count="19.8" data-suffix="%" data-dp="1">0%</div>
-        <div class="kicker mt-2.5">US businesses using AI</div>
+    <dl class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 reveal">
+      <div class="glass p-5"><dd class="stat-n" data-count="19.8" data-suffix="%" data-dp="1">19.8%</dd>
+        <dt class="kicker mt-2.5">US businesses using AI</dt>
         <p class="text-[12.5px] text-faint mt-2">Census Bureau BTOS, May 2026. Not the 74% vendor surveys claim.</p></div>
-      <div class="glass p-5"><div class="stat-n text-amber" data-count="362" data-dp="0">0</div>
-        <div class="kicker mt-2.5">Recorded AI incidents, 2025</div>
+      <div class="glass p-5"><dd class="stat-n text-amber" data-count="362" data-dp="0">362</dd>
+        <dt class="kicker mt-2.5">Recorded AI incidents, 2025</dt>
         <p class="text-[12.5px] text-faint mt-2">Stanford HAI AI Index. Up ~55% on 2024.</p></div>
-      <div class="glass p-5"><div class="stat-n" data-count="5.9" data-prefix="$" data-suffix="M" data-dp="1">$0M</div>
-        <div class="kicker mt-2.5">Avg AI-involved breach</div>
+      <div class="glass p-5"><dd class="stat-n" data-count="5.9" data-prefix="$" data-suffix="M" data-dp="1">$5.9M</dd>
+        <dt class="kicker mt-2.5">Avg AI-involved breach</dt>
         <p class="text-[12.5px] text-faint mt-2">IBM 2026. $0.9M above a breach without AI.</p></div>
-      <div class="glass p-5"><div class="stat-n text-rose" data-count="8" data-dp="0">0</div>
-        <div class="kicker mt-2.5">Rival writers already live</div>
+      <div class="glass p-5"><dd class="stat-n text-rose" data-count="8" data-dp="0">8</dd>
+        <dt class="kicker mt-2.5">Rival writers already live</dt>
         <p class="text-[12.5px] text-faint mt-2">Armilla, Testudo, AIUC, HSB, Munich Re, +3.</p></div>
-    </div>
+    </dl>
 
     <div class="grid lg:grid-cols-2 gap-4">
       <div class="glass p-5 sm:p-6 reveal">
         <h3 class="font-semibold mb-1">Cyber is the honest ceiling test</h3>
         <p class="text-[13.5px] text-dim mb-4">Global cyber premium took 25 years to reach $15.3B.
           Any forecast showing AI liability passing that within a decade is a sales document.</p>
-        <div class="h-[260px]"><canvas id="chartCyber" role="img" aria-label="Line chart: global cyber insurance premium reached $15.3 billion in 2024 after 25 years, against a much smaller bottom-up estimate for standalone AI liability premium"></canvas></div>
+        <div class="h-[260px]"><canvas id="chartCyber" width="1084" height="520" class="block w-full h-full" role="img" aria-label="Line chart: global cyber insurance premium reached $15.3 billion in 2024 after 25 years, against a much smaller bottom-up estimate for standalone AI liability premium"></canvas><p class="chart-fallback hidden text-[13px] text-amber py-6">This chart could not be rendered. The underlying figures are in the table below and in <code>pricing.json</code>.</p></div>
         <p class="plain">Insurance lines grow slowly. We planned for the slow version.</p>
       </div>
       <div class="glass p-5 sm:p-6 reveal">
@@ -182,7 +204,7 @@
         <p class="text-[13.5px] text-dim mb-4">Gartner sizes AI governance platforms at $492M in
           2026, passing $1B by 2030. That software pool is roughly three times the standalone AI
           insurance pool today — and it is the leg that carries our model.</p>
-        <div class="h-[260px]"><canvas id="chartPools" role="img" aria-label="Bar chart comparing the AI governance software market with the standalone AI liability premium pool for 2026, 2028 and 2030"></canvas></div>
+        <div class="h-[260px]"><canvas id="chartPools" width="1084" height="520" class="block w-full h-full" role="img" aria-label="Bar chart comparing the AI governance software market with the standalone AI liability premium pool for 2026, 2028 and 2030"></canvas><p class="chart-fallback hidden text-[13px] text-amber py-6">This chart could not be rendered. The underlying figures are in the table below and in <code>pricing.json</code>.</p></div>
         <p class="plain">The software business is bigger and more certain than the insurance
           business. So we lead with software.</p>
       </div>
@@ -200,16 +222,16 @@
             <label for="roiBand" class="field-label">Revenue band</label>
             <select id="roiBand" class="field"></select>
           </div>
-          <div class="glass px-4 py-3 min-w-[190px]">
-            <div class="kicker mb-1">5-year net benefit</div>
-            <div class="font-mono text-2xl text-teal" id="roiNet">—</div>
-          </div>
-          <div class="glass px-4 py-3 min-w-[150px]">
-            <div class="kicker mb-1">Payback</div>
-            <div class="font-mono text-2xl text-amber" id="roiPayback">—</div>
-          </div>
+          <dl class="glass px-4 py-3 min-w-[190px]">
+            <dt class="kicker mb-1">5-year net benefit</dt>
+            <dd class="font-mono text-2xl text-teal" id="roiNet">—</dd>
+          </dl>
+          <dl class="glass px-4 py-3 min-w-[150px]">
+            <dt class="kicker mb-1">Payback</dt>
+            <dd class="font-mono text-2xl text-amber" id="roiPayback">—</dd>
+          </dl>
         </div>
-        <div class="h-[280px]"><canvas id="chartRoi" role="img" aria-label="Combined bar and line chart showing annual Sentinel subscription cost against annual benefit, with the cumulative net position over five years"></canvas></div>
+        <div class="h-[280px]"><canvas id="chartRoi" width="2300" height="560" class="block w-full h-full" role="img" aria-label="Combined bar and line chart showing annual Sentinel subscription cost against annual benefit, with the cumulative net position over five years"></canvas><p class="chart-fallback hidden text-[13px] text-amber py-6">This chart could not be rendered. The underlying figures are in the table below and in <code>pricing.json</code>.</p></div>
         <p class="plain">This shows what you pay us versus what you save. The point where the
           line crosses zero is when the subscription has paid for itself.</p>
       </div>
@@ -234,13 +256,13 @@
       <div class="glass p-5 sm:p-6 reveal">
         <h3 class="font-semibold mb-1">Relative exposure by sector</h3>
         <p class="text-[13.5px] text-dim mb-4">Frequency multiplier against a commercial baseline of 1.00.</p>
-        <div class="h-[340px]"><canvas id="chartVert" role="img" aria-label="Horizontal bar chart ranking sectors by AI claim frequency multiplier, from automotive at 2.4 times baseline down to retail at 0.9 times"></canvas></div>
+        <div class="h-[340px]"><canvas id="chartVert" width="1084" height="680" class="block w-full h-full" role="img" aria-label="Horizontal bar chart ranking sectors by AI claim frequency multiplier, from automotive at 2.4 times baseline down to retail at 0.9 times"></canvas><p class="chart-fallback hidden text-[13px] text-amber py-6">This chart could not be rendered. The underlying figures are in the table below and in <code>pricing.json</code>.</p></div>
       </div>
       <div class="glass p-5 sm:p-6 reveal">
         <h3 class="font-semibold mb-1">Technical premium by sector</h3>
         <p class="text-[13.5px] text-dim mb-4">$5M xs $100k. Monitored versus unmonitored — the
           gap is the telemetry credit, and it is the product.</p>
-        <div class="h-[340px]"><canvas id="chartVertPrem" role="img" aria-label="Horizontal bar chart comparing monitored and unmonitored annual technical premium by sector at a $5M limit excess of $100k"></canvas></div>
+        <div class="h-[340px]"><canvas id="chartVertPrem" width="1084" height="680" class="block w-full h-full" role="img" aria-label="Horizontal bar chart comparing monitored and unmonitored annual technical premium by sector at a $5M limit excess of $100k"></canvas><p class="chart-fallback hidden text-[13px] text-amber py-6">This chart could not be rendered. The underlying figures are in the table below and in <code>pricing.json</code>.</p></div>
       </div>
     </div>
 
@@ -350,12 +372,12 @@
       <p class="plain">We checked everything. The four claims we could not verify are still on the
         page, marked red, so you can see what we threw out.</p>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8 reveal">
-      <div class="glass p-5"><div class="stat-n" id="cA">0</div><div class="kicker mt-2.5">Tier A — primary</div></div>
-      <div class="glass p-5"><div class="stat-n text-sky" id="cB">0</div><div class="kicker mt-2.5">Tier B — corroborated</div></div>
-      <div class="glass p-5"><div class="stat-n text-amber" id="cC">0</div><div class="kicker mt-2.5">Tier C — labeled</div></div>
-      <div class="glass p-5"><div class="stat-n text-rose" id="cD">0</div><div class="kicker mt-2.5">Tier D — discarded</div></div>
-    </div>
+    <dl class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8 reveal">
+      <div class="glass p-5"><dd class="stat-n" id="cA">0</dd><dt class="kicker mt-2.5">Tier A — primary</dt></div>
+      <div class="glass p-5"><dd class="stat-n text-sky" id="cB">0</dd><dt class="kicker mt-2.5">Tier B — corroborated</dt></div>
+      <div class="glass p-5"><dd class="stat-n text-amber" id="cC">0</dd><dt class="kicker mt-2.5">Tier C — labeled</dt></div>
+      <div class="glass p-5"><dd class="stat-n text-rose" id="cD">0</dd><dt class="kicker mt-2.5">Tier D — discarded</dt></div>
+    </dl>
     <div id="ledger" class="space-y-2.5"></div>
     <noscript><p class="text-amber mt-5">The ledger is interactive. All claims and sources are in
       <code>evidence.json</code> beside this page.</p></noscript>
@@ -386,9 +408,9 @@
     <form id="quoteForm" class="glass glass-strong p-6 sm:p-8 reveal" novalidate>
       <div class="grid sm:grid-cols-2 gap-4">
         <div><label class="field-label" for="fName">Name<span class="text-amber" aria-hidden="true">*</span></label>
-          <input class="field" id="fName" name="name" type="text" autocomplete="name" required aria-required="true"></div>
+          <input class="field" id="fName" name="name" type="text" autocomplete="name" required aria-required="true" aria-describedby="formErr"></div>
         <div><label class="field-label" for="fEmail">Work email<span class="text-amber" aria-hidden="true">*</span></label>
-          <input class="field" id="fEmail" name="email" type="email" autocomplete="email" required aria-required="true"></div>
+          <input class="field" id="fEmail" name="email" type="email" autocomplete="email" required aria-required="true" aria-describedby="formErr"></div>
         <div><label class="field-label" for="fCompany">Company</label>
           <input class="field" id="fCompany" name="company" type="text" autocomplete="organization"></div>
         <div><label class="field-label" for="fRole">I am a…</label>
@@ -414,7 +436,7 @@
       </div>
 
       <div class="flex items-start gap-2.5 mt-5">
-        <input type="checkbox" id="fConsent" name="consent" class="mt-1 accent-[#1cc0a8] w-4 h-4 shrink-0" required aria-required="true">
+        <input type="checkbox" id="fConsent" name="consent" class="mt-1 accent-[#1cc0a8] w-4 h-4 shrink-0" required aria-required="true" aria-describedby="formErr">
         <label for="fConsent" class="text-[13px] text-dim">I agree to be contacted about this
           inquiry. No marketing lists, no data sold.</label>
       </div>
@@ -473,12 +495,11 @@
 </footer>
 </div>
 
-<script>
-window.__MC__ = /*__MCDATA__*/null;
-window.__EV__ = /*__EVIDENCE__*/null;
-window.__PR__ = /*__PRICING__*/null;
-</script>
-<script>/*__CHARTJS__*/</script>
+<script type="application/json" id="d-mc">/*__MCDATA__*/</script>
+<script type="application/json" id="d-ev">/*__EVIDENCE__*/</script>
+<script type="application/json" id="d-pr">/*__PRICING__*/</script>
 <script>/*__APP__*/</script>
+<script type="text/plain" id="chartjs-src">/*__CHARTJS__*/</script>
+
 </body>
 </html>

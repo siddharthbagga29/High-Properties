@@ -34,6 +34,16 @@
   .lede    { @apply text-dim leading-relaxed; font-size: clamp(1rem,1.6vw,1.22rem); max-width: 62ch; }
   .kicker  { @apply font-mono text-[9.5px] tracking-[0.18em] uppercase text-faint; }
 
+  /* A canvas' width/height attributes size the backing store. This keeps them
+     from also driving layout, which would overflow the document. */
+  canvas { max-width: 100%; }
+
+  .core-scrim {
+    background: linear-gradient(90deg, rgba(5,7,10,.94) 0%, rgba(5,7,10,.86) 34%,
+                rgba(5,7,10,.30) 55%, rgba(5,7,10,.05) 72%, rgba(5,7,10,.45) 100%);
+  }
+  .core-bar { width: 0%; }
+
   .card { @apply glass p-6; }
   .stat-n { @apply font-mono text-teal leading-none tracking-tight; font-size: clamp(1.6rem,3.2vw,2.4rem); }
 

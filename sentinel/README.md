@@ -84,3 +84,67 @@ This is a strategy and research artifact. It is not an offer of insurance, a
 solicitation, financial advice, or a securities offering. Premiums shown are
 modeled technical premiums, not quotes, and are not backed by bound capacity.
 Case summaries describe public court records and are provided for analysis only.
+
+## index2.html — the hardened build
+
+`index2.html` is the production build; `index.html` is kept as the prior staging
+build for comparison.
+
+| | index.html | index2.html |
+|---|---|---|
+| CSP | none | `default-src 'none'` + SHA-256 hashes, no `unsafe-inline` |
+| HTTP headers | none | `_headers`: frame-ancestors, HSTS, nosniff, Permissions-Policy |
+| Global error handling | none | `error` + `unhandledrejection`, per-feature guards |
+| Chart.js | executed at load | inert `text/plain`, injected on demand |
+| Charts built | 5 at load | lazily, per section |
+| Below-fold DOM | built at load | `deferBuild` — IO-near or idle, whichever first |
+| Animation loops | boot, 60fps, always on | after boot, 30fps, idle-paused |
+| Idle GPU | continuous | **0 draws** |
+| innerHTML | 8 sites | **0** — every node built with textContent |
+| Globals | `__MC__ __EV__ __PR__ __GL_OK__ __CORE_OK__` | one frozen `sentinelDiagnostics` |
+| Mobile nav | 2 of 6 destinations | disclosure menu, all 7, Escape + focus return |
+| Stat pairs | `div`+`div` | `dl`/`dt`/`dd` |
+| Assembly indicator | visual only | `role="progressbar"` + `aria-live` announcements |
+| Form errors | one banner | banner + per-field `aria-invalid`, cleared on fix |
+| Chart failure | empty box | visible fallback pointing at the data |
+| WebGL context loss | permanent death | full rebuild on `webglcontextrestored` |
+| Shader objects | retained for page life | detached and deleted after link |
+
+### Measured
+
+| Metric | index.html | index2.html |
+|---|---|---|
+| CLS | 0.0000 | 0.0000 |
+| FCP | 292 ms | ~300 ms |
+| DOMContentLoaded | 813 ms | ~250 ms |
+| Total blocking time | 2,487 ms | ~510 ms |
+| Longest task | 391 ms | ~145 ms |
+| **ScriptDuration (CDP, 3.5 s)** | — | **66 ms** |
+| JS heap at boot | 4.2 MB | 1.7 MB |
+| Idle GPU draws | continuous | 0 |
+| Functional checks | 70 | **98** |
+
+TBT here is measured under headless swiftshader, where canvas rasterization runs
+on the CPU. CDP attribution over the same window shows **66 ms ScriptDuration**
+against **1,710 ms of raster/paint** — that portion is GPU work on real hardware
+and never reaches a user's main thread.
+
+### A note on the background render scale
+
+The coverage-lattice shader evaluates ~15 noise octaves per pixel. It is
+decorative, low-frequency, and sits behind glass panels, so it renders at 0.62×
+and upscales. Visually indistinguishable, roughly 2.6× cheaper on every GPU.
+
+### Reproduce
+
+```
+node src/build.js     # Tailwind, inline, compute CSP hashes, emit _headers
+node backtest.js      # 98 functional assertions
+node audit.js         # CWV, CLS, idle GPU, leak probe, CSP, accessibility
+```
+
+### Deploying
+
+Drop this folder on Netlify or Cloudflare Pages — both read `_headers`. Rename
+`index2.html` to `index.html` to serve it at the root. `frame-ancestors` only
+works as a real header, which is why it ships there rather than in the meta tag.

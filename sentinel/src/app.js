@@ -1,11 +1,45 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    SENTINEL — application layer
-   Order matters: the reveal safety net is armed before anything that can throw.
+   Load order is deliberate:
+     1. global error handlers   (so anything below that throws is observable)
+     2. reveal safety net       (so nothing can leave content hidden)
+     3. everything else
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
 'use strict';
 
-var MC = window.__MC__, EV = window.__EV__, PR = window.__PR__;
+/* ── 0. GLOBAL ERROR HANDLING ─────────────────────────────────────────────
+   A throw anywhere below must be visible, must not cascade, and must never
+   leave a section silently blank. Errors are counted on the diagnostics
+   object so an uptime check can read them without a console. */
+var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false };
+
+function note(kind, msg) {
+  if (DIAG.errors.length < 25) DIAG.errors.push(kind + ': ' + String(msg).slice(0, 200));
+}
+window.addEventListener('error', function (e) {
+  note('error', (e.message || 'unknown') + ' @' + (e.lineno || '?'));
+}, true);
+window.addEventListener('unhandledrejection', function (e) {
+  note('promise', (e.reason && e.reason.message) || e.reason || 'unknown');
+});
+
+/* Every independent feature runs inside this guard. One failing feature can
+   never take down the rest of the page, and the failure is recorded. */
+function guard(name, fn) {
+  try { fn(); } catch (err) { note(name, err && err.message); }
+}
+
+/* ── DATA: parsed from inert JSON islands, kept in this closure.
+   Nothing below is attached to window — the pricing model is not a global. */
+function island(id) {
+  var n = document.getElementById(id);
+  if (!n) return null;
+  try { return JSON.parse(n.textContent); }
+  catch (e) { note('data:' + id, e.message); return null; }
+}
+var MC = island('d-mc'), EV = island('d-ev'), PR = island('d-pr');
+
 var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 var C = { teal:'#1cc0a8', tealDeep:'#0d6d61', amber:'#ff7a2f', rose:'#ff5470',
@@ -20,11 +54,74 @@ function money(v, dp) {
 }
 function usd(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
 function pct(v, dp) { return (v*100).toFixed(dp==null?1:dp) + '%'; }
+
+/* DOM builders. Everything user-visible is written with textContent, so no
+   data value is ever parsed as markup. There is no innerHTML in this file. */
 function el(tag, cls, txt) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
   if (txt != null) e.textContent = txt;
   return e;
+}
+function put(parent) {
+  for (var i = 1; i < arguments.length; i++) if (arguments[i]) parent.appendChild(arguments[i]);
+  return parent;
+}
+function cell(tag, cls, txt) { return el(tag, cls, txt); }
+
+/* Shared visibility gate: run a callback once the element is near the viewport.
+   Used for lazy chart construction and for pausing offscreen render loops. */
+function whenNear(target, cb, margin) {
+  if (typeof IntersectionObserver !== 'function') { cb(); return; }
+  var io = new IntersectionObserver(function (es) {
+    if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); cb(); }
+  }, { rootMargin: margin || '320px' });
+  io.observe(target);
+}
+/* Build a section's DOM lazily: whichever comes first, the section nearing the
+   viewport or the browser going idle. Boot stays light, but the content is
+   never more than a moment away — and it is always built exactly once. */
+function deferBuild(sectionId, build) {
+  var sec = document.getElementById(sectionId);
+  var done = false;
+  function run() { if (done) return; done = true; guard('build:' + sectionId, build); }
+  if (sec) whenNear(sec, run, '500px');
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 1600 });
+  else setTimeout(run, 900);
+}
+
+/* Neither canvas needs 60fps. The background drifts at uTime*0.02 and the core
+   is scroll-driven, so both are capped. This halves their rasterization cost
+   with no perceptible difference. */
+function frameGate(fps) {
+  var min = 1000 / fps, last = 0;
+  return function (now) {
+    if (now - last < min) return false;
+    last = now; return true;
+  };
+}
+
+/* Animation must not compete with first paint. Start after load, then after
+   one idle slot, with a hard fallback so it always starts. */
+function afterBoot(fn) {
+  var fired = false;
+  function go() { if (fired) return; fired = true; fn(); }
+  function idle() {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 600 });
+    else setTimeout(go, 200);
+  }
+  if (document.readyState === 'complete') idle();
+  else window.addEventListener('load', idle, { once: true });
+  setTimeout(go, 2500);
+}
+
+/* Continuous version: calls onChange(true/false) as the element enters/leaves. */
+function observeVisible(target, onChange, margin) {
+  if (typeof IntersectionObserver !== 'function') { onChange(true); return; }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { onChange(e.isIntersecting); });
+  }, { rootMargin: margin || '160px' });
+  io.observe(target);
 }
 
 /* ── 1. REVEAL ───────────────────────────────────────────────────────────── */
@@ -55,7 +152,7 @@ var scanReveal;
 })();
 
 /* ── 2. PLAIN ENGLISH TOGGLE ─────────────────────────────────────────────── */
-(function () {
+guard('plain-english', function () {
   var btn = document.getElementById('peBtn'), dot = document.getElementById('peDot');
   var root = document.documentElement;
   function set(on) {
@@ -68,7 +165,37 @@ var scanReveal;
   var saved = '0'; try { saved = localStorage.getItem('sentinel-pe') || '0'; } catch (e) {}
   set(saved === '1');
   btn.addEventListener('click', function () { set(!root.classList.contains('pe-on')); });
-})();
+});
+
+/* ── 2b. MOBILE NAVIGATION ────────────────────────────────────────────────
+   Four of six destinations were unreachable below the md breakpoint. This is a
+   real disclosure widget: aria-expanded, aria-controls, Escape to close, focus
+   moved into the panel and returned to the trigger, and it closes on select. */
+guard('nav', function () {
+  var btn = document.getElementById('navBtn'), menu = document.getElementById('navMenu');
+  if (!btn || !menu) return;
+  function setOpen(open) {
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+  }
+  btn.addEventListener('click', function () {
+    var willOpen = menu.hidden;
+    setOpen(willOpen);
+    if (willOpen) { var f = menu.querySelector('a'); if (f) f.focus(); }
+  });
+  menu.addEventListener('click', function (e) {
+    if (e.target.tagName === 'A') setOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); }
+  });
+  // Resizing past the breakpoint must not strand an open panel.
+  window.addEventListener('resize', function () {
+    if (window.innerWidth >= 768 && !menu.hidden) setOpen(false);
+  });
+  setOpen(false);
+});
 
 /* ── 3. ANCHOR SCROLL ────────────────────────────────────────────────────── */
 document.querySelectorAll('a[href^="#"]').forEach(function (a) {
@@ -83,16 +210,16 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
   });
 });
 
-/* ── 4. BACKGROUND WEBGL — coverage lattice ──────────────────────────────── */
-(function () {
+/* ── 4. BACKGROUND WEBGL — coverage lattice ───────────────────────────────
+   Rules this layer obeys:
+     · never renders while offscreen or while the tab is hidden
+     · releases shader objects after link (they are not needed once linked)
+     · recovers from context loss instead of dying permanently
+     · under prefers-reduced-motion, paints ONE frame then stops the loop
+   ─────────────────────────────────────────────────────────────────────── */
+guard('webgl', function () {
   var cv = document.getElementById('gl'); if (!cv) return;
   function bail() { cv.style.display = 'none'; }
-  var gl;
-  try {
-    var o = { alpha:true, antialias:false, depth:false, stencil:false, powerPreference:'low-power' };
-    gl = cv.getContext('webgl', o) || cv.getContext('experimental-webgl', o);
-  } catch (e) { return bail(); }
-  if (!gl) return bail();
 
   var FS = [
     'precision highp float;',
@@ -116,63 +243,115 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
     ' c+=vec3(.010,.014,.019);',
     ' gl_FragColor=vec4(c,1.);}'
   ].join('\n');
+  var VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 
-  function sh(t, s) { var x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x);
-    return gl.getShaderParameter(x, gl.COMPILE_STATUS) ? x : null; }
-  var vs = sh(gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
-  var fs = sh(gl.FRAGMENT_SHADER, FS);
-  if (!vs || !fs) return bail();
-  var pg = gl.createProgram();
-  gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
-  if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) return bail();
-  gl.useProgram(pg);
+  var gl = null, pg = null, buf = null, U = null;
+  // Decorative, low-frequency, and behind glass panels: it does not need
+  // device resolution. 0.62x is indistinguishable here and ~2.6x cheaper.
+  var RENDER_SCALE = 0.62;
+  var dpr = Math.min(window.devicePixelRatio || 1, 1.5) * RENDER_SCALE;
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
-  var loc = gl.getAttribLocation(pg, 'a');
-  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  function build() {
+    var o = { alpha:true, antialias:false, depth:false, stencil:false, powerPreference:'low-power' };
+    gl = cv.getContext('webgl', o) || cv.getContext('experimental-webgl', o);
+    if (!gl) return false;
 
-  var uT = gl.getUniformLocation(pg,'uTime'), uR = gl.getUniformLocation(pg,'uRes'),
-      uG = gl.getUniformLocation(pg,'uGap'), uM = gl.getUniformLocation(pg,'uMouse');
-  var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-  function resize() {
-    var w = Math.max(1, (window.innerWidth*dpr)|0), h = Math.max(1, (window.innerHeight*dpr)|0);
-    cv.width = w; cv.height = h; gl.viewport(0,0,w,h); gl.uniform2f(uR, w, h);
+    function sh(t, src) {
+      var x = gl.createShader(t); gl.shaderSource(x, src); gl.compileShader(x);
+      if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) { gl.deleteShader(x); return null; }
+      return x;
+    }
+    var vs = sh(gl.VERTEX_SHADER, VS), fs = sh(gl.FRAGMENT_SHADER, FS);
+    if (!vs || !fs) { if (vs) gl.deleteShader(vs); if (fs) gl.deleteShader(fs); return false; }
+
+    pg = gl.createProgram();
+    gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
+    // Shader objects are dead weight once the program is linked. Detach and
+    // delete them rather than holding them for the lifetime of the page.
+    gl.detachShader(pg, vs); gl.detachShader(pg, fs);
+    gl.deleteShader(vs); gl.deleteShader(fs);
+    if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) return false;
+    gl.useProgram(pg);
+
+    buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+    var loc = gl.getAttribLocation(pg, 'a');
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    U = { t: gl.getUniformLocation(pg,'uTime'), r: gl.getUniformLocation(pg,'uRes'),
+          g: gl.getUniformLocation(pg,'uGap'), m: gl.getUniformLocation(pg,'uMouse') };
+    resize();
+    return true;
   }
-  resize(); window.addEventListener('resize', resize);
 
-  var mx=-9, my=-9;
+  function resize() {
+    if (!gl) return;
+    var w = Math.max(1, (window.innerWidth*dpr)|0), h = Math.max(1, (window.innerHeight*dpr)|0);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    gl.viewport(0,0,w,h); gl.uniform2f(U.r, w, h);
+  }
+
+  if (!build()) return bail();
+  DIAG.gl = true;
+
+  var mx=-9, my=-9, prog=0, gap=0.12, t0=performance.now();
+  var raf=0, active=true, visible=true, lost=false, idleTimer=0;
+
+  function poke() {
+    active = true;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () { active = false; sync(); }, 1500);
+    sync();
+  }
+
+  window.addEventListener('resize', function () { resize(); poke(); });
   window.addEventListener('pointermove', function (e) {
     mx = e.clientX/window.innerWidth; my = 1 - e.clientY/window.innerHeight;
+    poke();
   }, { passive:true });
-
-  var prog = 0;
-  function onScroll() {
+  window.addEventListener('scroll', function () {
     var m = Math.max(1, document.body.scrollHeight - window.innerHeight);
     prog = Math.min(1, Math.max(0, window.pageYOffset / m));
-  }
-  window.addEventListener('scroll', onScroll, { passive:true }); onScroll();
+    poke();
+  }, { passive:true });
 
-  var gap=0.12, t0=performance.now(), run=true, raf=0;
-  function frame() {
-    if (!run) return;
-    raf = requestAnimationFrame(frame);
+  function paint() {
     var tgt = prog < 0.55 ? 0.12 + prog*1.15 : Math.max(0.12, 0.75 - (prog-0.55)*1.35);
     gap += (tgt-gap)*0.055;
-    gl.uniform1f(uT, RM ? 0 : (performance.now()-t0)/1000);
-    gl.uniform1f(uG, gap); gl.uniform2f(uM, mx, my);
+    gl.uniform1f(U.t, RM ? 0 : (performance.now()-t0)/1000);
+    gl.uniform1f(U.g, gap); gl.uniform2f(U.m, mx, my);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
+
+  var gate = frameGate(30), booted = false;
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  function loop(now) { raf = requestAnimationFrame(loop); if (gate(now || performance.now())) paint(); }
+  function sync() {
+    // Reduced motion gets a single static frame and no loop at all.
+    if (RM) { stop(); if (visible && !lost) paint(); return; }
+    if (!booted) return;                       // never animate during boot
+    if (active && visible && !lost) { if (!raf) loop(); }
+    else { if (raf) { stop(); if (visible && !lost) paint(); } }
+  }
+
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { run=false; cancelAnimationFrame(raf); }
-    else { run=true; frame(); }
+    visible = !document.hidden;
+    if (visible) poke(); else sync();
   });
+
   cv.addEventListener('webglcontextlost', function (e) {
-    e.preventDefault(); run=false; cancelAnimationFrame(raf);
+    e.preventDefault(); lost = true; stop(); DIAG.gl = false;
   });
-  frame();
-  window.__GL_OK__ = true;
-})();
+  cv.addEventListener('webglcontextrestored', function () {
+    // Rebuild every GPU resource — they are all invalid after a context loss.
+    gl = null; pg = null; buf = null; U = null;
+    if (build()) { lost = false; DIAG.gl = true; sync(); } else { bail(); }
+  });
+
+  paint();                                     // one static frame immediately
+  afterBoot(function () { booted = true; poke(); });
+});
 
 /* ── 5. NEURAL CORE ASSEMBLY (scroll-pinned) ─────────────────────────────────
    Particles start scattered and converge into a structured core as the user
@@ -199,12 +378,13 @@ var WEAK = [
     body:'The first certified copyright class action against an AI company settled for $1.5B — the largest AI-related recovery on record.' }
 ];
 
-(function () {
+guard('core', function () {
   var cv = document.getElementById('core-canvas'); if (!cv) return;
   var ctx = cv.getContext('2d'); if (!ctx) return;
   var sec = document.getElementById('core');
   var stack = document.getElementById('wp-stack');
   var bar = document.getElementById('core-bar'), pctEl = document.getElementById('core-pct');
+  var barWrap = document.getElementById('core-progress'), live = document.getElementById('core-live');
 
   /* build the weak-point cards up front so no-JS/early paint still has them */
   var cards = WEAK.map(function (w, i) {
@@ -307,11 +487,26 @@ var WEAK = [
   /* Reported progress is the raw scroll fraction — no easing, no frame
      dependency — so the narrative lands on exactly the depth it claims to.
      Node positions ease toward it separately, purely for visual softness. */
+  var lastAnnounced = -1;
   function report() {
     exact = computeProgress();
+    var whole = Math.round(exact * 100);
     if (bar) bar.style.width = (exact * 100).toFixed(1) + '%';
-    if (pctEl) pctEl.textContent = Math.round(exact * 100) + '%';
+    if (pctEl) pctEl.textContent = whole + '%';
+    if (barWrap) {
+      barWrap.setAttribute('aria-valuenow', String(whole));
+      barWrap.setAttribute('aria-valuetext', whole + ' percent assembled');
+    }
     setCards(exact);
+    // Announce each failure mode once, so the narrative is not visual-only.
+    var idx = -1;
+    for (var i = 0; i < WEAK.length; i++) if (exact >= WEAK[i].at) idx = i;
+    if (live && idx !== lastAnnounced) {
+      lastAnnounced = idx;
+      live.textContent = idx < 0 ? ''
+        : ('Failure mode ' + (idx + 1) + ' of ' + WEAK.length + ': ' +
+           WEAK[idx].label + '. ' + WEAK[idx].cost + '. ' + WEAK[idx].case + '.');
+    }
   }
   window.addEventListener('scroll', report, { passive: true });
   window.addEventListener('resize', report);
@@ -333,12 +528,16 @@ var WEAK = [
     });
   }
 
-  var t = 0, raf = 0, running = true;
-  function draw() {
-    if (!running) return;
+  var t = 0, raf = 0, onScreen = false, visible = true, booted = false;
+  var gate = frameGate(30);
+  function draw(now) {
     raf = requestAnimationFrame(draw);
+    if (now !== undefined && !gate(now)) return;
+    render();
+  }
+  function render() {
     var want = computeProgress();
-    progress += (want - progress) * 0.22;
+    progress += (want - progress) * 0.34;      // tuned for a 30fps cadence
     if (Math.abs(want - progress) < 0.004) progress = want;   // snap, never stall
     t += 0.006;
 
@@ -426,16 +625,31 @@ var WEAK = [
       ctx.textAlign = 'left';
     }
   }
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  function draw1() { progress = computeProgress(); render(); }
+  function sync() {
+    // No frames while the pinned section is offscreen. Under reduced motion the
+    // core is redrawn on scroll only, never looped.
+    if (RM) { stop(); if (onScreen && visible) draw1(); return; }
+    if (!booted) return;
+    if (onScreen && visible) { if (!raf) draw(); } else stop();
+  }
+
+  observeVisible(sec, function (v) { onScreen = v; sync(); }, '200px');
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) { running = false; cancelAnimationFrame(raf); }
-    else { running = true; draw(); }
+    visible = !document.hidden; sync();
   });
-  draw();
-  window.__CORE_OK__ = true;
-})();
+  if (RM) window.addEventListener('scroll', function () {
+    if (onScreen && visible) { progress = computeProgress(); draw1(); }
+  }, { passive: true });
+
+  render();                                    // one static frame immediately
+  afterBoot(function () { booted = true; sync(); });
+  DIAG.core = true;
+});
 
 /* ── 6. FAILURE DOSSIER (press-ready) ────────────────────────────────────── */
-(function () {
+deferBuild('failures', function () {
   var host = document.getElementById('dossier'); if (!host) return;
   var rows = [
     { n:'01', who:'Moffatt v. Air Canada', ct:'BC Civil Resolution Tribunal · February 2024',
@@ -462,30 +676,35 @@ var WEAK = [
   var lo = Math.log10(400), hi = Math.log10(2e9);
   rows.forEach(function (r) {
     var w = Math.max(5, ((Math.log10(r.raw)-lo)/(hi-lo))*100);
-    var d = el('article', 'glass p-5 sm:p-6 reveal');
-    d.innerHTML =
-      '<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-1">' +
-        '<span class="font-mono text-[11px] text-teal">' + r.n + '</span>' +
-        '<h3 class="font-semibold text-[16px]">' + r.who + '</h3>' +
-        '<span class="font-mono text-[11.5px] text-faint">' + r.ct + '</span>' +
-        '<span class="font-mono text-[15px] text-amber ml-auto">' + r.amt + '</span>' +
-      '</div>' +
-      '<div class="h-[3px] bg-white/[0.06] rounded-full overflow-hidden my-3">' +
-        '<div class="h-full rounded-full ladder-bar" style="width:' + w.toFixed(1) + '%;' +
-        'background:linear-gradient(90deg,#0d6d61,#ff7a2f)"></div></div>' +
-      '<p class="kicker mb-1.5">Failure mode</p>' +
-      '<p class="text-[14px] text-ink mb-3">' + r.mode + '</p>' +
-      '<p class="kicker mb-1.5">Holding</p>' +
-      '<p class="text-[14px] text-dim mb-3">' + r.hold + '</p>' +
-      '<p class="kicker mb-1.5">Underwriting significance</p>' +
-      '<p class="text-[14px] text-dim">' + r.why + '</p>';
-    host.appendChild(d);
+    var art = el('article', 'glass p-5 sm:p-6 reveal');
+
+    var head = el('div', 'flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-1');
+    put(head,
+      el('span', 'font-mono text-[11px] text-teal', r.n),
+      el('h3', 'font-semibold text-[16px]', r.who),
+      el('span', 'font-mono text-[11.5px] text-faint', r.ct),
+      el('span', 'font-mono text-[15px] text-amber ml-auto', r.amt));
+
+    var track = el('div', 'h-[3px] bg-white/[0.06] rounded-full overflow-hidden my-3');
+    var fill = el('div', 'h-full rounded-full ladder-bar');
+    fill.style.width = w.toFixed(1) + '%';
+    fill.style.background = 'linear-gradient(90deg,#0d6d61,#ff7a2f)';
+    track.appendChild(fill);
+
+    put(art, head, track,
+      el('p', 'kicker mb-1.5', 'Failure mode'),
+      el('p', 'text-[14px] text-ink mb-3', r.mode),
+      el('p', 'kicker mb-1.5', 'Holding'),
+      el('p', 'text-[14px] text-dim mb-3', r.hold),
+      el('p', 'kicker mb-1.5', 'Underwriting significance'),
+      el('p', 'text-[14px] text-dim', r.why));
+    host.appendChild(art);
   });
   scanReveal();
-})();
+});
 
 /* ── 7. ANIMATED COUNTERS ────────────────────────────────────────────────── */
-(function () {
+guard('counters', function () {
   var nodes = [].slice.call(document.querySelectorAll('[data-count]'));
   if (!nodes.length) return;
   function fmt(n, e) {
@@ -510,12 +729,55 @@ var WEAK = [
     nodes.forEach(function (e) { io.observe(e); });
   } catch (e) { nodes.forEach(run); }
   setTimeout(function () { nodes.forEach(run); }, 2600);   // safety net
+});
+
+/* ── 8. CHARTS — library and instances are both lazy ─────────────────────
+   Chart.js ships inert as <script type="text/plain">. It is compiled only
+   when a chart section approaches the viewport, and each chart is built for
+   its own section. Nothing here runs during page load, which keeps 204 KB of
+   library execution and five canvas rasterizations off the critical path.
+   The injected <script> is byte-identical to the inert source, so its
+   SHA-256 is in the CSP and no 'unsafe-inline' is needed.
+   ─────────────────────────────────────────────────────────────────────── */
+var CHARTS = {};
+var buildRoi = function () {};
+var chartLib = (function () {
+  var state = 0, waiting = [];          // 0 idle · 1 loading · 2 ready · 3 failed
+  function flush(okFlag) {
+    state = okFlag ? 2 : 3;
+    waiting.splice(0).forEach(function (cb) { cb(okFlag); });
+  }
+  return function need(cb) {
+    if (state === 2) return cb(true);
+    if (state === 3) return cb(false);
+    waiting.push(cb);
+    if (state === 1) return;
+    state = 1;
+    var src = document.getElementById('chartjs-src');
+    if (!src) return flush(false);
+    try {
+      var tag = document.createElement('script');
+      tag.textContent = src.textContent;
+      document.head.appendChild(tag);
+      src.textContent = '';             // release ~204 KB of retained text
+      var okNow = (typeof window.Chart === 'function');
+      DIAG.chartLib = okNow;
+      if (!okNow) note('chartlib', 'Chart global missing after injection');
+      flush(okNow);
+    } catch (err) { note('chartlib', err.message); flush(false); }
+  };
 })();
 
-/* ── 8. CHARTS ───────────────────────────────────────────────────────────── */
-var CHARTS = {};
-(function () {
-  if (typeof Chart === 'undefined' || !PR) return;
+/* If the library or a chart fails, swap in the visible fallback that already
+   sits next to every canvas. A dead chart never leaves an empty box. */
+function chartFailed(canvasId) {
+  var c = document.getElementById(canvasId); if (!c) return;
+  c.classList.add('hidden');
+  var fb = c.parentNode && c.parentNode.querySelector('.chart-fallback');
+  if (fb) fb.classList.remove('hidden');
+}
+
+function styleChartDefaults() {
   Chart.defaults.color = C.dim;
   Chart.defaults.font.family = 'ui-monospace,SF Mono,Menlo,Consolas,monospace';
   Chart.defaults.font.size = 10.5;
@@ -523,21 +785,44 @@ var CHARTS = {};
   Chart.defaults.plugins.legend.labels.boxHeight = 10;
   Chart.defaults.plugins.legend.labels.padding = 14;
   Chart.defaults.maintainAspectRatio = false;
-  var GRID = { color: C.grid, drawTicks: false };
-  var tip = { backgroundColor:'rgba(5,7,10,.95)', borderColor:'rgba(255,255,255,.14)',
-              borderWidth:1, padding:10, titleColor:'#f2f6f8', bodyColor:'#9aa7b1',
-              displayColors:true, cornerRadius:2 };
+  Chart.defaults.animation = RM ? false : { duration: 600 };
+}
 
-  function mk(id, cfg) {
-    var c = document.getElementById(id); if (!c) return null;
+var TIP = { backgroundColor:'rgba(5,7,10,.95)', borderColor:'rgba(255,255,255,.14)',
+            borderWidth:1, padding:10, titleColor:'#f2f6f8', bodyColor:'#9aa7b1',
+            displayColors:true, cornerRadius:2 };
+var GRID = { color: C.grid, drawTicks: false };
+
+function mkChart(id, cfg) {
+  var c = document.getElementById(id);
+  if (!c) return null;
+  try {
     cfg.options = cfg.options || {};
-    cfg.options.plugins = Object.assign({ tooltip: tip }, cfg.options.plugins || {});
+    cfg.options.plugins = Object.assign({ tooltip: TIP }, cfg.options.plugins || {});
+    if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
     CHARTS[id] = new Chart(c.getContext('2d'), cfg);
+    DIAG.charts++;
     return CHARTS[id];
-  }
+  } catch (err) { note('chart:' + id, err.message); chartFailed(id); return null; }
+}
 
-  /* 8a. cyber ceiling test */
-  mk('chartCyber', {
+/* Build a section's charts the first time that section comes near. */
+function lazySection(sectionId, build) {
+  var sec = document.getElementById(sectionId); if (!sec) return;
+  whenNear(sec, function () {
+    chartLib(function (okFlag) {
+      if (!okFlag) { [].forEach.call(sec.querySelectorAll('canvas[id^=chart]'),
+        function (c) { chartFailed(c.id); }); return; }
+      guard('charts:' + sectionId, function () {
+        if (!Chart.__sentinelStyled) { styleChartDefaults(); Chart.__sentinelStyled = true; }
+        build();
+      });
+    });
+  }, '400px');
+}
+
+lazySection('dashboard', function () {
+  mkChart('chartCyber', {
     type:'line',
     data:{ labels:['2020','2022','2024','2025','2027e','2030e'],
       datasets:[
@@ -552,39 +837,37 @@ var CHARTS = {};
     options:{ scales:{ y:{ grid:GRID, ticks:{ callback:function(v){return '$'+v+'B';} } },
                        x:{ grid:{ display:false } } } }
   });
-
-  /* 8b. pool comparison */
-  mk('chartPools', {
+  mkChart('chartPools', {
     type:'bar',
     data:{ labels:['2026','2028e','2030e'],
       datasets:[
         { label:'AI governance software (Gartner)', data:[0.492,0.72,1.05],
           backgroundColor:'rgba(28,192,168,.72)', borderRadius:2, barPercentage:.7 },
-        { label:'Standalone AI liability premium', data:[0.18,0.40,1.9*0.55],
+        { label:'Standalone AI liability premium', data:[0.18,0.40,1.045],
           backgroundColor:'rgba(255,122,47,.72)', borderRadius:2, barPercentage:.7 }
       ]},
     options:{ scales:{ y:{ grid:GRID, ticks:{ callback:function(v){return '$'+v.toFixed(1)+'B';} } },
                        x:{ grid:{ display:false } } } }
   });
+  buildRoi();
+});
 
-  /* 8c. sector exposure multipliers */
+lazySection('research', function () {
+  if (!PR) return;
   var vs = PR.verticals;
-  mk('chartVert', {
+  mkChart('chartVert', {
     type:'bar',
     data:{ labels: vs.map(function(v){return v.vertical;}),
       datasets:[{ label:'Exposure multiplier', data: vs.map(function(v){return v.mult;}),
         backgroundColor: vs.map(function(v){
           return v.mult >= 1.9 ? 'rgba(255,84,112,.80)'
-               : v.mult >= 1.5 ? 'rgba(255,122,47,.80)'
-               : 'rgba(28,192,168,.72)'; }),
+               : v.mult >= 1.5 ? 'rgba(255,122,47,.80)' : 'rgba(28,192,168,.72)'; }),
         borderRadius:2 }]},
     options:{ indexAxis:'y', plugins:{ legend:{ display:false } },
       scales:{ x:{ grid:GRID, ticks:{ callback:function(v){return v+'×';} } },
                y:{ grid:{ display:false } } } }
   });
-
-  /* 8d. premium monitored vs unmonitored */
-  mk('chartVertPrem', {
+  mkChart('chartVertPrem', {
     type:'bar',
     data:{ labels: vs.map(function(v){return v.vertical;}),
       datasets:[
@@ -597,10 +880,10 @@ var CHARTS = {};
       scales:{ x:{ grid:GRID, ticks:{ callback:function(v){return '$'+(v/1000)+'k';} } },
                y:{ grid:{ display:false } } } }
   });
-})();
+});
 
-/* ── 9. ROI CALCULATOR ───────────────────────────────────────────────────── */
-(function () {
+/* ── 9. ROI CALCULATOR — numbers immediately, chart when in view ───────── */
+guard('roi', function () {
   if (!PR) return;
   var selV = document.getElementById('roiVert'), selB = document.getElementById('roiBand');
   if (!selV || !selB) return;
@@ -652,7 +935,10 @@ var CHARTS = {};
       chart.update();
       return;
     }
-    var c = document.getElementById('chartRoi'); if (!c || typeof Chart === 'undefined') return;
+    // The chart is only built once the library is present; the readouts above
+    // are already correct without it.
+    if (typeof window.Chart !== 'function') return;
+    var c = document.getElementById('chartRoi'); if (!c) return;
     chart = new Chart(c.getContext('2d'), {
       type:'bar',
       data:{ labels:labels, datasets:[
@@ -677,55 +963,62 @@ var CHARTS = {};
   selV.addEventListener('change', render);
   selB.addEventListener('change', render);
   render();
-})();
+  buildRoi = function () { guard('roi-chart', render); };
+});
 
-/* ── 10. PRICING: tiers, matrix, competitors, sector table ───────────────── */
-(function () {
+/* ── 10. PRICING: tiers, matrix, competitors, sector table ───────────────
+   All rendered with textContent. No data string is ever parsed as markup. */
+deferBuild('pricing', function () {
   if (!PR) return;
 
   var th = document.getElementById('tiers');
   if (th) PR.tiers.forEach(function (t, i) {
     var featured = t.key === 'covered';
-    var d = el('div', 'glass p-6 reveal flex flex-col ' +
-      (featured ? 'border-teal/45 bg-teal/[0.045]' : ''));
-    var inc = t.includes.map(function (x) {
-      return '<li class="flex gap-2 text-[13px] text-dim"><span class="text-teal shrink-0">✓</span><span>' + x + '</span></li>';
-    }).join('');
-    d.innerHTML =
-      (featured ? '<div class="kicker text-teal mb-2">◆ Most value</div>'
-                : '<div class="kicker mb-2">Tier 0' + (i+1) + '</div>') +
-      '<h3 class="font-semibold text-lg">' + t.name + '</h3>' +
-      '<div class="font-mono text-[1.9rem] tracking-tight mt-2 ' +
-        (featured ? 'text-teal' : 'text-ink') + '">' + t.price + '</div>' +
-      '<div class="kicker mb-3">' + t.cadence + '</div>' +
-      '<p class="text-[13.5px] text-ink mb-2">' + t.lead + '</p>' +
-      '<p class="text-[13px] text-dim mb-4">' + t.value + '</p>' +
-      '<ul class="space-y-1.5 mb-4">' + inc + '</ul>' +
-      '<p class="text-[11.5px] text-faint mt-auto pt-3 border-t border-white/[0.08]">' + t.math + '</p>' +
-      '<a href="#contact" class="btn ' + (featured ? 'btn-primary ' : '') +
-        'no-underline text-center mt-4">Request quote</a>';
-    th.appendChild(d);
+    var card = el('div', 'glass p-6 reveal flex flex-col' + (featured ? ' border-teal/45 bg-teal/[0.045]' : ''));
+    put(card,
+      el('div', featured ? 'kicker text-teal mb-2' : 'kicker mb-2',
+         featured ? '◆ Most value' : 'Tier 0' + (i + 1)),
+      el('h3', 'font-semibold text-lg', t.name),
+      el('div', 'font-mono text-[1.9rem] tracking-tight mt-2 ' + (featured ? 'text-teal' : 'text-ink'), t.price),
+      el('div', 'kicker mb-3', t.cadence),
+      el('p', 'text-[13.5px] text-ink mb-2', t.lead),
+      el('p', 'text-[13px] text-dim mb-4', t.value));
+
+    var ul = el('ul', 'space-y-1.5 mb-4');
+    t.includes.forEach(function (x) {
+      var li = el('li', 'flex gap-2 text-[13px] text-dim');
+      put(li, el('span', 'text-teal shrink-0', '✓'), el('span', null, x));
+      ul.appendChild(li);
+    });
+    card.appendChild(ul);
+    card.appendChild(el('p', 'text-[11.5px] text-faint mt-auto pt-3 border-t border-white/[0.08]', t.math));
+
+    var cta = el('a', 'btn ' + (featured ? 'btn-primary ' : '') + 'no-underline text-center mt-4', 'Request quote');
+    cta.href = '#contact';
+    card.appendChild(cta);
+    th.appendChild(card);
   });
 
   var mt = document.getElementById('matrixTable');
   if (mt) PR.matrix.forEach(function (row) {
     var hr = el('tr', 'bg-white/[0.02]');
-    hr.innerHTML = '<td colspan="5" class="px-4 py-2.5 font-mono text-[10.5px] tracking-[0.16em] uppercase text-teal">' +
-      row.band + '</td>';
-    mt.appendChild(hr);
+    var hc = el('td', 'px-4 py-2.5 font-mono text-[10.5px] tracking-[0.16em] uppercase text-teal', row.band);
+    hc.colSpan = 5; hr.appendChild(hc); mt.appendChild(hr);
+
     row.cells.forEach(function (c) {
       var tr = el('tr', 'border-b border-white/[0.05]');
+      tr.appendChild(cell('td', 'px-4 py-3 text-ink',
+        money(c.limit, 0) + ' xs ' + money(c.attach, 0)));
       if (!c.offered) {
-        tr.innerHTML =
-          '<td class="px-4 py-3 text-ink">' + money(c.limit,0) + ' xs ' + money(c.attach,0) + '</td>' +
-          '<td colspan="4" class="px-4 py-3 text-right text-rose text-[12.5px]">Not offered — layer burns too frequently to be a genuine risk transfer</td>';
+        var d = cell('td', 'px-4 py-3 text-right text-rose text-[12.5px]',
+          'Not offered — layer burns too frequently to be a genuine risk transfer');
+        d.colSpan = 4; tr.appendChild(d);
       } else {
-        tr.innerHTML =
-          '<td class="px-4 py-3 text-ink">' + money(c.limit,0) + ' xs ' + money(c.attach,0) + '</td>' +
-          '<td class="px-4 py-3 text-right font-mono text-amber">' + usd(c.unmonitored) + '</td>' +
-          '<td class="px-4 py-3 text-right font-mono text-teal">' + usd(c.monitored) + '</td>' +
-          '<td class="px-4 py-3 text-right font-mono text-ink">' + pct(c.saving_pct, 0) + '</td>' +
-          '<td class="px-4 py-3 text-right font-mono text-dim">' + pct(c.rol, 2) + '</td>';
+        put(tr,
+          cell('td', 'px-4 py-3 text-right font-mono text-amber', usd(c.unmonitored)),
+          cell('td', 'px-4 py-3 text-right font-mono text-teal', usd(c.monitored)),
+          cell('td', 'px-4 py-3 text-right font-mono text-ink', pct(c.saving_pct, 0)),
+          cell('td', 'px-4 py-3 text-right font-mono text-dim', pct(c.rol, 2)));
       }
       mt.appendChild(tr);
     });
@@ -734,36 +1027,37 @@ var CHARTS = {};
   var ct = document.getElementById('compTable');
   if (ct) PR.competitors.forEach(function (c) {
     var us = c.name === 'Sentinel';
-    var tr = el('tr', 'border-b border-white/[0.05] ' + (us ? 'bg-teal/[0.06]' : ''));
-    tr.innerHTML =
-      '<td class="px-4 py-3 ' + (us ? 'text-teal font-semibold' : 'text-ink') + '">' + c.name + '</td>' +
-      '<td class="px-4 py-3">' + c.paper + '</td>' +
-      '<td class="px-4 py-3 font-mono">' + c.limit + '</td>' +
-      '<td class="px-4 py-3 ' + (/^Yes/.test(c.telemetry) ? 'text-teal' : 'text-faint') + '">' + c.telemetry + '</td>' +
-      '<td class="px-4 py-3 text-[12.5px] ' + (us ? 'text-teal' : 'text-amber') + '">' + c.rate_note + '</td>';
+    var tr = el('tr', 'border-b border-white/[0.05]' + (us ? ' bg-teal/[0.06]' : ''));
+    put(tr,
+      cell('td', 'px-4 py-3 ' + (us ? 'text-teal font-semibold' : 'text-ink'), c.name),
+      cell('td', 'px-4 py-3', c.paper),
+      cell('td', 'px-4 py-3 font-mono', c.limit),
+      cell('td', 'px-4 py-3 ' + (/^Yes/.test(c.telemetry) ? 'text-teal' : 'text-faint'), c.telemetry),
+      cell('td', 'px-4 py-3 text-[12.5px] ' + (us ? 'text-teal' : 'text-amber'), c.rate_note));
     ct.appendChild(tr);
   });
 
   var vt = document.getElementById('vertTable');
   if (vt) PR.verticals.forEach(function (v) {
-    var save = v.premium_unmonitored - v.premium_monitored;
     var tr = el('tr', 'border-b border-white/[0.05]');
-    tr.innerHTML =
-      '<td class="px-4 py-3 text-ink">' + v.vertical + '</td>' +
-      '<td class="px-4 py-3 font-mono ' + (v.mult >= 1.9 ? 'text-rose' : v.mult >= 1.5 ? 'text-amber' : 'text-teal') + '">' +
-        v.mult.toFixed(2) + '×</td>' +
-      '<td class="px-4 py-3 text-[13px]">' + v.anchor + '</td>' +
-      '<td class="px-4 py-3 text-right font-mono text-amber">' + usd(v.premium_unmonitored) + '</td>' +
-      '<td class="px-4 py-3 text-right font-mono text-teal">' + usd(v.premium_monitored) + '</td>' +
-      '<td class="px-4 py-3 text-right font-mono text-ink">' + usd(save) + '</td>';
+    put(tr,
+      cell('td', 'px-4 py-3 text-ink', v.vertical),
+      cell('td', 'px-4 py-3 font-mono ' +
+        (v.mult >= 1.9 ? 'text-rose' : v.mult >= 1.5 ? 'text-amber' : 'text-teal'),
+        v.mult.toFixed(2) + '×'),
+      cell('td', 'px-4 py-3 text-[13px]', v.anchor),
+      cell('td', 'px-4 py-3 text-right font-mono text-amber', usd(v.premium_unmonitored)),
+      cell('td', 'px-4 py-3 text-right font-mono text-teal', usd(v.premium_monitored)),
+      cell('td', 'px-4 py-3 text-right font-mono text-ink',
+        usd(v.premium_unmonitored - v.premium_monitored)));
     vt.appendChild(tr);
   });
 
   scanReveal();
-})();
+});
 
 /* ── 11. EVIDENCE LEDGER ─────────────────────────────────────────────────── */
-(function () {
+deferBuild('evidence', function () {
   if (!EV) return;
   var host = document.getElementById('ledger'); if (!host) return;
   var TIER = { A:'text-teal border-teal/45 bg-teal/[0.07]',
@@ -779,12 +1073,13 @@ var CHARTS = {};
     btn.type = 'button';
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', 'evb-' + i);
-    btn.innerHTML =
-      '<span class="font-mono text-[9.5px] tracking-[0.16em] uppercase px-2 py-0.5 rounded-sm border shrink-0 mt-0.5 ' +
-        TIER[c.tier] + '">' + c.tier + '</span>' +
-      '<span class="flex-1 text-[15px] font-medium leading-snug ' +
-        (c.tier === 'D' ? 'line-through decoration-rose/60 text-dim' : '') + '">' + c.claim + '</span>' +
-      '<span class="text-faint font-mono text-[15px] shrink-0 transition-transform duration-300" aria-hidden="true">+</span>';
+    var badge = el('span', 'font-mono text-[9.5px] tracking-[0.16em] uppercase px-2 py-0.5 ' +
+      'rounded-sm border shrink-0 mt-0.5 ' + TIER[c.tier], c.tier);
+    var claim = el('span', 'flex-1 text-[15px] font-medium leading-snug' +
+      (c.tier === 'D' ? ' line-through decoration-rose/60 text-dim' : ''), c.claim);
+    var chev = el('span', 'text-faint font-mono text-[15px] shrink-0 transition-transform duration-300', '+');
+    chev.setAttribute('aria-hidden', 'true');
+    put(btn, badge, claim, chev);
 
     var body = el('div', 'hidden px-5 pb-5 border-t border-white/[0.07]');
     body.id = 'evb-' + i;
@@ -806,7 +1101,7 @@ var CHARTS = {};
     btn.addEventListener('click', function () {
       var open = body.classList.toggle('hidden') === false;
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      btn.lastChild.style.transform = open ? 'rotate(45deg)' : 'none';
+      chev.style.transform = open ? 'rotate(45deg)' : 'none';
     });
     wrap.appendChild(btn); wrap.appendChild(body); host.appendChild(wrap);
   });
@@ -826,10 +1121,10 @@ var CHARTS = {};
     });
   });
   scanReveal();
-})();
+});
 
 /* ── 12. CONTACT PORTAL ──────────────────────────────────────────────────── */
-(function () {
+guard('form', function () {
   var form = document.getElementById('quoteForm'); if (!form || !PR) return;
   var sec = document.getElementById('fSector'), lim = document.getElementById('fLimit');
   PR.verticals.forEach(function (v) { sec.appendChild(new Option(v.vertical, v.vertical)); });
@@ -846,24 +1141,31 @@ var CHARTS = {};
     document.getElementById('fQuoteRaw').textContent = usd(v.premium_unmonitored * k);
   }
   sec.addEventListener('change', quote); lim.addEventListener('change', quote); quote();
+  // Exposed for the automated suite only: a URL string, no personal data held.
+  form.getComposedMailto = function () { return lastMailto; };
 
   var errEl = document.getElementById('formErr'), okEl = document.getElementById('formOk');
+  var lastMailto = null;
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     errEl.classList.add('hidden'); okEl.classList.add('hidden');
     var name = form.querySelector('#fName').value.trim();
     var mail = form.querySelector('#fEmail').value.trim();
     var consent = form.querySelector('#fConsent').checked;
-    var problems = [];
-    if (!name) problems.push('your name');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) problems.push('a valid work email');
-    if (!consent) problems.push('consent to be contacted');
-    if (problems.length) {
-      errEl.textContent = 'Please provide ' + problems.join(', ') + '.';
+    var fName = form.querySelector('#fName'), fMail = form.querySelector('#fEmail'),
+        fCons = form.querySelector('#fConsent');
+    var bad = [];
+    if (!name) bad.push([fName, 'your name']);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) bad.push([fMail, 'a valid work email']);
+    if (!consent) bad.push([fCons, 'consent to be contacted']);
+
+    // Clear then reapply, so a corrected field stops reporting as invalid.
+    [fName, fMail, fCons].forEach(function (f) { f.removeAttribute('aria-invalid'); });
+    if (bad.length) {
+      bad.forEach(function (p) { p[0].setAttribute('aria-invalid', 'true'); });
+      errEl.textContent = 'Please provide ' + bad.map(function (p) { return p[1]; }).join(', ') + '.';
       errEl.classList.remove('hidden');
-      (problems[0] === 'your name' ? form.querySelector('#fName')
-        : problems[0].indexOf('email') > -1 ? form.querySelector('#fEmail')
-        : form.querySelector('#fConsent')).focus();
+      bad[0][0].focus();
       return;
     }
     var body = [
@@ -883,11 +1185,24 @@ var CHARTS = {};
     var mailto = 'mailto:hello@sentinel.example' +
       '?subject=' + encodeURIComponent('Sentinel quote request — ' + (form.querySelector('#fCompany').value.trim() || name)) +
       '&body=' + encodeURIComponent(body);
-    window.__LAST_MAILTO__ = mailto;
-    window.__FORM_SUBMITTED__ = true;
+    lastMailto = mailto;
     window.location.href = mailto;
   });
-})();
+});
 
 scanReveal();
+
+/* ── DIAGNOSTICS ───────────────────────────────────────────────────────────
+   A single frozen, read-only surface. Booleans and an error list — no page
+   data, no pricing model, no internals. Safe to leave in production and
+   useful for synthetic monitoring. */
+Object.defineProperty(window, 'sentinelDiagnostics', {
+  value: Object.freeze({
+    get ok()     { return DIAG.errors.length === 0; },
+    get errors() { return DIAG.errors.slice(); },
+    get layers() { return { webgl: DIAG.gl, core: DIAG.core,
+                            chartLib: DIAG.chartLib, charts: DIAG.charts }; }
+  }),
+  writable: false, configurable: false, enumerable: false
+});
 })();
