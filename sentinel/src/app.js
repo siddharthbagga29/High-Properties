@@ -284,20 +284,25 @@ guard('webgl', function () {
   var cv = document.getElementById('gl'); if (!cv) return;
   function bail() { cv.style.display = 'none'; }
 
+  /* Shader budget, set by measurement. The previous version ran three
+     5-octave fbm calls — fifteen octaves per pixel, fullscreen, every frame,
+     measured at 83ms/frame and single-handedly holding scroll at 10fps. The
+     domain warp is now two sines instead of two fbm calls, and the tear field
+     uses three octaves instead of five. Three octaves total, down from fifteen;
+     invisible at this blur, ~5x cheaper. */
   var FS = [
-    'precision highp float;',
+    'precision mediump float;',
     'uniform float uTime; uniform vec2 uRes; uniform float uGap; uniform vec2 uMouse;',
     'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
     'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);',
     ' return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}',
-    'float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*noise(p);p*=2.03;a*=.5;}return v;}',
+    'float fbm3(vec2 p){float v=noise(p)*.5;p*=2.03;v+=noise(p)*.25;p*=2.03;v+=noise(p)*.125;return v;}',
     'void main(){',
     ' vec2 uv=gl_FragCoord.xy/uRes.xy; vec2 p=uv; p.x*=uRes.x/uRes.y;',
-    ' vec2 w=vec2(fbm(p*2.1+uTime*.020),fbm(p*2.1-uTime*.016));',
-    ' vec2 q=p+(w-.5)*.30;',
+    ' vec2 q=p+vec2(sin(p.y*3.1+uTime*.09),cos(p.x*2.7-uTime*.07))*.055;',
     ' vec2 g=abs(fract(q*13.0)-.5);',
     ' float lat=1.-smoothstep(.0,.055,min(g.x,g.y));',
-    ' float field=fbm(q*1.55+vec2(0.,uTime*.012));',
+    ' float field=fbm3(q*1.55+vec2(0.,uTime*.012));',
     ' float tear=smoothstep(.52-uGap*.30,.72-uGap*.10,field);',
     ' float probe=smoothstep(.26,0.,distance(uv,uMouse));',
     ' tear*=(1.-probe*.85);',
@@ -306,12 +311,13 @@ guard('webgl', function () {
     ' c+=vec3(.010,.014,.019);',
     ' gl_FragColor=vec4(c,1.);}'
   ].join('\n');
+
   var VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
 
   var gl = null, pg = null, buf = null, U = null;
   // Decorative, low-frequency, and behind glass panels: it does not need
-  // device resolution. 0.62x is indistinguishable here and ~2.6x cheaper.
-  var RENDER_SCALE = 0.62;
+  // device resolution. 0.34x is indistinguishable at this blur and ~8x cheaper.
+  var RENDER_SCALE = 0.34;
   var dpr = Math.min(window.devicePixelRatio || 1, 1.5) * RENDER_SCALE;
 
   function build() {
@@ -363,6 +369,7 @@ guard('webgl', function () {
 
   function poke() {
     active = true;
+    scrollUntil = performance.now() + 220;     // treat as "in motion"
     clearTimeout(idleTimer);
     idleTimer = setTimeout(function () { active = false; sync(); }, 1500);
     sync();
@@ -387,7 +394,12 @@ guard('webgl', function () {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
-  var gate = frameGate(30), booted = false;
+  /* A STATIC fullscreen canvas composites for free (60fps measured). Every
+     REPAINT costs ~33ms in software, and on a real GPU forces all 31
+     backdrop-filter panels to re-blur because their backdrop changed. So:
+     20fps at rest, 6fps while actually scrolling — that is where the lag was. */
+  var gateIdle = frameGate(20), gateScroll = frameGate(6);
+  var booted = false, scrollUntil = 0;
   function stop() {}
   function sync() {
     // Reduced motion gets a single static frame and no loop at all.
@@ -413,7 +425,7 @@ guard('webgl', function () {
   Ticker.add(function (now) {
     if (RM || !booted || lost || !visible) return false;
     if (!active) return false;
-    if (gate(now)) paint();
+    if ((now < scrollUntil ? gateScroll : gateIdle)(now)) paint();
     return true;
   });
 
@@ -450,78 +462,107 @@ guard('core', function () {
   var cv = document.getElementById('core-canvas'); if (!cv) return;
   var ctx = cv.getContext('2d'); if (!ctx) return;
   var sec = document.getElementById('core');
-  var stack = document.getElementById('wp-stack');
   var bar = document.getElementById('core-bar'), pctEl = document.getElementById('core-pct');
   var barWrap = document.getElementById('core-progress'), live = document.getElementById('core-live');
 
-  /* build the weak-point cards up front so no-JS/early paint still has them */
-  var cards = WEAK.map(function (w, i) {
-    var d = el('div', 'wp-card glass px-3.5 py-2.5 border-l-2 border-l-white/15 opacity-30 transition-all duration-500');
-    d.setAttribute('data-wp', i);
-    var top = el('div', 'flex items-baseline justify-between gap-3 flex-wrap');
-    top.appendChild(el('span', 'font-semibold text-[14.5px] wp-label', w.label));
-    top.appendChild(el('span', 'font-mono text-[12px] text-faint wp-cost', w.cost));
-    d.appendChild(top);
-    d.appendChild(el('p', 'text-[12px] text-faint wp-case', w.case));
-    var body = el('p', 'text-[12.5px] text-dim mt-1.5 hidden wp-body', w.body);
-    d.appendChild(body);
-    stack.appendChild(d);
+  /* One failure at a time. The full list already lives in the loss record
+     below; repeating it here buried the figure behind a 700px panel. */
+  var live = document.getElementById('core-live');
+  var slot = document.getElementById('wp-active');
+  var dotsWrap = document.getElementById('wp-dots');
+  var intro = slot ? slot.firstElementChild : null;
+
+  var dots = WEAK.map(function (w) {
+    var d = el('span', 'h-1 flex-1 rounded-full bg-white/12 transition-colors duration-500');
+    d.title = w.label;
+    if (dotsWrap) dotsWrap.appendChild(d);
     return d;
   });
 
-  /* ---- geometry -----------------------------------------------------------
-     Explicit topology, not a proximity graph. A proximity graph over a dense
-     point cloud renders as a hairball; here every edge is deliberate:
-     a nucleus, three concentric rings chained around their own circumference,
-     radial spokes tying the rings together, and five shell nodes carrying the
-     failure modes. The result reads as a machine rather than as noise.
+  // Which body part each failure is mounted on — stated, not just implied.
+  var PART = ['Mounted on the eye', 'Mounted on the mouth', 'Mounted on the hand',
+              'Mounted on the foot', 'Mounted on the chest core'];
+
+  var card = el('div', 'hidden');
+  var cTop = el('div', 'flex items-baseline justify-between gap-3 flex-wrap');
+  var cLabel = el('span', 'font-semibold text-[15px]');
+  var cCost = el('span', 'font-mono text-[13px] text-rose');
+  put(cTop, cLabel, cCost);
+  var cCase = el('p', 'text-[12px] text-faint mt-0.5');
+  var cBody = el('p', 'text-[13px] text-dim mt-2 leading-relaxed');
+  var cPart = el('p', 'kicker mt-2.5');
+  put(card, cTop, cCase, cBody, cPart);
+  if (slot) slot.appendChild(card);
+
+  /* ---- geometry: an actual robot -----------------------------------------
+     The previous version was concentric rings, which reads as an atom, not a
+     machine. This is a figure: head, antenna, torso, chest core, two arms, two
+     legs. Bones are explicit chains, so particles fly in and lock into limbs.
+     Coordinates are authored y-UP and flipped once at draw time.
      ------------------------------------------------------------------------ */
   var NODES = [], EDGES = [];
   (function build() {
-    function add(x, y, k, w) { NODES.push({ tx:x, ty:y, k:k, w:(w==null?-1:w) }); return NODES.length-1; }
-    var SQUASH = 0.88;
-
-    // nucleus — small, tight, no internal edges
-    var nucleus = [];
-    for (var i = 0; i < 26; i++) {
-      var a1 = i * 2.399963, r1 = Math.sqrt(i / 26) * 0.15;
-      nucleus.push(add(Math.cos(a1)*r1, Math.sin(a1)*r1*SQUASH, 1.5));
-    }
-
-    // three concentric rings, each chained around its own circumference
-    var ringDefs = [ [0.36, 22, 0.00], [0.58, 30, -0.62], [0.80, 38, 0.62] ];
-    var rings = ringDefs.map(function (rd) {
-      var rad = rd[0], cnt = rd[1], tilt = rd[2], idx = [];
-      for (var j = 0; j < cnt; j++) {
-        var th = (j / cnt) * Math.PI * 2;
-        var x = Math.cos(th) * rad, y = Math.sin(th) * rad * 0.56;
-        idx.push(add(x*Math.cos(tilt) - y*Math.sin(tilt),
-                     x*Math.sin(tilt) + y*Math.cos(tilt), 1.0));
+    function add(x, y, k, w) { NODES.push({ tx:x, ty:y, k:(k||1), w:(w==null?-1:w) }); return NODES.length-1; }
+    function bone(ax, ay, bx, by, n, k) {
+      var ids = [], i;
+      for (i = 0; i <= n; i++) {
+        var t = i / n;
+        ids.push(add(ax + (bx-ax)*t, ay + (by-ay)*t, k || 0.95));
       }
-      for (var m = 0; m < idx.length; m++) EDGES.push([idx[m], idx[(m+1) % idx.length]]);
-      return idx;
+      for (i = 0; i < ids.length - 1; i++) EDGES.push([ids[i], ids[i+1]]);
+      return ids;
+    }
+    function ring(cx, cy, r, n, k) {
+      var ids = [], i;
+      for (i = 0; i < n; i++) {
+        var th = (i / n) * Math.PI * 2;
+        ids.push(add(cx + Math.cos(th)*r, cy + Math.sin(th)*r, k || 0.9));
+      }
+      for (i = 0; i < n; i++) EDGES.push([ids[i], ids[(i+1) % n]]);
+      return ids;
+    }
+
+    var hx = 0.16, hyT = 0.84, hyB = 0.58;
+    bone(-hx, hyT,  hx, hyT, 5, 1.05);              // crown
+    bone(-hx, hyB,  hx, hyB, 5, 1.05);              // jaw
+    bone(-hx, hyT, -hx, hyB, 4, 1.05);              // left cheek
+    bone( hx, hyT,  hx, hyB, 4, 1.05);              // right cheek
+    bone(  0, hyT,   0, 0.98, 3, 0.9);              // antenna
+    add(0, 1.01, 2.0);                              // antenna tip
+    add(-0.075, 0.745, 1.7);                        // left eye
+
+    bone(0, hyB, 0, 0.50, 2, 1.0);                  // neck
+    bone(-0.34, 0.46, 0.34, 0.46, 7, 1.05);         // shoulders
+
+    [-1, 1].forEach(function (s) {
+      bone(s*0.34, 0.46, s*0.62, 0.14, 5, 1.0);     // upper arm
+      bone(s*0.62, 0.14, s*0.80, -0.16, 5, 1.0);    // forearm
+      add(s*0.62, 0.14, 1.7);                       // elbow
+      ring(s*0.82, -0.20, 0.055, 7, 0.85);          // hand
+      bone(s*0.30, 0.46, s*0.23, 0.06, 5, 1.0);     // torso upper
+      bone(s*0.23, 0.06, s*0.20, -0.18, 4, 1.0);    // torso lower
+      bone(s*0.20, -0.18, s*0.22, -0.54, 5, 1.0);   // thigh
+      bone(s*0.22, -0.54, s*0.24, -0.88, 5, 1.0);   // shin
+      add(s*0.22, -0.54, 1.7);                      // knee
+      bone(s*0.34, -0.92, s*0.13, -0.92, 3, 1.05);  // foot
     });
+    bone(-0.20, -0.18, 0.20, -0.18, 5, 1.05);       // pelvis
 
-    // radial spokes: nucleus → ring 1 → ring 2 → ring 3, every third node
-    for (var s = 0; s < rings[0].length; s += 3) {
-      EDGES.push([nucleus[s % nucleus.length], rings[0][s]]);
-    }
-    for (var p = 0; p < rings[1].length; p += 2) {
-      EDGES.push([rings[0][Math.floor(p * rings[0].length / rings[1].length)], rings[1][p]]);
-    }
-    for (var q = 0; q < rings[2].length; q += 2) {
-      EDGES.push([rings[1][Math.floor(q * rings[1].length / rings[2].length)], rings[2][q]]);
-    }
+    ring(0, 0.24, 0.115, 14, 1.0);                  // chest core, outer
+    ring(0, 0.24, 0.055, 8, 1.2);                   // chest core, inner
+    add(0, 0.24, 2.2);
 
-    // five shell nodes — the failure modes — each tied back to the outer ring
-    for (var k = 0; k < WEAK.length; k++) {
-      // -68deg .. +68deg: the arc that is never covered by the copy panel
-      var ang = (-68 + (k / (WEAK.length - 1)) * 136) * Math.PI / 180;
-      var wi = add(Math.cos(ang)*1.16, Math.sin(ang)*1.05, 2.8, k);
-      var near = rings[2][Math.round((k / WEAK.length) * rings[2].length) % rings[2].length];
-      EDGES.push([wi, near]);
-      NODES[wi].ring = near;
-    }
+    /* The five failure modes, each pinned to the body part it is about. This
+       is the point of the section: the machine assembles, and every piece that
+       lands is a documented way it has already failed. */
+    var MOUNT = [
+      [ 0.075, 0.745],   // eye   — it sees what is not there
+      [-0.075, 0.615],   // mouth — what it says binds you
+      [ 0.85,  -0.20],   // hand  — it sorts people
+      [ 0.26,  -0.92],   // foot  — it moves in the world
+      [ 0.0,    0.24]    // core  — what it is made of
+    ];
+    for (var k = 0; k < WEAK.length; k++) add(MOUNT[k][0], MOUNT[k][1], 2.7, k);
   })();
 
   // scatter origins + per-node arrival ordering
@@ -585,15 +626,25 @@ guard('core', function () {
     for (var i = 0; i < WEAK.length; i++) if (p >= WEAK[i].at) active = i;
     if (active === shown) return;
     shown = active;
-    cards.forEach(function (c, i) {
-      var on = i <= active, cur = i === active;
-      c.classList.toggle('opacity-30', !on);
-      c.classList.toggle('opacity-100', on);
-      c.style.borderLeftColor = cur ? C.rose : (on ? C.teal : 'rgba(255,255,255,.15)');
-      c.querySelector('.wp-cost').style.color = on ? (cur ? C.rose : C.amber) : C.faint;
-      c.querySelector('.wp-body').classList.toggle('hidden', !cur);
-      if (cur) c.classList.add('bg-white/[0.04]'); else c.classList.remove('bg-white/[0.04]');
+
+    dots.forEach(function (d, i) {
+      d.className = 'h-1 flex-1 rounded-full transition-colors duration-500 ' +
+        (i === active ? 'bg-rose' : i < active ? 'bg-teal' : 'bg-white/12');
     });
+
+    if (active < 0) {
+      card.classList.add('hidden');
+      if (intro) intro.classList.remove('hidden');
+      return;
+    }
+    if (intro) intro.classList.add('hidden');
+    card.classList.remove('hidden');
+    var w = WEAK[active];
+    cLabel.textContent = w.label;
+    cCost.textContent  = w.cost;
+    cCase.textContent  = w.case;
+    cBody.textContent  = w.body;
+    cPart.textContent  = PART[active];
   }
 
   var t = 0, onScreen = false, visible = true, booted = false;
@@ -610,11 +661,20 @@ guard('core', function () {
     ctx.clearRect(0, 0, W, H);
 
     // core sits right of center on wide screens, centered on narrow
-    var wide = W > 900;
-        var scale = Math.min(W, H) * (wide ? 0.36 : 0.32);
-    var LABEL_ROOM = 172;                       // px reserved for the callouts
-    var cx = wide ? Math.min(W*0.66, W - scale*1.16 - LABEL_ROOM) : W*0.5;
-    var cy = H*0.5;
+    var wide = W > 1024;
+        // Centred, and sized so the crown, both arms and both legs clear the copy
+    // panel that sits over the torso. That overlap is what makes it read as a
+    // robot standing behind the text rather than as a texture.
+    //
+    // Sizing is solved from the figure's own extents rather than a flat
+    // fraction of the viewport, otherwise a narrow screen shrinks it to a
+    // thumbnail. On mobile the arms tuck in so the hands stay on screen — the
+    // hand carries a failure-mode marker and must remain visible.
+    var xSquash = wide ? 1 : 0.62;
+    var EXT_X = 0.85 * xSquash, EXT_Y = 1.01;
+    var scale = Math.min(H * 0.44 / EXT_Y, W * 0.46 / EXT_X);
+    var cx = W * 0.5;
+    var cy = H * 0.52;
 
     // resolve node positions
     for (var i = 0; i < NODES.length; i++) {
@@ -623,27 +683,30 @@ guard('core', function () {
       lp = lp*lp*(3-2*lp);                                    // smoothstep
       var jitter = (1-lp) * 0.06;
       var wob = RM ? 0 : Math.sin(t*2 + i)*0.006*lp;
-      nd.x = cx + (nd.sx + (nd.tx-nd.sx)*lp + wob) * scale;
-      nd.y = cy + (nd.sy + (nd.ty-nd.sy)*lp + jitter) * scale;
+      var txs = nd.tx * xSquash;
+      nd.x = cx + (nd.sx + (txs-nd.sx)*lp + wob) * scale;
+      // negated: geometry is authored y-up, canvas y grows downward
+      nd.y = cy - (nd.sy + (nd.ty-nd.sy)*lp + jitter) * scale;
       nd.lp = lp;
     }
 
     // nucleus bloom — gives the core a light source instead of a flat scatter
     if (p > 0.12) {
-      var bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, scale*0.62);
+      var chestY = cy - 0.24 * scale;         // the core sits in the chest
+      var bg = ctx.createRadialGradient(cx, chestY, 0, cx, chestY, scale*0.55);
       bg.addColorStop(0, 'rgba(28,192,168,' + (0.16*Math.min(1,p*1.4)).toFixed(3) + ')');
       bg.addColorStop(1, 'rgba(28,192,168,0)');
       ctx.fillStyle = bg;
-      ctx.beginPath(); ctx.arc(cx, cy, scale*0.62, 0, 6.2832); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, chestY, scale*0.55, 0, 6.2832); ctx.fill();
     }
 
     // edges
-    ctx.lineWidth = 1.15;
+    ctx.lineWidth = 1.4;
     for (var e = 0; e < EDGES.length; e++) {
       var A = NODES[EDGES[e][0]], B = NODES[EDGES[e][1]];
       var a = Math.min(A.lp, B.lp);
       if (a < 0.55) continue;
-      ctx.strokeStyle = 'rgba(28,192,168,' + ((a-0.55)/0.45*0.62).toFixed(3) + ')';
+      ctx.strokeStyle = 'rgba(28,192,168,' + ((a-0.55)/0.45*0.85).toFixed(3) + ')';
       ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
     }
 
@@ -653,7 +716,7 @@ guard('core', function () {
       if (n2.lp <= 0.01) continue;
       var isWeak = n2.w >= 0;
       var live = isWeak && exact >= WEAK[n2.w].at;
-      var rad = n2.k * (isWeak ? 3.4 : 1.9) * (0.55 + n2.lp*0.45);
+      var rad = n2.k * (isWeak ? 3.6 : 2.1) * (0.55 + n2.lp*0.45);
       if (live) {
         var pulse = 1 + Math.sin(t*7 + n2.w)*0.18;
         var g = ctx.createRadialGradient(n2.x, n2.y, 0, n2.x, n2.y, rad*7*pulse);

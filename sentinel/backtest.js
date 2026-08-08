@@ -99,8 +99,9 @@ const CONTRAST_FN = `(() => {
   const coreSection = appSrc.slice(appSrc.indexOf('5. NEURAL CORE'), appSrc.indexOf('6. FAILURE DOSSIER'));
   ok(!/frameGate\(/.test(coreSection),
      'the scroll-linked core runs at native refresh rate, not a fixed cap');
-  ok(/frameGate\(30\)/.test(appSrc.slice(appSrc.indexOf('4. BACKGROUND WEBGL'), appSrc.indexOf('5. NEURAL CORE'))),
-     'the ambient background is capped at 30fps');
+  const bgSection = appSrc.slice(appSrc.indexOf('4. BACKGROUND WEBGL'), appSrc.indexOf('5. NEURAL CORE'));
+  ok(/frameGate\(20\)/.test(bgSection) && /frameGate\(6\)/.test(bgSection),
+     'the ambient background is dual-rate: 20fps at rest, 6fps while scrolling');
 
   H('SECURITY POSTURE');
   const cspMeta = await page.evaluate(() => {
@@ -227,8 +228,10 @@ const CONTRAST_FN = `(() => {
     samples.push(await page.evaluate(() => ({
       pct: parseInt(document.getElementById('core-pct').textContent),
       bar: parseFloat(document.getElementById('core-bar').style.width),
-      lit: document.querySelectorAll('#wp-stack .wp-card.opacity-100').length,
-      open: document.querySelectorAll('#wp-stack .wp-body:not(.hidden)').length
+      // dots no longer pending = failure modes reached so far
+      lit: [...document.querySelectorAll('#wp-dots span')]
+             .filter(d => !d.className.includes('bg-white/12')).length,
+      open: document.querySelectorAll('#wp-active > div:not(.hidden)').length
     })));
   }
   const mono = samples.every((s, i) => i === 0 || s.pct >= samples[i-1].pct);
@@ -238,7 +241,7 @@ const CONTRAST_FN = `(() => {
   const litMono = samples.every((s, i) => i === 0 || s.lit >= samples[i-1].lit);
   ok(litMono, `weak points activate in order (${samples.map(s=>s.lit).join(' → ')} of 5)`);
   ok(samples[samples.length-1].lit === 5, 'all five failure modes activate by the end');
-  ok(samples.every(s => s.open <= 1), 'exactly one failure mode is expanded at a time');
+  ok(samples.every(s => s.open <= 1), 'exactly one failure mode is shown at a time');
 
   const overlap = await page.evaluate(() => {
     const panel = document.querySelector('#core .glass').getBoundingClientRect();
@@ -251,12 +254,26 @@ const CONTRAST_FN = `(() => {
      `narrative panel holds its own area over the animation (${Math.round(overlap.panelW)}×${Math.round(overlap.panelH)})`);
 
   const coreContrast = await page.evaluate(() => {
-    const els = [...document.querySelectorAll('#core .glass p, #core .glass h2, #core .glass h3, #core .wp-card span')];
+    const els = [...document.querySelectorAll('#core .glass p, #core .glass h2, #core .glass span')]
+      .filter(e => e.textContent.trim() && e.offsetParent);
     return Math.min(...els.map(e => window.__contrast(e) || 99));
   });
   ok(coreContrast >= 4.5, `core panel text contrast over the animation: ${coreContrast.toFixed(2)}:1`);
 
   /* ─────────────── PHASE 3 ─────────────── */
+  ok(await page.evaluate(() => {
+    const cv = document.getElementById('core-canvas'), gl = document.querySelector('#core .glass');
+    const c = cv.getBoundingClientRect(), g = gl.getBoundingClientRect();
+    // panel centred over the figure and narrower than it, so head/arms/legs show
+    return Math.abs((c.left + c.width/2) - (g.left + g.width/2)) < 40
+        && g.width < c.width * 0.55;
+  }), 'copy panel sits centred over the figure, leaving it visible around the edges');
+  ok(await page.evaluate(() =>
+    document.querySelector('#core .glass').getBoundingClientRect().height
+      < window.innerHeight * 0.62),
+    'panel is short enough to leave the head and legs uncovered');
+  ok((await page.$$('#wp-dots span')).length === 5, 'five-step failure indicator present');
+
   H('PHASE 3 — CHARTS');
   const IDS = ['chartCyber','chartPools','chartVert','chartVertPrem','chartRoi'];
   for (const id of IDS) {

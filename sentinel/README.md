@@ -24,7 +24,7 @@ and it is live. It also opens correctly straight from disk (`file://`).
 | `evidence.json` | 29 claims, graded A/B/C/D, each with sources and a plain-English gloss. |
 | `montecarlo_v2.py` → `mc_v2.json` | Strategy viability. 60,000 trials, seed 20260808. |
 | `pricing.py` → `pricing.json` | Actuarial pricing. 400,000 simulations, seed 4711. |
-| `backtest.js` | 103 headless assertions. `node backtest.js` (needs playwright-core). |
+| `backtest.js` | 106 headless assertions. `node backtest.js` (needs playwright-core). |
 
 Full rebuild:
 
@@ -102,8 +102,11 @@ staging build is in git history, not in this folder.
 | Chart.js | executed at load | inert `text/plain`, injected on demand |
 | Charts built | 5 at load | lazily, per section |
 | Below-fold DOM | built at load | `deferBuild` — IO-near or idle, whichever first |
-| Animation loops | boot, 60fps, always on, two competing rAF loops | one shared ticker; scroll-linked at native rate, ambient capped at 30fps, idle-paused |
+| Animation loops | boot, 60fps, always on, two competing rAF loops | one shared ticker; scroll-linked at native rate, ambient dual-rate, idle-paused |
 | Scrolling | native, stepped | Lenis inertia, ~1.05 s eased tail |
+| Background shader | 15 noise octaves/px at 0.62× | 3 octaves at 0.34× |
+| Scroll frame rate | **10 fps** | **60 fps** |
+| Pinned figure | concentric rings (read as an atom) | a robot, with failures mounted per body part |
 | Idle GPU | continuous | **0 draws** |
 | innerHTML | 8 sites | **0** — every node built with textContent |
 | Globals | `__MC__ __EV__ __PR__ __GL_OK__ __CORE_OK__` | one frozen `sentinelDiagnostics` |
@@ -122,23 +125,39 @@ staging build is in git history, not in this folder.
 | CLS | 0.0000 | 0.0000 |
 | FCP | 292 ms | ~300 ms |
 | DOMContentLoaded | 813 ms | ~250 ms |
-| Total blocking time | 2,487 ms | ~510 ms |
-| Longest task | 391 ms | ~145 ms |
+| Total blocking time | 2,487 ms | **89 ms** |
+| Longest task | 391 ms | 132 ms |
 | **ScriptDuration (CDP, 3.5 s)** | — | **66 ms** |
 | JS heap at boot | 4.2 MB | 1.7 MB |
 | Idle GPU draws | continuous | 0 |
-| Functional checks | 70 | **103** |
+| Functional checks | 70 | **106** |
 
-TBT here is measured under headless swiftshader, where canvas rasterization runs
-on the CPU. CDP attribution over the same window shows **66 ms ScriptDuration**
-against **1,710 ms of raster/paint** — that portion is GPU work on real hardware
-and never reaches a user's main thread.
+TBT is now inside Google's "good" threshold even under headless swiftshader,
+where canvas rasterization runs on the CPU.
 
-### A note on the background render scale
+### How the scroll lag was found
 
-The coverage-lattice shader evaluates ~15 noise octaves per pixel. It is
-decorative, low-frequency, and sits behind glass panels, so it renders at 0.62×
-and upscales. Visually indistinguishable, roughly 2.6× cheaper on every GPU.
+Frame timing during a real wheel gesture, isolating one layer at a time:
+
+| Configuration | p50 frame | Effective |
+|---|---|---|
+| As shipped (before) | 100 ms | 10 fps |
+| `backdrop-filter` disabled | 100 ms | 10 fps — not the cause |
+| Background canvas hidden | 17 ms | **59 fps** — the cause |
+| Background visible but never repainted | 17 ms | 60 fps |
+
+The last row is the useful one: a **static** fullscreen canvas composites for
+free. Every **repaint** costs ~33 ms in software, and on a real GPU forces all
+31 `backdrop-filter` panels to re-blur because their backdrop changed. So the
+ambient layer now runs at 6 fps while scrolling and 20 fps at rest — during a
+scroll it is effectively a still image, which is what returns the page to 60.
+
+### A note on the background shader
+
+It evaluated ~15 noise octaves per pixel. The domain warp is now two sines
+instead of two fbm calls and the tear field uses three octaves instead of five —
+three total, down from fifteen — rendered at 0.34× and upscaled. Behind glass
+at this blur the difference is not visible; the cost is roughly 8× lower.
 
 ### Reproduce
 
@@ -147,6 +166,32 @@ node src/build.js     # Tailwind, inline, compute CSP hashes, emit _headers
 node backtest.js      # 98 functional assertions
 node audit.js         # CWV, CLS, idle GPU, leak probe, CSP, accessibility
 ```
+
+## The pinned figure
+
+The core section assembles a **robot** — head, antenna, eyes, torso, chest core,
+two arms, two legs — from scattered particles as you scroll. Bones are explicit
+node chains, so limbs lock into place rather than a cloud condensing.
+
+Five failure modes are mounted on the body part each one is actually about:
+
+| Body part | Failure mode | Cost |
+|---|---|---|
+| Eye | Hallucination — it sees what is not there | $5,000 + sanctions |
+| Mouth | Misrepresentation — what it says binds you | Company held bound |
+| Hand | Disparate impact — it sorts people | Nationwide collective |
+| Foot | Physical control — it moves in the world | $243,000,000 |
+| Chest core | Training data — what it is made of | $1,500,000,000 |
+
+The copy panel sits **over the torso**, deliberately narrower and shorter than
+the figure so the crown, both arms and both legs stay visible around it. One
+failure is shown at a time; the full list lives in the loss record below, and
+repeating it here buried the figure behind a 700px panel.
+
+Geometry is authored y-up and flipped once at draw time. Sizing is solved from
+the figure's own extents rather than a fraction of the viewport, so a narrow
+screen gets a properly sized figure with the arms tucked in — the hand carries a
+marker and has to stay on screen.
 
 ## Motion architecture
 

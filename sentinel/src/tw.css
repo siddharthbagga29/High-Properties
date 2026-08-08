@@ -45,9 +45,12 @@
   .lenis-on.lenis-stopped { overflow: clip; }
   .lenis-on [data-lenis-prevent] { overscroll-behavior: contain; }
 
+  /* Centered figure: keep the middle clear so the robot reads, and fall off
+     toward the edges so nothing competes with the copy panel over its torso. */
   .core-scrim {
-    background: linear-gradient(90deg, rgba(5,7,10,.94) 0%, rgba(5,7,10,.86) 34%,
-                rgba(5,7,10,.30) 55%, rgba(5,7,10,.05) 72%, rgba(5,7,10,.45) 100%);
+    background:
+      radial-gradient(ellipse 62% 78% at 50% 50%, rgba(5,7,10,0) 0%,
+                      rgba(5,7,10,.35) 62%, rgba(5,7,10,.88) 100%);
   }
   .core-bar { width: 0%; }
 
