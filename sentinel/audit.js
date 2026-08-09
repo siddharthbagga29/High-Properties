@@ -1,6 +1,10 @@
 /* CTO AUDIT — runtime instrumentation of sentinel/index.html */
 const { chromium } = require('playwright-core');
-const F = 'file://' + require('path').join(__dirname, 'index.html');
+const path = require('path');
+// Audits one page at a time. Default is the home page; pass a slug to switch:
+//   node audit.js research
+const SLUG = process.argv[2] || 'index';
+const F = 'file://' + path.join(__dirname, SLUG + '.html');
 
 (async () => {
   const b = await chromium.launch({
@@ -83,16 +87,21 @@ const F = 'file://' + require('path').join(__dirname, 'index.html');
   await page.waitForTimeout(3000);                       // let it go idle
   await page.evaluate(() => { window.__M.drawArrays = 0; window.__M.raf = 0; });
   await page.waitForTimeout(2000);                       // clean idle sample
-  const offscreen = await page.evaluate(() => ({
-    draws: window.__M.drawArrays, rafs: window.__M.raf,
-    coreVisible: document.getElementById('core').getBoundingClientRect().bottom > 0,
-    glDisplay: getComputedStyle(document.getElementById('gl')).display,
-  }));
+  /* There is no #gl element and no runtime WebGL context any more — the hero
+     backdrop is baked at build time, so drawArrays staying at zero is expected.
+     This reads as a regression guard rather than a metric. */
+  const offscreen = await page.evaluate(() => {
+    const core = document.getElementById('core');
+    return { draws: window.__M.drawArrays, rafs: window.__M.raf,
+             coreVisible: core ? core.getBoundingClientRect().bottom > 0 : false,
+             glElement: !!document.getElementById('gl') };
+  });
 
   // Listener growth under sustained scroll + resize (leak probe).
   // Warm every lazy section first, so one-time construction is not counted.
-  for (const id of ['failures','dashboard','research','pricing','evidence','contact']) {
-    await page.evaluate(i => document.getElementById(i).scrollIntoView(), id);
+  /* Sections live on different pages now, so warm whichever this page has. */
+  for (const id of ['core','failures','dashboard','research','pricing','evidence','contact']) {
+    await page.evaluate(i => { const e = document.getElementById(i); if (e) e.scrollIntoView(); }, id);
     await page.waitForTimeout(600);
   }
   await page.waitForTimeout(800);
@@ -137,8 +146,9 @@ const F = 'file://' + require('path').join(__dirname, 'index.html');
     return !!b && b.offsetParent !== null;
   });
   if (navBtnVisible) { await mob.click('#navBtn'); await mob.waitForTimeout(250); }
+  // Navigation is cross-document now, not in-page anchors.
   const navVis = await mob.evaluate(() =>
-    [...document.querySelectorAll('nav a[href^="#"]')]
+    [...document.querySelectorAll('#navMenu a')]
       .filter(a => a.offsetParent !== null).map(a => a.getAttribute('href')));
   const navExpanded = await mob.evaluate(() =>
     document.getElementById('navBtn') &&
@@ -148,6 +158,7 @@ const F = 'file://' + require('path').join(__dirname, 'index.html');
   await b.close();
 
   const R = (k,v) => console.log(('  ' + k).padEnd(42) + v);
+  console.log('\n══ ' + SLUG + '.html ══');
   console.log('\n══ BOOT ══');
   R('goto→load wall clock', loadMs + ' ms');
   R('FCP', boot.firstPaint + ' ms');
@@ -168,6 +179,7 @@ const F = 'file://' + require('path').join(__dirname, 'index.html');
   R('WebGL drawArrays calls', offscreen.draws + (offscreen.draws > 0 ? '  ✗ burning GPU while idle' : '  ✓ fully quiesced'));
   R('rAF callbacks', offscreen.rafs + (offscreen.rafs > 0 ? '  ✗ loop still scheduled' : '  ✓'));
   R('core section in viewport', offscreen.coreVisible);
+  R('legacy #gl backdrop element', offscreen.glElement ? 'PRESENT ✗ (should be baked)' : 'gone ✓');
   console.log('\n══ LEAK PROBE (6 resizes + 6 scrolls) ══');
   R('listener map changed', (before !== after) ? 'YES — see below' : 'no growth ✓');
   if (before !== after) {

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /index2.html
+
+Sitemap: https://sentinel.example/sitemap.xml

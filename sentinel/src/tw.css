@@ -38,8 +38,102 @@
      from also driving layout, which would overflow the document. */
   canvas { max-width: 100%; }
 
-  /* Filled in at boot with the shader's single rendered frame. */
-  .bg-backdrop { background-size: cover; background-position: center; }
+  /* ── PAGE BACKDROP ────────────────────────────────────────────────────────
+     Pure CSS gradients on a fixed layer. No canvas, no image, no bytes. A
+     <canvas> here was measured re-rastering on every scroll frame even when
+     its pixels never changed (30fps); a gradient layer is composited once. */
+  .page-bg {
+    background:
+      radial-gradient(ellipse 90% 60% at 78% -8%,  rgba(28,192,168,.075), transparent 62%),
+      radial-gradient(ellipse 70% 50% at 10% 12%,  rgba(60,110,180,.055), transparent 60%),
+      radial-gradient(ellipse 120% 70% at 50% 108%, rgba(255,122,47,.038), transparent 66%),
+      #05070a;
+  }
+
+  /* ── HERO BUST ────────────────────────────────────────────────────────────
+     A raymarched robot bust, rendered once at BUILD time (see bake.js) and
+     inlined as a JPEG data URI in this stylesheet. It never touches the GPU at
+     runtime — there is no WebGL context on the shipped page at all.
+
+     Legibility is the constraint, not decoration. The copy panel sits on the
+     left with its own glass backing; the bust is anchored right and masked so
+     it fades out before it reaches the text column, and .hero-veil lays a
+     directional scrim over the whole thing. Measured contrast of body copy
+     over the brightest pixel of the composited result is checked in
+     backtest.js — if a tuning change here drops any text under 4.5:1 the
+     build fails rather than shipping a pretty but unreadable hero. */
+  .hero-bust {
+    position: absolute; inset: 0; z-index: 0;
+    background-image: var(--bust);
+    background-repeat: no-repeat;
+    background-position: right -1% bottom -2%;
+    background-size: auto 88%;
+    opacity: .95;
+    /* The copy column occupies the left ~55% of a wide hero, so the mask
+       deletes the bust across that band rather than relying on the scrim to
+       darken it — the text sits on flat ground, not on a dimmed photograph.
+       The render already resolves to the page colour at its own edges, so this
+       mask has one job and does not have to hide a bounding box as well. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 54%, rgba(0,0,0,.45) 64%, #000 78%);
+            mask-image: linear-gradient(to right, transparent 0%, transparent 54%, rgba(0,0,0,.45) 64%, #000 78%);
+  }
+  @media (max-width: 1023px) {
+    /* Below lg the copy spans the full width, so there is no clear band left
+       for the subject. It moves behind the text and drops to a level where it
+       reads as texture rather than as an image competing for attention. */
+    .hero-bust {
+      background-position: right -26% top 6%; background-size: auto 62%; opacity: .34;
+      -webkit-mask-image: linear-gradient(to bottom, #000 42%, transparent 88%);
+              mask-image: linear-gradient(to bottom, #000 42%, transparent 88%);
+    }
+  }
+  /* Scrim. Heavy over the copy column, almost absent over the subject, and
+     closing to solid at the bottom edge so the hero hands off to the next
+     section without a seam. */
+  .hero-veil {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      linear-gradient(100deg, #05070a 10%, rgba(5,7,10,.90) 38%, rgba(5,7,10,.34) 62%, rgba(5,7,10,.10) 100%),
+      linear-gradient(to bottom, rgba(5,7,10,.50) 0%, transparent 20%, transparent 76%, #05070a 100%);
+  }
+
+  /* Interior pages get the same subject far smaller and dimmer — visual
+     continuity with the home page without competing with dense copy. */
+  .page-bust {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(46%, 620px);
+    z-index: 0; pointer-events: none;
+    background-image: var(--bust);
+    background-repeat: no-repeat;
+    background-position: right -18% center;
+    background-size: auto 118%;
+    opacity: .20;
+    /* Radial rather than horizontal: the accent is clipped by the header's
+       bottom border, and a one-axis mask leaves that cut visible as a straight
+       line across the subject. */
+    -webkit-mask-image: radial-gradient(ellipse 88% 76% at 74% 50%, #000 18%, rgba(0,0,0,.45) 58%, transparent 86%);
+            mask-image: radial-gradient(ellipse 88% 76% at 74% 50%, #000 18%, rgba(0,0,0,.45) 58%, transparent 86%);
+  }
+  @media (max-width: 767px) { .page-bust { display: none; } }
+
+  /* The page header already supplies generous space above the first section,
+     so the section's own top padding is redundant there and only reads as a
+     hole in the page. */
+  main > header + section { padding-top: 4.5rem; }
+
+  /* ── BREADCRUMBS ──────────────────────────────────────────────────────── */
+  .crumbs { @apply font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint; }
+  .crumbs a { @apply text-faint no-underline hover:text-teal transition-colors; }
+  .crumbs li + li::before { content: '/'; @apply mx-2 text-white/20; }
+
+  /* Current page in the nav. Colour alone is not a state indicator, so it also
+     carries an underline rule and aria-current in the markup. */
+  .nav-link { @apply text-dim hover:text-ink no-underline text-[11.5px] tracking-[0.11em] uppercase transition-colors; }
+  .nav-link[aria-current="page"] {
+    @apply text-ink;
+    box-shadow: inset 0 -2px 0 0 #1cc0a8;
+  }
+  .nav-link-m { @apply block py-2.5 text-dim hover:text-ink no-underline text-[13px] tracking-[0.08em] uppercase border-b border-white/[0.06]; }
+  .nav-link-m[aria-current="page"] { @apply text-teal; }
 
 
   /* Centered figure: keep the middle clear so the robot reads, and fall off

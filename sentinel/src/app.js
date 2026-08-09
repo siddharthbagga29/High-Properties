@@ -12,7 +12,7 @@
    A throw anywhere below must be visible, must not cascade, and must never
    leave a section silently blank. Errors are counted on the diagnostics
    object so an uptime check can read them without a console. */
-var DIAG = { errors: [], gl: false, core: false, charts: 0, chartLib: false, nativeScroll: true };
+var DIAG = { errors: [], core: false, charts: 0, chartLib: false, nativeScroll: true, bakedBackdrop: true };
 
 function note(kind, msg) {
   if (DIAG.errors.length < 25) DIAG.errors.push(kind + ': ' + String(msg).slice(0, 200));
@@ -252,107 +252,17 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
   });
 });
 
-/* ── 4. BACKDROP — rendered once, then cached as an image ─────────────────
-   Three measurement rounds all landed on this layer. The decisive numbers, at
-   Retina resolution while scrolling:
+/* ── 4. BACKDROP ─────────────────────────────────────────────────────────
+   Deliberately absent from this file.
 
-     animated canvas ..................... 30fps
-     canvas throttled to 6fps ............ 30fps
-     canvas STATIC, still in the DOM ..... 30fps
-     canvas -> cached background-image ... 60fps
-     no backdrop at all .................. 60fps
-
-   A <canvas> element sits in the compositing path and is re-rastered as the
-   page scrolls above it, even when its pixels never change. A plain image layer
-   is cached by the compositor and costs nothing. So the shader now runs exactly
-   once, into a detached canvas, and its output is handed to a div as a
-   background image. The visual is identical — it IS the shader's output — and
-   the scroll cost is zero.
-
-   Rendering happens after first paint so it never competes with boot, and the
-   GPU context is released immediately afterwards.
+   The hero backdrop is a raymarched robot bust, but it is rendered at BUILD
+   time (see bake.js) and shipped as a baked image in the stylesheet. That
+   removes the entire runtime WebGL layer: no context creation, no shader
+   compile, no context-loss handling, no GPU variance between machines, and no
+   per-frame compositing cost. Measured earlier: a <canvas> in the compositing
+   path is re-rastered as the page scrolls above it even when its pixels never
+   change, which alone held scrolling to 30fps at Retina.
    ──────────────────────────────────────────────────────────────────────── */
-guard('backdrop', function () {
-  var host = document.getElementById('gl'); if (!host) return;
-  function bail() { host.style.display = 'none'; }
-
-  var FS = [
-    'precision mediump float;',
-    'uniform vec2 uRes; uniform float uGap;',
-    'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
-    'float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);',
-    ' return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}',
-    'float fbm3(vec2 p){float v=noise(p)*.5;p*=2.03;v+=noise(p)*.25;p*=2.03;v+=noise(p)*.125;return v;}',
-    'void main(){',
-    ' vec2 uv=gl_FragCoord.xy/uRes.xy; vec2 p=uv; p.x*=uRes.x/uRes.y;',
-    ' vec2 q=p+vec2(sin(p.y*3.1),cos(p.x*2.7))*.055;',
-    ' vec2 g=abs(fract(q*13.0)-.5);',
-    ' float lat=1.-smoothstep(.0,.055,min(g.x,g.y));',
-    ' float field=fbm3(q*1.55);',
-    ' float tear=smoothstep(.52-uGap*.30,.72-uGap*.10,field);',
-    ' vec3 c=vec3(.055,.42,.375)*lat*(1.-tear)+vec3(.72,.31,.11)*lat*tear;',
-    ' c*=(1.-smoothstep(.45,1.25,length(uv-.5)*1.35))*.26;',
-    ' c+=vec3(.010,.014,.019);',
-    ' gl_FragColor=vec4(c,1.);}'
-  ].join('\n');
-
-  function render() {
-    // Detached: this canvas is never inserted into the document.
-    var cv = document.createElement('canvas');
-    cv.width = 1280; cv.height = 800;            // 16:10, upscaled by background-size
-    var o = { alpha:false, antialias:false, depth:false, stencil:false,
-              powerPreference:'low-power', preserveDrawingBuffer:true };
-    var gl = cv.getContext('webgl', o) || cv.getContext('experimental-webgl', o);
-    if (!gl) return null;
-
-    function sh(t, src) {
-      var x = gl.createShader(t); gl.shaderSource(x, src); gl.compileShader(x);
-      if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) { gl.deleteShader(x); return null; }
-      return x;
-    }
-    var vs = sh(gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
-    var fs = sh(gl.FRAGMENT_SHADER, FS);
-    if (!vs || !fs) { if (vs) gl.deleteShader(vs); if (fs) gl.deleteShader(fs); return null; }
-
-    var pg = gl.createProgram();
-    gl.attachShader(pg, vs); gl.attachShader(pg, fs); gl.linkProgram(pg);
-    gl.detachShader(pg, vs); gl.detachShader(pg, fs);
-    gl.deleteShader(vs); gl.deleteShader(fs);
-    if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) return null;
-    gl.useProgram(pg);
-
-    var buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
-    var loc = gl.getAttribLocation(pg, 'a');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-
-    gl.viewport(0, 0, cv.width, cv.height);
-    gl.uniform2f(gl.getUniformLocation(pg, 'uRes'), cv.width, cv.height);
-    gl.uniform1f(gl.getUniformLocation(pg, 'uGap'), 0.46);   // mid-tear: the most legible state
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-    var url = null;
-    try { url = cv.toDataURL('image/jpeg', 0.86); }   // smooth field: JPEG is far smaller than PNG
-    catch (e) { note('backdrop', e.message); }
-
-    // Release everything; nothing here is needed again.
-    gl.deleteBuffer(buf); gl.deleteProgram(pg);
-    var le = gl.getExtension('WEBGL_lose_context');
-    if (le) le.loseContext();
-    return url;
-  }
-
-  afterBoot(function () {
-    guard('backdrop-render', function () {
-      var url = render();
-      if (!url) return bail();
-      host.style.backgroundImage = 'url("' + url + '")';
-      DIAG.gl = true;
-    });
-  });
-});
 
 /* ── 5. NEURAL CORE ASSEMBLY (scroll-pinned) ─────────────────────────────────
    Particles start scattered and converge into a structured core as the user
@@ -1097,7 +1007,9 @@ deferBuild('pricing', function () {
     card.appendChild(el('p', 'text-[11.5px] text-faint mt-auto pt-3 border-t border-white/[0.08]', t.math));
 
     var cta = el('a', 'btn ' + (featured ? 'btn-primary ' : '') + 'no-underline text-center mt-4', 'Request quote');
-    cta.href = '#contact';
+    /* The tier cards live on coverage.html and the form lives on contact.html,
+       so this is a cross-document link now, not an in-page anchor. */
+    cta.href = './contact.html';
     card.appendChild(cta);
     th.appendChild(card);
   });
@@ -1303,9 +1215,9 @@ Object.defineProperty(window, 'sentinelDiagnostics', {
   value: Object.freeze({
     get ok()     { return DIAG.errors.length === 0; },
     get errors() { return DIAG.errors.slice(); },
-    get layers() { return { webgl: DIAG.gl, core: DIAG.core,
-                            chartLib: DIAG.chartLib, charts: DIAG.charts,
-                            nativeScroll: DIAG.nativeScroll }; }
+    get layers() { return { core: DIAG.core, chartLib: DIAG.chartLib,
+                            charts: DIAG.charts, nativeScroll: DIAG.nativeScroll,
+                            bakedBackdrop: DIAG.bakedBackdrop }; }
   }),
   writable: false, configurable: false, enumerable: false
 });
