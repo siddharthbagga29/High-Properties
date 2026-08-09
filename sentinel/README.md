@@ -46,8 +46,11 @@ asserted unique by the backtest.
 | `evidence.json` | 29 claims, graded A/B/C/D, each with sources and a plain-English gloss. |
 | `montecarlo_v2.py` → `mc_v2.json` | Strategy viability. 60,000 trials, seed 20260808. |
 | `pricing.py` → `pricing.json` | Actuarial pricing. 400,000 simulations, seed 4711. |
-| `backtest.js` | 324 headless assertions across all six pages. Needs `playwright-core`. |
-| `audit.js` | Core Web Vitals, CLS, idle GPU, leak probe, CSP. |
+| `src/reel.datauri`, `src/reel.json` | The 11-view turntable atlas and its geometry. |
+| `backtest.js` | 332 headless assertions across all six pages. Needs `playwright-core`. |
+| `guards.js` | The failure-audit layer. Runs every guard in `failures.json` and proves each one can fail. |
+| `failures.json` | Every defect that reached a built artifact, its root cause, and why the tests missed it. |
+| `audit.js` | Core Web Vitals, CLS, idle GPU, leak probe, CSP. `node audit.js <slug>`. |
 
 Full rebuild:
 
@@ -56,8 +59,12 @@ python3 montecarlo_v2.py && python3 pricing.py \
   && node src/bake.js && node src/build.js && node backtest.js
 ```
 
-`src/bake.js` is only needed when the shader changes; the baked result is
-committed.
+`src/bake.js` is only needed when the shader changes; the baked results are
+committed. `BAKE_ONLY=hero` skips the turntable and finishes in seconds.
+
+Dependencies are not vendored here. If `node_modules` is not at the repo root,
+point `NODE_PATH` at one that has `playwright-core`, `chart.js` and
+`tailwindcss`.
 
 ## Page weight is chosen, not inherited
 
@@ -66,12 +73,12 @@ page carries a library it never calls:
 
 | Page | Size | Carries |
 |---|---|---|
-| index | 158 KB | app, CSS, hero bust |
-| method | 157 KB | app, CSS |
-| coverage | 166 KB | + `pricing.json` |
-| contact | 166 KB | + `pricing.json` |
-| evidence | 183 KB | + `evidence.json` |
-| research | 374 KB | + `pricing.json` + Chart.js (204 KB) |
+| method | 169 KB | app, CSS, hero bust |
+| coverage | 178 KB | + `pricing.json` |
+| contact | 180 KB | + `pricing.json` |
+| evidence | 195 KB | + `evidence.json` |
+| research | 387 KB | + `pricing.json` + Chart.js (204 KB) |
+| index | 321 KB | + the 154 KB turntable atlas |
 
 Chart.js is 204 KB and only one page draws charts. Shipping it everywhere would
 have added a megabyte across the site for nothing. The build detects the need
@@ -86,11 +93,44 @@ pauldrons, a glowing chest core ring and panel lines cut with `smax`. Gunmetal
 material with a GGX specular lobe, a fresnel rim light gated to the light's own
 side, and hemisphere ambient.
 
-It is rendered **once at build time** and shipped as an inline JPEG data URI.
-The shipped pages contain no WebGL at all — no context creation, no shader
-compile, no context-loss handling, no GPU variance between machines, and no
-per-frame compositing cost. Because the render is offline, quality is free:
-2× supersampling and a chroma-gated bloom that no runtime budget would allow.
+It is rendered **once at build time** and shipped as inline JPEG data URIs. The
+shipped pages contain no WebGL at all — no context creation, no shader compile,
+no context-loss handling, no GPU variance between machines. Because the render
+is offline, quality is free: 2× supersampling and a chroma-gated bloom that no
+runtime budget would allow.
+
+### It turns to follow you
+
+The build also renders an **eleven-view turntable** across a ±23° arc and lays
+it out as one horizontal strip. On the home page the bust tracks the pointer,
+with a few pixels of counter-parallax underneath it.
+
+The strip is an **image layer moved by `transform`**, not a canvas, and that is
+the whole design rather than a preference. The first version blitted one cell
+per frame into a canvas and measured **88 ms per scroll frame at 2× DPR against
+17 ms without it** — the identical failure that cost this project three rounds
+of optimisation on the backdrop before that was moved out of a canvas too. A
+canvas sits in the compositing path and is re-rastered as the page scrolls above
+it even when its pixels never change. An image layer is a cached texture: the
+compositor moves it and never re-rasters it. Selecting a view is a `translateX`
+of a whole cell width; scrolling now measures **20.6 ms, the same as with the
+layer removed entirely.**
+
+Gating the canvas off during scroll was tried first and is the wrong shape — it
+defends against a cost instead of not incurring it, and it did not even work
+reliably.
+
+The view **snaps** to the nearest cell; there is no cross-fade. Blending
+adjacent views was tried and does not work at this cell count: 4.6° apart, two
+superimposed heads at comparable alpha read as two heads. The alternatives were
+tripling a 154 KB payload or shrinking the cells until the only sharp thing in
+the hero went soft. Eleven discrete poses stepped through with an eased target
+is a servo moving, which is what the subject is.
+
+It is off entirely under `prefers-reduced-motion`, off below 1024px, stopped
+when the hero leaves the viewport or the tab is hidden, and frame-gated to 20fps
+when idling. With JavaScript disabled the still is the backdrop and nothing is
+missing.
 
 Three problems were solved in the render rather than papered over in CSS:
 
@@ -253,9 +293,65 @@ nobody reintroduces one without re-measuring.
   want frames and the loop stops entirely when none do. Zero rAF, zero GPU,
   measured over a clean sample.
 
+## The failure-audit layer
+
+`failures.json` records every defect that reached a built artifact on this
+project — twenty of them, in nine classes — with its root cause and, the field
+that matters, **why the tests in place at the time did not catch it**. A bug
+that was caught is just work; a bug that shipped past a green suite is a hole in
+the suite, and the fix is the guard, not the patch.
+
+`node guards.js` makes that ledger executable. For each entry it runs the guard
+against a clean build, then **reintroduces the original defect into the source,
+rebuilds, and requires the same guard to fail.**
+
+That second step is the point. A regression test that has never been observed to
+fail is not evidence of anything, and three of the twenty incidents here are
+exactly that failure mode — a check matching a substring that is always present,
+or measuring the thing it was supposed to measure against. Writing this layer
+immediately caught **six of its own guards being unfalsifiable**, including one
+that compared a collapsed canvas' backing store against the canvas' own
+collapsed box and therefore could never fail.
+
+It also caught a live defect: the yaw plumbing had been overwritten in one copy
+of `bake.js`, so all eleven turntable views had been rendered at the same angle.
+The atlas shipped, the module ran, the diagnostics said fine, and the "rotation"
+visible on screen was the 16 px parallax on its own.
+
+Current state: **17 guards, all proven non-vacuous, 20/20 incidents covered.**
+
+Fixes are held to not costing anything elsewhere by construction:
+
+- Mutations are applied to source, the site is rebuilt into a temporary
+  directory, and the artifact is discarded. Sources and baked renders are
+  restored byte-for-byte, and the run verifies it.
+- Each guard runs against a build where only its own defect is present, so it
+  cannot pass by virtue of some other fix.
+- Containment is delegated to `backtest.js`. `guards.js` proves a guard is real;
+  the full suite proves the fix did not break anything else. Neither is
+  sufficient alone.
+
+Two findings worth keeping:
+
+- The opacity-bucket defect **can no longer be reproduced by reverting its fix**
+  — floating point leaves `frac` at 0.9999999999999999, one ulp below the
+  boundary. It is currently masked by an accident, not only by the fix, so a
+  refactor that makes the arithmetic exact would reintroduce it silently. The
+  mutation restores both halves.
+- Hero legibility is **not** carried by the scrim (removing it moved contrast by
+  0.06) or by the copy panel's own fill (0.31). It is carried by the mask that
+  deletes the bust from the copy column. That is the load-bearing protection,
+  and now the guarded one.
+
+```
+node guards.js            all 17, mutation-verified   (~12 min; re-renders the bust)
+node guards.js --fast     skip the three shader guards (~3 min)
+node guards.js --list     print the ledger, run nothing
+```
+
 ## What the backtest guarantees
 
-`node backtest.js` — **324 assertions**, all against the shipped files in a real
+`node backtest.js` — **332 assertions**, all against the shipped files in a real
 browser from a `file://` URL.
 
 Per page, all six:
@@ -282,8 +378,9 @@ Across pages:
 - Every canonical appears in the sitemap and points at its own URL.
 - No orphans: every page is linked from at least two others (measured: five).
 
-Plus the behavior: assembly maps monotonically to scroll depth with all five
-failure modes firing in order; five charts paint; the ROI calculator responds to
+Plus the behavior: the turntable goes live, spans every baked view, turns with
+the pointer, and is absent under reduced motion and below 1024px; assembly maps
+monotonically to scroll depth with all five failure modes firing in order; five charts paint; the ROI calculator responds to
 both selectors; the quote form blocks empty and invalid submits with per-field
 `aria-invalid` and composes a `mailto` carrying the entered data; the mobile
 disclosure menu reaches all six destinations, flips `aria-expanded` and returns

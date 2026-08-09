@@ -97,6 +97,56 @@
       linear-gradient(to bottom, rgba(5,7,10,.50) 0%, transparent 20%, transparent 76%, #05070a 100%);
   }
 
+  /* The interactive layer sits directly over .hero-bust and must land the
+     subject on identical pixels — the mask and the geometry constants in
+     app.js (SCALE / RIGHT / BOTTOM) are the same numbers as the background-size
+     and background-position above. It starts transparent and fades in only
+     once the atlas has decoded, so a slow decode is invisible rather than a
+     flash of empty canvas. */
+  /* ── THE INTERACTIVE LAYER ────────────────────────────────────────────────
+     Two image strips, moved by transform. Not a canvas — and that is the whole
+     design, arrived at by measurement rather than preference.
+
+     A canvas sits in the compositing path and is re-rastered as the page
+     scrolls above it even when its pixels never change. The first version of
+     this layer was a canvas blitting one cell of the turntable per frame, and
+     it measured 88ms per scroll frame at 2x DPR against 17ms without it — the
+     identical failure that cost this project three rounds of optimisation on
+     the backdrop before that was moved out of a canvas too. Gating the canvas
+     off during scroll was tried and is the wrong shape: it defends against a
+     cost instead of not incurring it.
+
+     An image layer is a cached texture. The compositor moves it; it never
+     re-rasters it. Each strip is the atlas laid out N cells wide, so selecting
+     a view is a translateX of a multiple of the cell width — a compositor
+     transform, no repaint at all — and cross-fading two of them is an opacity
+     change, also compositor-only. The interaction therefore costs the main
+     thread two style writes per pointer move and costs scrolling nothing. */
+  .hero-reel {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none; overflow: hidden;
+    opacity: 0; transition: opacity .55s ease;
+    contain: paint;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, transparent 54%, rgba(0,0,0,.45) 64%, #000 78%);
+            mask-image: linear-gradient(to right, transparent 0%, transparent 54%, rgba(0,0,0,.45) 64%, #000 78%);
+  }
+  .hero-reel.live { opacity: 1; }
+  /* The still hands over once the strips can draw. It stays in the document as
+     the no-JS, reduced-motion and narrow-viewport backdrop. */
+  .reel-live .hero-bust { opacity: 0; transition: opacity .55s ease; }
+
+  .hero-reel { transition: opacity .55s ease, transform .35s cubic-bezier(.22,1,.36,1); }
+  .hero-reel > i {
+    position: absolute; top: 0; left: 0; display: block;
+    background-image: var(--reel);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;      /* the strip is sized to N cells in JS */
+    transform-origin: 0 0;
+    will-change: transform, opacity;
+  }
+  @media (max-width: 1023px) { .hero-reel { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .hero-reel { display: none; } }
+
   /* Interior pages get the same subject far smaller and dimmer — visual
      continuity with the home page without competing with dense copy. */
   .page-bust {

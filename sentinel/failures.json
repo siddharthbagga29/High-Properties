@@ -1,0 +1,231 @@
+{
+  "$comment": [
+    "The failure ledger. Every defect that reached a built artifact during this",
+    "project, what actually caused it, and — the part that matters — why the",
+    "tests in place at the time did not catch it.",
+    "",
+    "The last field on each entry is the important one. A bug that was caught is",
+    "just work. A bug that shipped past a green test suite is a hole in the suite,",
+    "and the fix is the guard, not the patch. guards.js turns every entry with a",
+    "'guard' into an executable check and then proves that check is not vacuous by",
+    "reintroducing the defect and requiring the check to fail.",
+    "",
+    "class is the reusable lesson. Fixing one instance of a class without",
+    "addressing the class is how the same bug comes back wearing a different hat."
+  ],
+  "classes": {
+    "silent-noop-edit": "A programmatic edit whose anchor did not match, so it changed nothing and reported nothing. The build stayed green because the old code was still valid.",
+    "vacuous-assertion": "A test that could not fail. It matched a substring inside an unrelated payload, or measured the thing it was supposed to be measuring against.",
+    "partial-render-illusion": "Output existed, so an existence check passed, while the thing the output was for was absent.",
+    "space-mismatch": "Two coordinate or unit systems met without a conversion — y-up against y-down, CSS pixels against device pixels, intrinsic size against layout size.",
+    "measuring-the-wrong-thing": "The number was real and correctly computed, and it was not the number that mattered.",
+    "harness-race": "The test observed the page before the page had finished responding.",
+    "optimisation-regression": "A change made to improve a metric made it worse, or improved it while damaging something not being measured.",
+    "refactor-link-rot": "A structural change left a reference pointing at something that no longer exists there.",
+    "misnamed-term": "A quantity was given the name of the thing it was supposed to be, and then trusted to behave like it."
+  },
+  "incidents": [
+    {
+      "id": "rim-light-was-diffuse",
+      "class": "misnamed-term",
+      "area": "shader",
+      "symptom": "Broad teal wash across whole faces of the bust instead of a thin edge highlight.",
+      "rootCause": "The rim term was pow(dot(n, lightDir), k) — a Phong diffuse lobe. A diffuse lobe is brightest where the surface faces the light; a rim light is brightest where the surface turns away from the CAMERA. Naming it 'rim' did not make it one.",
+      "fix": "fresnel term (1 - dot(n, v))^13 to confine it to the silhouette, multiplied by smoothstep on dot(n, rimDir) to confine it to the side the light is actually on, multiplied by a shadow trace from the rim direction.",
+      "whyItEvaded": "There was no test. It was caught by looking at the render, which is the only thing that can catch it — hence the guard below is a pixel measurement, not a source check.",
+      "guard": "rim-is-an-edge"
+    },
+    {
+      "id": "var-shadow-nan",
+      "class": "partial-render-illusion",
+      "area": "core canvas",
+      "symptom": "The scroll-formed robot vanished. The canvas still had pixels.",
+      "rootCause": "Batching the edge strokes introduced a local named t. var is function-scoped, so it shadowed the animation clock t inside render(). Every frame began undefined + 0.006 = NaN, which propagated into every node's x.",
+      "fix": "Renamed the local to frac.",
+      "whyItEvaded": "The test asserted the canvas had non-transparent pixels. The chest bloom is drawn from a fixed centre and does not depend on node positions, so it kept painting and the assertion kept passing while the figure was gone.",
+      "guard": "figure-has-limbs"
+    },
+    {
+      "id": "opacity-bucket-drops-arrived-edges",
+      "class": "vacuous-assertion",
+      "area": "core canvas",
+      "symptom": "Fully assembled edges disappeared at 100% scroll depth.",
+      "rootCause": "Edges were bucketed by opacity with frac >= hi. When both frac and hi are exactly 1 the edge matched no bucket and was never drawn.",
+      "fix": "(frac >= hi && hi < 1) so the final bucket is half-open at the top.",
+      "whyItEvaded": "Every test sampled the animation at depths below 100%.",
+      "guard": "figure-complete-at-full-depth",
+      "note": "Reverting the fix alone no longer reproduces this. frac is (av - 0.55) / 0.45; with av exactly 1 that evaluates to 0.9999999999999999, so the closed-interval test misses by one ulp and the bones survive. The defect is currently masked by a floating-point accident rather than only by the fix, which means a refactor that makes the arithmetic exact would reintroduce it silently. guards.js mutates both halves, so the guard is still proven against the real failure rather than against an accident."
+    },
+    {
+      "id": "empty-string-replace-destroyed-app",
+      "class": "silent-noop-edit",
+      "area": "tooling",
+      "symptom": "app.js was corrupted beyond recovery in a single command.",
+      "rootCause": "A slice expression returned the empty string, and Python's str.replace('', x) inserts x between every character of the subject.",
+      "fix": "Restored from git. Every programmatic edit now goes through a helper that asserts the anchor occurs exactly once before substituting, so a mismatched or empty anchor aborts instead of doing something creative.",
+      "whyItEvaded": "Nothing verified that an edit had actually made the change it claimed. This is the single most productive guard in the project — it has aborted several edits since.",
+      "guard": "build-fails-on-missing-marker"
+    },
+    {
+      "id": "figure-upside-down",
+      "class": "space-mismatch",
+      "area": "core canvas",
+      "symptom": "The robot rendered inverted; the foot marker appeared above the head.",
+      "rootCause": "Geometry was authored y-up. Canvas y grows downward. No flip.",
+      "fix": "One flip at draw time: nd.y = cy - (...).",
+      "whyItEvaded": "Ink-coverage tests are orientation-blind. An upside-down figure has exactly as many painted pixels as a right-way-up one.",
+      "guard": "figure-has-limbs"
+    },
+    {
+      "id": "canvas-intrinsic-size-overflow",
+      "class": "space-mismatch",
+      "area": "layout",
+      "symptom": "Horizontal overflow at 390px; the document laid out 1560px wide.",
+      "rootCause": "A canvas' width attribute sizes the backing store, but with no CSS constraint it also drives layout. width=\"2300\" laid out at 2300 CSS pixels.",
+      "fix": "canvas { max-width: 100% } plus explicit sizing classes.",
+      "whyItEvaded": "Desktop-only testing. 2300px fits in a 1440px viewport with a scrollbar and looks unremarkable.",
+      "guard": "no-mobile-overflow"
+    },
+    {
+      "id": "canvas-replaced-element-sizing",
+      "class": "space-mismatch",
+      "area": "layout",
+      "symptom": "The interactive hero layer painted a 300x150 postage stamp in the corner instead of filling the hero.",
+      "rootCause": "position:absolute with inset:0 stretches a div, but a canvas is a REPLACED element: with width:auto its used width is the intrinsic 300x150 and the over-constrained inset is dropped. The sibling .hero-bust div stretched correctly, which is why the CSS looked right.",
+      "fix": "Explicit width:100%; height:100% alongside the inset.",
+      "whyItEvaded": "The layer was new, and the diagnostic flag it sets reported success — the module had run, decoded its atlas and painted. It painted into a canvas the size of a business card.",
+      "guard": "reel-canvas-fills-hero",
+      "note": "The canvas is gone — the layer became an image strip moved by transform, because a canvas in the compositing path re-rasters on every scroll frame and measured 88ms per frame at 2x DPR against 17ms without it. The exact code path that produced this defect therefore no longer exists. The guard was re-aimed at the surviving family rather than deleted: a layer that is present, reports success, and is the wrong size. Its mutation now shrinks the strip to a single cell."
+    },
+    {
+      "id": "chartjs-substring-false-positive",
+      "class": "vacuous-assertion",
+      "area": "test harness",
+      "symptom": "A check that non-chart pages omit Chart.js failed on all four of them, while the file sizes proved the library was absent.",
+      "rootCause": "The check searched for the substring 'chartjs-src'. app.js contains document.getElementById('chartjs-src') and app.js is inlined on every page.",
+      "fix": "Match the actual element — /<script type=\"text\\/plain\" id=\"chartjs-src\">/ — and corroborate with a byte-size bound.",
+      "whyItEvaded": "It did not evade; it fired spuriously. The same root cause runs the other way: an earlier build counted '<script' occurrences to check tag balance, and Chart.js contains that substring inside string literals. Substring searches over a document that embeds arbitrary payloads are unsound in both directions.",
+      "guard": "chart-library-is-page-scoped"
+    },
+    {
+      "id": "contrast-probe-measured-the-text",
+      "class": "measuring-the-wrong-thing",
+      "area": "test harness",
+      "symptom": "Hero body copy reported 2.26:1 against a background of rgb(242,246,248).",
+      "rootCause": "The probe screenshotted the hero and took the brightest pixel inside the copy panel as the background. The brightest pixel inside a copy panel is the white heading. It was measuring the text against the text.",
+      "fix": "Hide the panel's children, wait for the hide to take effect, screenshot, then sample. The guard additionally asserts that no sampled pixel matches the body-copy colour, so the probe cannot silently regress to measuring type again.",
+      "whyItEvaded": "The number was plausible enough to look like a real contrast failure rather than a broken instrument, which is the dangerous kind of wrong.",
+      "guard": "hero-contrast-samples-background"
+    },
+    {
+      "id": "transition-outlasted-the-wait",
+      "class": "harness-race",
+      "area": "test harness",
+      "symptom": "After hiding the hero copy, one paragraph was still in the screenshot.",
+      "rootCause": "The .plain class carries transition-all duration-300. visibility is a transitioned discrete property, so it changes at the end of the transition, not the start. The harness waited 200ms.",
+      "fix": "Poll for the computed state instead of sleeping a guessed interval.",
+      "whyItEvaded": "The other five children had no transition and hid instantly, so the screenshot looked almost right.",
+      "guard": "hero-contrast-samples-background"
+    },
+    {
+      "id": "reveal-check-counted-offscreen-nodes",
+      "class": "measuring-the-wrong-thing",
+      "area": "test harness",
+      "symptom": "A page failed 'nothing invisible after reveal settles' for an element six pixels into the viewport.",
+      "rootCause": "The reveal observer deliberately uses a -6% bottom rootMargin so a card grazing the bottom edge does not fire early. The assertion treated any element with top < innerHeight as required-visible, so it was asserting against the harness's own cutoff.",
+      "fix": "Two distinct assertions: nothing meaningfully in the first viewport is hidden on load, and nothing anywhere is still hidden after scrolling the whole document. The second is the one that would catch real permanently-lost content.",
+      "whyItEvaded": "It was a new assertion written against an intuition rather than against the observer's actual configuration.",
+      "guard": "reveal-survives-without-observer"
+    },
+    {
+      "id": "lenis-halved-the-frame-rate",
+      "class": "optimisation-regression",
+      "area": "scrolling",
+      "symptom": "Scrolling felt worse after a smooth-scroll library was added to make it feel better.",
+      "rootCause": "Native scrolling is driven by the compositor thread and survives a busy main thread. Any JS scroll library moves scrolling onto the main thread, where it competes with canvas work. Measured inside the pinned section: Lenis on 30fps, Lenis off 60fps.",
+      "fix": "Removed. Anchor easing is native scroll-behavior.",
+      "whyItEvaded": "Nothing measured frame pacing. It was added because it is what one adds.",
+      "guard": "no-scroll-library"
+    },
+    {
+      "id": "fps-cap-chasing-a-headless-number",
+      "class": "optimisation-regression",
+      "area": "scrolling",
+      "symptom": "Choppy scrolling on the reader's machine after a change that improved total blocking time in the test harness.",
+      "rootCause": "Scroll-linked motion was capped to 30fps to reduce a TBT figure that had already been attributed, by CDP, to software rasterization in headless Chromium rather than to page JavaScript (ScriptDuration 66ms against raster 1,710ms over 3.5s).",
+      "fix": "Cap removed; scroll-linked motion runs at native refresh rate.",
+      "whyItEvaded": "The metric improved. It was the wrong metric, measured on hardware nobody uses.",
+      "guard": "scroll-motion-uncapped"
+    },
+    {
+      "id": "canvas-backdrop-rerasters-on-scroll",
+      "class": "optimisation-regression",
+      "area": "scrolling",
+      "symptom": "30fps scrolling with a backdrop whose pixels never changed.",
+      "rootCause": "A canvas element sits in the compositing path and is re-rastered as the page scrolls above it even when its contents are static. Making the shader cheaper and capping its frame rate did nothing, because the cost was not the shader.",
+      "fix": "The backdrop is not a canvas. It is rendered at build time and shipped as an image layer, which the compositor caches. 30fps to 60fps.",
+      "whyItEvaded": "Two rounds of optimisation targeted the shader because the shader was the expensive-looking thing. The isolating measurement — static canvas still in the DOM, still 30fps — is what ended the guessing.",
+      "guard": "no-fullscreen-canvas-backdrop"
+    },
+    {
+      "id": "tier-cta-anchor-rot",
+      "class": "refactor-link-rot",
+      "area": "content",
+      "symptom": "Four dead #contact anchors on the coverage page.",
+      "rootCause": "Splitting one page into six moved the contact form to its own document. The pricing tier CTAs were still emitting an in-page anchor.",
+      "fix": "./contact.html, and a build-time check that resolves every internal href against the files the build actually wrote.",
+      "whyItEvaded": "On a single page the anchor was correct, and the split did not touch the line that emitted it.",
+      "guard": "no-dead-anchors"
+    },
+    {
+      "id": "image-frame-read-as-a-rectangle",
+      "class": "measuring-the-wrong-thing",
+      "area": "shader",
+      "symptom": "A faint straight-edged panel behind the hero that no amount of CSS masking removed.",
+      "rootCause": "A JPEG has no alpha, so the empty studio around the subject is painted onto the page as an opaque block a few levels above the page background. Two rounds were spent adjusting masks, which fade the subject and the block together and can never make the block match.",
+      "fix": "The render resolves its own frame edges to the exact page background colour, per-axis, as the last operation applied to the image.",
+      "whyItEvaded": "The seam was attributed to the mask because the mask was the thing that had just been edited.",
+      "guard": "hero-image-has-no-frame-seam"
+    },
+    {
+      "id": "edge-blend-ran-before-bloom",
+      "class": "measuring-the-wrong-thing",
+      "area": "shader",
+      "symptom": "After matching the frame edges to the page colour, a bright halo ring appeared just inside the border.",
+      "rootCause": "The blend was applied in the fragment shader, so the bloom pass ran after it and bled bright interior pixels back out across the band that had just been matched.",
+      "fix": "The blend moved to bake.js, after bloom. It must be the last operation that touches the image.",
+      "whyItEvaded": "The fix was verified by reading the code rather than by looking at the output.",
+      "guard": "hero-image-has-no-frame-seam"
+    },
+    {
+      "id": "yaw-arc-too-narrow-to-see",
+      "class": "vacuous-assertion",
+      "area": "hero reel",
+      "symptom": "The interactive turntable worked, and two frames from opposite ends of its arc were nearly indistinguishable.",
+      "rootCause": "A +/-13 degree arc on a dark, soft, three-quarter-lit subject is below the threshold at which a viewer registers rotation. The feature existed in the code and did not exist for a reader.",
+      "fix": "Arc widened to +/-23 degrees, cell count raised with it so each cross-fade stays a rotation rather than a ghost, and a few pixels of pointer parallax added because translation is what makes the brain call it depth.",
+      "whyItEvaded": "The obvious assertion — 'the canvas repaints when the pointer moves' — passes on an invisible change. The guard now requires the two extreme frames to differ by a measured amount.",
+      "guard": "reel-turn-is-visible"
+    },
+    {
+      "id": "diagnostics-block-triplicated",
+      "class": "silent-noop-edit",
+      "area": "tooling",
+      "symptom": "The diagnostics IIFE appeared three times and the file no longer parsed as intended.",
+      "rootCause": "A replacement matched three sites instead of one.",
+      "fix": "Edits assert an exact occurrence count, not merely presence.",
+      "whyItEvaded": "Nothing checked how many times a substitution had applied.",
+      "guard": "single-diagnostics-surface"
+    },
+    {
+      "id": "probe-leaked-into-its-own-measurement",
+      "class": "vacuous-assertion",
+      "area": "test harness",
+      "symptom": "The 'no internals on window' check failed because of the harness.",
+      "rootCause": "The contrast probe installs window.__contrast, and the globals check looks for names beginning with __.",
+      "fix": "The check excludes the probe's own names explicitly, so it still fails on any other leak.",
+      "whyItEvaded": "The probe was added after the check and nobody re-read the check.",
+      "guard": "no-window-globals"
+    }
+  ]
+}

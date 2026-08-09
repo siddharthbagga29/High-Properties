@@ -20,8 +20,26 @@ const fs = require('fs');
 const path = require('path');
 const { SITE, NAV, PAGES, href } = require('./pages.js');
 
-const D = __dirname, MC = path.join(D, '..'), NM = path.join(D, '..', '..', 'node_modules');
-const OUT = process.env.OUT ? path.resolve(process.env.OUT) : D;
+const D = __dirname, MC = path.join(D, '..');
+/* node_modules is not vendored into this folder. Look for it beside the site,
+   at the repo root, and anywhere NODE_PATH points — so the build works whether
+   it is run from a checkout with dependencies installed at the top level or
+   from a scratch tree that only has the toolchain. */
+const NM = (function () {
+  const seen = [];
+  const roots = [D, path.join(D, '..'), path.join(D, '..', '..'), path.join(D, '..', '..', '..')]
+    .map(r => path.join(r, 'node_modules'))
+    .concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean));
+  for (const r of roots) { seen.push(r); if (fs.existsSync(path.join(r, '.bin', 'tailwindcss'))) return r; }
+  console.error('FATAL: could not find a node_modules with tailwindcss. Looked in:\n  ' + seen.join('\n  '));
+  process.exit(1);
+})();
+/* Output goes beside the sources by default, or one level up when the sources
+   live in a src/ folder — which is the shipped layout. Defaulting to __dirname
+   there once scattered six built pages into src/ next to the code that makes
+   them. OUT overrides both; guards.js uses it to build throwaway copies. */
+const OUT = process.env.OUT ? path.resolve(process.env.OUT)
+          : (path.basename(D) === 'src' ? path.join(D, '..') : D);
 
 const sha256 = s => "'sha256-" + crypto.createHash('sha256').update(s, 'utf8').digest('base64') + "'";
 // A literal </script> inside any inlined payload would close the tag early.
@@ -56,16 +74,27 @@ fs.unlinkSync(cssOut);
 const chartjs = safe(fs.readFileSync(path.join(NM, 'chart.js/dist/chart.umd.min.js'), 'utf8'));
 const app     = safe(fs.readFileSync(path.join(D, 'app.js'), 'utf8'));
 const bust    = fs.readFileSync(path.join(D, 'bust.datauri'), 'utf8').trim();
+const reelSrc = fs.readFileSync(path.join(D, 'reel.datauri'), 'utf8').trim();
+const reelMeta = JSON.parse(fs.readFileSync(path.join(D, 'reel.json'), 'utf8'));
 const DATA = {
   'd-ev': safe(fs.readFileSync(path.join(MC, 'evidence.json'), 'utf8')),
   'd-pr': safe(fs.readFileSync(path.join(MC, 'pricing.json'), 'utf8')),
+  // Geometry only. The pixels travel in reelCss; see the note there.
+  'd-reel': safe(JSON.stringify(reelMeta)),
 };
 if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(bust)) fail('bust.datauri is not a JPEG data URI');
 
-// The bust lives in its own tiny stylesheet so the 51 KB payload rides only on
-// the pages that actually paint it, while the Tailwind bundle stays identical
-// (and identically hashed) across all six.
+/* The renders live in their own small stylesheet so their payload rides only on
+   the pages that actually paint them, while the Tailwind bundle stays identical
+   (and identically hashed) across all six.
+
+   The turntable atlas is a CSS custom property rather than a JSON island. It
+   started as an island, read by JS and blitted into a canvas; once the canvas
+   became image layers the CSS needs the URL itself, and shipping it in both
+   places would have put 150 KB of base64 on the home page twice. app.js reads
+   it back off the custom property when it needs to preload. */
 const bustCss = `:root{--bust:url("${bust}")}`;
+const reelCss = `:root{--reel:url("${reelSrc}")}`;
 
 const bootstrap = "document.documentElement.classList.add('js-ready');";
 
@@ -79,6 +108,7 @@ function needs(page) {
     charts:   /<canvas id="chart/.test(b),
     'd-pr':   /id="(tiers|matrixTable|compTable|vertTable|roiVert|quoteForm|fSector)"/.test(b),
     'd-ev':   /id="(dossier|ledger|srcList|cA)"/.test(b),
+    'd-reel': /id="hero-reel"/.test(b),
     bust:     true,                       // hero on the home page, accent elsewhere
   };
 }
@@ -259,7 +289,7 @@ for (const page of PAGES) {
   const url = SITE.origin + (page.slug === 'index' ? '/' : '/' + page.slug + '.html');
   const file = page.slug + '.html';
 
-  const styles = [css].concat(n.bust ? [bustCss] : []);
+  const styles = [css].concat(n.bust ? [bustCss] : []).concat(n['d-reel'] ? [reelCss] : []);
   const scripts = [bootstrap, app].concat(n.charts ? [chartjs] : []);
 
   const dataIslands = Object.keys(DATA).filter(k => n[k])
@@ -397,7 +427,7 @@ Sitemap: ${SITE.origin}/sitemap.xml
    must admit every page's hashes. Each page additionally carries its own
    tighter <meta> CSP, and the browser enforces the intersection of the two. */
 const allScript = new Set([sha256(bootstrap), sha256(app), sha256(chartjs)]);
-const allStyle = new Set([sha256(css), sha256(bustCss)]);
+const allStyle = new Set([sha256(css), sha256(bustCss), sha256(reelCss)]);
 const headerCsp = [
   "default-src 'none'",
   `script-src ${[...allScript].join(' ')}`,

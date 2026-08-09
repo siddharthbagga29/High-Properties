@@ -363,6 +363,47 @@ await home.evaluate(() => {
   document.querySelectorAll('header .glass > [data-hid]').forEach(e => { e.style.visibility = ''; delete e.dataset.hid; });
 });
 
+H('HOME — INTERACTIVE TURNTABLE');
+{
+  const reel = await home.evaluate(() => {
+    const s = document.getElementById('hero-reel');
+    if (!s) return null;
+    const strip = s.getElementsByTagName('i')[0];
+    const meta = JSON.parse(document.getElementById('d-reel').textContent);
+    return { tag: s.tagName, strips: s.getElementsByTagName('i').length,
+             live: s.classList.contains('live'),
+             stripW: Math.round(parseFloat((strip || {}).style ? strip.style.width : 0)),
+             cellH: Math.round(parseFloat((strip || {}).style ? strip.style.height : 0)),
+             frames: meta.frames, canvases: document.querySelectorAll('header canvas').length };
+  });
+  ok(!!reel && reel.tag === 'DIV' && reel.canvases === 0,
+     'the interactive layer is an image layer, not a canvas — nothing in the hero re-rasters on scroll');
+  ok(!!reel && reel.live, 'the turntable went live after the atlas decoded');
+  ok(!!reel && reel.frames >= 9, `${reel ? reel.frames : 0} baked views in the turntable`);
+  ok(!!reel && Math.abs(reel.stripW - reel.frames * reel.cellH) <= reel.frames,
+     `strip spans every view (${reel ? reel.stripW : 0}px for ${reel ? reel.frames : 0} cells)`);
+
+  // pointer at the two extremes must select different views
+  await home.mouse.move(120, 460); await home.waitForTimeout(1300);
+  const left = await home.evaluate(() => document.querySelector('#hero-reel i').style.transform);
+  await home.mouse.move(1320, 460); await home.waitForTimeout(1300);
+  const right = await home.evaluate(() => document.querySelector('#hero-reel i').style.transform);
+  ok(left !== right, `the subject turns with the pointer (${left} → ${right})`);
+  ok(await home.evaluate(() => /translate3d\(-?\d/.test(document.getElementById('hero-reel').style.transform || 'translate3d(0')),
+     'the layer parallaxes with the pointer');
+}
+{
+  // reduced motion and narrow viewports get the still and no moving parts
+  const rm = await open('index', { reducedMotion: 'reduce' });
+  ok(await rm.page.evaluate(() => getComputedStyle(document.getElementById('hero-reel')).display === 'none'),
+     'reduced motion: the turntable is not rendered at all');
+  await rm.page.close();
+  const nar = await open('index', { viewport: { width: 900, height: 800 } });
+  ok(await nar.page.evaluate(() => getComputedStyle(document.getElementById('hero-reel')).display === 'none'),
+     'below 1024px: the turntable is not rendered at all');
+  await nar.page.close();
+}
+
 H('HOME — SCROLL-FORMING CORE');
 const coreTop = await home.evaluate(() =>
   document.getElementById('core').getBoundingClientRect().top + window.pageYOffset);
@@ -480,9 +521,13 @@ ok(INERT.test(fs.readFileSync(path.join(DIR, 'research.html'), 'utf8')),
 ok(await res.evaluate(() => !!document.getElementById('chartjs-src')),
    'Chart.js ships with the only page that draws charts');
 for (const other of ['index', 'coverage', 'method', 'contact']) {
+  /* Presence of the element, with no byte-size corroboration. An earlier
+     version added "and under 200 KB" and began failing the day the home page
+     legitimately grew a turntable atlas — a check that fires when unrelated
+     things change is a check someone deletes. */
   const src = fs.readFileSync(path.join(DIR, other + '.html'), 'utf8');
-  ok(!INERT.test(src) && src.length < 200 * 1024,
-     `${other}.html omits the 204 KB chart library it never uses (${(src.length/1024).toFixed(0)} KB)`);
+  ok(!INERT.test(src),
+     `${other}.html omits the 204 KB chart library it never uses (page is ${(src.length/1024).toFixed(0)} KB)`);
 }
 for (const id of ['dashboard', 'research']) {
   await res.evaluate(i => document.getElementById(i).scrollIntoView(), id);

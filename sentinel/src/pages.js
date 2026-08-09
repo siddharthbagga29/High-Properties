@@ -104,6 +104,10 @@ const PAGES = [
   <!-- The bust is a build-time render, shipped as a baked image: no runtime
        WebGL, no GPU variance, no per-frame compositing cost. -->
   <div class="hero-bust" aria-hidden="true"></div>
+  <!-- Enhancement layer. The still above is the real backdrop; this strip
+       takes over once the turntable atlas has decoded and turns the bust to
+       follow the pointer. Everything still works if it never appears. -->
+  <div id="hero-reel" class="hero-reel" aria-hidden="true"><i></i></div>
   <div class="hero-veil" aria-hidden="true"></div>
   <div class="max-w-content mx-auto w-full relative">
     <div class="glass glass-strong p-7 sm:p-11 max-w-2xl reveal">

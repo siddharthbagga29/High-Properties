@@ -12,7 +12,8 @@
    A throw anywhere below must be visible, must not cascade, and must never
    leave a section silently blank. Errors are counted on the diagnostics
    object so an uptime check can read them without a console. */
-var DIAG = { errors: [], core: false, charts: 0, chartLib: false, nativeScroll: true, bakedBackdrop: true };
+var DIAG = { errors: [], core: false, charts: 0, chartLib: false, nativeScroll: true,
+             bakedBackdrop: true, heroReel: false };
 
 function note(kind, msg) {
   if (DIAG.errors.length < 25) DIAG.errors.push(kind + ': ' + String(msg).slice(0, 200));
@@ -252,17 +253,181 @@ document.querySelectorAll('a[href^="#"]').forEach(function (a) {
   });
 });
 
-/* ── 4. BACKDROP ─────────────────────────────────────────────────────────
-   Deliberately absent from this file.
+/* ── 4. HERO REEL — the interactive backdrop ──────────────────────────────
+   The hero bust turns to follow the pointer.
 
-   The hero backdrop is a raymarched robot bust, but it is rendered at BUILD
-   time (see bake.js) and shipped as a baked image in the stylesheet. That
-   removes the entire runtime WebGL layer: no context creation, no shader
-   compile, no context-loss handling, no GPU variance between machines, and no
-   per-frame compositing cost. Measured earlier: a <canvas> in the compositing
-   path is re-rastered as the page scrolls above it even when its pixels never
-   change, which alone held scrolling to 30fps at Retina.
+   How, and why this way:
+
+   The bust is a raymarched signed-distance field costing ~130 sphere-tracing
+   steps per pixel with soft shadows and five-tap ambient occlusion. Rendering
+   that live, sixty times a second, is affordable on a discrete GPU and is not
+   affordable on the integrated graphics most visitors actually have — and a
+   hero that stutters on the machines people own is worse than a hero that does
+   not move. So the shader runs at BUILD time across a small yaw arc, and the
+   result ships as one horizontal strip of nine views (see bake.js).
+
+   At runtime this module does exactly one thing per frame: blit one cell of
+   that strip into a canvas, cross-fading the two cells either side of the
+   requested angle so the motion is continuous rather than stepped. The cost of
+   a texture blit does not depend on how complicated the shader was, so the
+   model can keep getting more detailed without the interaction getting slower.
+
+   Everything here is an ENHANCEMENT over the still that the stylesheet already
+   paints. If the atlas is missing, fails to decode, the viewport is narrow, the
+   reader prefers reduced motion, or the canvas cannot get a 2D context, this
+   module returns and the page is exactly what it was. Nothing depends on it.
+
+   Five gates keep it from ever costing anything it should not:
+     · during scroll    — see the scroll gate below. This one is not an
+                          optimisation, it is the condition on which the layer
+                          is allowed to exist at all
+     · out of view      — an IntersectionObserver stops the loop entirely once
+                          the hero scrolls away, and the canvas stops being
+                          composited at all
+     · tab hidden       — visibilitychange stops it
+     · narrow viewport  — below 1024px the copy spans the full width and the
+                          bust is texture, not a subject, so there is nothing
+                          to interact with; mobile keeps the still and the
+                          battery
+     · at rest          — the idle drift is frame-gated to 20fps, which is
+                          imperceptible for a 14-second sine and a fifth of the
+                          work of running it at refresh rate
    ──────────────────────────────────────────────────────────────────────── */
+guard('hero-reel', function () {
+  var stage = document.getElementById('hero-reel');
+  if (!stage || RM) return;
+  if (!window.matchMedia || !window.matchMedia('(min-width: 1024px)').matches) return;
+
+  var meta = island('d-reel');
+  if (!meta || !meta.frames) return;
+  /* The atlas itself is a CSS custom property, not part of this island — the
+     strips are painted by the stylesheet, so shipping the base64 here as well
+     would put 150 KB on the page twice. Read it back to preload it. */
+  var reelProp = getComputedStyle(document.documentElement).getPropertyValue('--reel');
+  var reelUrl = (reelProp.match(/url\(\s*["']?([^"')]+)/) || [])[1];
+  if (!reelUrl) return;
+
+  var strips = stage.getElementsByTagName('i');
+  if (!strips.length) return;
+  var A = strips[0];
+
+  var N = meta.frames;
+  /* These three numbers must match .hero-bust in the stylesheet exactly. They
+     are the one genuine coupling in this module: the strips have to land the
+     subject on the same pixels as the still they fade over, or the cross-fade
+     shows as a jump. backtest.js screenshots both states, so a change made to
+     one side and not the other fails the build. */
+  var SCALE = 0.88, RIGHT = -0.01, BOTTOM = -0.02;
+  var PARALLAX_X = 16, PARALLAX_Y = 9;      // px of travel at the extremes
+
+  var cell = 0, ready = false;
+
+  function size() {
+    var r = stage.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    var h = SCALE * r.height;
+    cell = h;                                // cells are square
+    var left = (r.width - h) * (1 - RIGHT), top = (r.height - h) * (1 - BOTTOM);
+    A.style.width = (N * h) + 'px';
+    A.style.height = h + 'px';
+    A.style.left = left + 'px';
+    A.style.top = top + 'px';
+    return true;
+  }
+
+  /* Selecting a view is a translate by whole cell widths — a compositor
+     transform, so a pointer move costs one style write and no paint at all.
+
+     The view SNAPS to the nearest cell; there is no cross-fade. Blending two
+     adjacent views was tried first and it does not work at this cell count:
+     4.6 degrees apart, two superimposed heads at comparable alpha read as two
+     heads, not as one head between two angles. Narrowing the blend band to the
+     middle third helped and did not fix it. The alternatives were to triple the
+     cell count, which triples a 154 KB payload for a decorative layer, or to
+     shrink the cells, which blurs the only sharp thing in the hero.
+
+     Snapping costs nothing and looks deliberate: eleven discrete poses stepped
+     through with an eased target is a servo moving, which is what the subject
+     is. Continuity comes from the easing and the parallax, not from the pixels. */
+  function show(t) {
+    if (!ready || !cell) return;
+    var i = Math.max(0, Math.min(N - 1, Math.round(t)));
+    A.style.transform = 'translate3d(' + (-i * cell).toFixed(2) + 'px,0,0)';
+  }
+
+  var mid = (N - 1) / 2;
+  var cur = mid, target = mid, lastPointer = -1e9, visible = false;
+  var gate20 = frameGate(20);
+
+  function idleTarget(now) {
+    // slow, shallow, never centred for long — a machine idling, not a toy
+    return mid + Math.sin(now / 7000 * Math.PI * 2) * (N - 1) * 0.17;
+  }
+
+  function tick(now) {
+    if (!visible || document.hidden) return false;
+    var chasing = (now - lastPointer) < 2500;
+    if (!chasing) {
+      target = idleTarget(now);
+      if (!gate20(now)) return true;        // at rest, 20fps is plenty
+    }
+    /* Lagged ease. Snapping to the pointer reads as a jump cut; trailing it by
+       a few frames is what gives the movement mass. */
+    var k = chasing ? 0.16 : 0.05;
+    var next = cur + (target - cur) * k;
+    /* Only repaint when the SNAPPED view actually changes. Without this the
+       transform is rewritten every frame to the same value while the eased
+       target creeps across a cell, which is pure main-thread work for no
+       visible difference. */
+    var before = Math.round(cur);
+    cur = next;
+    if (Math.round(cur) !== before) show(cur);
+    return true;
+  }
+
+  /* Decode after first paint. This is 150 KB of base64 and it is not urgent.
+     Nothing is shown until it has decoded, so a slow decode is invisible rather
+     than a flash of empty layers. */
+  afterBoot(function () {
+    var img = new Image();
+    img.decoding = 'async';
+    img.onerror = function () { note('hero-reel', 'atlas failed to decode'); };
+    img.onload = function () {
+      ready = true;
+      DIAG.heroReel = true;
+      if (!size()) return;
+      show(cur);
+      /* Hand over from the still. Both layers show the same subject in the
+         same place, so leaving the still underneath at full strength put a
+         third, non-turning copy of the head behind the two that do turn. */
+      stage.classList.add('live');
+      var hero = stage.closest('header');
+      if (hero) hero.classList.add('reel-live');
+      observeVisible(stage, function (on) {
+        visible = on;
+        if (on) Ticker.add(tick);
+      }, '120px');
+      window.addEventListener('pointermove', function (e) {
+        if (!visible) return;
+        var x = e.clientX / Math.max(1, window.innerWidth);
+        var y = e.clientY / Math.max(1, window.innerHeight);
+        target = (1 - x) * (N - 1);         // pointer left → subject turns to face it
+        /* Parallax on top of the turn. Rotation alone at this scale is a subtle
+           read on a dark subject; a few pixels of counter-travel is what makes
+           the brain call it depth. Also a transform, also free. */
+        stage.style.transform = 'translate3d(' + ((0.5 - x) * PARALLAX_X).toFixed(2) + 'px,' +
+                                ((0.5 - y) * PARALLAX_Y).toFixed(2) + 'px,0)';
+        lastPointer = performance.now();
+        Ticker.add(tick);
+      }, { passive: true });
+      window.addEventListener('resize', function () { if (size()) show(cur); });
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden && visible) Ticker.add(tick);
+      });
+    };
+    img.src = reelUrl;
+  });
+});
 
 /* ── 5. NEURAL CORE ASSEMBLY (scroll-pinned) ─────────────────────────────────
    Particles start scattered and converge into a structured core as the user
@@ -1217,7 +1382,7 @@ Object.defineProperty(window, 'sentinelDiagnostics', {
     get errors() { return DIAG.errors.slice(); },
     get layers() { return { core: DIAG.core, chartLib: DIAG.chartLib,
                             charts: DIAG.charts, nativeScroll: DIAG.nativeScroll,
-                            bakedBackdrop: DIAG.bakedBackdrop }; }
+                            bakedBackdrop: DIAG.bakedBackdrop, heroReel: DIAG.heroReel }; }
   }),
   writable: false, configurable: false, enumerable: false
 });

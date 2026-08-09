@@ -1,6 +1,7 @@
 precision highp float;
 uniform vec2 uRes;
 uniform vec2 uFrame;   // x = focal length, y = vertical recentre
+uniform float uYaw;    // turntable angle, radians
 
 // ── SDF primitives ────────────────────────────────────────────────────────
 float sdSph(vec3 p, float r){ return length(p)-r; }
@@ -14,6 +15,19 @@ float smax(float a,float b,float k){ return -smin(-a,-b,k); }
 vec2 opU(vec2 a, vec2 b){ return a.x<b.x?a:b; }
 
 // ── the robot bust ────────────────────────────────────────────────────────
+/* Materials
+     1  outer shell — dark anodised plate, the visible bodywork
+     2  emissive    — visor slits, chest core
+     3  under-frame — machined metal seen in housings, collars, joints, bolts
+     4  soft parts  — neck cabling, rougher and much darker
+
+   Detail is added by SUBTRACTION and by small separate solids. An earlier
+   revision hung the whole shell on a full under-frame body; in several places
+   the frame was larger than the plate covering it and burst through the
+   silhouette, turning a helmet into a bulging egg. The rule that came out of
+   that: nothing in material 3 may be bigger than the shell it sits inside, and
+   every id-3 piece below is a ring, a housing, a joint block or a bolt — a
+   shape whose whole job is to be small. */
 vec2 map(vec3 p){
   vec3 q = p;
 
@@ -50,35 +64,60 @@ vec2 map(vec3 p){
   // seam down the crown
   head = smax(head, -sdBox(hp-vec3(0.,0.30,0.05), vec3(0.016,0.14,0.34), 0.004), 0.01);
 
+  // Socket the visor into the shell. Emissive geometry flush with a surface
+  // reads as a printed decal; the same geometry inside a recess reads as a lamp.
+  head = smax(head, -sdBox(vp - vec3(0.,0.,-0.005), vec3(0.218,0.040,0.070), 0.009), 0.006);
+  // chin bevel — stops the jaw reading as a brick
+  head = smax(head, -sdBox(hp-vec3(0.,-0.475,0.40), vec3(0.30,0.09,0.10), 0.008), 0.020);
+
   vec2 res = vec2(head, 1.0);
   res = opU(res, vec2(visor, 2.0));                   // emissive visor
+  // temple modules — small, tight to the skull, machined not painted
+  res = opU(res, vec2(sdBox(vec3(abs(hp.x)-0.252, hp.y+0.005, hp.z-0.045),
+                            vec3(0.020,0.068,0.092), 0.018), 3.0));
 
   // NECK — column with two collars
-  float neck = sdCyl(q-vec3(0.,0.87,0.02), 0.17, 0.135);
-  neck = smin(neck, sdCyl(q-vec3(0.,0.79,0.02), 0.02, 0.175), 0.03);
-  neck = smin(neck, sdCyl(q-vec3(0.,0.98,0.02), 0.02, 0.16), 0.03);
-  res = opU(res, vec2(neck, 3.0));
+  res = opU(res, vec2(sdCyl(q-vec3(0.,0.87,0.02), 0.17, 0.132), 4.0));
+  for(float c=-1.; c<=1.; c+=1.)
+    res = opU(res, vec2(sdCap(q, vec3(c*0.072,0.76,-0.092), vec3(c*0.054,1.00,-0.076), 0.019), 4.0));
+  res = opU(res, vec2(sdCyl(q-vec3(0.,0.79,0.02), 0.024, 0.176), 3.0));
+  res = opU(res, vec2(sdCyl(q-vec3(0.,0.98,0.02), 0.021, 0.161), 3.0));
 
   // SHOULDERS + CHEST — the bust base
   vec3 tp = q - vec3(0.,0.30,0.);
   float torso = sdBox(tp*vec3(1.,1.,1.25), vec3(0.42,0.42,0.30), 0.085)/1.0;
   // clavicle scoop
   torso = smax(torso, -sdSph(q-vec3(0.,0.86,0.30), 0.30), 0.09);
+  // upper and lower chest plates, parted by a real gap rather than a scribed line
+  torso = smax(torso, -sdBox(q-vec3(0.,0.225,0.30), vec3(0.46,0.012,0.24), 0.004), 0.009);
+  // side intake slots
+  for(int i=0;i<4;i++){
+    float fi = float(i);
+    torso = smax(torso, -sdBox(vec3(abs(q.x)-0.418, q.y-0.30+fi*0.056, q.z-0.10),
+                               vec3(0.026,0.012,0.16), 0.005), 0.007);
+  }
   res = opU(res, vec2(torso, 1.0));
 
   // shoulder pauldrons — angular plates, not spheres
   for(float s=-1.; s<=1.; s+=2.){
     vec3 sp = q - vec3(s*0.52, 0.60, 0.);
     sp.xy = mat2(0.94, -0.34*s, 0.34*s, 0.94)*sp.xy;      // cant outward
+    // joint block, deliberately smaller than the pauldron that caps it
+    res = opU(res, vec2(sdBox(sp-vec3(0.,-0.095,0.), vec3(0.104,0.046,0.146), 0.036), 3.0));
     float pad = sdBox(sp, vec3(0.15,0.115,0.20), 0.055);
     pad = smax(pad, -sdBox(sp-vec3(0.,0.02,0.), vec3(0.20,0.008,0.22), 0.002), 0.01);
     res = opU(res, vec2(pad, 1.0));
+    /* Bolt heads. Greebles are how the eye judges scale: without a feature of
+       known real-world size on the surface, the whole bust reads as a 10cm desk
+       toy however good the material is. */
+    for(float b=-1.; b<=1.; b+=2.)
+      res = opU(res, vec2(sdSph(sp-vec3(b*0.098,0.030,0.172), 0.0152), 3.0));
   }
 
   // CHEST CORE — emissive ring
   vec3 cq = (q-vec3(0.,0.44,0.345)).xzy;
-  float core = max(sdCyl(cq, 0.028, 0.088), -sdCyl(cq, 0.06, 0.052));   // ring
-  res = opU(res, vec2(core, 2.0));
+  res = opU(res, vec2(max(sdCyl(cq, 0.026, 0.118), -sdCyl(cq, 0.10, 0.088)), 3.0));  // housing
+  res = opU(res, vec2(max(sdCyl(cq, 0.017, 0.083), -sdCyl(cq, 0.06, 0.049)), 2.0));  // ring
 
   // machined panel lines — what stops it reading as a smooth toy
   float seams = 1e9;
@@ -196,13 +235,22 @@ vec3 shade(vec3 ro, vec3 rd, float t, vec2 h, out bool hit){
     // emissive visor / chest core — blown out on purpose; the bake adds bloom
     col  = vec3(0.13,1.05,0.90);
     col += vec3(0.5,1.0,0.95) * ggx(n,v,kl,0.2) * 0.6;
+  } else if(mid < 3.5){
+    /* Under-frame: raw machined metal, lighter and rougher than the anodised
+       shell. The tonal step between the two is what makes a gap read as a gap
+       rather than as a scratch in one continuous surface. */
+    vec3 base = vec3(0.062,0.066,0.074);
+    col  = base * (0.22 + 0.80*dif) * occ * occ;
+    col += base * amb * 2.4;
+    col += vec3(0.50,0.55,0.64) * ggx(n,v,kl,0.34) * 0.75 * sh;
+    col += vec3(0.10,0.60,0.53) * rim * 2.0;
   } else {
-    // neck: recessed, rougher, deliberately darker so the head separates
-    vec3 base = vec3(0.014,0.016,0.020);
-    col  = base * (0.25 + 0.7*dif) * occ;
-    col += base * amb * 2.6;
-    col += vec3(0.20,0.24,0.31) * ggx(n,v,kl,0.40) * 0.35 * sh;
-    col += vec3(0.12,0.72,0.63) * rim * 2.4;
+    // cabling and gaskets: near-matte, dark, no specular to speak of
+    vec3 base = vec3(0.020,0.022,0.027);
+    col  = base * (0.30 + 0.8*dif) * occ;
+    col += base * amb * 2.8;
+    col += vec3(0.16,0.19,0.24) * ggx(n,v,kl,0.62) * 0.20 * sh;
+    col += vec3(0.10,0.58,0.51) * rim * 1.9;
   }
 
   // depth fade so the bust sinks into the dark rather than being cut out
@@ -214,7 +262,10 @@ void main(){
   vec2 uv = (gl_FragCoord.xy - 0.5*uRes)/uRes.y;
 
   // three-quarter view, slightly above the eyeline
+  /* Orbit the camera rather than the subject: rotating the SDF would rotate
+     the lighting with it and the rim light would stop being a rim light. */
   vec3 ro = vec3(1.95, 1.72, 3.55);
+  ro.xz = mat2(cos(uYaw), -sin(uYaw), sin(uYaw), cos(uYaw)) * ro.xz;
   vec3 ta = vec3(0.00, 0.86 + uFrame.y, 0.0);
   vec3 fw = normalize(ta-ro), rt = normalize(cross(vec3(0.,1.,0.),fw)), up = cross(fw,rt);
   vec3 rd = normalize(uv.x*rt + uv.y*up + uFrame.x*fw);
@@ -244,13 +295,11 @@ void main(){
      faint but perfectly straight-edged panel behind the hero, which no amount
      of CSS masking removes cleanly. Landing the edges on the page colour makes
      the boundary disappear because there is nothing there to see.
-     The falloff is per-axis, not radial: uv is normalised by height, so a
-     radial band would saturate in the corners long before it reached the top
-     and bottom edges of a square frame and the horizontal seams would survive. */
-  const vec3 PAGE_BG = vec3(0.0196, 0.0275, 0.0392);   // #05070a
-  vec2 halfExtent = vec2(0.5*uRes.x/uRes.y, 0.5);
-  vec2 edge = smoothstep(vec2(0.72), vec2(1.0), abs(uv)/halfExtent);
-  col = mix(col, PAGE_BG, max(edge.x, edge.y));
+     It is applied in bake.js, AFTER bloom, not here. Done in the shader it ran
+     BEFORE the bloom pass, so bright interior pixels bled outward across the
+     blended band and left a halo ring just inside the frame — the blend has to
+     be the last operation that touches the image, or something else paints
+     over the edge it just matched. */
 
   col += (fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-0.5)*0.010;
 
