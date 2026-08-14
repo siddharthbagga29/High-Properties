@@ -3,6 +3,13 @@
 Animation / 3D / motion skills installed for this project so Claude Code has
 consistent guidance when building immersive ("Unseen-style") front-end work.
 
+## Data & integration skills
+
+`public-apis` — offline-searchable catalog of 1,650+ free public APIs
+(weather, geocoding, finance, open data, etc.) vendored from
+[public-apis/public-apis](https://github.com/public-apis/public-apis). See
+`public-apis/SKILL.md`.
+
 ## Installed (22)
 
 **Core 3D & animation**
