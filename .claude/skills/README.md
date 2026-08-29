@@ -10,6 +10,14 @@ consistent guidance when building immersive ("Unseen-style") front-end work.
 [public-apis/public-apis](https://github.com/public-apis/public-apis). See
 `public-apis/SKILL.md`.
 
+## Generative media skills
+
+`ltx-video` — operating knowledge for Lightricks
+[LTX-Video](https://github.com/Lightricks/LTX-Video) text-to-video and
+image-to-video generation: the 11-config model matrix, input constraints,
+prompt structure, and a command builder. Weights are not vendored; generation
+needs a CUDA GPU. See `ltx-video/SKILL.md`.
+
 ## Installed (22)
 
 **Core 3D & animation**
