@@ -18,6 +18,22 @@ image-to-video generation: the 11-config model matrix, input constraints,
 prompt structure, and a command builder. Weights are not vendored; generation
 needs a CUDA GPU. See `ltx-video/SKILL.md`.
 
+## Engineering-workflow skills (11)
+
+Vendored from [WorldFlowAI/everything-claude-code](https://github.com/WorldFlowAI/everything-claude-code):
+
+`backend-patterns` · `clickhouse-io` · `coding-standards` · `continuous-learning`
+· `eval-harness` · `frontend-patterns` · `project-guidelines-example`
+· `security-review-checklist` · `strategic-compact` · `tdd-workflow`
+· `verification-loop`
+
+That repo also supplied 9 subagents in `.claude/agents/` and 15 slash commands
+in `.claude/commands/`. Its hooks, rules, contexts and MCP examples are vendored
+inert under `.claude/everything-claude-code/`, which also documents the two
+renames made to avoid shadowing built-in skills and the three skills whose
+missing frontmatter had to be written. See
+`.claude/everything-claude-code/INSTALL-NOTES.md`.
+
 ## Installed (22)
 
 **Core 3D & animation**
