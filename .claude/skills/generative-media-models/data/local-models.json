@@ -1,0 +1,255 @@
+{
+ "source": "https://github.com/Anil-matcha/Open-Generative-AI (src/lib/localModels.js)",
+ "note": "These run on your own hardware with NO API key. sdcpp models are bundled-engine weights downloaded to disk; wan2gp models require a user-run Wan2GP Gradio server.",
+ "model_count": 12,
+ "providers": [
+  "sdcpp",
+  "wan2gp"
+ ],
+ "models": [
+  {
+   "id": "z-image-turbo",
+   "name": "Z-Image Turbo",
+   "description": "WaveSpeed's featured local model \u2014 6B params, ultra-fast 8-step generation. No API key needed.",
+   "type": "z-image",
+   "provider": "sdcpp",
+   "filename": "z_image_turbo-Q4_K.gguf",
+   "sizeGB": 3.4,
+   "defaultSteps": 8,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "turbo",
+    "fast",
+    "local",
+    "featured"
+   ]
+  },
+  {
+   "id": "z-image-base",
+   "name": "Z-Image Base",
+   "description": "Full-quality 6B parameter model from Tongyi-MAI \u2014 higher detail, 50-step generation.",
+   "type": "z-image",
+   "provider": "sdcpp",
+   "filename": "z-image-Q4_K_M.gguf",
+   "sizeGB": 3.5,
+   "defaultSteps": 50,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "high-quality",
+    "local",
+    "detailed"
+   ]
+  },
+  {
+   "id": "dreamshaper-8",
+   "name": "Dreamshaper 8",
+   "description": "Versatile SD 1.5 model \u2014 great for portraits, landscapes, and artistic styles.",
+   "type": "sd1",
+   "provider": "sdcpp",
+   "filename": "DreamShaper_8_pruned.safetensors",
+   "sizeGB": 2.1,
+   "defaultSteps": 20,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "photorealistic",
+    "artistic",
+    "versatile"
+   ]
+  },
+  {
+   "id": "realistic-vision-v51",
+   "name": "Realistic Vision v5.1",
+   "description": "Highly photorealistic people and scenes, based on SD 1.5.",
+   "type": "sd1",
+   "provider": "sdcpp",
+   "filename": "realisticVisionV51_v51VAE.safetensors",
+   "sizeGB": 2.1,
+   "defaultSteps": 25,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "photorealistic",
+    "portraits",
+    "people"
+   ]
+  },
+  {
+   "id": "anything-v5",
+   "name": "Anything v5",
+   "description": "High quality anime and illustration style image generation.",
+   "type": "sd1",
+   "provider": "sdcpp",
+   "filename": "Anything-v5.0-PRT.safetensors",
+   "sizeGB": 2.1,
+   "defaultSteps": 20,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "anime",
+    "illustration",
+    "artistic"
+   ]
+  },
+  {
+   "id": "stable-diffusion-xl-base",
+   "name": "SDXL Base 1.0",
+   "description": "Official Stable Diffusion XL base model \u2014 higher resolution, excellent quality.",
+   "type": "sdxl",
+   "provider": "sdcpp",
+   "filename": "sd_xl_base_1.0.safetensors",
+   "sizeGB": 6.9,
+   "defaultSteps": 30,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "sdxl",
+    "high-quality",
+    "versatile"
+   ]
+  },
+  {
+   "id": "wan2gp:flux-dev",
+   "name": "Flux.1 Dev (Wan2GP)",
+   "description": "Image \u2014 FLUX.1 dev served by Wan2GP. Requires running Wan2GP server.",
+   "type": "image",
+   "provider": "wan2gp",
+   "defaultSteps": 28,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "image",
+    "flux",
+    "remote"
+   ]
+  },
+  {
+   "id": "wan2gp:qwen-image",
+   "name": "Qwen Image (Wan2GP)",
+   "description": "Image \u2014 Qwen-Image text-to-image served by Wan2GP.",
+   "type": "image",
+   "provider": "wan2gp",
+   "defaultSteps": 30,
+   "aspectRatios": [
+    "1:1",
+    "4:3",
+    "3:4",
+    "16:9",
+    "9:16"
+   ],
+   "tags": [
+    "image",
+    "qwen",
+    "remote"
+   ]
+  },
+  {
+   "id": "wan2gp:wan22-t2v",
+   "name": "Wan 2.2 (Text-to-Video)",
+   "description": "Video \u2014 Wan 2.2 text-to-video. Slow on consumer GPUs.",
+   "type": "video",
+   "provider": "wan2gp",
+   "defaultSteps": 25,
+   "aspectRatios": [
+    "16:9",
+    "1:1",
+    "9:16"
+   ],
+   "tags": [
+    "video",
+    "wan",
+    "text-to-video"
+   ]
+  },
+  {
+   "id": "wan2gp:wan22-i2v",
+   "name": "Wan 2.2 (Image-to-Video)",
+   "description": "Video \u2014 Wan 2.2 image-to-video. Provide a start frame.",
+   "type": "video",
+   "provider": "wan2gp",
+   "defaultSteps": 25,
+   "aspectRatios": [
+    "16:9",
+    "1:1",
+    "9:16"
+   ],
+   "tags": [
+    "video",
+    "wan",
+    "image-to-video"
+   ]
+  },
+  {
+   "id": "wan2gp:hunyuan-video",
+   "name": "Hunyuan Video (Wan2GP)",
+   "description": "Video \u2014 Hunyuan text-to-video via Wan2GP.",
+   "type": "video",
+   "provider": "wan2gp",
+   "defaultSteps": 30,
+   "aspectRatios": [
+    "16:9",
+    "1:1",
+    "9:16"
+   ],
+   "tags": [
+    "video",
+    "hunyuan"
+   ]
+  },
+  {
+   "id": "wan2gp:ltx-video",
+   "name": "LTX Video (Wan2GP)",
+   "description": "Video \u2014 LTX text-to-video. Fastest video option in Wan2GP.",
+   "type": "video",
+   "provider": "wan2gp",
+   "defaultSteps": 20,
+   "aspectRatios": [
+    "16:9",
+    "1:1",
+    "9:16"
+   ],
+   "tags": [
+    "video",
+    "ltx",
+    "fast"
+   ]
+  }
+ ]
+}

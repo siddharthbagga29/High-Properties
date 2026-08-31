@@ -18,6 +18,14 @@ image-to-video generation: the 11-config model matrix, input constraints,
 prompt structure, and a command builder. Weights are not vendored; generation
 needs a CUDA GPU. See `ltx-video/SKILL.md`.
 
+`generative-media-models` — searchable catalog of 440 hosted image/video/audio
+models with their exact IDs, endpoints and parameter schemas, plus the 12
+keyless models that run locally. Merged from
+[Open-Higgsfield-AI](https://github.com/Autom8AI/Open-Higgsfield-AI) and
+[Open-Generative-AI](https://github.com/Anil-matcha/Open-Generative-AI). The
+hosted models all need a paid muapi.ai key; only the 12 local ones are free.
+See `generative-media-models/SKILL.md`.
+
 ## Engineering-workflow skills (11)
 
 Vendored from [WorldFlowAI/everything-claude-code](https://github.com/WorldFlowAI/everything-claude-code):
