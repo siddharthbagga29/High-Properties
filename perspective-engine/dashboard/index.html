@@ -1,0 +1,298 @@
+<title>Perspective Engine City</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an isometric city map (one district per agent, one building per task) beside a civic "permit office" panel. */
+:root {
+  --bg: #e9ede8; --panel: #f6f8f4; --ground: #d6ddd2; --lot: #c4ccbf; --road: #b5bdb0;
+  --fg: #1c2420; --muted: #5d6a63; --line: #c9d1c5;
+  --accent: #2b5d86; --amber: #b9780a; --red: #b23a2e; --scaffold: #c46a1c;
+  --win: #f4f1d0; --dark: 0;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11161a; --panel: #171e23; --ground: #1c252b; --lot: #26323a; --road: #2f3c45;
+  --fg: #e4eae6; --muted: #8e9c96; --line: #2a353c;
+  --accent: #6aa5d6; --amber: #e3a531; --red: #e06a5c; --scaffold: #e08a3c; --win: #ffd27a; --dark: 1; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11161a; --panel: #171e23; --ground: #1c252b; --lot: #26323a; --road: #2f3c45;
+  --fg: #e4eae6; --muted: #8e9c96; --line: #2a353c;
+  --accent: #6aa5d6; --amber: #e3a531; --red: #e06a5c; --scaffold: #e08a3c; --win: #ffd27a; --dark: 1; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--display); font-variation-settings: "wdth" 100; padding-inline: 16px; padding-block: 20px 40px; margin: 0 }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 18px }
+header { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: end; justify-content: space-between }
+h1 { margin: 0; font-size: clamp(26px, 4vw, 40px); font-weight: 800; font-variation-settings: "wdth" 118; letter-spacing: -.01em; text-wrap: balance }
+.star { margin: 4px 0 0; color: var(--muted); max-width: 62ch; font-size: 15px; line-height: 1.45 }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted) }
+.progress { min-width: 240px; display: grid; gap: 6px }
+.bar { height: 8px; background: var(--lot); border-radius: 4px; overflow: hidden }
+.bar > i { display: block; height: 100%; background: var(--accent) }
+.big { font: 600 28px/1 var(--mono); font-variant-numeric: tabular-nums }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: 500 12px/1 var(--mono); padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); display: inline-flex; gap: 6px; align-items: center }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none }
+main { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 18px; align-items: start }
+@media (max-width: 920px) { main { grid-template-columns: minmax(0, 1fr) } }
+.city { position: relative; background: var(--ground); border-radius: 6px; border: 1px solid var(--line); overflow: hidden }
+canvas { display: block; width: 100%; touch-action: manipulation }
+.tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; max-width: 280px; font-size: 13px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,.18) }
+.tip b { display: block; font-size: 14px; margin-bottom: 2px }
+.tip code { font: 11px var(--mono); color: var(--muted); word-break: break-all }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--panel); font-size: 12px; color: var(--muted) }
+.legend span { display: inline-flex; gap: 6px; align-items: center }
+aside { display: grid; gap: 14px; min-width: 0 }
+section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; min-width: 0 }
+section.card h2 { margin: 0 0 10px; font-size: 15px; font-weight: 700; font-variation-settings: "wdth" 112; display: flex; justify-content: space-between; gap: 8px }
+section.card h2 small { font: 500 12px var(--mono); color: var(--muted) }
+.gate { border-left: 3px solid var(--amber); padding: 6px 0 6px 10px; display: grid; gap: 2px; font-size: 13px }
+.gate + .gate { margin-top: 8px }
+.gate em { font-style: normal; color: var(--muted); font-size: 12px }
+.empty { color: var(--muted); font-size: 13px; margin: 0 }
+.agents { display: grid; gap: 4px }
+.agent { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 6px 4px; border-radius: 4px; cursor: pointer; border: 0; background: none; color: inherit; font: inherit; text-align: left; width: 100% }
+.agent:hover, .agent[aria-pressed="true"] { background: var(--lot) }
+.agent:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px }
+.agent .nm { font-weight: 650; font-size: 14px }
+.agent .nm small { font-weight: 400; color: var(--muted); font-size: 12px }
+.agent .ct { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.agent .now { grid-column: 2 / 4; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.agent .mini { grid-column: 2 / 4; height: 3px; background: var(--lot); border-radius: 2px; overflow: hidden }
+.agent .mini i { display: block; height: 100% }
+ol.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; max-height: 240px; overflow: auto }
+ol.log li { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; align-items: baseline }
+ol.log time, ol.log .ev { font: 11px var(--mono); color: var(--muted) }
+.queue { display: grid; gap: 4px; font-size: 13px }
+.queue div { display: grid; grid-template-columns: 3.4em minmax(0, 1fr); gap: 8px }
+.queue code { font: 12px var(--mono); color: var(--accent) }
+.foot { font-size: 12px; color: var(--muted) }
+.foot code { font-family: var(--mono) }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Venture build map · agent city</div>
+      <h1 id="title">Perspective Engine</h1>
+      <p class="star" id="star"></p>
+    </div>
+    <div class="progress">
+      <div style="display:flex;justify-content:space-between;align-items:end;gap:12px"><span class="big" id="pct">0%</span><span class="eyebrow" id="count"></span></div>
+      <div class="bar"><i id="barfill" style="width:0"></i></div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </header>
+
+  <main>
+    <div>
+      <div class="city" id="city">
+        <canvas id="cv" aria-label="Isometric city: each district is an agent, each building a task"></canvas>
+        <div class="tip" id="tip" hidden></div>
+        <div class="legend">
+          <span><i class="dot" style="background:var(--fg)"></i>Built (task done)</span>
+          <span><i class="dot" style="background:var(--scaffold)"></i>Under construction</span>
+          <span><i class="dot" style="background:var(--accent)"></i>Permit ready</span>
+          <span><i class="dot" style="background:var(--amber)"></i>Needs your sign-off</span>
+          <span><i class="dot" style="background:var(--red)"></i>Blocked</span>
+          <span><i class="dot" style="border:1px dashed var(--muted)"></i>Planned lot</span>
+        </div>
+      </div>
+    </div>
+    <aside>
+      <section class="card"><h2>Waiting on you <small id="gcount"></small></h2><div id="gates"></div></section>
+      <section class="card"><h2>Agents <small>tasks built</small></h2><div class="agents" id="agents"></div></section>
+      <section class="card"><h2>Next permits <small>ready to start</small></h2><div class="queue" id="ready"></div></section>
+      <section class="card"><h2>Ledger <small>latest first</small></h2><ol class="log" id="log"></ol></section>
+      <p class="foot" id="gen"></p>
+    </aside>
+  </main>
+</div>
+
+<script src="state.js"></script>
+<script>
+(() => {
+  const S = window.PE_STATE;
+  if (!S) { document.getElementById('star').textContent = 'No state.js found. Run: python3 perspective-engine/tools/graph.py export'; return; }
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // District placement: City Hall in the middle, 3x3 lots per district, roads between.
+  const ORDER = ['science', 'ethics', 'product', 'gtm', 'orchestrator', 'data', 'finance', 'legal', 'brand'];
+  const HUE = { science: 205, ethics: 330, product: 25, gtm: 185, orchestrator: 45, data: 265, finance: 140, legal: 0, brand: 290 };
+  const ROOF = { science: 'dome', ethics: 'gable', product: 'saw', gtm: 'flat', orchestrator: 'dome', data: 'dome', finance: 'gable', legal: 'gable', brand: 'spire' };
+  const N = 13, LOTS = [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2]];
+  const nodes = S.nodes, agents = S.agents;
+  const byAgent = {};
+  nodes.forEach(n => (byAgent[n.agent] ||= []).push(n));
+  const placed = [];
+  ORDER.forEach((a, di) => {
+    const ox = 1 + (di % 3) * 4, oy = 1 + Math.floor(di / 3) * 4;
+    (byAgent[a] || []).forEach((n, i) => {
+      const [lx, ly] = LOTS[i];
+      const seed = [...n.id].reduce((s, c) => s * 31 + c.charCodeAt(0), 7) % 1000 / 1000;
+      placed.push({ n, a, x: ox + lx, y: oy + ly, h: 1.1 + n.phase * 0.9 + seed * 1.1, seed });
+    });
+  });
+
+  // Header + panel
+  const count = v => nodes.filter(n => n.view === v).length;
+  const done = count('done');
+  $('title').textContent = S.project;
+  $('star').textContent = S.north_star;
+  $('pct').textContent = Math.round(100 * done / nodes.length) + '%';
+  $('count').textContent = `${done} of ${nodes.length} buildings`;
+  $('barfill').style.width = (100 * done / nodes.length) + '%';
+  const CH = [['running', 'Under construction', '--scaffold'], ['ready', 'Ready', '--accent'], ['awaiting_human', 'Your sign-off', '--amber'], ['blocked', 'Blocked', '--red']];
+  $('chips').innerHTML = CH.map(([v, l, c]) => `<span class="chip"><i class="dot" style="background:var(${c})"></i>${l} ${count(v)}</span>`).join('');
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const gates = nodes.filter(n => n.gate && !n.gate.cleared && n.view !== 'done');
+  const now = gates.filter(n => n.view === 'awaiting_human'), later = gates.filter(n => n.view !== 'awaiting_human');
+  $('gcount').textContent = `${now.length} now · ${later.length} later`;
+  $('gates').innerHTML = now.length
+    ? now.map(n => `<div class="gate"><strong>${esc(n.id)} · ${esc(n.title)}</strong><em>${esc(n.gate.reason)}</em></div>`).join('')
+    : `<p class="empty">Nothing needs you right now. ${later.length} future steps will need an account, signature or approval. The first is ${esc(later[0]?.id || '—')}: ${esc(later[0]?.gate.reason || '')}</p>`;
+
+  const color = (a, l) => `hsl(${HUE[a]} ${css('--dark') === '1' ? 38 : 34}% ${l}%)`;
+  let focus = null;
+  const renderAgents = () => {
+    $('agents').innerHTML = ORDER.map(a => {
+      const list = byAgent[a] || [], d = list.filter(n => n.view === 'done').length;
+      const run = list.find(n => n.view === 'running') || list.find(n => n.view === 'ready');
+      const what = run ? `${run.view === 'running' ? 'Building' : 'Next'}: ${run.id} ${run.title}` : (d === list.length ? 'District complete' : 'Waiting on other districts');
+      return `<button class="agent" data-a="${a}" aria-pressed="${focus === a}"><i class="dot" style="background:${color(a, 50)}"></i>
+        <span class="nm">${esc(agents[a].name)} <small>${esc(agents[a].district)}</small></span><span class="ct">${d}/${list.length}</span>
+        <span class="mini"><i style="width:${100 * d / list.length}%;background:${color(a, 50)}"></i></span><span class="now">${esc(what)}</span></button>`;
+    }).join('');
+  };
+  renderAgents();
+  $('agents').addEventListener('click', e => {
+    const b = e.target.closest('.agent'); if (!b) return;
+    focus = focus === b.dataset.a ? null : b.dataset.a; renderAgents(); draw(performance.now());
+  });
+  $('ready').innerHTML = nodes.filter(n => n.view === 'ready').map(n => `<div><code>${n.id}</code><span>${esc(n.title)} · <span style="color:var(--muted)">${esc(agents[n.agent].name)}</span></span></div>`).join('') || '<p class="empty">No permits open.</p>';
+  const fmt = t => t ? t.slice(5, 16).replace('T', ' ') : '';
+  $('log').innerHTML = [...S.ledger].reverse().map(e => `<li><time>${fmt(e.t)}</time><span class="ev">${esc(e.event)} ${esc(e.node)}</span><span>${esc(e.note || (nodes.find(n => n.id === e.node) || {}).title || '')}</span></li>`).join('') || '<li class="empty">No events yet.</li>';
+  $('gen').innerHTML = `State exported ${fmt(S.generated)} UTC from <code>graph/graph.json</code>.`;
+
+  // Isometric renderer
+  const cv = $('cv'), ctx = cv.getContext('2d'), city = $('city');
+  let W, H, tw, th, ox, oy, hits = [];
+  const resize = () => {
+    W = city.clientWidth; tw = W / (N + 0.6); th = tw / 2; H = Math.round(N * th + tw * 2.2);
+    ox = W / 2; oy = tw * 1.9;
+    const r = devicePixelRatio || 1; cv.width = W * r; cv.height = H * r; cv.style.height = H + 'px';
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+  };
+  const P = (x, y, z = 0) => [ox + (x - y) * tw / 2, oy + (x + y) * th / 2 - z * th];
+  const poly = (pts, fill, stroke) => {
+    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
+  };
+  const tile = (x, y, fill, stroke, z = 0) => poly([P(x, y, z), P(x + 1, y, z), P(x + 1, y + 1, z), P(x, y + 1, z)], fill, stroke);
+  const box = (x, y, s, h, a, lit, alpha = 1) => {
+    const x0 = x + (1 - s) / 2, y0 = y + (1 - s) / 2, x1 = x0 + s, y1 = y0 + s;
+    ctx.globalAlpha = alpha;
+    poly([P(x0, y1), P(x1, y1), P(x1, y1, h), P(x0, y1, h)], color(a, 38));
+    poly([P(x1, y0), P(x1, y1), P(x1, y1, h), P(x1, y0, h)], color(a, 50));
+    poly([P(x0, y0, h), P(x1, y0, h), P(x1, y1, h), P(x0, y1, h)], color(a, 64));
+    if (lit) { // window rows on both visible faces
+      ctx.fillStyle = css('--dark') === '1' ? css('--win') : 'rgba(255,255,255,.55)';
+      for (let z = 0.45; z < h - 0.25; z += 0.55) for (let k = 0.2; k < 0.9; k += 0.3) {
+        const on = (Math.sin(x * 7 + y * 3 + z * 5 + k * 11) > -0.3);
+        if (!on) continue;
+        const [ax, ay] = P(x0 + k * s, y1, z), [bx, by] = P(x1, y0 + k * s, z);
+        ctx.fillRect(ax - 1.5, ay - 3, 3, 4); ctx.fillRect(bx - 1.5, by - 3, 3, 4);
+      }
+    }
+    ctx.globalAlpha = 1;
+    return [x0, y0, x1, y1];
+  };
+  const roof = (b, h, a, kind) => {
+    const [x0, y0, x1, y1] = b, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    if (kind === 'flat') return poly([P(x0 + .1, y0 + .1, h + .15), P(x1 - .1, y0 + .1, h + .15), P(x1 - .1, y1 - .1, h + .15), P(x0 + .1, y1 - .1, h + .15)], color(a, 70));
+    if (kind === 'spire' || kind === 'gable') {
+      const top = P(cx, cy, h + (kind === 'spire' ? 1.6 : .7));
+      poly([P(x0, y1, h), P(x1, y1, h), top], color(a, 44)); poly([P(x1, y0, h), P(x1, y1, h), top], color(a, 56)); return;
+    }
+    if (kind === 'saw') { for (let i = 0; i < 3; i++) { const t = x0 + (i + .5) * (x1 - x0) / 3; poly([P(t - .15, y1, h), P(t + .15, y1, h), P(t + .15, y1, h + .4)], color(a, 70)); } return; }
+    const [px, py] = P(cx, cy, h); ctx.beginPath(); ctx.ellipse(px, py, tw * .2, th * .35, 0, Math.PI, 0); ctx.fillStyle = color(a, 72); ctx.fill();
+  };
+
+  const draw = t => {
+    ctx.clearRect(0, 0, W, H); hits = [];
+    const road = css('--road'), lot = css('--lot'), line = css('--line');
+    for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) {
+      const isRoad = x % 4 === 0 || y % 4 === 0;
+      tile(x, y, isRoad ? road : css('--ground'), isRoad ? null : line);
+    }
+    [...placed].sort((p, q) => (p.x + p.y) - (q.x + q.y)).forEach(p => {
+      const { n, a, x, y } = p, v = n.view, dim = focus && focus !== a ? .25 : 1;
+      ctx.globalAlpha = dim;
+      if (v === 'pending') { ctx.setLineDash([3, 3]); tile(x + .1, y + .1, null, css('--muted')); ctx.setLineDash([]); }
+      else tile(x, y, lot);
+      let top = 0;
+      if (v === 'done') { const b = box(x, y, .72, p.h, a, true, dim); roof(b, p.h, a, ROOF[a]); top = p.h + 1; }
+      else if (v === 'running') {
+        const grow = reduce ? .55 : .35 + .25 * (0.5 + 0.5 * Math.sin(t / 900 + p.seed * 6));
+        const h = p.h * grow; box(x, y, .72, h, a, false, dim);
+        ctx.strokeStyle = css('--scaffold'); ctx.lineWidth = 1;
+        for (let z = 0; z <= p.h; z += .5) { ctx.beginPath(); ctx.moveTo(...P(x + .12, y + .9, z)); ctx.lineTo(...P(x + .9, y + .9, z)); ctx.lineTo(...P(x + .9, y + .12, z)); ctx.stroke(); }
+        const mast = P(x + .9, y + .9, p.h + 1.2), base = P(x + .9, y + .9, 0), sw = reduce ? 0 : Math.sin(t / 1300 + p.seed * 9) * .5;
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(...base); ctx.lineTo(...mast); ctx.lineTo(...P(x + .9 - 1.1 * Math.cos(sw), y + .9 - 1.1 * Math.sin(sw) * .3, p.h + 1.2)); ctx.stroke(); ctx.lineWidth = 1;
+        top = p.h + 1.4;
+      } else if (v === 'ready') { tile(x + .15, y + .15, null, css('--accent'), .12); ctx.lineWidth = 2; tile(x + .15, y + .15, null, css('--accent'), .12); ctx.lineWidth = 1; top = .6; }
+      else if (v === 'awaiting_human') {
+        tile(x + .2, y + .2, css('--amber'), null, .08);
+        const [bx, by] = P(x + .5, y + .5, .9), pulse = reduce ? 1 : .6 + .4 * Math.sin(t / 400);
+        ctx.fillStyle = css('--amber'); ctx.globalAlpha = dim * pulse; ctx.beginPath(); ctx.arc(bx, by, tw * .09, 0, 7); ctx.fill(); ctx.globalAlpha = dim;
+        ctx.strokeStyle = css('--amber'); ctx.beginPath(); ctx.moveTo(...P(x + .5, y + .5, .1)); ctx.lineTo(bx, by); ctx.stroke(); top = 1.2;
+      } else if (v === 'blocked') {
+        const [bx, by] = P(x + .5, y + .5); ctx.fillStyle = css('--red');
+        ctx.beginPath(); ctx.moveTo(bx, by - th * 1.1); ctx.lineTo(bx - tw * .12, by); ctx.lineTo(bx + tw * .12, by); ctx.fill(); top = 1.2;
+      }
+      ctx.globalAlpha = 1;
+      const [l] = P(x, y + 1), [r] = P(x + 1, y), [, b] = P(x + 1, y + 1), [, tp] = P(x + .5, y + .5, Math.max(top, .5));
+      hits.push({ p, x0: l, x1: r, y0: tp, y1: b });
+    });
+    // district plaques, drawn over the buildings
+    ctx.font = `600 ${Math.max(9, tw * .19)}px ${css('--mono')}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ORDER.forEach((a, di) => {
+      const dx = 1 + (di % 3) * 4, dy = 1 + Math.floor(di / 3) * 4, [px, py] = P(dx + 3.5, dy + 3.5);
+      const label = agents[a].district.toUpperCase(), w = ctx.measureText(label).width + 10, hh = Math.max(14, tw * .3);
+      ctx.globalAlpha = focus && focus !== a ? .45 : .92; ctx.fillStyle = css('--panel');
+      ctx.fillRect(px - w / 2, py - hh / 2, w, hh); ctx.globalAlpha = 1;
+      ctx.fillStyle = focus && focus !== a ? css('--muted') : color(a, css('--dark') === '1' ? 70 : 30);
+      ctx.fillText(label, px, py + 1);
+    });
+    // couriers walking from City Hall to every site under construction
+    if (!reduce) placed.filter(p => p.n.view === 'running').forEach((p, i) => {
+      const k = ((t / 4000) + i * .37) % 1, hx = 6.5, hy = 6.5;
+      const [cx, cy] = k < .5 ? P(hx + (p.x + .5 - hx) * k * 2, hy, 0) : P(p.x + .5, hy + (p.y + .5 - hy) * (k - .5) * 2, 0);
+      ctx.fillStyle = color(p.a, 45); ctx.beginPath(); ctx.arc(cx, cy - 4, Math.max(2.5, tw * .06), 0, 7); ctx.fill();
+    });
+  };
+
+  const tip = $('tip'), LABEL = { done: 'Built', running: 'Under construction', ready: 'Permit ready', awaiting_human: 'Needs your sign-off', blocked: 'Blocked', pending: 'Planned' };
+  const hover = e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    const h = [...hits].reverse().find(h => mx >= h.x0 && mx <= h.x1 && my >= h.y0 && my <= h.y1);
+    if (!h) { tip.hidden = true; return; }
+    const n = h.p.n;
+    tip.innerHTML = `<b>${esc(n.id)} · ${esc(n.title)}</b>${esc(agents[n.agent].name)} · ${LABEL[n.view]} · phase ${n.phase}<br>${n.gate && !n.gate.cleared ? `<span style="color:var(--amber)">${esc(n.gate.reason)}</span><br>` : ''}<code>${n.outputs.map(esc).join('<br>')}</code>`;
+    tip.hidden = false;
+    tip.style.left = Math.min(mx + 14, r.width - tip.offsetWidth - 8) + 'px';
+    tip.style.top = Math.max(8, my - tip.offsetHeight - 10) + 'px';
+  };
+  cv.addEventListener('pointermove', hover); cv.addEventListener('pointerdown', hover);
+  cv.addEventListener('pointerleave', () => tip.hidden = true);
+
+  const loop = t => { draw(t); if (!reduce) requestAnimationFrame(loop); };
+  resize(); requestAnimationFrame(loop);
+  addEventListener('resize', () => { resize(); if (reduce) draw(0); });
+  new MutationObserver(() => draw(performance.now())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>

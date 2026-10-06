@@ -1,0 +1,766 @@
+window.PE_STATE = {
+ "generated": "2026-10-06T12:39:52Z",
+ "project": "Perspective Engine",
+ "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
+ "agents": {
+  "orchestrator": {
+   "name": "Mayor",
+   "district": "City Hall",
+   "role": "Runs the graph, assigns ready nodes, writes the plan. Never does domain work."
+  },
+  "science": {
+   "name": "Curie",
+   "district": "Research Lab",
+   "role": "Evidence, mechanism model, study protocol, papers."
+  },
+  "ethics": {
+   "name": "Milton",
+   "district": "Commons",
+   "role": "Neurodivergent co-design, consent, harm review, IRB packet."
+  },
+  "product": {
+   "name": "Ada",
+   "district": "Workshop",
+   "role": "Browser MVP, WebXR build, facilitator tooling."
+  },
+  "data": {
+   "name": "Tukey",
+   "district": "Observatory",
+   "role": "Instruments, analytics, buyer ROI dashboard."
+  },
+  "gtm": {
+   "name": "Ogilvy",
+   "district": "Harbor",
+   "role": "ICP, target lists, LOIs, outreach drafts, pilot playbook."
+  },
+  "finance": {
+   "name": "Pacioli",
+   "district": "Bank",
+   "role": "Bottom-up model, grants, raise materials."
+  },
+  "legal": {
+   "name": "Ginsburg",
+   "district": "Courthouse",
+   "role": "Privacy, data map, entity and IP checklists."
+  },
+  "brand": {
+   "name": "Rams",
+   "district": "Tower",
+   "role": "Positioning, landing page, case studies."
+  }
+ },
+ "nodes": [
+  {
+   "id": "F01",
+   "phase": 0,
+   "agent": "orchestrator",
+   "title": "Agent graph, role cards and ledger",
+   "deps": [],
+   "outputs": [
+    "perspective-engine/graph/graph.json",
+    "perspective-engine/tools/graph.py"
+   ],
+   "accept": [
+    "graph validates as a DAG",
+    "every node has an agent and outputs"
+   ],
+   "gate": null,
+   "budget_k": 0,
+   "status": "done",
+   "view": "done"
+  },
+  {
+   "id": "F02",
+   "phase": 0,
+   "agent": "orchestrator",
+   "title": "City dashboard",
+   "deps": [
+    "F01"
+   ],
+   "outputs": [
+    "perspective-engine/dashboard/index.html"
+   ],
+   "accept": [
+    "renders from state.js with no server"
+   ],
+   "gate": null,
+   "budget_k": 0,
+   "status": "done",
+   "view": "done"
+  },
+  {
+   "id": "F03",
+   "phase": 0,
+   "agent": "science",
+   "title": "Evidence dossier: verify the memo's claims",
+   "deps": [
+    "F01"
+   ],
+   "outputs": [
+    "perspective-engine/research/evidence-dossier.md"
+   ],
+   "accept": [
+    "every claim rated Supported/Weak/Refuted/Unverified",
+    "each finding has a URL"
+   ],
+   "gate": null,
+   "budget_k": 60,
+   "status": "done",
+   "view": "done"
+  },
+  {
+   "id": "F04",
+   "phase": 0,
+   "agent": "product",
+   "title": "Browser MVP v0: attention-load simulator",
+   "deps": [
+    "F01"
+   ],
+   "outputs": [
+    "perspective-engine/mvp/index.html",
+    "perspective-engine/mvp/README.md"
+   ],
+   "accept": [
+    "baseline vs load conditions",
+    "mandatory debrief",
+    "no flashing above 3 Hz",
+    "JSON export, no network calls"
+   ],
+   "gate": null,
+   "budget_k": 60,
+   "status": "running",
+   "view": "running"
+  },
+  {
+   "id": "F05",
+   "phase": 0,
+   "agent": "orchestrator",
+   "title": "Execution plan v1",
+   "deps": [
+    "F03",
+    "F04"
+   ],
+   "outputs": [
+    "perspective-engine/docs/execution-plan.md"
+   ],
+   "accept": [
+    "revised kill criteria",
+    "12-month milestones mapped to node ids"
+   ],
+   "gate": null,
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "F06",
+   "phase": 0,
+   "agent": "ethics",
+   "title": "Co-design charter",
+   "deps": [
+    "F03"
+   ],
+   "outputs": [
+    "perspective-engine/ethics/codesign-charter.md"
+   ],
+   "accept": [
+    "paid ND advisors with veto on content",
+    "debrief and harm rules",
+    "claims we will never make"
+   ],
+   "gate": null,
+   "budget_k": 15,
+   "status": "running",
+   "view": "running"
+  },
+  {
+   "id": "V01",
+   "phase": 1,
+   "agent": "science",
+   "title": "Mechanism spec: what we model and why",
+   "deps": [
+    "F03"
+   ],
+   "outputs": [
+    "perspective-engine/science/mechanism-spec.md"
+   ],
+   "accept": [
+    "each mechanism cites evidence",
+    "parameter ranges stated",
+    "explicit list of what is NOT modeled"
+   ],
+   "gate": null,
+   "budget_k": 25,
+   "status": "running",
+   "view": "running"
+  },
+  {
+   "id": "V02",
+   "phase": 1,
+   "agent": "data",
+   "title": "Measurement instruments and study design",
+   "deps": [
+    "V01"
+   ],
+   "outputs": [
+    "perspective-engine/data/instruments.md"
+   ],
+   "accept": [
+    "validated scales named with citations",
+    "pre / post / 30-day behavioral follow-up",
+    "primary outcome is behavior, not mood"
+   ],
+   "gate": null,
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V03",
+   "phase": 1,
+   "agent": "science",
+   "title": "Pre-registration draft",
+   "deps": [
+    "V01",
+    "V02"
+   ],
+   "outputs": [
+    "perspective-engine/science/preregistration.md"
+   ],
+   "accept": [
+    "hypotheses, power analysis, analysis plan"
+   ],
+   "gate": {
+    "type": "account",
+    "reason": "Posting to OSF needs the founder's OSF account."
+   },
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V04",
+   "phase": 1,
+   "agent": "ethics",
+   "title": "Advisory board recruitment plan",
+   "deps": [
+    "F06"
+   ],
+   "outputs": [
+    "perspective-engine/ethics/advisory-board.md"
+   ],
+   "accept": [
+    "compensation rate",
+    "recruitment channels",
+    "session script"
+   ],
+   "gate": null,
+   "budget_k": 12,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V05",
+   "phase": 1,
+   "agent": "gtm",
+   "title": "ICP and buyer map",
+   "deps": [
+    "F03"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/icp.md"
+   ],
+   "accept": [
+    "budget owner per segment",
+    "post-DEI-cut framing",
+    "top 3 segments ranked"
+   ],
+   "gate": null,
+   "budget_k": 15,
+   "status": "running",
+   "view": "running"
+  },
+  {
+   "id": "V06",
+   "phase": 1,
+   "agent": "gtm",
+   "title": "LOI template and pilot offer",
+   "deps": [
+    "V05",
+    "F05"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/loi-template.md"
+   ],
+   "accept": [
+    "non-binding",
+    "success metric agreed upfront",
+    "price anchor"
+   ],
+   "gate": null,
+   "budget_k": 8,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V07",
+   "phase": 1,
+   "agent": "gtm",
+   "title": "Target list: 50 accounts from public sources",
+   "deps": [
+    "V05"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/targets.csv"
+   ],
+   "accept": [
+    "company, segment, public neurodiversity signal, source URL",
+    "no personal emails scraped"
+   ],
+   "gate": null,
+   "budget_k": 25,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V08",
+   "phase": 1,
+   "agent": "gtm",
+   "title": "Outreach sequence drafts",
+   "deps": [
+    "V06",
+    "V07"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/outreach.md"
+   ],
+   "accept": [
+    "3-touch sequence per segment",
+    "each under 120 words"
+   ],
+   "gate": null,
+   "budget_k": 8,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V09",
+   "phase": 1,
+   "agent": "gtm",
+   "title": "Send outreach",
+   "deps": [
+    "V08"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/outreach-log.md"
+   ],
+   "accept": [
+    "log of sends and replies"
+   ],
+   "gate": {
+    "type": "account",
+    "reason": "Sending email uses the founder's Gmail; needs authorization and approval of each batch."
+   },
+   "budget_k": 10,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V10",
+   "phase": 1,
+   "agent": "finance",
+   "title": "Bottom-up financial model",
+   "deps": [
+    "F03",
+    "V05"
+   ],
+   "outputs": [
+    "perspective-engine/finance/model.py",
+    "perspective-engine/finance/model.md"
+   ],
+   "accept": [
+    "runs with python3 stdlib",
+    "Monte Carlo with stated input ranges",
+    "P10/P50/P90 ARR"
+   ],
+   "gate": null,
+   "budget_k": 25,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V11",
+   "phase": 1,
+   "agent": "finance",
+   "title": "Non-dilutive funding map",
+   "deps": [
+    "F03"
+   ],
+   "outputs": [
+    "perspective-engine/finance/grants.md"
+   ],
+   "accept": [
+    "program, amount, deadline, fit, source URL"
+   ],
+   "gate": null,
+   "budget_k": 15,
+   "status": "pending",
+   "view": "ready"
+  },
+  {
+   "id": "V12",
+   "phase": 1,
+   "agent": "legal",
+   "title": "Privacy-by-design data map",
+   "deps": [
+    "F04"
+   ],
+   "outputs": [
+    "perspective-engine/legal/privacy.md"
+   ],
+   "accept": [
+    "no biometrics stored in v0",
+    "GDPR/HIPAA applicability stated"
+   ],
+   "gate": null,
+   "budget_k": 10,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V13",
+   "phase": 1,
+   "agent": "brand",
+   "title": "Positioning and landing page",
+   "deps": [
+    "V05",
+    "F06"
+   ],
+   "outputs": [
+    "perspective-engine/brand/landing/index.html"
+   ],
+   "accept": [
+    "no claim to 'simulate ADHD'",
+    "pilot sign-up CTA"
+   ],
+   "gate": null,
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V14",
+   "phase": 1,
+   "agent": "product",
+   "title": "MVP v0.2 from advisory feedback",
+   "deps": [
+    "F04",
+    "V04",
+    "V01"
+   ],
+   "outputs": [
+    "perspective-engine/mvp/CHANGELOG.md"
+   ],
+   "accept": [
+    "every change traces to an advisor note"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "Needs real feedback sessions with paid ND advisors."
+   },
+   "budget_k": 40,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "V15",
+   "phase": 1,
+   "agent": "science",
+   "title": "University partner shortlist and brief",
+   "deps": [
+    "V01"
+   ],
+   "outputs": [
+    "perspective-engine/science/partners.md"
+   ],
+   "accept": [
+    "10 labs with published relevant work and URLs",
+    "1-page collaboration brief"
+   ],
+   "gate": null,
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M01",
+   "phase": 2,
+   "agent": "product",
+   "title": "WebXR v1 on Quest browser",
+   "deps": [
+    "V14"
+   ],
+   "outputs": [
+    "perspective-engine/mvp/xr/index.html"
+   ],
+   "accept": [
+    "72 fps on Quest 3",
+    "same task and metrics as v0"
+   ],
+   "gate": null,
+   "budget_k": 80,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M02",
+   "phase": 2,
+   "agent": "data",
+   "title": "Buyer ROI dashboard",
+   "deps": [
+    "V02",
+    "M01"
+   ],
+   "outputs": [
+    "perspective-engine/data/roi-dashboard/index.html"
+   ],
+   "accept": [
+    "aggregate only, n>=10 suppression"
+   ],
+   "gate": null,
+   "budget_k": 30,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M03",
+   "phase": 2,
+   "agent": "ethics",
+   "title": "Pilot study protocol and IRB packet (N=50)",
+   "deps": [
+    "V03",
+    "V04",
+    "V15"
+   ],
+   "outputs": [
+    "perspective-engine/ethics/irb-packet.md"
+   ],
+   "accept": [
+    "consent form",
+    "debrief",
+    "adverse-event handling"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "IRB submission goes through a university partner."
+   },
+   "budget_k": 25,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M04",
+   "phase": 2,
+   "agent": "legal",
+   "title": "Entity formation and IP assignment checklist",
+   "deps": [
+    "V12"
+   ],
+   "outputs": [
+    "perspective-engine/legal/entity-checklist.md"
+   ],
+   "accept": [
+    "jurisdiction options compared",
+    "IP assignment template"
+   ],
+   "gate": {
+    "type": "account",
+    "reason": "Incorporation needs founder identity and payment."
+   },
+   "budget_k": 10,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M05",
+   "phase": 2,
+   "agent": "finance",
+   "title": "SBIR Phase I application draft",
+   "deps": [
+    "V11",
+    "M03"
+   ],
+   "outputs": [
+    "perspective-engine/finance/sbir-draft.md"
+   ],
+   "accept": [
+    "specific aims page",
+    "budget justification"
+   ],
+   "gate": {
+    "type": "account",
+    "reason": "SAM.gov / eRA Commons registration in the founder's name."
+   },
+   "budget_k": 40,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "M06",
+   "phase": 2,
+   "agent": "gtm",
+   "title": "Pilot playbook and facilitator guide",
+   "deps": [
+    "M01",
+    "V02"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/pilot-playbook.md"
+   ],
+   "accept": [
+    "60-min session agenda",
+    "success metrics",
+    "debrief script"
+   ],
+   "gate": null,
+   "budget_k": 15,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "S01",
+   "phase": 3,
+   "agent": "gtm",
+   "title": "Close 3 paid pilots",
+   "deps": [
+    "V09",
+    "M06",
+    "M04"
+   ],
+   "outputs": [
+    "perspective-engine/gtm/pilots.md"
+   ],
+   "accept": [
+    "3 signed pilot agreements"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "Contracts are signed by the founder."
+   },
+   "budget_k": 20,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "S02",
+   "phase": 3,
+   "agent": "data",
+   "title": "Pilot results report",
+   "deps": [
+    "S01",
+    "M02"
+   ],
+   "outputs": [
+    "perspective-engine/data/pilot-report.md"
+   ],
+   "accept": [
+    "pre-registered outcomes reported, including nulls"
+   ],
+   "gate": null,
+   "budget_k": 25,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "S03",
+   "phase": 3,
+   "agent": "science",
+   "title": "Paper submission",
+   "deps": [
+    "S02",
+    "M03"
+   ],
+   "outputs": [
+    "perspective-engine/science/paper.md"
+   ],
+   "accept": [
+    "co-authored with ND advisors and lab partner"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "Journal submission by named authors."
+   },
+   "budget_k": 60,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "S04",
+   "phase": 3,
+   "agent": "finance",
+   "title": "Seed raise materials",
+   "deps": [
+    "S02",
+    "V10"
+   ],
+   "outputs": [
+    "perspective-engine/finance/seed-memo.md"
+   ],
+   "accept": [
+    "numbers trace to pilot data and model"
+   ],
+   "gate": null,
+   "budget_k": 30,
+   "status": "pending",
+   "view": "pending"
+  },
+  {
+   "id": "S05",
+   "phase": 3,
+   "agent": "brand",
+   "title": "Pilot case studies",
+   "deps": [
+    "S02"
+   ],
+   "outputs": [
+    "perspective-engine/brand/case-studies.md"
+   ],
+   "accept": [
+    "customer-approved quotes only"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "Customer sign-off on quotes."
+   },
+   "budget_k": 15,
+   "status": "pending",
+   "view": "pending"
+  }
+ ],
+ "ledger": [
+  {
+   "t": "2026-10-06T12:35:38Z",
+   "event": "done",
+   "node": "F03",
+   "note": "Dossier: Quest commercial sales ended 2026-02; quantum/18dB/CPT claims unsupported; sims need debrief"
+  },
+  {
+   "t": "2026-10-06T12:38:19Z",
+   "event": "start",
+   "node": "F06",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:38:19Z",
+   "event": "start",
+   "node": "V01",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:38:19Z",
+   "event": "start",
+   "node": "V05",
+   "note": ""
+  }
+ ]
+};
