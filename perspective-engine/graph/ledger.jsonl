@@ -7,3 +7,5 @@
 {"t": "2026-10-06T12:40:18Z", "event": "start", "node": "V04", "note": ""}
 {"t": "2026-10-06T12:40:58Z", "event": "done", "node": "V01", "note": "5 mechanisms graded S1-S3; design-parameter ranges; 15-item not-modeled list; M4/M5 sources snippet-level"}
 {"t": "2026-10-06T12:40:58Z", "event": "start", "node": "V02", "note": ""}
+{"t": "2026-10-06T12:42:32Z", "event": "done", "node": "V04", "note": "Advisor plan: USD 50/h floor (benchmarks snippet-level), 7 channels, session-1 script; all outreach gated"}
+{"t": "2026-10-06T12:42:32Z", "event": "start", "node": "V07", "note": ""}
