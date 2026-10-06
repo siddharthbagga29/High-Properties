@@ -449,7 +449,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "V14",
