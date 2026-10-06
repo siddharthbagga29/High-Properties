@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:39:52Z",
+ "generated": "2026-10-06T12:39:58Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -277,8 +277,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 15,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V06",
@@ -320,7 +320,7 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 25,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "V08",
@@ -386,7 +386,7 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 25,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "V11",
@@ -761,6 +761,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "V05",
    "note": ""
+  },
+  {
+   "t": "2026-10-06T12:39:58Z",
+   "event": "done",
+   "node": "V05",
+   "note": "3 segments: ND-program employers (People/L&D), accommodation/ADA owners, higher ed; pricing unverified"
   }
  ]
 };
