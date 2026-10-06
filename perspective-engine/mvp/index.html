@@ -494,6 +494,7 @@ function drawDelay(R){
   let d=tail?logn(mn*TAIL_RATIO,TAIL_CV):logn(mn,BASE_CV*V);
   const n=R.m2.draws.length,rem=N-n-1,dmin=0.3*M,dmax=8;
   if(rem>=0){
+    d*=clamp(((N*M-R.m2.sum)/(rem+1))/M,0.5,1.8);   // spread any drift correction over the remaining draws, so it never piles onto the last one
     const hi=Math.min(dmax,(1+DRIFT)*N*M-R.m2.sum-rem*dmin),lo=Math.max(dmin,(1-DRIFT)*N*M-R.m2.sum-rem*dmax);
     d=clamp(d,Math.min(lo,hi),Math.max(lo,hi));
   }
@@ -1161,7 +1162,7 @@ function init(){
     if(++n%5===0&&!$('#fac').hidden)updateStatus();
   },100);
   go('intro',true);
-  window.PE={S:S,go:go,startRun:startRun,stepRun:stepRun,buildExport:buildExport,selfTest:selfTest,doStop:doStop,pause:pause};
+  window.PE={S:S,go:go,startRun:startRun,stepRun:stepRun,buildExport:buildExport,selfTest:selfTest,doStop:doStop,pause:pause,drawDelay:drawDelay};
   if(location.hash==='#selftest')selfTest();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
