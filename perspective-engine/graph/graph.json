@@ -227,7 +227,7 @@
         "reason": "Posting to OSF needs the founder's OSF account."
       },
       "budget_k": 20,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "V04",
@@ -469,7 +469,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "M01",

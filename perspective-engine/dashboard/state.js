@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:45:44Z",
+ "generated": "2026-10-06T12:49:21Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -235,8 +235,8 @@ window.PE_STATE = {
     "reason": "Posting to OSF needs the founder's OSF account."
    },
    "budget_k": 20,
-   "status": "running",
-   "view": "running"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "V04",
@@ -489,8 +489,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "pending",
-   "view": "ready"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "M01",
@@ -826,6 +826,18 @@ window.PE_STATE = {
    "t": "2026-10-06T12:45:44Z",
    "event": "start",
    "node": "V10",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:49:21Z",
+   "event": "done",
+   "node": "V03",
+   "note": "OSF-ready prereg: 120-manager cluster-randomized estimation pilot; CI half-width ~0.41 SD; slots to fill"
+  },
+  {
+   "t": "2026-10-06T12:49:21Z",
+   "event": "start",
+   "node": "V15",
    "note": ""
   }
  ]
