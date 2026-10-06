@@ -6,17 +6,16 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; media-src blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>Perspective Engine: attention-load illustration (prototype v0)</title>
 <!--
-SUMMARY (node F04, Perspective Engine MVP v0)
-One self-contained file: no build step, no network calls (CSP connect-src 'none'), Web Audio for optional sound.
+SUMMARY (F04)
+One self-contained file: no build step, no network calls (CSP connect-src 'none'), optional Web Audio sound.
 A manager does one short workplace task twice (read an email, wait for a file, answer 8 questions, follow an
-instruction): round 1 as usual, round 2 with four tunable, spec-based conditions: M1 inner-voice intrusions,
-M2 reaction-time variability, M3 delay aversion, M4 salience capture (M5 hyperfocus exists, off by default,
-advanced only). A facilitator drawer tunes each within the mechanism spec's ranges (session ceiling 0.8).
-Flow: consent, day-0 questions (T0), round 1, round 2, comparison, mandatory debrief (charter section 6),
-planning step, day-0 post questions (T1), JSON export with no personal identifiers.
-Safety: nothing flashes (no luminance change faster than once per 0.5 s), prefers-reduced-motion honoured,
-Stop visible at all times, keyboard operable. Never claims to show what ADHD is like. Prototype: wording is a
-draft not yet reviewed by neurodivergent advisors (charter section 3 veto applies).
+instruction): round 1 as usual, round 2 with four tunable conditions from the mechanism spec: M1 inner-voice
+intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture. M5 hyperfocus is off by default
+and advanced only. A facilitator drawer tunes each within the spec's ranges (intensity ceiling 0.8).
+Flow: consent, day-0 questions (T0), round 1, round 2, comparison, mandatory debrief, planning, T1 questions,
+JSON export with no personal identifiers. Safety: nothing loops or pulses, the largest cue cycles at most
+0.3 Hz, reduced motion honoured, Stop always visible, keyboard operable. It never claims to show what ADHD is
+like. Wording is a draft pending neurodivergent advisor review (charter section 3).
 -->
 <style>
 :root{--bg:#0f1420;--s1:#182033;--s2:#212c47;--line:#6b7ba3;--line2:#33405e;--tx:#f1f4fa;--mu:#bcc5d8;--ac:#8fd0ff;--aci:#06121f;--ok:#8de0a8;--wa:#ffd166;--st:#ff8a7a;--sti:#2a0703;--fo:#ffd166;--miss:#33405e}
