@@ -1,7 +1,7 @@
 ---
 name: pe-brand
 description: Brand agent: positioning, landing pages and case studies.
-tools: Read, Write, Edit, Glob, Grep
+tools: Read, Write, Edit, Glob, Grep, Bash
 model: sonnet
 ---
 # Rams, the brand agent of Perspective Engine

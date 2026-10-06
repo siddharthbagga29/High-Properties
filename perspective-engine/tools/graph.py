@@ -3,19 +3,26 @@
 
 The graph in graph/graph.json is the single source of truth. Agents never edit
 it by hand; they call this tool, which validates every transition, appends to
-graph/ledger.jsonl and re-exports dashboard/state.js.
+graph/ledger.jsonl, keeps a timestamped activity log per task, and re-exports
+the state the dashboards read (dashboard/state.js, city/public/state.json).
 
   python3 perspective-engine/tools/graph.py validate
   python3 perspective-engine/tools/graph.py ready            # nodes an agent may start now
   python3 perspective-engine/tools/graph.py human            # nodes waiting on the founder
   python3 perspective-engine/tools/graph.py brief F05        # minimal context packet for one node
   python3 perspective-engine/tools/graph.py start F05
+  python3 perspective-engine/tools/graph.py log F05 write "drafted section 2: kill criteria"
   python3 perspective-engine/tools/graph.py done F05 "one-line summary"
   python3 perspective-engine/tools/graph.py block F05 "reason"
   python3 perspective-engine/tools/graph.py clear-gate V09 "founder approved batch 1"
   python3 perspective-engine/tools/graph.py export
+
+Every write takes an exclusive lock, so agents running in parallel cannot
+corrupt the graph.
 """
+import contextlib
 import datetime
+import fcntl
 import json
 import pathlib
 import re
@@ -25,13 +32,28 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 PE = ROOT / "perspective-engine"
 GRAPH = PE / "graph" / "graph.json"
 LEDGER = PE / "graph" / "ledger.jsonl"
+ACTIVITY = PE / "graph" / "activity"
+LOCK = PE / "graph" / ".lock"
 STATE_JS = PE / "dashboard" / "state.js"
 CITY_JSON = PE / "city" / "public" / "state.json"
 STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
+LOG_KINDS = {"plan", "read", "search", "fetch", "write", "edit", "run", "check", "note", "blocked", "handoff"}
+MAX_STATE_BYTES = 230_000  # the live dashboard stores state in one 256 KiB document
 
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@contextlib.contextmanager
+def locked():
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    with LOCK.open("w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
 
 
 def load():
@@ -39,26 +61,58 @@ def load():
 
 
 def save(g):
-    GRAPH.write_text(json.dumps(g, indent=2) + "\n")
+    tmp = GRAPH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(g, indent=2) + "\n")
+    tmp.replace(GRAPH)
 
 
 def index(g):
     return {n["id"]: n for n in g["nodes"]}
 
 
-def log(event, node_id, note=""):
+def ledger_append(event, node_id, note=""):
     with LEDGER.open("a") as f:
         f.write(json.dumps({"t": now(), "event": event, "node": node_id, "note": note}) + "\n")
 
 
-def derived(n, idx):
-    """Status as the dashboard sees it: a pending node whose deps are all done is ready.
+def activity_append(node_id, agent, kind, text, src="self", t=None):
+    ACTIVITY.mkdir(parents=True, exist_ok=True)
+    rec = {"t": t or now(), "node": node_id, "agent": agent, "kind": kind, "text": text[:300], "src": src}
+    with (ACTIVITY / f"{node_id}.jsonl").open("a") as f:
+        f.write(json.dumps(rec) + "\n")
 
-    Gates never stop an agent from preparing the work. A gated node that an agent
-    finishes moves to awaiting_human, and only the founder's clear-gate finishes it."""
+
+def activity_all():
+    out = {}
+    if not ACTIVITY.exists():
+        return out
+    for p in sorted(ACTIVITY.glob("*.jsonl")):
+        rows = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+        seen, uniq = set(), []
+        for r in sorted(rows, key=lambda r: r["t"]):
+            k = (r["t"], r["kind"], r["text"])
+            if k not in seen:
+                seen.add(k)
+                uniq.append(r)
+        out[p.stem] = uniq
+    return out
+
+
+def dep_ok(dep, dependent):
+    """A dependency is satisfied when it is done. A dependent that is itself
+    founder-gated may also start from a dependency that is fully prepared and
+    only waiting on the founder: it will be prepared, never finished, before
+    the founder acts. Anything that needs real results waits for done."""
+    if dep["status"] == "done":
+        return True
+    return dep["status"] == "awaiting_human" and bool(dependent.get("gate"))
+
+
+def derived(n, idx):
+    """Status as the dashboard sees it: a pending node whose deps are satisfied is ready."""
     if n["status"] != "pending":
         return n["status"]
-    return "ready" if all(idx[d]["status"] == "done" for d in n["deps"]) else "pending"
+    return "ready" if all(dep_ok(idx[d], n) for d in n["deps"]) else "pending"
 
 
 def validate(g):
@@ -95,24 +149,28 @@ def validate(g):
     return errs
 
 
-def export(g):
-    idx = index(g)
-    ledger = []
-    if LEDGER.exists():
-        ledger = [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()][-40:]
-    nodes = [dict(n, view=derived(n, idx)) for n in g["nodes"]]
-    state = {"generated": now(), "project": g["project"], "north_star": g["north_star"],
-             "agents": g["agents"], "nodes": nodes, "ledger": ledger}
-    STATE_JS.write_text("window.PE_STATE = " + json.dumps(state, indent=1) + ";\n")
-    if CITY_JSON.parent.exists():
-        city = dict(state, ledger=ledger_all(), excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]})
-        CITY_JSON.write_text(json.dumps(city, separators=(",", ":")))
-
-
 def ledger_all():
     if not LEDGER.exists():
         return []
     return [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()]
+
+
+def export(g):
+    idx = index(g)
+    ledger = ledger_all()
+    nodes = [dict(n, view=derived(n, idx)) for n in g["nodes"]]
+    state = {"generated": now(), "project": g["project"], "north_star": g["north_star"],
+             "agents": g["agents"], "nodes": nodes, "ledger": ledger[-40:]}
+    STATE_JS.write_text("window.PE_STATE = " + json.dumps(state, indent=1) + ";\n")
+    if CITY_JSON.parent.exists():
+        act = activity_all()
+        city = dict(state, ledger=ledger, excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]}, activity=act)
+        # Keep the live document under its size cap: trim the oldest activity first.
+        cap = 120
+        while len(json.dumps(city, separators=(",", ":"))) > MAX_STATE_BYTES and cap > 10:
+            cap -= 10
+            city["activity"] = {k: v[-cap:] for k, v in act.items()}
+        CITY_JSON.write_text(json.dumps(city, separators=(",", ":")))
 
 
 def excerpt(path, limit=520):
@@ -152,6 +210,7 @@ def brief(n, g):
         "ACCEPTANCE: " + "; ".join(n["accept"]),
         f"TOKEN BUDGET: ~{n['budget_k']}k",
         f"GATE: {n['gate']['reason']}" if n.get("gate") else "GATE: none",
+        f"LOG EVERY STEP: python3 perspective-engine/tools/graph.py log {n['id']} <{'|'.join(sorted(LOG_KINDS))}> \"what you did\"",
     ])
 
 
@@ -160,6 +219,11 @@ def main(argv):
         print(__doc__)
         return 1
     cmd, args = argv[0], argv[1:]
+    with locked():
+        return run(cmd, args)
+
+
+def run(cmd, args):
     g = load()
     idx = index(g)
     if cmd == "validate":
@@ -176,15 +240,24 @@ def main(argv):
         return 0
     if cmd == "export":
         export(g)
-        print(f"wrote {STATE_JS.relative_to(ROOT)}")
+        print(f"wrote {STATE_JS.relative_to(ROOT)} and {CITY_JSON.relative_to(ROOT)}")
         return 0
     if not args or args[0] not in idx:
         print(f"usage: {cmd} <NODE_ID> [note]")
         return 1
-    n, note = idx[args[0]], " ".join(args[1:])
+    n = idx[args[0]]
     if cmd == "brief":
         print(brief(n, g))
         return 0
+    if cmd == "log":
+        if len(args) < 3 or args[1] not in LOG_KINDS:
+            print(f"usage: log <NODE_ID> <{'|'.join(sorted(LOG_KINDS))}> \"text\"")
+            return 1
+        activity_append(n["id"], n["agent"], args[1], " ".join(args[2:]))
+        export(g)
+        print(f"{n['id']} logged {args[1]}")
+        return 0
+    note = " ".join(args[1:])
     view = derived(n, idx)
     if cmd == "start":
         if view != "ready":
@@ -218,7 +291,9 @@ def main(argv):
         print(f"unknown command {cmd}")
         return 1
     save(g)
-    log(cmd, n["id"], note)
+    ledger_append(cmd, n["id"], note)
+    activity_append(n["id"], n["agent"], {"start": "plan", "done": "handoff", "block": "blocked"}.get(cmd, "note"),
+                    f"{cmd}{': ' + note if note else ''}", src="ledger")
     export(g)
     print(f"{n['id']} -> {cmd}")
     return 0

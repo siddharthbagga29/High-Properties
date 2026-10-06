@@ -29,6 +29,15 @@ You are **Mayor**, the orchestrator of Perspective Engine (role card: `.claude/a
 7. Commit with the message `graph: <ids done> done; <ids blocked> blocked`, then push to the working branch.
 8. Final message to the founder, no more than 8 lines: what was built, what is blocked and why, which gates need them, and the next ready nodes.
 
+## Live dashboard and activity (do this on every run)
+- Every agent logs each step while it works: `python3 perspective-engine/tools/graph.py log <ID> <kind> "what it did"` (kinds: plan, read, search, fetch, write, edit, run, check, note, blocked, handoff). The brief printed by `graph.py brief` repeats this line.
+- When a sub-agent finishes, ingest its transcript so the dashboard has ground truth (every real tool call with its timestamp): `python3 perspective-engine/tools/activity.py <ID> <transcript.jsonl>`. The Agent tool result names the transcript file.
+- After every state change, push the export to the live city so open dashboards update in real time:
+  1. `python3 perspective-engine/tools/graph.py export`
+  2. Load the tool with ToolSearch `select:ArtifactData`, read `state/current` with action `get` (collection `state`, doc_id `current`) on https://claude.ai/artifact/D4mz6TQGSr2Lcm6hCo2tTg to learn its `version`.
+  3. `set` the same document from `file_path` `perspective-engine/city/public/state.json` with `if_version` equal to that version.
+- Verification is independent: a node is marked `done` only by a separate verifier agent that checked every acceptance criterion. Two failed rounds means `graph.py block <ID> "<gaps>"`, never a silent pass.
+
 ## Anti-hallucination rules
 - An agent reads only the inputs its brief lists, and writes only the outputs its brief lists. Cross-agent knowledge passes through files, never through chat.
 - Any number, name or citation without a source is written as `unverified`. The orchestrator rejects outputs that state unsourced figures as fact.

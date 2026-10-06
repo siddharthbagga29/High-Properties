@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T13:51:33Z",
+ "generated": "2026-10-06T19:34:12Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -119,22 +119,26 @@ window.PE_STATE = {
    "agent": "product",
    "title": "Browser MVP v0: attention-load simulator",
    "deps": [
-    "F01"
+    "F01",
+    "V01",
+    "F06",
+    "V02"
    ],
    "outputs": [
     "perspective-engine/mvp/index.html",
     "perspective-engine/mvp/README.md"
    ],
    "accept": [
-    "baseline vs load conditions",
-    "mandatory debrief",
-    "no flashing above 3 Hz",
-    "JSON export, no network calls"
+    "baseline vs load conditions on the same task",
+    "mechanisms M1-M4 from the mechanism spec, each tunable, M5 off by default",
+    "mandatory debrief per the co-design charter",
+    "no flashing above 3 Hz; reduced-motion respected; Stop always visible",
+    "JSON export of the day-0 measures from the instruments spec; no network calls"
    ],
    "gate": null,
-   "budget_k": 60,
-   "status": "blocked",
-   "view": "blocked"
+   "budget_k": 80,
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "F05",
@@ -456,8 +460,8 @@ window.PE_STATE = {
     "reason": "Sending email uses the founder's Gmail; needs authorization and approval of each batch."
    },
    "budget_k": 10,
-   "status": "pending",
-   "view": "ready"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "V10",
@@ -670,8 +674,8 @@ window.PE_STATE = {
     "reason": "IRB submission goes through a university partner."
    },
    "budget_k": 25,
-   "status": "pending",
-   "view": "pending"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "M04",
@@ -1058,6 +1062,36 @@ window.PE_STATE = {
    "event": "done",
    "node": "F07",
    "note": "3D cortex-to-city with semantic zoom, guide, replay, deep links; a11y/BP/SEO 100"
+  },
+  {
+   "t": "2026-10-06T19:07:55Z",
+   "event": "unblock",
+   "node": "F04",
+   "note": "Founder asked for real building; re-queued"
+  },
+  {
+   "t": "2026-10-06T19:09:04Z",
+   "event": "start",
+   "node": "F04",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T19:17:52Z",
+   "event": "start",
+   "node": "V09",
+   "note": "Ogilvy preparing outreach batch 1 (not sending)"
+  },
+  {
+   "t": "2026-10-06T19:17:52Z",
+   "event": "start",
+   "node": "M03",
+   "note": "Milton preparing the IRB packet"
+  },
+  {
+   "t": "2026-10-06T19:19:31Z",
+   "event": "done",
+   "node": "V09",
+   "note": "Batch B1 prepared, NOT sent: 10 US accounts x 3 touches, signals re-checked, empty send/reply log; awaits founder Gmail OK"
   }
  ]
 };

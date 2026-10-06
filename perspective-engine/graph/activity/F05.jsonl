@@ -1,0 +1,2 @@
+{"t": "2026-10-06T12:57:56Z", "node": "F05", "agent": "orchestrator", "kind": "plan", "text": "Task started", "src": "ledger"}
+{"t": "2026-10-06T12:57:56Z", "node": "F05", "agent": "orchestrator", "kind": "handoff", "text": "Task finished: Plan v1: 4 falsifiable hypotheses w/ kill criteria; browser-first; behavior outcome; MC shows $50M@48mo ~0.6%", "src": "ledger"}

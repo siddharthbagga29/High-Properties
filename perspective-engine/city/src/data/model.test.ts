@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { formatLink, parseLink } from './deeplink'
 import { answer } from './guide'
-import { agentStats, atomsOf, parentOf, statusesAt, timeline } from './model'
+import { agentFeed, agentStats, atomsOf, feed, parentOf, statusesAt, timeline } from './model'
 import type { GraphState } from './types'
 
 const state: GraphState = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8'))
@@ -57,4 +57,17 @@ describe('guide', () => {
   it('navigates to an agent by name', () => expect(answer('what is Ogilvy doing', state, st, null).dive).toBe('gtm'))
   it('is honest about data', () => expect(answer('is this real data?', state, st, null).text).toMatch(/Nothing in this city is simulated/))
   it('falls back to suggestions instead of inventing', () => expect(answer('zzqx', state, st, null).chips?.length).toBeGreaterThan(0))
+})
+
+describe('activity', () => {
+  it('every activity event belongs to a real task and agent', () => {
+    const ids = new Set(state.nodes.map(n => n.id))
+    feed(state, null).forEach(e => { expect(ids.has(e.node)).toBe(true); expect(state.agents[e.agent]).toBeTruthy() })
+  })
+  it('feeds are newest first and filter by agent', () => {
+    const f = agentFeed(state, 'gtm', null)
+    expect(f.length).toBeGreaterThan(10)
+    for (let i = 1; i < f.length; i++) expect(Date.parse(f[i - 1].t)).toBeGreaterThanOrEqual(Date.parse(f[i].t))
+    f.forEach(e => expect(e.agent).toBe('gtm'))
+  })
 })

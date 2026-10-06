@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; media-src blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Perspective Engine: attention-load illustration (prototype v0)</title>
+<!--
+SUMMARY (node F04, Perspective Engine MVP v0)
+One self-contained file: no build step, no network calls (CSP connect-src 'none'), Web Audio for optional sound.
+A manager does one short workplace task twice (read an email, wait for a file, answer 8 questions, follow an
+instruction): round 1 as usual, round 2 with four tunable, spec-based conditions: M1 inner-voice intrusions,
+M2 reaction-time variability, M3 delay aversion, M4 salience capture (M5 hyperfocus exists, off by default,
+advanced only). A facilitator drawer tunes each within the mechanism spec's ranges (session ceiling 0.8).
+Flow: consent, day-0 questions (T0), round 1, round 2, comparison, mandatory debrief (charter section 6),
+planning step, day-0 post questions (T1), JSON export with no personal identifiers.
+Safety: nothing flashes (no luminance change faster than once per 0.5 s), prefers-reduced-motion honoured,
+Stop visible at all times, keyboard operable. Never claims to show what ADHD is like. Prototype: wording is a
+draft not yet reviewed by neurodivergent advisors (charter section 3 veto applies).
+-->
+<style>
+:root{--bg:#0f1420;--s1:#182033;--s2:#212c47;--line:#6b7ba3;--line2:#33405e;--tx:#f1f4fa;--mu:#bcc5d8;--ac:#8fd0ff;--aci:#06121f;--ok:#8de0a8;--wa:#ffd166;--st:#ff8a7a;--sti:#2a0703;--fo:#ffd166;--miss:#33405e}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;background:var(--bg);color:var(--tx);font:1rem/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+[hidden]{display:none!important}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+a.skip{position:absolute;left:8px;top:-60px;background:var(--ac);color:var(--aci);padding:8px 12px;border-radius:8px;z-index:200}
+a.skip:focus{top:8px}
+:focus-visible{outline:3px solid var(--fo);outline-offset:2px}
+h1{font-size:1.7rem;line-height:1.25;margin:.2rem 0 .8rem}
+h2{font-size:1.2rem;margin:.2rem 0 .6rem}
+h3{font-size:1.02rem;margin:.2rem 0 .4rem}
+p{margin:.4rem 0 .8rem}
+ul,ol{margin:.3rem 0 .8rem;padding-left:1.3rem}
+li{margin:.25rem 0}
+small,.small{font-size:.88rem;color:var(--mu)}
+code{background:var(--s2);padding:1px 5px;border-radius:5px;font-size:.9em}
+header.top{position:sticky;top:0;z-index:60;background:#0a0e17;border-bottom:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;justify-content:space-between;padding:8px 14px}
+.brand strong{display:block;font-size:1rem}
+.brand .sub{font-size:.8rem;color:var(--mu)}
+.stepind{font-size:.9rem;color:var(--mu);flex:1 1 200px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:44px;padding:.5rem 1rem;border:2px solid var(--line);background:var(--s2);color:var(--tx);border-radius:10px;font:inherit;font-size:.95rem;cursor:pointer}
+.btn:hover{border-color:var(--ac)}
+.btn.primary{background:var(--ac);color:var(--aci);border-color:var(--ac);font-weight:600}
+.btn.stop{background:var(--st);color:var(--sti);border-color:var(--st);font-weight:700;letter-spacing:.02em}
+.btn.small{min-height:36px;padding:.25rem .7rem;font-size:.85rem}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.link{border-color:transparent;background:transparent;text-decoration:underline;color:var(--ac)}
+.proto{background:#2a2410;color:#ffe9a8;border-bottom:1px solid #6b5a1c;font-size:.82rem;padding:5px 14px}
+main{max-width:1180px;margin:0 auto;padding:18px 14px 90px}
+main:focus{outline:none}
+.screen h1:focus{outline:none}
+.card{background:var(--s1);border:1px solid var(--line2);border-radius:14px;padding:14px 18px;margin:0 0 14px}
+.card.warn{border-color:#7a6a2a}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lead{font-size:1.1rem;max-width:62ch}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:.5rem 0;cursor:pointer}
+.chk input{width:22px;height:22px;margin-top:3px;flex:0 0 auto;accent-color:#8fd0ff}
+.chk.big{font-size:1.02rem}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:.4rem 0}
+fieldset.q{border:1px solid var(--line2);border-radius:12px;margin:0 0 12px;padding:10px 14px;background:var(--s1)}
+fieldset.q legend{padding:0;margin:0 0 4px;font-weight:600;float:left;width:100%}
+fieldset.q legend+*{clear:both}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+label.pill{position:relative;display:inline-block}
+label.pill input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+label.pill span{display:inline-block;min-width:44px;min-height:44px;padding:.5rem .9rem;border:2px solid var(--line);border-radius:10px;background:var(--s2);text-align:center;line-height:1.3}
+label.pill input:focus-visible+span{outline:3px solid var(--fo);outline-offset:2px}
+label.pill input:checked+span{background:var(--ac);color:var(--aci);border-color:var(--ac);font-weight:600}
+label.pill input:checked+span::before{content:"\2713\00a0"}
+label.pill input:disabled+span{opacity:.45}
+.scalehint{display:flex;justify-content:space-between;font-size:.8rem;color:var(--mu);margin-top:2px}
+.ios svg{display:block}
+.ios label.pill span{padding:6px;min-width:96px}
+.sec{margin:1.2rem 0 .4rem;font-size:1.05rem;color:var(--ac)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{border-bottom:1px solid var(--line2);padding:7px 8px;text-align:left;vertical-align:top}
+th{color:var(--mu);font-weight:600}
+.run{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.email{font-size:1.05rem;line-height:1.7;min-height:11rem}
+.email p{margin:.2rem 0 .6rem}
+.ch{display:inline}
+.ch.miss{color:#7e8db3;background:var(--miss);border-radius:4px;padding:0 3px;letter-spacing:-.05em;user-select:none}
+.w.lost{color:transparent;background:var(--miss);border-radius:4px;user-select:none}
+.q{font-size:1.15rem}
+.optlist{display:grid;gap:8px;margin:.6rem 0}
+button.opt{display:flex;gap:10px;align-items:center;text-align:left;width:100%;min-height:48px;padding:.5rem .8rem;border:2px solid var(--line);background:var(--s2);color:var(--tx);border-radius:10px;font:inherit;cursor:pointer}
+button.opt .k{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:6px;background:var(--bg);color:var(--mu);font-size:.85rem}
+button.opt:disabled{opacity:.6;cursor:wait}
+button.opt.sel{border-color:var(--ac);background:#1c3552}
+select,input[type=text]{min-height:44px;font:inherit;color:var(--tx);background:var(--s2);border:2px solid var(--line);border-radius:10px;padding:.4rem .6rem;max-width:100%}
+.status{min-height:1.6em;color:var(--mu);font-size:.95rem}
+.waitcards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.later,.sooner{border:2px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--s2)}
+.sooner{--pull:0}
+.sooner button{margin-top:6px}
+.sooner.pulling{border-color:#ffd166;box-shadow:0 0 calc(var(--pull)*34px) calc(var(--pull)*12px) rgba(255,209,102,calc(.15 + var(--pull)*.55));background:#2b2a22}
+.cp{list-style:none;padding:0;margin:.4rem 0;font-size:.9rem;color:var(--mu)}
+.cp li::before{content:"\25CB\00a0"}
+.cp li.done::before{content:"\25CF\00a0";color:var(--ok)}
+.bar{height:10px;border-radius:6px;background:var(--bg);border:1px solid var(--line2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac);width:0}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#notif{position:fixed;bottom:16px;right:14px;z-index:80;display:grid;gap:8px;width:min(320px,calc(100vw - 28px));pointer-events:none}
+#pullbox{position:fixed;inset:0;z-index:85;display:grid;place-items:center;pointer-events:none}
+.notif{background:#26324f;color:var(--tx);border:2px solid var(--line);border-radius:12px;padding:10px 14px;display:grid;gap:2px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.notif strong{font-size:.85rem;color:var(--ac)}
+.notif.banner{border-left:8px solid var(--ac)}
+.notif.pulled{width:min(440px,92vw);padding:18px 22px;font-size:1.15rem;border-color:var(--wa);outline:4px solid var(--wa);outline-offset:3px}
+body.gm .notif{animation:fadein .3s ease-out}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+#vig{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;background:radial-gradient(circle at center,rgba(0,0,0,.05) 0,rgba(0,0,0,.5) 100%)}
+#vig.on{opacity:1}
+body.gm #vig{transition:opacity .35s ease}
+body.pulling .run,body.pulling #adaptBox{opacity:.8}
+#innerWrap{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:75;max-width:min(560px,94vw);background:#2a2345;color:#efe9ff;border:2px solid #9d8cff;border-radius:14px;padding:10px 16px;text-align:center;pointer-events:none}
+#innerWrap .lbl{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#cbbfff}
+#innerWrap #inner{font-style:italic;font-size:1.05rem}
+body.gm #innerWrap{animation:fadein .4s ease-out}
+#pauseOv{position:fixed;inset:0;z-index:150;background:rgba(5,8,14,.88);display:grid;place-items:center}
+#pauseOv .card{max-width:440px;text-align:center}
+#fac{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:120;background:#121a2c;border-left:2px solid var(--line);overflow:auto;padding:14px 16px 40px}
+#fac h2{font-size:1.15rem}
+.mech{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;margin:0 0 12px;background:var(--s1)}
+.mech.off{opacity:.8}
+.grade{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-left:6px;color:var(--ac);vertical-align:middle}
+.prm{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;margin:.5rem 0}
+.prm label{font-size:.88rem}
+.prm output{font-variant-numeric:tabular-nums;font-size:.88rem;color:var(--wa)}
+.prm input[type=range]{grid-column:1/3;width:100%;min-height:28px;accent-color:#8fd0ff}
+.prm .rng{font-size:.75rem;color:var(--mu)}
+.caveat{font-size:.82rem;color:var(--mu)}
+#facLog{list-style:none;margin:0;padding:0;font:.78rem/1.4 ui-monospace,Menlo,Consolas,monospace;max-height:220px;overflow:auto;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:6px 8px}
+#facLog li{margin:0;color:var(--mu)}
+#facLog b{color:var(--tx)}
+pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid var(--line2);border-radius:8px;padding:10px;font-size:.78rem;white-space:pre-wrap;word-break:break-all}
+.pillrow{display:flex;flex-wrap:wrap;gap:6px;margin:.3rem 0}
+.tag{font-size:.78rem;border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--mu)}
+.debrief article{border-left:4px solid var(--ac);padding:2px 0 2px 14px;margin:0 0 16px}
+.debrief article h2{margin-top:0}
+.rm *,.rm *::before,.rm *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media (max-width:820px){.cols,.run,.waitcards{grid-template-columns:1fr}.board{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){header.top{padding:6px 10px;gap:4px 8px}.brand .sub{display:none}.stepind{order:3;flex-basis:100%;font-size:.8rem}.btn{min-height:44px;padding:.3rem .65rem;font-size:.85rem}#innerWrap{bottom:84px}}
+@media (forced-colors:active){.btn,button.opt,label.pill span{border:2px solid ButtonText}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="top" id="top">
+  <div class="brand"><strong>Perspective Engine</strong><span class="sub">Attention-load illustration &middot; prototype v0</span></div>
+  <div class="stepind" id="stepInd" aria-live="polite"></div>
+  <div class="ctl">
+    <button id="stopBtn" class="btn stop" type="button" aria-label="Stop everything now">&#9632; Stop</button>
+    <button id="pauseBtn" class="btn" type="button" hidden>Pause</button>
+    <button id="easeBtn" class="btn" type="button" hidden title="Lower every added condition to 0.2 for the rest of the session">Ease off</button>
+    <button id="soundBtn" class="btn" type="button" aria-pressed="false">Sound: off</button>
+    <button id="facBtn" class="btn" type="button" aria-expanded="false" aria-controls="fac">Facilitator panel</button>
+  </div>
+</header>
+<div class="proto" role="note">Prototype v0 for internal review. Wording is a draft by the product agent and has not been reviewed or approved by any neurodivergent advisor. Not for use with real participants until the co-design charter's harm review is signed off.</div>
+
+<main id="main" tabindex="-1">
+<noscript><p class="card warn">This page needs JavaScript to run. Nothing is sent anywhere.</p></noscript>
+
+<section id="s-intro" class="screen" aria-labelledby="h-intro" hidden>
+  <h1 id="h-intro" tabindex="-1">A short, honest illustration of four attention and timing patterns</h1>
+  <p class="lead">You will do one small workplace task twice, in about 15 minutes in all. The second time, four patterns that research reports for some people with ADHD at group level are added in an adjustable, made-up way. Then comes a debrief, a few questions and a planning step.</p>
+  <div class="cols">
+    <div class="card"><h2>What this is</h2><ul>
+      <li>An interactive illustration of documented attention and timing patterns that some people with ADHD report or show at group level.</li>
+      <li>A way to start a conversation about working practices, always followed by a debrief.</li></ul></div>
+    <div class="card"><h2>What this is not</h2><ul>
+      <li>It is an analogue. It is not what ADHD is, and not what any person's day is like. Group findings do not describe individuals, and people with ADHD differ widely.</li>
+      <li>It does not diagnose, screen, score or rank you or anyone else. It is not an attention test.</li>
+      <li>It has not been shown to build empathy or change behaviour. One review found simulations can raise discomfort without improving attitudes (Nario-Redmond et al., 2017), so this one is short and has a mandatory debrief.</li></ul></div>
+  </div>
+  <div class="card"><h2>Your data and your control</h2><ul>
+    <li>Everything stays on this device. No account, camera, microphone or name. Nothing is sent anywhere. At the end you may download a file that holds no personal identifiers; sharing it is your choice.</li>
+    <li><strong>Stop</strong> is visible at every moment. Pause, Ease off and Skip are always available. You can leave at any point without consequence. Everything works from the keyboard; Esc pauses, and the pause dialog has its own Stop button.</li>
+    <li>Content note: interruptions, a wait, notifications from outside the task and, only if you switch sound on, quiet sounds. Nothing flashes. If you have ADHD yourself this may feel inaccurate or upsetting, and you are free to skip it.</li></ul></div>
+  <div class="card"><h2>Sensory settings (reduced by default)</h2>
+    <label class="chk"><input type="checkbox" id="optSound"><span>Allow quiet sounds (off by default). Needed for the optional inner-voice murmur and notification pings.</span></label>
+    <div class="row"><button class="btn small" type="button" id="testSound">Play a test sound</button><label for="vol" class="small">Volume</label><input type="range" id="vol" min="0.05" max="0.5" step="0.05" value="0.25" aria-label="Sound volume"></div>
+    <label class="chk"><input type="checkbox" id="optMotion"><span>Allow gentle motion (fades only). Off by default; always off if your system asks for reduced motion. With it off, cues appear and disappear instantly and nothing animates.</span></label>
+    <p class="small" id="motionNote"></p>
+  </div>
+  <div class="card"><h2>For facilitators</h2><p class="small">Open the Facilitator panel (top right) to tune the four conditions before round 2. Defaults are the mechanism spec's mid-range values (intensity 0.5); the session ceiling is 0.8. Hyperfocus (M5) is off and sits under Advanced.</p></div>
+  <label class="chk big"><input type="checkbox" id="consent"><span>I have read this. I understand that this is an illustration, that it may cause some discomfort, that I can stop at any time, and that a debrief follows.</span></label>
+  <p><button class="btn primary" id="beginBtn" type="button" disabled>Begin</button></p>
+</section>
+
+<section id="s-t0" class="screen" aria-labelledby="h-t0" hidden></section>
+
+<section id="s-brief1" class="screen" aria-labelledby="h-brief1" hidden>
+  <h1 id="h-brief1" tabindex="-1">Round 1: the task, as usual</h1>
+  <div class="card"><p class="lead">A colleague will send you an email. It is read out and shown phrase by phrase, like a walkthrough on a shared screen. Then:</p>
+    <ol><li>Wait for Finance's cost summary to open.</li><li>Answer 8 short questions about the email.</li><li>Follow the instruction at the end of the email.</li></ol>
+    <p class="small">There is no time limit and no score is shown while you work. Round 2 repeats the same kind of task, with matching content, so you are not just remembering answers. Stop is always at the top right.</p></div>
+  <p><button class="btn primary" id="startR1" type="button">Start round 1</button></p>
+</section>
+
+<section id="s-run" class="screen" aria-labelledby="h-run" hidden></section>
+
+<section id="s-brief2" class="screen" aria-labelledby="h-brief2" hidden></section>
+<section id="s-compare" class="screen" aria-labelledby="h-compare" hidden></section>
+<section id="s-debrief" class="screen debrief" aria-labelledby="h-debrief" hidden></section>
+<section id="s-plan" class="screen" aria-labelledby="h-plan" hidden></section>
+<section id="s-t1" class="screen" aria-labelledby="h-t1" hidden></section>
+<section id="s-done" class="screen" aria-labelledby="h-done" hidden></section>
+<section id="s-stopped" class="screen" aria-labelledby="h-stopped" hidden></section>
+</main>
+
+<aside id="fac" aria-label="Facilitator panel" hidden></aside>
+<div id="notif" aria-hidden="true"></div>
+<div id="pullbox" aria-hidden="true"></div>
+<div id="vig" aria-hidden="true"></div>
+<div id="innerWrap" aria-hidden="true" hidden><span class="lbl">Inner voice (off-task thought)</span><span id="inner"></span></div>
+<div id="pauseOv" role="dialog" aria-modal="true" aria-labelledby="pauseH" hidden>
+  <div class="card"><h2 id="pauseH">Paused</h2><p>Everything is frozen, including timers and sound. Nothing is recorded as a response while paused.</p>
+    <div class="row" style="justify-content:center"><button class="btn primary" id="resumeBtn" type="button">Resume</button><button class="btn stop" id="stopBtn2" type="button">&#9632; Stop</button></div></div>
+</div>
+<div id="live" class="sr" aria-live="polite"></div>
+<script>
+(function(){
+'use strict';
+/* ===== constants (all numeric ranges are DESIGN parameters from perspective-engine/science/mechanism-spec.md, not empirical ADHD estimates) ===== */
+const VERSION='0.1.0-F04';
+const CEIL=0.8, DEF_I=0.5;            // session ceiling and default intensity (spec section 1)
+const MIN_VIS_GAP=2.5;                // s between visual cue events: keeps every change well under 3 Hz
+const BASE_DELAY=1.0, BASE_CV=0.25;   // scenario baseline response-registration delay (design)
+const TAIL_RATIO=6, TAIL_CV=0.4;      // slow-tail mean = 6x normal-component mean (design assumption)
+const N_DRAWS=9;                      // 8 answers + 1 send per run
+const DRIFT=0.05;                     // mean-delay drift allowed (spec M2): +-5%
+const GAP_MIN=5;                      // M1 minimum gap between intrusions (spec)
+
+/* ===== utilities ===== */
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const rnd=()=>Math.random();
+const rand=(a,b)=>a+rnd()*(b-a);
+const expS=m=>-Math.log(1-rnd())*m;
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const r1=x=>Math.round(x*10)/10, r2=x=>Math.round(x*100)/100, r3=x=>Math.round(x*1000)/1000;
+function gauss(){let u=0,v=0;while(!u)u=rnd();while(!v)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function logn(mean,cv){const s2=Math.log(1+cv*cv);return Math.exp(Math.log(mean)-s2/2+Math.sqrt(s2)*gauss());}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function fmtT(s){s=Math.max(0,s);const m=Math.floor(s/60),x=s-m*60;return String(m).padStart(2,'0')+':'+(x<10?'0':'')+x.toFixed(1);}
+function h(tag,attrs){
+  const e=document.createElement(tag);
+  if(attrs)for(const k in attrs){const v=attrs[k];if(v==null||v===false)continue;
+    if(k==='class')e.className=v;
+    else if(k==='text')e.textContent=v;
+    else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);
+    else if(k==='checked'||k==='disabled'||k==='hidden'||k==='value'||k==='selected')e[k]=v;
+    else e.setAttribute(k,v===true?'':v);}
+  for(let i=2;i<arguments.length;i++){const c=arguments[i];
+    (Array.isArray(c)?c:[c]).forEach(x=>{if(x==null||x===false)return;e.append(x.nodeType?x:document.createTextNode(String(x)));});}
+  return e;
+}
+function uid(){const a=new Uint8Array(6);(window.crypto||{getRandomValues:x=>{for(let i=0;i<x.length;i++)x[i]=Math.floor(rnd()*256);}}).getRandomValues(a);return Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');}
+
+/* ===== mechanism definitions (mechanism-spec.md section 2) ===== */
+const MECH={
+ M1:{name:'M1 Inner-voice intrusions',grade:'S2',gradeTxt:'Evidence S2: theory-backed, contested',
+  what:'Irregular off-task thoughts (text, optional murmur) cut in. Part of the task information arriving during an intrusion is missed (dimmed). Internal: no outside cause.',
+  ev:'Default-mode interference hypothesis (Sonuga-Barke & Castellanos 2007). Imaging-supported hypothesis, contested, group-level only, not a diagnostic marker. Real intrusion frequency and duration: unverified.',
+  params:[{k:'rate',label:'Intrusion rate',unit:'events/min',lo:0.5,hi:4,drv:1},
+          {k:'dur',label:'Intrusion duration',unit:'s',lo:2,hi:8,drv:1},
+          {k:'share',label:'Share of task info lost during intrusion',unit:'',lo:0.2,hi:0.8,drv:1}],
+  fixed:'Minimum gap between intrusions: 5 s (fixed). Timing is irregular on purpose; no periodicity is claimed.'},
+ M2:{name:'M2 Reaction-time variability',grade:'S1',gradeTxt:'Evidence S1: among the most consistent group-level findings',
+  what:'Your answers are registered after a delay with a wider spread and a slow tail. The average delay stays the same (variability, not slowing).',
+  ev:'Intra-individual reaction-time variability is among the most consistent ADHD findings at group level (PubMed 24204553). Slow-tail shape is a design assumption (unverified). Link to default-mode intrusions (M1 coupling) is motivated by Sonuga-Barke & Castellanos 2007; its strength is unverified.',
+  params:[{k:'cvm',label:'Variability multiplier on baseline CV',unit:'x',lo:1,hi:3,drv:1},
+          {k:'tail',label:'Share of responses from slow tail',unit:'',lo:0.05,hi:0.30,drv:1},
+          {k:'couple',label:'Coupling M1 to M2 (first response after an intrusion from slow tail)',unit:'prob',lo:0,hi:0.8,drv:1}],
+  fixed:'Mean-delay drift allowed: +-5% (fixed). Slow-tail mean is 6x the normal component (design assumption).'},
+ M3:{name:'M3 Delay aversion',grade:'S2',gradeTxt:'Evidence S2: moderate, extrapolated from adolescents',
+  what:'During a forced wait, a visible pull toward a smaller, sooner option grows with elapsed time. Both options stay available; the clock is not distorted.',
+  ev:'Delay aversion and temporal discounting linked with default-mode hypoconnectivity in adolescents (PubMed 35032471). Adult workplace use is an extrapolation. The hyperbolic form V = V0/(1 + kD) is a modelling convention (unverified). Time perception is not modelled.',
+  params:[{k:'k',label:'Discount rate k',unit:'1/s',lo:0.02,hi:0.20,drv:1},
+          {k:'pull',label:'Pull-cue intensity',unit:'0-1',lo:0.2,hi:1,drv:1},
+          {k:'D',label:'Forced wait length D (scenario-set)',unit:'s',lo:5,hi:30,drv:0,def:15,step:1}],
+  fixed:''},
+ M4:{name:'M4 Salience capture',grade:'S2',gradeTxt:'Evidence S2, mixed: depends on task difficulty',
+  what:'Irrelevant events from outside the task (notifications) occur. Each may capture attention: the view is pulled to it for a dwell time. Nothing is blocked.',
+  ev:'Adults with ADHD show higher behavioural distractibility than controls, and capture depends on task difficulty (snippet-level evidence; PMC4670482 and others). Direction and size are mixed, so difficulty is an explicit moderator. Authors and effect sizes: unverified.',
+  params:[{k:'rate',label:'Salient event rate',unit:'events/min',lo:2,hi:10,drv:1},
+          {k:'p',label:'Capture probability at nominal difficulty',unit:'prob',lo:0.1,hi:0.7,drv:1},
+          {k:'diff',label:'Task-difficulty modifier on p (scenario-set; p capped at 0.95)',unit:'x',lo:0.5,hi:1.5,drv:0,def:1,step:0.05},
+          {k:'dwell',label:'Capture dwell',unit:'s',lo:0.5,hi:3,drv:1}],
+  fixed:''},
+ M5:{name:'M5 Hyperfocus (advanced)',grade:'S3',gradeTxt:'Evidence S3: self-report only, default OFF',
+  what:'Adds a block with a task flagged high-interest. After an onset latency a locked-in state damps M1 and M4, and non-task cues are more likely to go unnoticed. The state is never shown to the user.',
+  ev:'Self-report only (Hupfeld, Abagis & Shah 2019). No behavioural or neural validation found. This is not a claim about strengths. Consequences for outside cues are a design assumption (unverified).',
+  params:[{k:'onset',label:'Onset latency on flagged task',unit:'s',lo:30,hi:120,drv:0,def:60,step:1},
+          {k:'mult',label:'Multiplier on M1 rate and M4 p while active',unit:'x',lo:0.1,hi:0.6,drv:0,def:0.3,step:0.01},
+          {k:'miss',label:'Probability a non-task cue is missed while active',unit:'prob',lo:0.3,hi:0.9,drv:0,def:0.6,step:0.01},
+          {k:'dur',label:'Duration of locked-in state',unit:'s',lo:30,hi:120,drv:0,def:75,step:1}],
+  fixed:'Only damps M1 and M4. Does not alter M2 or M3.'}
+};
+const MKEYS=['M1','M2','M3','M4','M5'];
+function pStep(p){return p.step||(p.hi-p.lo)/100;}
+function pMax(p){return p.drv?p.lo+CEIL*(p.hi-p.lo):p.hi;}
+function pFromI(p,I){return p.lo+I*(p.hi-p.lo);}
+function initMech(){
+  const o={};
+  MKEYS.forEach(m=>{const e={enabled:m!=='M5',I:DEF_I,custom:false,v:{}};
+    MECH[m].params.forEach(p=>{e.v[p.k]=p.drv?pFromI(p,DEF_I):p.def;});o[m]=e;});
+  return o;
+}
+function setI(m,I){const e=S.mech[m];e.I=clamp(I,0,CEIL);e.custom=false;MECH[m].params.forEach(p=>{if(p.drv)e.v[p.k]=pFromI(p,e.I);});}
+const ADAPT={
+ follow:{label:'Written follow-up',aff:'M1',desc:'The email is also sent in writing, so passages missed live can be read again.'},
+ quiet:{label:'Fewer notifications',aff:'M4',desc:'Notification-light mode: outside events happen about 60% less often.'},
+ deadline:{label:'Structured deadline',aff:'M3',desc:'The wait gets a stated end time and checkpoints, and the pull cue is cut by 60%.'}
+};
+const ADAPT_FACTOR={quiet:0.4,deadline:0.4};
+
+/* ===== state ===== */
+const S={
+ sid:uid(),t0:performance.now(),startISO:new Date().toISOString().slice(0,16)+'Z',
+ screen:'intro',consent:null,paused:false,stopped:null,
+ set:{sound:false,vol:0.25,gentle:false,pace:1.8,formMode:'matched',formFirst:'random',offerAdapt:true,measures:true},
+ mech:null,adapt:{follow:false,quiet:false,deadline:false},adaptLog:[],
+ run:null,runs:{baseline:null,load:null},forms:{baseline:'A',load:'B'},
+ T0:null,T1:null,practice:null,toolkit:[],events:[],pauses:[],easeOff:0,
+ debrief:{seen:false,reachedEnd:false,seconds:0,t:null},screenT:{},rm:false
+};
+S.mech=initMech();
+const sessT=()=>(performance.now()-S.t0)/1000;
+function logEv(type,data){
+  const e=Object.assign({t:r2(sessT()),run:S.run?S.run.cond:null,type:type},data||{});
+  S.events.push(e);
+  const ul=$('#facLog');
+  if(ul){const li=h('li',null,h('b',null,fmtT(e.t)+' '),type+(data?' '+JSON.stringify(data).slice(0,110):''));ul.prepend(li);while(ul.children.length>90)ul.lastChild.remove();}
+}
+function say(t){const l=$('#live');if(l)l.textContent=t;}
+
+/* ===== task content: two matched forms. Wording is draft, authored by the product agent (advisor review pending). ===== */
+const FORMS={
+ A:{id:'A',subject:'Thursday client handover',from:'Dana (operations)',
+  sentences:[
+   'Hi, |here is the plan |for Thursday’s handover |with the Harbor Foods team.',
+   'The meeting has moved |to 2:30 pm in Room B, |instead of the usual morning slot.',
+   'Please bring |the signed scope sheet |and the printed budget summary.',
+   'The phase-one budget cap |is 18,400, |and nothing above 5,000 |may be committed |without written approval.',
+   'Priya will present the timeline |and Marco |will cover the risks.',
+   'If Room B is taken, |we will use |the third-floor lounge.',
+   'Before you leave today, |please send the agenda |to Ms. Okafor |and copy in Finance.',
+   'Thanks, |Dana'],
+  qs:[
+   {q:'What time is the meeting now?',o:['10:00 am','12:30 pm','2:30 pm','3:30 pm'],a:2},
+   {q:'Which room is booked?',o:['Room A','Room B','Room D','The lounge'],a:1},
+   {q:'What should you bring?',o:['The signed scope sheet and the printed budget summary','The timeline slides and the risk register','The signed contract and a laptop','The agenda and the budget cap'],a:0},
+   {q:'What is the phase-one budget cap?',o:['14,800','18,000','18,400','28,400'],a:2},
+   {q:'Above what amount is written approval needed?',o:['500','3,000','5,000','15,000'],a:2},
+   {q:'Who will present the timeline?',o:['Dana','Priya','Marco','Ms. Okafor'],a:1},
+   {q:'Who will cover the risks?',o:['Priya','Dana','Finance','Marco'],a:3},
+   {q:'Where is the fallback if Room B is taken?',o:['Room D','The third-floor lounge','The cafeteria','Move to Friday'],a:1}],
+  reply:{to:['Ms. Okafor','Dana','Priya','Harbor Foods team'],cc:['Finance','Marco','Legal','No one'],att:['Agenda','Budget summary','Scope sheet'],ans:{to:0,cc:0,att:0}}},
+ B:{id:'B',subject:'Wednesday supplier review',from:'Ravi (operations)',
+  sentences:[
+   'Hi, |here is the plan |for Wednesday’s review |with the Northgate Logistics team.',
+   'The meeting has moved |to 11:45 am in Room D, |instead of the usual afternoon slot.',
+   'Please bring |the updated risk register |and the printed cost summary.',
+   'The phase-two cost limit |is 27,600, |and nothing above 3,000 |may be committed |without written approval.',
+   'Tomas will present the schedule |and Lena |will cover the dependencies.',
+   'If Room D is taken, |we will use |the second-floor library.',
+   'Before you leave today, |please send the checklist |to Mr. Haddad |and copy in Legal.',
+   'Thanks, |Ravi'],
+  qs:[
+   {q:'What time is the meeting now?',o:['9:45 am','11:45 am','1:45 pm','4:15 pm'],a:1},
+   {q:'Which room is booked?',o:['Room C','Room B','Room D','The library'],a:2},
+   {q:'What should you bring?',o:['The updated risk register and the printed cost summary','The schedule slides and the signed contract','The signed scope sheet and a laptop','The checklist and the cost limit'],a:0},
+   {q:'What is the phase-two cost limit?',o:['27,000','27,600','26,700','72,600'],a:1},
+   {q:'Above what amount is written approval needed?',o:['300','3,000','13,000','30,000'],a:1},
+   {q:'Who will present the schedule?',o:['Lena','Ravi','Tomas','Mr. Haddad'],a:2},
+   {q:'Who will cover the dependencies?',o:['Tomas','Lena','Legal','Ravi'],a:1},
+   {q:'Where is the fallback if Room D is taken?',o:['Room C','The cafeteria','The second-floor library','Move to Thursday'],a:2}],
+  reply:{to:['Mr. Haddad','Ravi','Lena','Northgate team'],cc:['Legal','Tomas','Finance','No one'],att:['Checklist','Cost summary','Risk register'],ans:{to:0,cc:0,att:0}}}
+};
+function chunksOf(form){const out=[];form.sentences.forEach((s,si)=>s.split('|').forEach(c=>{const t=c.trim();if(t)out.push({s:si,text:t,missed:false,el:null,shownT:null});}));return out;}
+const INNER=['Did I answer that invoice email?','What was I going to have for dinner?','I should book that appointment.','That song from this morning again.','I need to reply to Jo about the weekend.','Is it going to rain later?','I still haven’t called about the parking permit.','Where did I save that file?','I wonder if the shop is still open.','Need to water the plant on my desk.','That thing I meant to say earlier…','Did I turn the heating off?'];
+const NOTIFS=[{l:'Chat · Lee',t:'Anyone up for lunch later?'},{l:'Calendar',t:'Weekly sync was cancelled'},{l:'Email',t:'New message: invoice received'},{l:'Chat · Mia',t:'Quick question when you have a sec'},{l:'System',t:'Updates are ready to install'},{l:'Reminder',t:'Submit your timesheet'},{l:'Chat · Sam',t:'Did you see the news?'}];
+const CUES=[{l:'Chat · colleague',t:'Can you look at this when you are free?'},{l:'Timer',t:'Your check-in reminder is up'}];
+
+/* ===== day-0 measures: ONLY items named in perspective-engine/data/instruments.md ===== */
+const AAI=['Sent agendas at least 24 hours before meetings','Sent a written follow-up after meetings','Stated priorities and deadlines in writing','Split large tasks with interim checkpoints','Offered notification-light or focus-time blocks','Asked team members what helps them work, without requiring disclosure','Offered quiet-space, headphone or remote-work flexibility','Gave a written response to any accommodation request within a stated time','Gave feedback that was structured and specific rather than vague','Held check-ins on workload at a regular cadence'];
+const AAI_IMP=['Send agendas at least 24 hours before meetings','Send a written follow-up after meetings','State priorities and deadlines in writing','Split large tasks with interim checkpoints','Offer notification-light or focus-time blocks','Ask team members what helps them work, without requiring disclosure','Offer quiet-space, headphone or remote-work flexibility','Give a written response to any accommodation request within a stated time','Give feedback that is structured and specific rather than vague','Hold check-ins on workload at a regular cadence'];
+const LIK7=['Strongly disagree','Disagree','Somewhat disagree','Neutral','Somewhat agree','Agree','Strongly agree'];
+const SE=[{id:'se1',text:'I know what to do when a team member struggles with attention-related demands.'}];
+const KNOW=[{id:'k1',text:'Research findings about ADHD describe groups of people, not any one individual.',a:'T'},{id:'k2',text:'ADHD means a person cannot focus.',a:'F'}];
+const ATTN=[{id:'ac1',text:'Instruction check: please select 6 for this item.',exp:6},{id:'ac2',text:'Instruction check: please select “Not sure” for this item.',exp:'N'}];
+const NOT_ADMIN=[
+ {instrument:'QPS (Fuermaier 2012), 37 items; 2 subscales at T1',why:'item texts not in the instruments spec; licensing unverified'},
+ {instrument:'IRI Perspective-Taking (Davis 1983), 7 items',why:'item texts not in the instruments spec; licensing unverified'},
+ {instrument:'RIBS (Evans-Lacko 2011), 8 items; intended 4 at T1',why:'item texts not in the instruments spec; ADHD wording would be an unvalidated adaptation'},
+ {instrument:'OMS-WA (Lindsay 2024), 22 items, T0',why:'item texts not in the instruments spec; licensing unverified'},
+ {instrument:'AQ-27 Pity and Fear subscales (Corrigan 2003)',why:'item texts not in the instruments spec; ADHD vignette would be an unvalidated adaptation'},
+ {instrument:'Marlowe-Crowne short form C, 13 items, T0',why:'item texts not in the instruments spec'},
+ {instrument:'Self-efficacy items 2 and 3',why:'instruments spec gives 3 items but names only one'},
+ {instrument:'Knowledge items 3 to 8',why:'instruments spec gives 8 items but names only two examples'},
+ {instrument:'AAI-verified (logs, direct-report survey)',why:'needs system logs or direct reports; outside a single-device session'},
+ {instrument:'Toolkit follow-up messages',why:'contact with real people is a founder-gated step'}];
+const PRACT=[
+ {id:'p1',t:AAI_IMP[0],c:1,m:1},{id:'p2',t:AAI_IMP[1],c:1,m:1},{id:'p3',t:AAI_IMP[2],c:1,m:1},{id:'p4',t:AAI_IMP[3],c:2,m:1},{id:'p5',t:AAI_IMP[4],c:2,m:1},
+ {id:'p6',t:AAI_IMP[5],c:1,m:1},{id:'p7',t:AAI_IMP[6],c:3,m:1},{id:'p8',t:AAI_IMP[7],c:2,m:1},{id:'p9',t:AAI_IMP[8],c:2,m:1},{id:'p10',t:AAI_IMP[9],c:3,m:1},
+ {id:'x1',t:'Ask people to share any diagnosis before offering flexibility',c:1,m:0},
+ {id:'x2',t:'Track each person’s response times to see who is struggling',c:2,m:0},
+ {id:'x3',t:'Wait until someone asks, then decide case by case',c:1,m:0},
+ {id:'x4',t:'Run a one-off awareness talk and move on',c:2,m:0}];
+const SLOTS=5,BUDGET=8;
+const TOOLKIT={
+ agenda:{title:'Agenda template (send at least 24 hours ahead)',text:'Subject: Agenda for [meeting], [day] at [time]\n\nPurpose of the meeting (one sentence):\nDecisions we need to make:\nItems, in order, with who leads and how long:\n1.\n2.\n3.\nWhat to read or prepare beforehand (optional):\nIf you prefer to contribute in writing, reply by [time]:\n\nSent at least 24 hours before the meeting.\n'},
+ followup:{title:'Written follow-up template (send after the meeting)',text:'Subject: Follow-up: [meeting], [date]\n\nDecisions made:\nActions (who, what, by when, written deadline):\nOpen questions and who will answer:\nNext meeting: [date, time]. Agenda to follow 24 hours before.\n\nReply if anything here is unclear or you would like it in a different format.\n'}
+};
+const DEBRIEF=[
+ ['What you just did is an analogue',['You did a small task twice. In round 2, four patterns that research reports for some people with ADHD at group level were added in a made-up, adjustable way. It is an analogue built from a few reported experiences. It is not what ADHD is, and it is not what any person’s day is like. A few minutes cannot convey living with a condition, and the settings were chosen for visibility, not measured from anyone.']],
+ ['Strengths and adaptation',['People with ADHD build workable ways of working and bring real skills and expertise. Short simulations ignore that long-term coping and so tend to understate capability. In round 2 you could try workplace changes (written follow-up, fewer notifications, a structured deadline). If you tried them, they eased the added conditions in this illustration. That shows a design idea, not proof that a change works for any person. ADHD is not only a deficit and not only a gift; it varies.']],
+ ['People differ widely',['People with ADHD differ widely in which patterns they notice, how strongly, and when. Findings such as variable reaction times describe groups, not any one person. This session cannot tell you how a colleague experiences anything, so ask rather than assume.']],
+ ['Accommodations and practice',['Concrete steps you can take: ask what helps, without requiring anyone to disclose anything; send agendas ahead of time; follow meetings with a short written summary and written deadlines; split large tasks with checkpoints; offer focus time and fewer notifications; answer requests in writing; check in on workload regularly.','These are options to agree together, drawn from general workplace-accommodation guidance. How well each works for any one person is not established here.']],
+ ['Mismatches go both ways',['Communication mismatches run in both directions, and teams can adjust too. The research on this two-way view (the double empathy problem) comes mainly from autism. It is applied to ADHD here cautiously; that is an extrapolation, not an established account of ADHD.']],
+ ['Your reaction',['Pity, discomfort or confusion are common reactions to an exercise like this. They are not a measure of understanding, and pity is not the goal. This session has not been shown to build empathy, reduce stigma or change behaviour. Research found simulations can raise discomfort without improving attitudes, so what counts is what you do afterwards.']],
+ ['What not to do next',['Do not diagnose or label colleagues. You cannot tell from behaviour, and this session does not teach you to.','Do not say “now I know how you feel”.','Do not reuse these scenes to tease, test or evaluate anyone, and do not track individuals’ responses or timings.']],
+ ['Lived-experience voice',['No advisor words or recordings are included in this prototype. Neurodivergent advisors, paid and credited as they choose, will author and approve this part. Until then this card is a placeholder and all wording in this debrief is a draft.']],
+ ['Where to learn more and raise a concern',['A vetted resource list and a feedback and concerns channel with a named person are not set up yet (unverified; to be sourced by advisors and the founder). Until then, raise concerns with whoever ran your session.']],
+ ['Check in with yourself',['If you feel unsettled, stop, take a break, have some water and talk to someone you trust. A way to talk to a named person is not set up in this prototype. If you are in distress or crisis, contact local support or emergency services.']]
+];
+
+/* ===== audio (Web Audio, opt-in, synthesised on device; no files, no network) ===== */
+const Aud={ctx:null,master:null,mur:null,
+ ensure(){
+  if(!S.set.sound)return false;
+  if(!this.ctx){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;this.ctx=new C();this.master=this.ctx.createGain();this.master.gain.value=S.set.vol;this.master.connect(this.ctx.destination);}catch(e){return false;}}
+  if(this.ctx.state==='suspended'&&!S.paused)this.ctx.resume();
+  return true;},
+ vol(v){if(this.master)this.master.gain.setTargetAtTime(v,this.ctx.currentTime,0.05);},
+ ping(){
+  if(!this.ensure())return;const c=this.ctx,t=c.currentTime;
+  [[880,0],[1175,0.12]].forEach(a=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=a[0];
+   g.gain.setValueAtTime(0.0001,t+a[1]);g.gain.exponentialRampToValueAtTime(0.18,t+a[1]+0.015);g.gain.exponentialRampToValueAtTime(0.0001,t+a[1]+0.28);
+   o.connect(g);g.connect(this.master);o.start(t+a[1]);o.stop(t+a[1]+0.3);});},
+ murStart(sec){
+  if(!this.ensure())return;this.murStop();const c=this.ctx,t=c.currentTime,len=c.sampleRate*2;
+  const buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);let b0=0;
+  for(let i=0;i<len;i++){const w=Math.random()*2-1;b0=0.97*b0+0.03*w;d[i]=w*0.3+b0*4;}
+  const src=c.createBufferSource();src.buffer=buf;src.loop=true;
+  const f1=c.createBiquadFilter();f1.type='bandpass';f1.frequency.value=550;f1.Q.value=1.4;
+  const f2=c.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1700;f2.Q.value=2.2;
+  const mix=c.createGain();mix.gain.value=0.5;const env=c.createGain();env.gain.value=0.5;
+  const lfo=c.createOscillator();lfo.frequency.value=3.3;const lg=c.createGain();lg.gain.value=0.35;lfo.connect(lg);lg.connect(env.gain);
+  const out=c.createGain();out.gain.setValueAtTime(0.0001,t);out.gain.linearRampToValueAtTime(0.5,t+0.5);
+  out.gain.setValueAtTime(0.5,t+Math.max(0.6,sec-0.5));out.gain.linearRampToValueAtTime(0.0001,t+sec);
+  src.connect(f1);src.connect(f2);f1.connect(mix);f2.connect(mix);mix.connect(env);env.connect(out);out.connect(this.master);
+  src.start(t);lfo.start(t);src.stop(t+sec+0.1);lfo.stop(t+sec+0.1);this.mur={src:src,lfo:lfo,out:out};},
+ murStop(){
+  if(!this.mur||!this.ctx)return;const t=this.ctx.currentTime;
+  try{this.mur.out.gain.cancelScheduledValues(t);this.mur.out.gain.setTargetAtTime(0.0001,t,0.08);this.mur.src.stop(t+0.4);this.mur.lfo.stop(t+0.4);}catch(e){}
+  this.mur=null;},
+ hush(){this.murStop();if(this.ctx&&this.ctx.state==='running')this.ctx.suspend();},
+ stopAll(){this.murStop();if(this.ctx){try{this.ctx.close();}catch(e){}}this.ctx=null;this.master=null;}
+};
+
+/* ===== run engine ===== */
+const on=(R,m)=>R.cond==='load'&&S.mech[m].enabled;
+function newRun(cond){
+  const form=FORMS[S.forms[cond]];
+  return {cond:cond,form:form,chunks:chunksOf(form),t:0,stepT:0,step:null,over:false,
+   intr:null,nIntr:0,nextIntr:null,lastFrag:-1,nextSal:null,notif:null,lastEnd:-99,
+   m2:{draws:[],sum:0,pendingCouple:false},pend:null,qa:{i:0,items:[],cur:null},wait:null,reply:null,flow:null,lockMult:1,
+   stream:{idx:0,sched:null,end:0},events:{intr:[],sal:[],cues:[]},skips:[],tStart:r2(sessT()),tEnd:null,sum:null};
+}
+function flat(a,out){(Array.isArray(a)?a:[a]).forEach(x=>{if(Array.isArray(x))flat(x,out);else if(x!=null&&x!==false)out.push(x);});return out;}
+function mount(root,kids){root.replaceChildren.apply(root,flat(kids,[]));}
+function mk(text){const f=document.createDocumentFragment();text.split(' ').forEach((w,i,a)=>{f.append(h('span',{class:'w'},w));if(i<a.length-1)f.append(document.createTextNode(' '));});return f;}
+function applyMask(R){
+  if(!R.intr)return;
+  $$('#stepPane .w:not(.lost)').forEach(w=>{if(rnd()<R.intr.share){w.classList.add('lost');w.setAttribute('aria-hidden','true');R.intr.wordsLost=(R.intr.wordsLost||0)+1;}});
+}
+function clearMask(){$$('#stepPane .w.lost').forEach(w=>{w.classList.remove('lost');w.removeAttribute('aria-hidden');});}
+
+/* M2: response-registration delay. Mean held at BASE_DELAY (+-5% over the planned N draws), spread and slow tail vary. */
+function drawDelay(R){
+  const M=BASE_DELAY,N=N_DRAWS,act=on(R,'M2'),P=S.mech.M2.v;
+  const s=act?P.tail:0,V=act?P.cvm:1,mn=M/(1+(TAIL_RATIO-1)*s);
+  let tail=false,coupled=false;
+  if(act&&R.m2.pendingCouple&&on(R,'M1')){R.m2.pendingCouple=false;if(rnd()<P.couple){tail=true;coupled=true;}else tail=rnd()<s;}
+  else tail=rnd()<s;
+  let d=tail?logn(mn*TAIL_RATIO,TAIL_CV):logn(mn,BASE_CV*V);
+  const n=R.m2.draws.length,rem=N-n-1,dmin=0.3*M,dmax=8;
+  if(rem>=0){
+    const hi=Math.min(dmax,(1+DRIFT)*N*M-R.m2.sum-rem*dmin),lo=Math.max(dmin,(1-DRIFT)*N*M-R.m2.sum-rem*dmax);
+    d=clamp(d,Math.min(lo,hi),Math.max(lo,hi));
+  }
+  R.m2.draws.push(d);R.m2.sum+=d;
+  return {v:d,tail:tail,coupled:coupled};
+}
+
+/* M1 */
+function startIntr(R){
+  const P=S.mech.M1.v;let i;do{i=Math.floor(rnd()*INNER.length);}while(i===R.lastFrag&&INNER.length>1);R.lastFrag=i;
+  R.intr={id:++R.nIntr,t0:R.t,end:R.t+P.dur,share:P.share,frag:INNER[i],wordsLost:0,chMissed:0};
+  $('#inner').textContent=INNER[i];$('#innerWrap').hidden=false;
+  Aud.murStart(P.dur);applyMask(R);
+  logEv('M1_start',{dur:r2(P.dur),share:r2(P.share),text:INNER[i]});
+}
+function endIntr(R){
+  const x=R.intr;if(!x)return;
+  clearMask();$('#innerWrap').hidden=true;Aud.murStop();
+  R.events.intr.push({id:x.id,t:r2(x.t0),dur:r2(R.t-x.t0),share:r2(x.share),words_lost:x.wordsLost,phrases_missed:x.chMissed,step:R.step});
+  R.intr=null;R.m2.pendingCouple=true;
+  const P=S.mech.M1.v;R.nextIntr=R.t+GAP_MIN+expS(Math.max(0.5,60/P.rate-P.dur-GAP_MIN));
+  logEv('M1_end',{words_lost:x.wordsLost,phrases_missed:x.chMissed});
+}
+function m1Tick(R){
+  const P=S.mech.M1.v;
+  if(R.intr){if(R.t>=R.intr.end)endIntr(R);return;}
+  if(R.nextIntr==null)R.nextIntr=R.t+rand(8,22);   // design: at least one early intrusion so the condition is perceptible
+  if(R.t<R.nextIntr)return;
+  if(R.lockMult<1&&rnd()>R.lockMult){R.nextIntr=R.t+GAP_MIN+expS(Math.max(0.5,60/P.rate-P.dur-GAP_MIN));logEv('M1_damped_by_M5');return;}
+  startIntr(R);
+}
+
+/* M4 */
+function showNotif(R,cap,dwell,custom){
+  const n=custom||pick(NOTIFS),style=rnd()<0.5?'toast':'banner';
+  const el=h('div',{class:'notif '+style+(cap?' pulled':'')},h('strong',null,n.l),h('span',null,n.t));
+  (cap?$('#pullbox'):$('#notif')).append(el);
+  R.notif={el:el,end:R.t+(cap?dwell+0.4:3.0),cap:cap};
+  if(cap){$('#vig').classList.add('on');document.body.classList.add('pulling');}
+  Aud.ping();
+}
+function clearNotif(R){
+  if(R.notif){R.notif.el.remove();R.notif=null;}
+  $('#vig').classList.remove('on');document.body.classList.remove('pulling');R.lastEnd=R.t;
+}
+function m4Tick(R){
+  const P=S.mech.M4.v;
+  if(R.nextSal==null)R.nextSal=R.t+rand(6,14);
+  if(R.t<R.nextSal)return;
+  if(R.notif||R.t-R.lastEnd<MIN_VIS_GAP||R.step==='fin'){R.nextSal=R.t+1;return;}
+  const rate=P.rate*(S.adapt.quiet?ADAPT_FACTOR.quiet:1);
+  R.nextSal=R.t+Math.max(MIN_VIS_GAP+3,expS(60/rate));
+  const p=Math.min(0.95,P.p*P.diff*R.lockMult),cap=rnd()<p,n=pick(NOTIFS);
+  showNotif(R,cap,P.dwell,n);
+  R.events.sal.push({t:r2(R.t),captured:cap,p:r2(p),dwell:cap?r2(P.dwell):0,step:R.step});
+  logEv('M4_event',{captured:cap,p:r2(p),text:n.t});
+}
+
+/* steps */
+function beginStep(R,name){
+  R.step=name;R.stepT=0;logEv('step',{phase:name});
+  if(name==='read')initRead(R);else if(name==='wait')initWait(R);else if(name==='qa')renderQ(R);
+  else if(name==='reply')renderReply(R);else if(name==='flow')initFlow(R);else if(name==='fin')finishRun(R);
+  refreshRunHead(R);
+}
+function initRead(R){
+  $('#stepPane').replaceChildren(h('h2',null,'Listen and read along'),h('p',null,R.form.from.split(' ')[0]+'’s email is read out and shown phrase by phrase, like a walkthrough on a shared screen. It cannot be paused or rewound by you. Just follow along.'),h('p',{class:'status',id:'stat'},'Starting…'));
+  let t=1.0;const pace=S.set.pace;
+  R.stream.sched=R.chunks.map((c,i)=>{const at=t;t+=pace;const nx=R.chunks[i+1];if(!nx||nx.s!==c.s)t+=0.8;return at;});
+  R.stream.end=t+1.0;
+}
+function paintChunk(c){
+  if(!c.el)return;
+  if(c.missed&&!S.adapt.follow){c.el.className='ch miss';c.el.textContent='▒'.repeat(Math.max(3,Math.round(c.text.length*0.6)));c.el.setAttribute('role','img');c.el.setAttribute('aria-label','a passage that was missed');}
+  else{c.el.className='ch';c.el.textContent=c.text;c.el.removeAttribute('role');c.el.removeAttribute('aria-label');}
+}
+function revealChunk(R,i,clean){
+  const c=R.chunks[i],body=$('#emailBody');
+  let p=body.querySelector('p[data-s="'+c.s+'"]');if(!p){p=h('p',{'data-s':c.s});body.append(p);}
+  c.shownT=r2(R.t);
+  if(!clean&&R.intr&&rnd()<R.intr.share){c.missed=true;R.intr.chMissed++;}
+  c.el=h('span',{class:'ch'});p.append(c.el,document.createTextNode(' '));paintChunk(c);
+}
+function readTick(R){
+  const st=R.stream;
+  while(st.idx<R.chunks.length&&R.stepT>=st.sched[st.idx])revealChunk(R,st.idx++);
+  const st2=$('#stat');if(st2)st2.textContent='Phrase '+Math.min(st.idx,R.chunks.length)+' of '+R.chunks.length;
+  if(st.idx>=R.chunks.length&&R.stepT>=st.end)beginStep(R,'wait');
+}
+function pullAt(el){
+  const P=S.mech.M3.v,g=1-1/(1+P.k*el),c=P.pull*(S.adapt.deadline?ADAPT_FACTOR.deadline:1);
+  return clamp(c*g*1.5,0,1);   // 1.5 = display gain (design); pull = intensity x (1 - 1/(1+k t)), hyperbolic convention (unverified)
+}
+function initWait(R){
+  $('#stepPane').onkeydown=null;
+  const D=S.mech.M3.v.D;R.wait={D:D,t0:R.t,choice:null,elapsed:null,pullMax:0,next:null,lastShown:-1};
+  const sooner=h('div',{class:'sooner',id:'sooner'},h('h3',null,'Use last month’s summary now'),h('p',{class:'small'},'Older figures, ready immediately.'),h('button',{class:'btn',id:'quickBtn',type:'button',onclick:()=>resolveWait(R,'quick')},'Open it now'));
+  const later=h('div',{class:'later'},h('h3',null,'Current summary (complete)'),h('p',{class:'small'},'Finance is preparing it. It opens when the queue clears.'),h('div',{id:'dl'}));
+  $('#stepPane').replaceChildren(h('h2',null,'Before the questions: wait for the cost summary'),h('p',null,mk('Finance’s system is slow today. You can wait for the current summary, or use last month’s now. Either is fine. There is no right answer, and it does not change the questions.')),h('div',{class:'waitcards'},later,sooner),h('p',{class:'status',id:'stat'},''));
+  renderDeadline(R);if(R.intr)applyMask(R);
+}
+function renderDeadline(R){
+  const dl=$('#dl');if(!dl||!R.wait)return;
+  if(!S.adapt.deadline||R.cond!=='load'){dl.replaceChildren();return;}
+  const D=R.wait.D;
+  dl.replaceChildren(h('p',{class:'small',id:'dlTxt'},'Stated end: the summary opens in about '+Math.round(D)+' s.'),h('div',{class:'bar','aria-hidden':'true'},h('i',{id:'dlBar'})),
+    h('ul',{class:'cp'},[0.25,0.5,0.75,1].map((f,i)=>h('li',{'data-f':f},'Checkpoint '+(i+1)+(i===3?': opens':'')))));
+}
+function waitTick(R){
+  const W=R.wait;
+  if(W.choice){if(R.t>=W.next)beginStep(R,'qa');return;}
+  const el=R.t-W.t0;
+  if(on(R,'M3')){
+    const q=(S.rm||!S.set.gentle)?3:1,slot=Math.floor(el/q);
+    if(slot!==W.lastShown){W.lastShown=slot;const pl=pullAt(el);W.pullMax=Math.max(W.pullMax,pl);const s=$('#sooner');if(s){s.style.setProperty('--pull',pl.toFixed(3));s.classList.toggle('pulling',pl>0.03);}}
+  }
+  if(S.adapt.deadline&&R.cond==='load'){const b=$('#dlBar');if(b)b.style.width=Math.min(100,100*el/W.D)+'%';const t=$('#dlTxt');if(t)t.textContent='Stated end: opens in about '+Math.max(0,Math.ceil(W.D-el))+' s.';$$('#dl li').forEach(li=>li.classList.toggle('done',el/W.D>=+li.dataset.f));}
+  if(el>=W.D)resolveWait(R,'waited');
+}
+function resolveWait(R,choice){
+  const W=R.wait;if(!W||W.choice)return;
+  W.choice=choice;W.elapsed=r2(R.t-W.t0);W.next=R.t+1.6;
+  const q=$('#quickBtn');if(q)q.disabled=true;
+  const st=$('#stat');if(st)st.textContent=choice==='waited'?'The current summary opened.':choice==='quick'?'Last month’s summary opened.':'Step skipped.';
+  logEv('wait_resolved',{choice:choice,elapsed:W.elapsed,pull_max:r2(W.pullMax)});
+}
+function renderQ(R){
+  const q=R.form.qs[R.qa.i];
+  const opts=q.o.map((t,i)=>h('button',{class:'opt',type:'button','data-i':i,onclick:()=>answerQ(R,i)},h('span',{class:'k',text:String(i+1)}),h('span',null,mk(t))));
+  const grp=h('div',{class:'optlist',role:'group','aria-label':'Answer options'},opts),pane=$('#stepPane');
+  pane.onkeydown=e=>{const n=parseInt(e.key,10);if(n>=1&&n<=q.o.length&&!R.pend&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.target.tagName!=='SELECT'){e.preventDefault();answerQ(R,n-1);}};
+  pane.replaceChildren(h('h2',{id:'stepH',tabindex:'-1'},'Question '+(R.qa.i+1)+' of '+R.form.qs.length),h('p',{class:'q'},mk(q.q)),grp,h('p',{class:'status',id:'stat'},'Pick an answer, or press 1 to '+q.o.length+'.'));
+  R.qa.cur={i:R.qa.i,shown:R.t};
+  if(R.intr)applyMask(R);
+  if(document.activeElement===document.body||pane.contains(document.activeElement)||!document.activeElement.closest('#fac'))$('#stepH').focus({preventScroll:true});
+  say('Question '+(R.qa.i+1)+' of '+R.form.qs.length);
+}
+function answerQ(R,opt){
+  if(R.pend||R.step!=='qa')return;
+  const q=R.form.qs[R.qa.i],d=drawDelay(R),lost=$$('#stepPane .w.lost').length;
+  R.qa.items.push({i:R.qa.i,opt:opt,correct:opt===q.a,shown_t:r2(R.qa.cur.shown),rt_s:r2(R.t-R.qa.cur.shown),delay_s:r2(d.v),slow_tail:d.tail,coupled_to_m1:d.coupled,words_lost_at_click:lost,intrusion_active:!!R.intr});
+  R.pend={due:R.t+d.v,kind:'qa'};
+  $$('#stepPane button.opt').forEach(b=>{b.disabled=true;if(+b.dataset.i===opt)b.classList.add('sel');});
+  $('#stat').textContent='Registering your answer…';
+  logEv('response',{kind:'answer',q:R.qa.i+1,delay:r2(d.v),slow_tail:d.tail,coupled:d.coupled});
+}
+function qaTick(R){
+  if(R.pend&&R.t>=R.pend.due){R.pend=null;nextQ(R);}
+}
+function nextQ(R){R.qa.i++;if(R.qa.i>=R.form.qs.length)beginStep(R,'reply');else renderQ(R);}
+function renderReply(R){
+  $('#stepPane').onkeydown=null;
+  const rp=R.form.reply;
+  const sel=(id,label,opts)=>h('div',{class:'row'},h('label',{for:id,style:'min-width:90px'},label),h('select',{id:id},h('option',{value:'',text:'Choose…'}),opts.map((o,i)=>h('option',{value:String(i),text:o}))));
+  $('#stepPane').replaceChildren(h('h2',null,'Follow the instruction in the email'),h('p',null,mk('Write the message the email asked for: choose who it goes to, who to copy, and what to attach. If you are unsure, give your best guess, or use Skip.')),
+    h('div',{class:'card'},sel('rpTo','To',rp.to),sel('rpCc','Cc',rp.cc),sel('rpAt','Attach',rp.att),h('div',{class:'row'},h('button',{class:'btn primary',id:'sendBtn',type:'button',onclick:()=>sendReply(R)},'Send'))),h('p',{class:'status',id:'stat'},''));
+  R.reply={shown:R.t,res:null};if(R.intr)applyMask(R);say('Compose the reply');$('#rpTo').focus({preventScroll:true});
+}
+function sendReply(R){
+  if(R.pend||R.step!=='reply')return;
+  const g=id=>{const v=$('#'+id).value;return v===''?null:+v;};
+  const d=drawDelay(R);
+  R.reply.res={to:g('rpTo'),cc:g('rpCc'),att:g('rpAt'),rt_s:r2(R.t-R.reply.shown),delay_s:r2(d.v),slow_tail:d.tail,coupled_to_m1:d.coupled};
+  R.pend={due:R.t+d.v,kind:'reply'};
+  $$('#stepPane select,#sendBtn').forEach(x=>x.disabled=true);$('#stat').textContent='Registering your message…';
+  logEv('response',{kind:'send',delay:r2(d.v),slow_tail:d.tail,coupled:d.coupled});
+}
+function replyTick(R){if(R.pend&&R.t>=R.pend.due){R.pend=null;beginStep(R,on(R,'M5')?'flow':'fin');}}
+/* M5 advanced block (load run only): a task flagged high-interest in this scenario */
+const MILES=['Design freeze','Beta build','Security review','User testing','Content lock','Pricing sign-off','Vendor contract','Training session','Pilot start','Launch checklist','Budget review','Docs published'];
+function initFlow(R){
+  const P=S.mech.M5.v;
+  R.flow={t0:R.t,len:P.onset+P.dur+10,rounds:0,wrong:0,cards:[],next:0,locked:false,lockStart:null,lockEnd:null,nextCue:rand(10,16),shown:0,missed:0};
+  newRound(R);
+}
+function newRound(R){
+  const F=R.flow,names=shuffle(MILES).slice(0,6),days=shuffle(Array.from({length:60},(_,i)=>i+1)).slice(0,6);
+  F.cards=names.map((n,i)=>({n:n,d:days[i]}));F.order=days.slice().sort((a,b)=>a-b);F.next=0;renderFlow(R);
+}
+function renderFlow(R){
+  const F=R.flow;
+  const btns=F.cards.map(c=>h('button',{class:'opt',type:'button',onclick:ev=>{
+    if(c.d===F.order[F.next]){ev.currentTarget.disabled=true;ev.currentTarget.classList.add('sel');F.next++;if(F.next>=F.cards.length){F.rounds++;newRound(R);}}
+    else{F.wrong++;const s=$('#stat');if(s)s.textContent='Not that one. Pick the earliest day still left.';}}},h('span',null,c.n+' · day '+c.d)));
+  $('#stepPane').replaceChildren(h('h2',null,'Milestone board (a task flagged as high-interest here)'),h('p',null,'Click the cards from the earliest day to the latest. New rounds follow. There is no score.'),h('div',{class:'board'},btns),h('p',{class:'status',id:'stat'},'Round '+(F.rounds+1)));
+}
+function flowTick(R){
+  const F=R.flow,P=S.mech.M5.v,e=R.stepT,was=F.locked;
+  F.locked=e>=P.onset&&e<P.onset+P.dur;R.lockMult=F.locked?P.mult:1;
+  if(F.locked&&!was){F.lockStart=r2(R.t);logEv('M5_lock_start',{onset:P.onset,mult:P.mult});}
+  if(!F.locked&&was){F.lockEnd=r2(R.t);logEv('M5_lock_end');}
+  if(e>=F.nextCue){
+    const cue=pick(CUES),missed=F.locked&&rnd()<P.miss;
+    if(missed){F.missed++;F.nextCue=e+rand(14,24);R.events.cues.push({t:r2(R.t),missed:true,locked:true});logEv('M5_cue_missed',{text:cue.t});}
+    else if(!R.notif&&R.t-R.lastEnd>=MIN_VIS_GAP){F.shown++;F.nextCue=e+rand(14,24);showNotif(R,false,0,cue);R.events.cues.push({t:r2(R.t),missed:false,locked:F.locked});logEv('M5_cue_shown',{text:cue.t});}
+    else F.nextCue=e+1;
+  }
+  if(e>=F.len){R.lockMult=1;beginStep(R,'fin');}
+}
+function skipStep(R){
+  if(!R||R.over||R.pend)return;
+  R.skips.push({step:R.step,t:r2(R.t)});logEv('skip',{step:R.step});
+  if(R.step==='read'){for(;R.stream.idx<R.chunks.length;R.stream.idx++)revealChunk(R,R.stream.idx,true);beginStep(R,'wait');}
+  else if(R.step==='wait')resolveWait(R,'skipped');
+  else if(R.step==='qa'){R.qa.items.push({i:R.qa.i,skipped:true});nextQ(R);}
+  else if(R.step==='reply'){R.reply.res=null;beginStep(R,on(R,'M5')?'flow':'fin');}
+  else if(R.step==='flow'){R.lockMult=1;beginStep(R,'fin');}
+}
+function clearEffects(R){
+  if(R&&R.intr){R.intr=null;}
+  clearMask();$('#innerWrap').hidden=true;Aud.murStop();
+  if(R&&R.notif){R.notif.el.remove();R.notif=null;}
+  $('#notif').replaceChildren();$('#pullbox').replaceChildren();$('#vig').classList.remove('on');document.body.classList.remove('pulling');
+}
+function stepRun(R,dt){
+  R.t+=dt;R.stepT+=dt;
+  if(R.intr&&!on(R,'M1'))endIntr(R);
+  if(R.notif&&R.t>=R.notif.end)clearNotif(R);
+  if(on(R,'M1')&&R.step!=='fin')m1Tick(R);
+  if(on(R,'M4')&&R.step!=='fin')m4Tick(R);
+  if(R.step==='read')readTick(R);else if(R.step==='wait')waitTick(R);else if(R.step==='qa')qaTick(R);
+  else if(R.step==='reply')replyTick(R);else if(R.step==='flow')flowTick(R);
+}
+function summarize(R){
+  const items=R.qa.items.filter(x=>!x.skipped),ds=R.m2.draws,n=ds.length;
+  const mean=n?ds.reduce((a,b)=>a+b,0)/n:null,sd=n>1?Math.sqrt(ds.reduce((a,b)=>a+(b-mean)*(b-mean),0)/(n-1)):null;
+  const rp=R.reply&&R.reply.res,ans=R.form.reply.ans;
+  return {form:R.form.id,details_matching_email:items.filter(x=>x.correct).length,details_answered:items.length,details_total:R.form.qs.length,
+   instruction_parts_matching:rp?['to','cc','att'].filter(k=>rp[k]===ans[k]).length:null,instruction_parts_total:3,
+   phrases_total:R.chunks.length,phrases_missed:R.chunks.filter(c=>c.missed).length,
+   responses:n,delay_mean_s:mean==null?null:r2(mean),delay_cv:mean?r2(sd/mean):null,delay_max_s:n?r2(Math.max.apply(null,ds)):null,
+   late_responses:ds.filter(x=>x>2*BASE_DELAY).length,
+   intrusions:R.events.intr.length,outside_events:R.events.sal.length,pulled:R.events.sal.filter(e=>e.captured).length,
+   wait_choice:R.wait?R.wait.choice:null,wait_elapsed_s:R.wait?R.wait.elapsed:null,
+   m5_cues_missed:R.flow?R.flow.missed:null,duration_s:r2(R.t)};
+}
+function finishRun(R){
+  R.over=true;R.tEnd=r2(sessT());clearEffects(R);R.sum=summarize(R);
+  logEv('run_end',R.sum);S.run=null;
+  $('#pauseBtn').hidden=true;$('#easeBtn').hidden=true;
+  go(R.cond==='baseline'?'brief2':'compare');
+}
+
+/* ===== navigation and chrome ===== */
+const STEP_NAMES={intro:'Introduction',t0:'Questions before',r1:'Round 1 (as usual)',r2:'Round 2 (added conditions)',compare:'What changed',debrief:'Debrief (required)',plan:'Planning',t1:'Questions after',done:'Export'};
+function stepList(){return ['intro'].concat(S.set.measures?['t0']:[],['r1','r2','compare','debrief','plan'],S.set.measures?['t1']:[],['done']);}
+function stepKey(sc){
+  if(sc==='run')return S.runs.load&&S.runs.load===S.run?'r2':(S.run&&S.run.cond==='load'?'r2':'r1');
+  return {intro:'intro',t0:'t0',brief1:'r1',brief2:'r2',compare:'compare',debrief:'debrief',plan:'plan',t1:'t1',done:'done'}[sc]||null;
+}
+const BUILD={t0:()=>renderMeasures('T0'),t1:()=>renderMeasures('T1'),brief2:buildBrief2,compare:buildCompare,debrief:buildDebrief,plan:buildPlan,done:buildDone,stopped:buildStopped};
+function go(sc,quiet){
+  const now=sessT();if(S.curScreen)S.screenT[S.curScreen]=r2((S.screenT[S.curScreen]||0)+now-S.curStart);
+  S.curScreen=sc;S.curStart=now;
+  if(BUILD[sc])BUILD[sc]();
+  $$('.screen').forEach(s=>{s.hidden=true;});
+  const el=$('#s-'+sc);el.hidden=false;S.screen=sc;
+  const k=stepKey(sc),list=stepList(),i=list.indexOf(k);
+  $('#stepInd').textContent=sc==='stopped'?'Stopped':(i>=0?'Step '+(i+1)+' of '+list.length+': '+STEP_NAMES[k]:'');
+  const hd=el.querySelector('h1');if(hd&&!quiet){hd.setAttribute('tabindex','-1');hd.focus({preventScroll:true});}
+  window.scrollTo(0,0);logEv('screen',{screen:sc});
+}
+function applyMotion(){
+  const os=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  S.rm=!(S.set.gentle&&!os);
+  document.body.classList.toggle('rm',S.rm);document.body.classList.toggle('gm',!S.rm);
+  const cb=$('#optMotion');if(cb){cb.disabled=!!os;if(os)cb.checked=false;}
+  const n=$('#motionNote');if(n)n.textContent=os?'Your system asks for reduced motion, so motion stays off.':(S.rm?'Motion is off: cues appear and disappear instantly.':'Gentle motion is on: fades only, nothing flashes.');
+}
+function setSound(v){
+  S.set.sound=v;const b=$('#soundBtn');b.textContent='Sound: '+(v?'on':'off');b.setAttribute('aria-pressed',String(v));
+  const cb=$('#optSound');if(cb)cb.checked=v;
+  if(v)Aud.ensure();else Aud.stopAll();logEv('setting',{sound:v});
+}
+function pause(on,why){
+  if(!S.run||S.run.over||on===S.paused||S.stopped)return;
+  S.paused=on;$('#pauseOv').hidden=!on;$('#pauseBtn').textContent=on?'Resume':'Pause';
+  if(on){Aud.hush();S.pauses.push({t0:r2(sessT()),t1:null,why:why||'user'});$('#resumeBtn').focus();}
+  else{const p=S.pauses[S.pauses.length-1];if(p)p.t1=r2(sessT());Aud.ensure();$('#pauseBtn').focus();}
+  logEv(on?'pause':'resume',{why:why||'user'});
+}
+function doStop(){
+  if(S.stopped)return;
+  const R=S.run;S.stopped={t:r2(sessT()),screen:S.screen,step:R?R.step:null,cond:R?R.cond:null};
+  if(R){R.over=true;R.stoppedAt=r2(R.t);clearEffects(R);R.sum=summarize(R);S.run=null;}
+  S.paused=false;$('#pauseOv').hidden=true;Aud.stopAll();
+  logEv('STOP',S.stopped);
+  $('#pauseBtn').hidden=true;$('#easeBtn').hidden=true;go('stopped');
+}
+function easeOff(){
+  ['M1','M2','M3','M4'].forEach(m=>{if(S.mech[m].I>0.2)setI(m,0.2);});S.mech.M5.enabled=false;S.easeOff++;
+  logEv('ease_off',{to:0.2});syncFac();say('Eased off: all added conditions set to 0.2 for the rest of the session.');
+  const s=$('#stat');if(s)s.dataset.eased='1';
+}
+function startRun(cond){
+  if(cond==='baseline'){
+    const first=S.set.formFirst==='random'?(rnd()<0.5?'A':'B'):S.set.formFirst;
+    S.forms={baseline:first,load:S.set.formMode==='identical'?first:(first==='A'?'B':'A')};
+  }
+  S.adapt={follow:false,quiet:false,deadline:false};
+  const R=newRun(cond);S.run=R;S.runs[cond]=R;buildRunShell(R);
+  $('#pauseBtn').hidden=false;$('#pauseBtn').textContent='Pause';$('#easeBtn').hidden=cond!=='load';
+  go('run');logEv('run_start',{cond:cond,form:R.form.id,active:cond==='load'?MKEYS.filter(m=>S.mech[m].enabled):[]});
+  beginStep(R,'read');syncFacSession();
+}
+const PHASES={read:'Reading',wait:'Waiting',qa:'Questions',reply:'Reply',flow:'Milestone board'};
+function refreshRunHead(R){
+  const s=$('#runSub');if(s)s.textContent='Phase: '+(PHASES[R.step]||'')+'. No time limit, no score shown. Stop is at the top right; Esc pauses.';
+  const b=$('#skipBtn');if(b)b.textContent=R.step==='qa'?'Skip this question':R.step==='flow'?'End this block':'Skip this step';
+}
+function buildRunShell(R){
+  const load=R.cond==='load';
+  const kids=[h('h1',{id:'h-run',tabindex:'-1'},load?'Round 2: the same kind of task, with added conditions':'Round 1: the task, as usual'),h('p',{class:'small',id:'runSub'},''),
+   h('div',{class:'run'},
+     h('section',{class:'card','aria-labelledby':'emH'},h('h2',{id:'emH'},'Email from '+R.form.from),h('p',{class:'small'},'Subject: '+R.form.subject),h('div',{class:'email',id:'emailBody','aria-live':'off'})),
+     h('section',{class:'card',id:'stepCard'},h('div',{id:'stepPane'}),h('div',{class:'row'},h('button',{class:'btn',id:'skipBtn',type:'button',onclick:()=>skipStep(S.run)},'Skip this step'))))];
+  if(load&&S.set.offerAdapt){
+    kids.push(h('section',{class:'card',id:'adaptBox','aria-labelledby':'adH'},h('h2',{id:'adH'},'Try a workplace change (illustrative, not proven)'),
+      h('p',{class:'small'},'People build ways of working that fit them. These are examples of changes a team could agree. In this illustration each eases one condition; that does not show they work for any person.'),
+      Object.keys(ADAPT).map(k=>h('label',{class:'chk'},h('input',{type:'checkbox',id:'ad-'+k,onchange:ev=>toggleAdapt(k,ev.target.checked)}),h('span',null,h('strong',null,ADAPT[k].label),' ('+ADAPT[k].aff+'): '+ADAPT[k].desc)))));
+  }
+  mount($('#s-run'),kids);
+}
+function toggleAdapt(k,v){
+  S.adapt[k]=v;const R=S.run;S.adaptLog.push({t:r2(sessT()),adaptation:k,on:v,step:R?R.step:null});logEv('ADAPT',{adaptation:k,on:v});
+  if(R&&k==='follow'){R.chunks.forEach(paintChunk);const n=R.chunks.filter(c=>c.missed).length;say(v?'Written follow-up on: '+n+' missed passages restored.':'Written follow-up off.');}
+  if(R&&k==='deadline'){renderDeadline(R);if(R.wait)R.wait.lastShown=-1;const s=$('#sooner');if(s&&!v){s.style.setProperty('--pull','0');s.classList.remove('pulling');}}
+}
+
+/* ===== measures (T0 / T1): only items named in instruments.md ===== */
+function svgEl(t,a){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function iosSvg(n){
+  const d=[44,36,28,22,16,10,4][n-1],s=svgEl('svg',{width:'110',height:'50',viewBox:'0 0 110 50',role:'img','aria-label':'Picture '+n+' of 7: two circles, '+(n===1?'apart':n===7?'almost fully overlapping':'overlapping a little more than the previous picture')});
+  s.append(svgEl('circle',{cx:String(55-d/2),cy:'25',r:'16',fill:'none',stroke:'#8fd0ff','stroke-width':'2.5'}),svgEl('circle',{cx:String(55+d/2),cy:'25',r:'16',fill:'none',stroke:'#ffd166','stroke-width':'2.5'}));
+  return s;
+}
+function renderMeasures(wave){
+  const D=S[wave]||(S[wave]={wave:wave,started:r2(sessT()),answers:{},skipped:false}),A=D.answers,pre=wave==='T0';
+  const radios=(id,opts,extra)=>h('div',{class:'opts'+(extra?' '+extra:'')},opts.map(o=>h('label',{class:'pill'},
+    h('input',{type:'radio',name:wave+'_'+id,value:String(o.v),checked:A[id]!==undefined&&String(A[id])===String(o.v),onchange:()=>{A[id]=o.v;}}),h('span',null,o.l))));
+  const lik=(id,text)=>h('fieldset',{class:'q'},h('legend',null,text),radios(id,LIK7.map((l,i)=>({v:i+1,l:String(i+1)}))),h('div',{class:'scalehint'},h('span',null,'1 = '+LIK7[0]),h('span',null,'7 = '+LIK7[6])));
+  const tf=(it)=>h('fieldset',{class:'q'},h('legend',null,it.text),radios(it.id,[{v:'T',l:'True'},{v:'F',l:'False'},{v:'N',l:'Not sure'}]));
+  const root=$('#s-'+wave.toLowerCase());
+  const kids=[h('h1',{id:'h-'+wave.toLowerCase(),tabindex:'-1'},pre?'A few questions before you start':'A few questions after the debrief'),
+   h('p',{class:'lead'},pre?'These day-0 questions come from the planned study design. They are optional, answers stay on this device, and nothing here is a test of you.':'The same short questions again, so the study can see what changed. Optional, and stored only on this device.'),
+   h('details',{class:'card'},h('summary',null,'Which standard scales are not in this prototype, and why'),h('ul',null,NOT_ADMIN.map(x=>h('li',null,h('strong',null,x.instrument),': '+x.why))),h('p',{class:'small'},'Adapting scales to ADHD or to managers is an unvalidated adaptation; the AAI, intention, self-efficacy, knowledge and practice-selection items are study-specific and unvalidated.'))];
+  kids.push(h('h2',{class:'sec'},'How you feel right now'),h('fieldset',{class:'q'},h('legend',null,'How distressed or uncomfortable do you feel right now?'),radios('distress',Array.from({length:11},(_,i)=>({v:i,l:String(i)})),'d11'),h('div',{class:'scalehint'},h('span',null,'0 = not at all'),h('span',null,'10 = extremely'))));
+  kids.push(h('h2',{class:'sec'},'What do you think?'),KNOW.map(tf),tf({id:ATTN[1].id,text:ATTN[1].text}));
+  kids.push(h('h2',{class:'sec'},'Your intentions for the next 30 days'),h('p',{class:'small'},'Which five practices count as the "top 5" is not specified in the instruments spec; the first five on the list are used as a placeholder.'),
+    AAI_IMP.slice(0,5).map((t,i)=>lik('int'+(i+1),'I intend to adopt this practice in the next 30 days: '+t.charAt(0).toLowerCase()+t.slice(1)+'.')),lik(ATTN[0].id,ATTN[0].text));
+  kids.push(h('h2',{class:'sec'},'Confidence'),SE.map(it=>lik(it.id,it.text)));
+  kids.push(h('h2',{class:'sec'},'Closeness'),h('fieldset',{class:'q ios'},h('legend',null,'Which picture best describes your relationship with people who have ADHD, as a group? The blue circle is you; the yellow circle is people with ADHD as a group.'),
+    h('div',{class:'opts'},[1,2,3,4,5,6,7].map(n=>h('label',{class:'pill'},h('input',{type:'radio',name:wave+'_ios',value:String(n),checked:A.ios===n,onchange:()=>{A.ios=n;}}),h('span',null,iosSvg(n),h('small',null,String(n))))))),
+    h('p',{class:'small'},'One-item pictorial scale (Aron, Aron & Smollan 1992). Using it for this group is not a validated use.'));
+  if(pre){
+    kids.push(h('h2',{class:'sec'},'What you did in the last 30 days'),h('p',{class:'small'},'Choose Not applicable if it did not come up. These ten practices are a study-specific menu to be finalised with advisors.'));
+    AAI.forEach((t,i)=>kids.push(h('fieldset',{class:'q'},h('legend',null,'In the last 30 days I: '+t.charAt(0).toLowerCase()+t.slice(1)+'.'),radios('aai'+(i+1),[{v:'Y',l:'Yes'},{v:'N',l:'No'},{v:'NA',l:'Not applicable'}]))));
+  }
+  kids.push(h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:()=>finishMeasures(wave,false)},'Continue'),h('button',{class:'btn',type:'button',onclick:()=>finishMeasures(wave,true)},'Skip these questions')));
+  mount(root,kids);
+}
+function finishMeasures(wave,skipped){
+  const D=S[wave];D.ended=r2(sessT());D.skipped=skipped;D.n_answered=Object.keys(D.answers).length;logEv('measures_done',{wave:wave,answered:D.n_answered,skipped:skipped});
+  go(wave==='T0'?'brief1':'done');
+}
+
+/* ===== round 2 briefing, comparison ===== */
+const PLAIN={M1:'Off-task thoughts cut in now and then. While one is on screen, some of what you are trying to read is dimmed.',
+ M2:'Your answers register after a variable delay. Most are quick, a few are late. The average delay is the same as in round 1.',
+ M3:'During a forced wait, the quick option gets a growing visual pull. Both options stay available.',
+ M4:'Notifications from outside the task appear. Some pull your view toward them for a moment. Nothing is blocked.'};
+function buildBrief2(){
+  const root=$('#s-brief2');
+  const kids=[h('h1',{id:'h-brief2',tabindex:'-1'},'Round 2: the same kind of task, with added conditions'),
+   h('div',{class:'card warn'},h('p',null,h('strong',null,'Content note. '),'Round 2 adds interruptions, a more variable response delay, a wait with a visual pull, and notifications'+(S.set.sound?' (with quiet sounds, which you allowed)':'')+'. Nothing flashes. It is an analogue, not what ADHD is, and the settings are design values, not measurements of anyone.'),
+     h('p',{class:'small'},'You can use Stop, Pause, Ease off or Skip at any moment. Tick or untick a condition below to leave it out.')),
+   h('div',{class:'card'},['M1','M2','M3','M4'].map(m=>h('label',{class:'chk'},h('input',{type:'checkbox',id:'b2-'+m,checked:S.mech[m].enabled,onchange:ev=>{S.mech[m].enabled=ev.target.checked;logEv('setting',{mech:m,enabled:ev.target.checked});syncFac();}}),
+      h('span',null,h('strong',null,MECH[m].name),' ('+MECH[m].grade+', intensity '+r2(S.mech[m].I)+(S.mech[m].custom?', custom':'')+'). '+PLAIN[m])))),
+   S.mech.M5.enabled?h('p',{class:'card warn'},'Advanced block enabled: M5 hyperfocus adds a milestone-board block of about '+Math.round((S.mech.M5.v.onset+S.mech.M5.v.dur+10)/60*10)/10+' minutes. Evidence for M5 is self-report only.'):null,
+   h('p',{class:'small'},'Round 2 uses '+(S.set.formMode==='identical'?'the identical email and questions (expect memory effects)':'a matched email with different details and the same structure, so you are not just remembering answers')+'.'),
+   h('p',null,h('button',{class:'btn primary',id:'startR2',type:'button',onclick:()=>startRun('load')},'Start round 2'),' ',h('button',{class:'btn',type:'button',onclick:()=>toggleFac(true)},'Open facilitator panel'))];
+  mount(root,kids);
+}
+function waitLabel(c){return c==='waited'?'Waited for the current summary':c==='quick'?'Used last month’s summary':c==='skipped'?'Skipped':'n/a';}
+function buildCompare(){
+  const root=$('#s-compare'),B=S.runs.baseline&&S.runs.baseline.sum,L=S.runs.load&&S.runs.load.sum;
+  const row=(l,f)=>h('tr',null,h('th',{scope:'row'},l),h('td',null,B?f(B):'n/a'),h('td',null,L?f(L):'n/a'));
+  const kids=[h('h1',{id:'h-compare',tabindex:'-1'},'What changed in the task'),
+   h('p',{class:'lead'},'These counts describe what the conditions did to one small task. They are not a measure of your attention, or anyone’s, and they do not predict how any person works.'),
+   h('div',{class:'card'},h('table',null,h('thead',null,h('tr',null,h('th',null,'Same task, two rounds'),h('th',null,'Round 1 (as usual)'),h('th',null,'Round 2 (added)'))),
+    h('tbody',null,
+     row('Email phrases that were missed live',x=>x.phrases_missed+' of '+x.phrases_total),
+     row('Questions where your answer matched the email',x=>x.details_matching_email+' of '+x.details_total),
+     row('Instruction parts you followed',x=>x.instruction_parts_matching==null?'not sent':x.instruction_parts_matching+' of '+x.instruction_parts_total),
+     row('The wait',x=>waitLabel(x.wait_choice)+(x.wait_elapsed_s!=null?' ('+x.wait_elapsed_s+' s)':'')),
+     row('Responses registered late (over 2 s)',x=>x.late_responses+' of '+x.responses),
+     row('Longest response delay, average delay',x=>(x.delay_max_s==null?'n/a':x.delay_max_s+' s, avg '+x.delay_mean_s+' s')),
+     row('Inner-voice intrusions',x=>String(x.intrusions)),
+     row('Outside events, and how many pulled the view',x=>x.outside_events+', '+x.pulled),
+     row('Time on the task',x=>Math.round(x.duration_s)+' s')))),
+   S.adaptLog.length?h('div',{class:'card'},h('h2',null,'Workplace changes you tried'),h('ul',null,S.adaptLog.map(a=>h('li',null,ADAPT[a.adaptation].label+' switched '+(a.on?'on':'off')+' at '+fmtT(a.t)+'.'))),h('p',{class:'small'},'Illustrative only. They show a design idea, not proof that a change works for any person.')):h('p',{class:'small'},'You did not try any workplace changes. The debrief covers some.'),
+   h('p',{class:'small'},'Round 2 content: '+(S.set.formMode==='identical'?'identical to round 1 (memory effects likely).':'a matched form with different details and the same structure.')+' Counts are small and noisy; do not read them as results.'),
+   h('p',null,h('button',{class:'btn primary',type:'button',onclick:()=>go('debrief')},'Continue to the debrief'))];
+  mount(root,kids);
+}
+
+/* ===== debrief (mandatory, charter section 6) ===== */
+function buildDebrief(){
+  const root=$('#s-debrief');
+  S.debrief.t=sessT();
+  const kids=[h('h1',{id:'h-debrief',tabindex:'-1'},'Debrief'),
+   h('p',{class:'lead'},S.stopped?'You stopped early. The debrief is still worth reading, and you can stop reading at any point.':'This part is required: it is how the session ends. It takes about three minutes.'),
+   h('p',{class:'small'},'Draft wording written by the product agent from the co-design charter. Not yet reviewed or approved by any neurodivergent advisor. Text only in this prototype; audio and a brief video need advisor-recorded content.')];
+  DEBRIEF.forEach((d,i)=>kids.push(h('article',null,h('h2',null,(i+1)+'. '+d[0]),d[1].map(p=>h('p',null,p)))));
+  kids.push(h('div',{id:'debEnd'}),h('p',null,h('button',{class:'btn primary',id:'debDone',type:'button',disabled:true,onclick:finishDebrief},S.stopped?'I have read the debrief':'I have read the debrief, continue')),h('p',{class:'small',id:'debHint'},'The button unlocks when you reach the end of the page.'));
+  mount(root,kids);
+  const unlock=()=>{S.debrief.reachedEnd=true;const b=$('#debDone');if(b)b.disabled=false;const t=$('#debHint');if(t)t.textContent='';};
+  if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){unlock();io.disconnect();}});io.observe($('#debEnd'));}else unlock();
+}
+function finishDebrief(){
+  S.debrief.seen=true;S.debrief.seconds=r2(sessT()-S.debrief.t);S.debrief.completed=true;logEv('debrief_done',{seconds:S.debrief.seconds});
+  go(S.stopped?'done':'plan');
+}
+
+/* ===== planning step: practice selection + toolkit ===== */
+function buildPlan(){
+  const root=$('#s-plan');
+  if(!S.practiceOrder)S.practiceOrder=shuffle(PRACT).map(p=>p.id);
+  const byId={};PRACT.forEach(p=>{byId[p.id]=p;});
+  const sel=new Set(S.practice?S.practice.chosen:[]);
+  const info=h('p',{class:'status',id:'planInfo','aria-live':'polite'},'');
+  const boxes=S.practiceOrder.map(id=>{const p=byId[id];return h('label',{class:'chk'},h('input',{type:'checkbox',value:id,checked:sel.has(id),onchange:ev=>{if(ev.target.checked)sel.add(id);else sel.delete(id);refresh();}}),h('span',null,p.t+' ',h('span',{class:'tag'},'time cost '+p.c)));});
+  function refresh(){
+    const used=Array.from(sel).reduce((a,id)=>a+byId[id].c,0);
+    $$('#planBox input').forEach(inp=>{const p=byId[inp.value];inp.disabled=!inp.checked&&(sel.size>=SLOTS||used+p.c>BUDGET);});
+    info.textContent='Slots used '+sel.size+' of '+SLOTS+'. Time budget used '+used+' of '+BUDGET+' units.';
+  }
+  const kids=[h('h1',{id:'h-plan',tabindex:'-1'},'Planning: what would you try?'),
+   h('p',{class:'lead'},'Your team has room to change up to '+SLOTS+' things this month, within a time budget of '+BUDGET+' units. Choose what you would actually try. There is no right answer and no score is shown.'),
+   h('p',{class:'small'},'Time costs are rough design placeholders, not measured. This step stands in for the commitment-planning step; whether the instruments spec treats them as one step is unverified.'),
+   h('div',{class:'card',id:'planBox'},boxes),info,
+   h('h2',{class:'sec'},'Toolkit (optional)'),h('p',{class:'small'},'Two plain templates you can copy. Opening or copying one is logged on this device only.')];
+  Object.keys(TOOLKIT).forEach(k=>{
+    const T=TOOLKIT[k];
+    const det=h('details',{class:'card',ontoggle:ev=>{if(ev.target.open)S.toolkit.push({t:r2(sessT()),item:k,action:'open'});}},h('summary',null,T.title),h('pre',{class:'json'},T.text),
+      h('div',{class:'row'},h('button',{class:'btn small',type:'button',onclick:()=>{copyText(T.text);S.toolkit.push({t:r2(sessT()),item:k,action:'copy'});say('Copied');}},'Copy'),
+        h('button',{class:'btn small',type:'button',onclick:()=>{downloadText('pe-template-'+k+'.txt',T.text,'text/plain');S.toolkit.push({t:r2(sessT()),item:k,action:'download'});}},'Download .txt')));
+    kids.push(det);
+  });
+  kids.push(h('p',null,h('button',{class:'btn primary',type:'button',onclick:()=>{
+    const chosen=Array.from(sel),used=chosen.reduce((a,id)=>a+byId[id].c,0),matched=chosen.filter(id=>byId[id].m).length;
+    S.practice={chosen:chosen,n_chosen:chosen.length,time_units:used,share_on_aai_menu:chosen.length?r2(matched/chosen.length):null,order_shown:S.practiceOrder.slice(),slots:SLOTS,budget:BUDGET,time_costs_are_placeholders:true};
+    logEv('practice_saved',{n:chosen.length});go(S.set.measures?'t1':'done');}},'Save my plan and continue')));
+  mount(root,kids);refresh();
+}
+function downloadText(name,text,mime){
+  const b=new Blob([text],{type:mime+';charset=utf-8'}),u=URL.createObjectURL(b),a=h('a',{href:u,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
+}
+function copyText(t){
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).catch(()=>{});return;}}catch(e){}
+  const ta=h('textarea',{'aria-hidden':'true',style:'position:fixed;left:-9999px'});ta.value=t;document.body.append(ta);ta.select();try{document.execCommand('copy');}catch(e){}ta.remove();
+}
+
+/* ===== stop / done ===== */
+function buildStopped(){
+  const root=$('#s-stopped'),sim=!!(S.runs.baseline||S.runs.load);
+  root.replaceChildren(h('h1',{id:'h-stopped',tabindex:'-1'},'Stopped'),
+   h('div',{class:'card'},h('p',{class:'lead'},'Everything has stopped. Nothing else will play or move.'),h('p',null,'Nothing was sent anywhere. You can leave now, or take a moment first. You have not done anything wrong.')),
+   h('div',{class:'row'},sim?h('button',{class:'btn primary',type:'button',onclick:()=>go('debrief')},'Read the short debrief (recommended)'):null,
+    h('button',{class:'btn',type:'button',onclick:()=>go('done')},'See what was recorded and export'),h('button',{class:'btn',type:'button',onclick:()=>location.reload()},'Erase everything and start over')),
+   h('p',{class:'small'},'If you feel unsettled: take a break, have some water and talk to someone you trust. A named-person route is not set up in this prototype.'));
+}
+function buildDone(){
+  const root=$('#s-done'),ex=buildExport(),txt=JSON.stringify(ex,null,2);
+  const done=!!S.debrief.completed&&!S.stopped;
+  root.replaceChildren(h('h1',{id:'h-done',tabindex:'-1'},done?'Session complete':'Session ended'),
+   h('div',{class:'card'},h('p',{class:'lead'},done?'Thank you. The debrief is complete.':(S.stopped?'You stopped early. The debrief was '+(S.debrief.completed?'read':'not read')+', so the session is not recorded as complete.':'The session ended before the debrief, so it is not recorded as complete.')),
+    h('ul',null,h('li',null,'Nothing has left this device. There is no server, account or analytics.'),h('li',null,'The export holds your task counts, settings and answers. It has no name, email, employer, device or location data.'),
+      h('li',null,'Per the co-design charter, an employer must not require this file or see individual responses. Share it only if you choose to.'))),
+   h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:()=>{downloadText('perspective-engine-session-'+S.sid+'.json',txt,'application/json');logEv('export_download');}},'Download JSON'),
+    h('button',{class:'btn',type:'button',onclick:()=>{copyText(txt);say('JSON copied');}},'Copy JSON'),h('button',{class:'btn',type:'button',onclick:()=>location.reload()},'Erase everything and start over')),
+   h('details',{class:'card'},h('summary',null,'Preview the export ('+txt.length+' characters)'),h('pre',{class:'json',tabindex:'0'},txt)),
+   h('p',{class:'small'},'This build is a prototype. Results from it are not findings, and it makes no claim about empathy, stigma, attitudes or behaviour.'));
+}
+
+/* ===== facilitator panel ===== */
+const fmtV=v=>String(+(+v).toFixed(3));
+function mechCard(m){
+  const M=MECH[m],E=S.mech[m];
+  const kids=[h('h3',null,M.name,h('span',{class:'grade',title:M.gradeTxt},M.grade),' ',h('span',{class:'small'},M.gradeTxt.replace(/^Evidence S\d:?\s*/,''))),h('p',{class:'small'},M.what),
+   h('label',{class:'chk'},h('input',{type:'checkbox',id:'en-'+m,checked:E.enabled,onchange:ev=>{S.mech[m].enabled=ev.target.checked;logEv('setting',{mech:m,enabled:ev.target.checked});syncFac();}}),h('span',null,m==='M5'?'Enable M5 (advanced; weakest evidence; default off)':'Enabled'))];
+  if(m!=='M5'){
+    kids.push(h('div',{class:'prm'},h('label',{for:'I-'+m},'Intensity I (0 to 1; session ceiling '+CEIL+'; default '+DEF_I+')'),h('output',{id:'Io-'+m,for:'I-'+m}),
+      h('input',{type:'range',id:'I-'+m,min:'0',max:String(CEIL),step:'0.05',value:String(E.I),oninput:ev=>{setI(m,+ev.target.value);syncFac();},onchange:()=>logEv('setting',{mech:m,intensity:r2(S.mech[m].I)})})));
+  }
+  const pr=M.params.map(p=>h('div',{class:'prm'},h('label',{for:'pv-'+m+'-'+p.k},p.label+' ',h('span',{class:'rng'},'[range '+p.lo+' to '+p.hi+(p.unit?' '+p.unit:'')+(p.drv?'; ceiling '+fmtV(pMax(p)):'')+']')),
+    h('output',{id:'po-'+m+'-'+p.k,for:'pv-'+m+'-'+p.k}),
+    h('input',{type:'range',id:'pv-'+m+'-'+p.k,min:String(p.lo),max:String(pMax(p)),step:String(pStep(p)),value:String(E.v[p.k]),
+      oninput:ev=>{const e=S.mech[m];e.v[p.k]=+ev.target.value;if(p.drv)e.custom=true;syncFac();},onchange:()=>logEv('setting',{mech:m,param:p.k,value:fmtV(S.mech[m].v[p.k])})})));
+  kids.push(h('details',{open:true},h('summary',null,'Parameters (all design values, not ADHD estimates)'),pr),
+    h('p',{class:'caveat'},h('strong',null,'Evidence: '),M.ev),M.fixed?h('p',{class:'caveat'},M.fixed):null,h('p',{class:'small',id:'ms-'+m,'aria-live':'off'},'No run active.'));
+  return h('section',{class:'mech'+(E.enabled?'':' off'),id:'mc-'+m},kids);
+}
+function buildFac(){
+  const fac=$('#fac');
+  const adv=mechCard('M5');
+  mount(fac,[h('div',{class:'row',style:'justify-content:space-between'},h('h2',{id:'facH'},'Facilitator panel'),h('span',{class:'row'},h('button',{class:'btn small stop',id:'facStop',type:'button',onclick:doStop},'■ Stop'),h('button',{class:'btn small',id:'facClose',type:'button',onclick:()=>toggleFac(false)},'Close'))),
+   h('p',{class:'small'},'Tune each condition independently. Changes apply live, and lowering a setting during a run is always allowed. Every number is a design parameter from the mechanism spec, not an empirical ADHD estimate. There are no ADHD profile presets, on purpose: people differ widely.'),
+   ['M1','M2','M3','M4'].map(mechCard),
+   h('details',{class:'mech'},h('summary',null,h('strong',null,'Advanced: M5 hyperfocus (off by default, weakest evidence)')),adv),
+   h('section',{class:'mech'},h('h3',null,'Session and scenario'),
+    h('div',{class:'prm'},h('label',{for:'sPace'},'Reading pace, seconds per phrase (scenario setting)'),h('output',{id:'sPaceO',for:'sPace'}),h('input',{type:'range',id:'sPace',min:'1.2',max:'3',step:'0.1',value:String(S.set.pace),oninput:ev=>{S.set.pace=+ev.target.value;$('#sPaceO').textContent=S.set.pace.toFixed(1)+' s';}})),
+    h('div',{class:'row'},h('label',{for:'sForm'},'Task content'),h('select',{id:'sForm',onchange:ev=>{S.set.formMode=ev.target.value;logEv('setting',{formMode:S.set.formMode});}},h('option',{value:'matched'},'Matched forms A/B (default)'),h('option',{value:'identical'},'Identical email in both rounds'))),
+    h('p',{class:'caveat'},'Identical content means round 2 is the literal same task, but memory effects will blunt the comparison.'),
+    h('div',{class:'row'},h('label',{for:'sFirst'},'Round 1 form'),h('select',{id:'sFirst',onchange:ev=>{S.set.formFirst=ev.target.value;}},h('option',{value:'random'},'Random'),h('option',{value:'A'},'A (Thursday handover)'),h('option',{value:'B'},'B (Wednesday review)'))),
+    h('label',{class:'chk'},h('input',{type:'checkbox',id:'sAdapt',checked:S.set.offerAdapt,onchange:ev=>{S.set.offerAdapt=ev.target.checked;logEv('setting',{offerAdapt:S.set.offerAdapt});}}),h('span',null,'Offer workplace changes (illustrative) during round 2')),
+    h('label',{class:'chk'},h('input',{type:'checkbox',id:'sMeas',checked:S.set.measures,onchange:ev=>{S.set.measures=ev.target.checked;logEv('setting',{measures:S.set.measures});}}),h('span',null,'Include the day-0 questions (T0 before, T1 after)')),
+    h('div',{class:'row'},h('button',{class:'btn small',type:'button',onclick:()=>{const f=initMech();MKEYS.forEach(m=>Object.assign(S.mech[m],f[m]));logEv('reset_defaults');syncFac();}},'Reset all conditions to defaults'),h('button',{class:'btn small',type:'button',onclick:()=>easeOff()},'Ease off to 0.2'))),
+   h('section',{class:'mech'},h('h3',null,'Live session log'),h('p',{class:'small'},'Every cue, delay and setting change, with session time (mm:ss.s). The same events are in the JSON export.'),h('ol',{id:'facLog','aria-label':'Session log'}))]);
+  const ul=$('#facLog');S.events.slice(-90).forEach(e=>ul.prepend(h('li',null,h('b',null,fmtT(e.t)+' '),e.type)));
+  syncFac();
+}
+function syncFac(){
+  MKEYS.forEach(m=>{
+    const E=S.mech[m],c=$('#mc-'+m);if(!c)return;
+    c.classList.toggle('off',!E.enabled);$('#en-'+m).checked=E.enabled;
+    if(m!=='M5'){const s=$('#I-'+m);s.value=String(E.I);$('#Io-'+m).textContent=r2(E.I).toFixed(2)+(E.custom?' (custom)':'');}
+    MECH[m].params.forEach(p=>{const s=$('#pv-'+m+'-'+p.k);s.value=String(E.v[p.k]);$('#po-'+m+'-'+p.k).textContent=fmtV(E.v[p.k])+(p.unit?' '+p.unit:'');});
+    const b=$('#b2-'+m);if(b)b.checked=E.enabled;
+  });
+  const pc=$('#sPace');if(pc){pc.value=String(S.set.pace);$('#sPaceO').textContent=S.set.pace.toFixed(1)+' s';}
+  syncFacSession();
+}
+function syncFacSession(){
+  const started=!!S.runs.baseline,left=S.screen!=='intro';
+  ['sPace','sForm','sFirst'].forEach(id=>{const e=$('#'+id);if(e)e.disabled=started;});
+  const m=$('#sMeas');if(m)m.disabled=left;
+}
+function updateStatus(){
+  const R=S.run,e=R&&R.events;
+  const set=(m,t)=>{const el=$('#ms-'+m);if(el)el.textContent=t;};
+  if(!R){MKEYS.forEach(m=>set(m,'No run active.'));return;}
+  const ld=R.cond==='load';
+  set('M1',ld&&S.mech.M1.enabled?(R.intr?'Intrusion active, '+Math.max(0,R.intr.end-R.t).toFixed(1)+' s left. ':'Idle. ')+'This run: '+e.intr.length+' intrusions.':'Not active in this run.');
+  const d=R.m2.draws;
+  set('M2',ld&&S.mech.M2.enabled?d.length+' responses so far, '+d.filter(x=>x>2*BASE_DELAY).length+' late (over 2 s), last '+(d.length?r2(d[d.length-1])+' s':'n/a')+'.':'Not active in this run (round 1 uses the baseline spread, same mean).');
+  set('M3',ld&&S.mech.M3.enabled?(R.wait&&!R.wait.choice?'Waiting. Pull cue now '+r2(pullAt(R.t-R.wait.t0))+'.':R.wait?'Wait finished ('+waitLabel(R.wait.choice)+'), peak pull '+r2(R.wait.pullMax)+'.':'Wait not reached yet.'):'Not active in this run.');
+  set('M4',ld&&S.mech.M4.enabled?e.sal.length+' events, '+e.sal.filter(x=>x.captured).length+' pulled the view.':'Not active in this run.');
+  set('M5',ld&&S.mech.M5.enabled?(R.flow?(R.flow.locked?'Locked-in state ACTIVE (never shown to the participant).':'Block running, not locked in.')+' Cues missed '+R.flow.missed+', shown '+R.flow.shown+'.':'Block starts after the reply step.'):'Off.');
+}
+function toggleFac(open){
+  $('#fac').hidden=!open;$('#facBtn').setAttribute('aria-expanded',String(open));
+  if(open){syncFac();updateStatus();$('#facClose').focus();}else $('#facBtn').focus();
+}
+
+/* ===== export: no personal identifiers, no device data, no free text ===== */
+function deriveMeasures(D){
+  if(!D)return null;const A=D.answers;
+  let y=0,n=0;for(let i=1;i<=10;i++){if(A['aai'+i]==='Y')y++;else if(A['aai'+i]==='N')n++;}
+  const ints=[1,2,3,4,5].map(i=>A['int'+i]).filter(x=>typeof x==='number');
+  return {aai_self_share_of_applicable:(y+n)?r2(y/(y+n)):null,aai_applicable_items:y+n,intention_mean_of_answered:ints.length?r2(ints.reduce((a,b)=>a+b,0)/ints.length):null,intention_answered:ints.length,
+   knowledge_matching:KNOW.filter(k=>A[k.id]===k.a).length,knowledge_answered:KNOW.filter(k=>A[k.id]!==undefined).length,
+   instruction_checks_passed:[A.ac1===ATTN[0].exp,A.ac2===ATTN[1].exp].filter(Boolean).length,
+   note:'Derived counts for the study team; unvalidated; never shown to the participant as a score.'};
+}
+function runExport(R){
+  if(!R)return null;
+  const F=R.flow;
+  return {form:R.form.id,started_s:R.tStart,ended_s:R.tEnd,stopped_at_run_s:R.stoppedAt,summary:R.sum||summarize(R),
+   phrases:R.chunks.map((c,i)=>({i:i,shown_t:c.shownT,missed:c.missed})),answers:R.qa.items,reply:R.reply?R.reply.res:null,
+   wait:R.wait?{D_s:r2(R.wait.D),choice:R.wait.choice,elapsed_s:R.wait.elapsed,pull_peak:r2(R.wait.pullMax)}:null,
+   m2_delays_s:R.m2.draws.map(r2),m1_intrusions:R.events.intr,m4_events:R.events.sal,
+   m5:F?{rounds:F.rounds,wrong_clicks:F.wrong,lock_start_t:F.lockStart,lock_end_t:F.lockEnd,cues_shown:F.shown,cues_missed:F.missed}:null,skips:R.skips};
+}
+function buildExport(){
+  const mech={};
+  MKEYS.forEach(m=>{const E=S.mech[m],v={};Object.keys(E.v).forEach(k=>{v[k]=r3(E.v[k]);});
+    mech[m]={enabled:E.enabled,evidence_grade:MECH[m].grade,intensity:m==='M5'?null:r2(E.I),custom_parameters:E.custom,params:v};});
+  const r=S.runs;
+  return {
+   schema:'perspective-engine/session-export/v0',app_version:VERSION,node:'F04',session_id:S.sid,started_at_utc_minute:S.startISO,
+   privacy:{personal_identifiers_collected:false,device_and_place_data_collected:false,biometrics_stored:false,network_requests_made:false,free_text_collected:false},
+   framing:'Interactive illustration of documented group-level attention and timing patterns. Not what ADHD is, not what any person’s day is like. No diagnosis, score or prediction of any person.',
+   parameter_note:'All mechanism values are design parameters from perspective-engine/science/mechanism-spec.md (intensity ceiling 0.8), not empirical ADHD estimates.',
+   consent:S.consent,
+   settings:{sound:S.set.sound,volume:S.set.sound?S.set.vol:null,motion:S.rm?'reduced':'gentle',reading_pace_s:S.set.pace,form_mode:S.set.formMode,forms:S.forms,adaptations_offered:S.set.offerAdapt,day0_measures_included:S.set.measures,m5_block_in_load_round_only:true},
+   mechanisms:mech,adaptations:{toggles:S.adaptLog,note:'Illustrative and co-design pending; not proven interventions.'},
+   conditions:{baseline:runExport(r.baseline),load:runExport(r.load)},
+   day0_measures:{T0:S.T0,T1:S.T1,derived:{T0:deriveMeasures(S.T0),T1:deriveMeasures(S.T1)},practice_selection:S.practice,toolkit_clicks:S.toolkit,
+    administered:['AAI-self (10 items, T0, study-specific, unvalidated)','Behavioral intention (5 items, T0/T1, unvalidated; top-5 choice unspecified in spec)','Self-efficacy item 1 of 3 (T0/T1, unvalidated)','Knowledge items 1 and 2 of 8 (T0/T1, unvalidated)','IOS (1 item, T0/T1; group use unvalidated)','Distress now 0-10 (T0/T1)','Instruction-check items (2 per wave)','Practice-selection task (T1, study-specific, unvalidated)','Toolkit take-up click log (T1)'],
+    not_administered:NOT_ADMIN},
+   telemetry:{total_duration_s:r2(sessT()),screen_seconds:S.screenT,pauses:S.pauses,ease_off_count:S.easeOff,stop:S.stopped,
+    debrief:{seen:S.debrief.seen,reached_end:S.debrief.reachedEnd,seconds:S.debrief.seconds,completed:!!S.debrief.completed},
+    session_completed:!!(S.debrief.completed&&!S.stopped&&r.baseline&&r.load&&r.load.over)},
+   events:S.events};
+}
+
+/* ===== self-test: open the page with #selftest ===== */
+function selfTest(){
+  const out=[],t=(n,ok,d)=>out.push({test:n,pass:!!ok,detail:d==null?'':String(d)});
+  const f=initMech();
+  const spec={M1:{rate:[0.5,4,2.25],dur:[2,8,5],share:[0.2,0.8,0.5]},M2:{cvm:[1,3,2],tail:[0.05,0.3,0.175],couple:[0,0.8,0.4]},M3:{k:[0.02,0.2,0.11],pull:[0.2,1,0.6],D:[5,30,15]},M4:{rate:[2,10,6],p:[0.1,0.7,0.4],diff:[0.5,1.5,1],dwell:[0.5,3,1.75]},M5:{onset:[30,120,60],mult:[0.1,0.6,0.3],miss:[0.3,0.9,0.6],dur:[30,120,75]}};
+  Object.keys(spec).forEach(m=>MECH[m].params.forEach(p=>{const s=spec[m][p.k];t('range+default '+m+'.'+p.k,s&&p.lo===s[0]&&p.hi===s[1]&&Math.abs(f[m].v[p.k]-s[2])<1e-9,p.lo+'..'+p.hi+' def '+f[m].v[p.k]);
+    if(p.drv)t('ceiling '+m+'.'+p.k,Math.abs(pMax(p)-(p.lo+0.8*(p.hi-p.lo)))<1e-9,pMax(p));}));
+  t('M5 off by default, M1-M4 on',f.M5.enabled===false&&f.M1.enabled&&f.M2.enabled&&f.M3.enabled&&f.M4.enabled);
+  t('intensity ceiling is 0.8',CEIL===0.8);
+  const save=S.mech;S.mech=initMech();
+  let worst=0,tails=0,tot=0,sum=0;
+  for(let i=0;i<1500;i++){const R={cond:'load',m2:{draws:[],sum:0,pendingCouple:false}};let s=0;for(let j=0;j<N_DRAWS;j++){const d=drawDelay(R);s+=d.v;tails+=d.tail?1:0;tot++;}const dr=Math.abs(s/N_DRAWS-BASE_DELAY)/BASE_DELAY;if(dr>worst)worst=dr;sum+=s/N_DRAWS;}
+  t('M2 mean-delay drift never exceeds 5% (1500 runs)',worst<=DRIFT+1e-9,'worst '+r3(worst));
+  t('M2 slow-tail share near default 0.175',Math.abs(tails/tot-0.175)<0.03,r3(tails/tot));
+  let bw=0;for(let i=0;i<500;i++){const R={cond:'baseline',m2:{draws:[],sum:0,pendingCouple:false}};let s=0;for(let j=0;j<N_DRAWS;j++)s+=drawDelay(R).v;bw=Math.max(bw,Math.abs(s/N_DRAWS-BASE_DELAY));}
+  t('Round 1 uses the same mean delay (same constraint)',bw<=DRIFT*BASE_DELAY+1e-9,r3(bw));
+  S.mech=save;
+  const wc=x=>x.sentences.join(' ').replace(/\|/g,'').split(/\s+/).length;
+  t('Forms A and B: same word count (+-3) and phrase count',Math.abs(wc(FORMS.A)-wc(FORMS.B))<=3&&chunksOf(FORMS.A).length===chunksOf(FORMS.B).length,wc(FORMS.A)+' vs '+wc(FORMS.B)+' words; '+chunksOf(FORMS.A).length+' phrases');
+  ['A','B'].forEach(k=>{const F=FORMS[k],txt=F.sentences.join(' ').replace(/\|/g,'').replace(/\s+/g,' ');
+    t('Form '+k+': 8 questions, 4 options, answer text appears in email',F.qs.length===8&&F.qs.every(q=>q.o.length===4&&q.a>=0&&q.a<4),'');
+    t('Form '+k+': correct options are supported by the email',F.qs.every(q=>{const a=q.o[q.a];return a.split(/ and /).every(x=>txt.indexOf(x.replace(/^The /,'the ').replace(/^the /,''))>=0||txt.toLowerCase().indexOf(x.toLowerCase().replace(/^the /,''))>=0);}),'');
+    t('Form '+k+': instruction answers present',['to','cc','att'].every(x=>{const o=F.reply[x][F.reply.ans[x]];return txt.toLowerCase().indexOf(o.toLowerCase())>=0;}),'');});
+  t('Visual events spaced at least 2.5 s (well under 3 Hz)',MIN_VIS_GAP>=0.34&&GAP_MIN>=5,MIN_VIS_GAP+' s');
+  const code=Array.from(document.scripts).map(s=>s.textContent).join('\n').replace(/http:\/\/www\.w3\.org\/2000\/svg/g,'');
+  const bad=['fe'+'tch\\(','XMLHt'+'tpRequest','Web'+'Socket','send'+'Beacon','https?'+':\\/\\/','import'+'Scripts','new Im'+'age\\('].filter(p=>new RegExp(p).test(code));
+  t('No network calls in script',bad.length===0,bad.join(','));
+  const txt=[$('#main'),$('#top'),$('#fac')].map(e=>e.textContent).join(' ').toLowerCase();
+  const forb=['feel what','walk a mile','walk in their shoes','step inside','experience adhd','what adhd is like','simulate adhd','adhd brain','superpower'].filter(p=>txt.indexOf(p)>=0);
+  t('No prohibited claim phrases in visible text',forb.length===0,forb.join(','));
+  const ex=JSON.stringify(buildExport()),keys=ex.match(/"[a-z_0-9]+":/g)||[];
+  t('Export has no identifier-like keys',!keys.some(k=>/name"|email|phone|ip_|user_?agent|employer|company|location/.test(k.replace('framing','').replace('screen_seconds',''))),'');
+  t('Stop button visible and not hidden',!$('#stopBtn').hidden);
+  window.__selftest=out;
+  const fails=out.filter(x=>!x.pass);
+  const box=h('div',{class:'card '+(fails.length?'warn':''),id:'selftestBox'},h('h2',null,'Self-test: '+(out.length-fails.length)+' of '+out.length+' passed'),h('ul',null,(fails.length?fails:out).slice(0,60).map(x=>h('li',null,(x.pass?'PASS ':'FAIL ')+x.test+(x.detail?' ('+x.detail+')':'')))));
+  const old=$('#selftestBox');if(old)old.remove();$('#main').prepend(box);
+  return out;
+}
+
+/* ===== init ===== */
+function init(){
+  buildFac();applyMotion();
+  const mq=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)');
+  if(mq&&mq.addEventListener)mq.addEventListener('change',applyMotion);
+  $('#stopBtn').addEventListener('click',doStop);$('#stopBtn2').addEventListener('click',doStop);
+  $('#pauseBtn').addEventListener('click',()=>pause(!S.paused));$('#resumeBtn').addEventListener('click',()=>pause(false));
+  $('#easeBtn').addEventListener('click',easeOff);
+  $('#soundBtn').addEventListener('click',()=>setSound(!S.set.sound));
+  $('#facBtn').addEventListener('click',()=>toggleFac($('#fac').hidden));
+  $('#optSound').addEventListener('change',ev=>setSound(ev.target.checked));
+  $('#optMotion').addEventListener('change',ev=>{S.set.gentle=ev.target.checked;applyMotion();logEv('setting',{gentle:S.set.gentle});});
+  $('#vol').addEventListener('input',ev=>{S.set.vol=+ev.target.value;Aud.vol(S.set.vol);});
+  $('#testSound').addEventListener('click',()=>{if(!S.set.sound)setSound(true);Aud.ping();say('Test sound played');});
+  $('#consent').addEventListener('change',ev=>{$('#beginBtn').disabled=!ev.target.checked;});
+  $('#beginBtn').addEventListener('click',()=>{if(!$('#consent').checked)return;S.consent={given:true,at_s:r2(sessT()),text_version:'v0-draft-2026-10-06'};logEv('consent');go(S.set.measures?'t0':'brief1');syncFacSession();});
+  $('#startR1').addEventListener('click',()=>startRun('baseline'));
+  document.addEventListener('keydown',ev=>{
+    if(ev.key!=='Escape')return;
+    if(!$('#fac').hidden){toggleFac(false);return;}
+    if(S.run&&!S.run.over)pause(!S.paused);
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.run&&!S.run.over&&!S.paused)pause(true,'tab hidden');});
+  let last=performance.now(),n=0;
+  setInterval(()=>{
+    const now=performance.now();let dt=(now-last)/1000;last=now;if(dt>0.5)dt=0.5;
+    const R=S.run;if(R&&!R.over&&!S.paused&&!S.stopped)stepRun(R,dt);
+    if(++n%5===0&&!$('#fac').hidden)updateStatus();
+  },100);
+  go('intro',true);
+  window.PE={S:S,go:go,startRun:startRun,stepRun:stepRun,buildExport:buildExport,selfTest:selfTest,doStop:doStop,pause:pause};
+  if(location.hash==='#selftest')selfTest();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 ---
 name: pe-gtm
 description: Go-to-market agent: ICP, account lists, LOIs, outreach drafts and pilot playbooks.
-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
+tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash
 model: sonnet
 ---
 # Ogilvy, the gtm agent of Perspective Engine

@@ -1,7 +1,8 @@
-import type { AtomRecord, FocusKind, GraphState, LedgerEvent, Status, TaskNode } from './types'
+import type { ActivityEvent, AtomRecord, FocusKind, GraphState, LedgerEvent, Status, TaskNode } from './types'
 
 /** City grid order (row-major, City Hall in the centre). Shared by the layout and the UI. */
-export const AGENT_ORDER = ['science', 'ethics', 'product', 'gtm', 'orchestrator', 'data', 'finance', 'legal', 'brand'] as const
+/** Orchestrator first, then the ring clockwise from the top (matches scene/world.ts). */
+export const AGENT_ORDER = ['orchestrator', 'science', 'data', 'finance', 'legal', 'gtm', 'brand', 'product', 'ethics'] as const
 export type AgentKey = (typeof AGENT_ORDER)[number]
 
 export const STATUS_CODE: Record<Status, number> = { pending: 0, ready: 1, running: 2, done: 3, awaiting_human: 4, blocked: 5 }
@@ -186,3 +187,34 @@ export function newEvents(prev: GraphState | null, next: GraphState): LedgerEven
 
 export const fmtTime = (t: number) => new Date(t).toISOString().slice(11, 16) + ' UTC'
 export const fmtK = (k: number) => (k >= 1000 ? `${(k / 1000).toFixed(2)}M` : `${Math.round(k)}k`)
+
+// ---------- activity: what each agent actually did, with timestamps ----------
+
+export const KIND_LABEL: Record<ActivityEvent['kind'], string> = {
+  plan: 'Started', read: 'Read', search: 'Searched', fetch: 'Opened', write: 'Wrote', edit: 'Edited',
+  run: 'Ran', check: 'Checked', note: 'Note', blocked: 'Blocked', handoff: 'Handed off',
+}
+
+/** Every activity event up to time t (null = now), newest first. */
+export function feed(state: GraphState, t: number | null): ActivityEvent[] {
+  const all = Object.values(state.activity ?? {}).flat()
+  return all.filter(e => t === null || ms(e.t) <= t).sort((a, b) => ms(b.t) - ms(a.t) || (a.src === 'ledger' ? -1 : 1))
+}
+
+export const agentFeed = (state: GraphState, agent: string, t: number | null) => feed(state, t).filter(e => e.agent === agent)
+export const taskFeed = (state: GraphState, id: string, t: number | null) => feed(state, t).filter(e => e.node === id)
+
+/** Agents with a task whose status is really "running" right now. */
+export function workingNow(state: GraphState, st: Map<string, Status>) {
+  return state.nodes.filter(n => st.get(n.id) === 'running').map(n => ({ agent: n.agent, node: n }))
+}
+
+export function ago(iso: string | number, now = Date.now()) {
+  const s = Math.max(0, Math.round((now - (typeof iso === 'number' ? iso : ms(iso))) / 1000))
+  if (s < 60) return `${s}s ago`
+  if (s < 3600) return `${Math.round(s / 60)}m ago`
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`
+  return `${Math.round(s / 86400)}d ago`
+}
+
+export const clock = (iso: string | number) => new Date(typeof iso === 'number' ? iso : ms(iso)).toISOString().slice(11, 19)

@@ -1,107 +1,90 @@
 import { create } from 'zustand'
-import { focusKind, levelOf, parentOf, statusesAt } from './data/model'
+import { statusesAt } from './data/model'
 import type { GraphState, Status } from './data/types'
 
-export type Mode = 'story' | 'explore'
-export type Panel = 'none' | 'palette' | 'index' | 'pilot'
-export interface Hover { kind: 'agent' | 'task' | 'worker' | 'atom'; id: string }
+export type Focus = { kind: 'world' } | { kind: 'brain' } | { kind: 'agent'; id: string } | { kind: 'task'; id: string }
+export type Tab = 'overview' | 'activity' | 'output' | 'ask'
+export type Panel = 'none' | 'search' | 'help' | 'pilot' | 'index'
+export interface Hover { kind: 'agent' | 'task' | 'brain' | 'worker'; id: string }
+export type Source = 'loading' | 'live' | 'file' | 'offline'
 
 const read = (k: string) => { try { return localStorage.getItem(k) } catch { return null } }
 export const persist = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* storage unavailable */ } }
 
+export const focusKey = (f: Focus) => (f.kind === 'agent' || f.kind === 'task' ? `${f.kind}-${f.id}` : f.kind)
+export function parseFocus(key: string, d: GraphState | null): Focus | null {
+  if (key === 'world' || key === 'brain') return { kind: key }
+  const m = /^(agent|task)-([A-Za-z0-9_]+)$/.exec(key)
+  if (!m) return null
+  if (d && m[1] === 'agent' && !d.agents[m[2]]) return null
+  if (d && m[1] === 'task' && !d.nodes.some(n => n.id === m[2])) return null
+  return m[1] === 'agent' ? { kind: 'agent', id: m[2] } : { kind: 'task', id: m[2] }
+}
+
 interface S {
   data: GraphState | null
-  prev: GraphState | null
   st: Map<string, Status>
-  mode: Mode
-  focus: string
-  level: 1 | 2 | 3 | 4
-  nudge: number
-  workerView: boolean
+  source: Source
+  syncedAt: number | null
+  time: number | null
+  focus: Focus
+  tab: Tab
   hover: Hover | null
   record: string | null
-  time: number | null
-  statusFilter: Status[]
-  phaseFilter: number[]
+  panel: Panel
   sound: boolean
   voice: boolean
-  storyP: number
-  storyChapter: number
-  panel: Panel
-  guideOpen: boolean
-  entered: boolean
+  introDone: boolean
+  coach: number
+  touring: boolean
   webgl: boolean
-  setData: (d: GraphState) => void
-  dive: (id: string, opts?: { worker?: boolean }) => void
+  bump: number
+  enteredAt: number | null
+  pendingAsk: string | null
+  replayOpen: boolean
+  hintsUsed: string[]
+  statusFilter: Status[]
+  setData: (d: GraphState, source: Source) => void
+  select: (f: Focus, tab?: Tab) => void
   back: () => void
-  zoomBy: (d: number) => void
   setTime: (t: number | null) => void
   set: (p: Partial<S>) => void
 }
 
 export const useStore = create<S>((set, get) => ({
   data: null,
-  prev: null,
   st: new Map(),
-  mode: 'story',
-  focus: 'venture',
-  level: 1,
-  nudge: 0,
-  workerView: false,
+  source: 'loading',
+  syncedAt: null,
+  time: null,
+  focus: { kind: 'world' },
+  tab: 'overview',
   hover: null,
   record: null,
-  time: null,
-  statusFilter: [],
-  phaseFilter: [],
+  panel: 'none',
   sound: read('pe.sound') === '1',
   voice: read('pe.voice') !== '0',
-  storyP: 0,
-  storyChapter: 0,
-  panel: 'none',
-  guideOpen: false,
-  entered: false,
+  introDone: read('pe.intro') === '1',
+  coach: -1,
+  touring: false,
   webgl: true,
-  setData: d => set(s => ({ prev: s.data, data: d, st: statusesAt(d, s.time) })),
-  dive: (id, opts) => {
-    const d = get().data
-    if (!d) return
-    const level = levelOf(focusKind(d, id))
-    set({ focus: id, level, nudge: 0, workerView: !!opts?.worker, record: null, hover: null })
-  },
+  bump: 0,
+  enteredAt: null,
+  pendingAsk: null,
+  replayOpen: false,
+  hintsUsed: [],
+  statusFilter: [],
+  setData: (d, source) => set(s => ({ data: d, source, syncedAt: Date.now(), st: statusesAt(d, s.time) })),
+  select: (f, tab) => set(s => ({ focus: f, tab: tab ?? (f.kind === s.focus.kind && focusKey(f) === focusKey(s.focus) ? s.tab : 'overview'), record: null, bump: s.bump + 1 })),
   back: () => {
-    const { data, focus, level, workerView } = get()
-    if (!data || level === 1) return
-    if (workerView) return set({ workerView: false })
-    const up = parentOf(data, focus)
-    set({ focus: up, level: levelOf(focusKind(data, up)), nudge: 0, record: null })
-  },
-  zoomBy: dz => {
-    const { nudge, level, data, focus, hover } = get()
-    const n = nudge + dz
-    if (n > 0.5 && level < 4 && data) {
-      // Zooming in past a level dives into what the cursor is on, or the most relevant child.
-      const target = pickChild(data, focus, hover, get().st)
-      if (target) return get().dive(target)
+    const { focus, data, record } = get()
+    if (record) return set({ record: null })
+    if (focus.kind === 'task' && data) {
+      const n = data.nodes.find(x => x.id === focus.id)
+      return get().select(n ? { kind: 'agent', id: n.agent } : { kind: 'world' })
     }
-    if (n < -0.5 && level > 1) return get().back()
-    set({ nudge: Math.max(-0.5, Math.min(0.5, n)) })
+    if (focus.kind !== 'world') get().select({ kind: 'world' })
   },
   setTime: t => set(s => ({ time: t, st: s.data ? statusesAt(s.data, t) : s.st })),
   set: p => set(p as S),
 }))
-
-function pickChild(d: GraphState, focus: string, hover: Hover | null, st: Map<string, Status>): string | null {
-  const k = focusKind(d, focus)
-  if (hover && (hover.kind === 'agent' || hover.kind === 'worker') && k !== 'agent') return hover.id
-  if (hover?.kind === 'task') return hover.id
-  if (k === 'venture') return 'city'
-  if (k === 'city') {
-    const live = d.nodes.find(n => st.get(n.id) === 'running') ?? d.nodes.find(n => st.get(n.id) === 'ready')
-    return live?.agent ?? 'orchestrator'
-  }
-  if (k === 'agent') {
-    const mine = d.nodes.filter(n => n.agent === focus)
-    return (mine.find(n => st.get(n.id) === 'running') ?? mine.find(n => st.get(n.id) === 'done') ?? mine[0])?.id ?? null
-  }
-  return null
-}

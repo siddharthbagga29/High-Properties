@@ -137,6 +137,13 @@ class Sound {
     this.blip(110, 0.5, 0.12, 'sine', 0.05)
   }
 
+  /** A short marimba-like pluck when a tower is pressed: pitch follows the task. */
+  pluck(i: number) {
+    const f = 220 * Math.pow(2, PENTA[i % PENTA.length] / 12)
+    this.blip(f, 0.35, 0.09, 'triangle')
+    this.blip(f * 3, 0.12, 0.025, 'sine')
+  }
+
   /** One bell per agent, pitched on a pentatonic scale so simultaneous events stay consonant. */
   ping(agentIndex: number) {
     const f = 440 * Math.pow(2, PENTA[agentIndex % PENTA.length] / 12)

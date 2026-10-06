@@ -1,0 +1,62 @@
+{
+  "F03": {
+    "agent_id": "aca1a911f59c2c370",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-aca1a911f59c2c370.jsonl"
+  },
+  "F04": {
+    "agent_id": "a5918a173f5b18d05",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a5918a173f5b18d05.jsonl"
+  },
+  "F06": {
+    "agent_id": "a57aca20c172a30c2",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a57aca20c172a30c2.jsonl"
+  },
+  "V01": {
+    "agent_id": "a7ac0209e0c4c291e",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a7ac0209e0c4c291e.jsonl"
+  },
+  "V05": {
+    "agent_id": "a3e126482ed69c6b1",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a3e126482ed69c6b1.jsonl"
+  },
+  "V04": {
+    "agent_id": "ac2dd770518b91f99",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-ac2dd770518b91f99.jsonl"
+  },
+  "V02": {
+    "agent_id": "a902abb8305315002",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a902abb8305315002.jsonl"
+  },
+  "V07": {
+    "agent_id": "a1beb3b1cbc84d779",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a1beb3b1cbc84d779.jsonl"
+  },
+  "V03": {
+    "agent_id": "ab35daf95a904b5b4",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-ab35daf95a904b5b4.jsonl"
+  },
+  "V10": {
+    "agent_id": "a55e26b205ad3f757",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a55e26b205ad3f757.jsonl"
+  },
+  "V15": {
+    "agent_id": "a44ddf6aae13fc109",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a44ddf6aae13fc109.jsonl"
+  },
+  "V11": {
+    "agent_id": "af498336294d23751",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-af498336294d23751.jsonl"
+  },
+  "V13": {
+    "agent_id": "a8c87146be9ccac49",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a8c87146be9ccac49.jsonl"
+  },
+  "V06": {
+    "agent_id": "a617ad9ad8d5990a5",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a617ad9ad8d5990a5.jsonl"
+  },
+  "V08": {
+    "agent_id": "a59d3357687514cee",
+    "transcript": "/root/.claude/projects/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/subagents/agent-a59d3357687514cee.jsonl"
+  }
+}

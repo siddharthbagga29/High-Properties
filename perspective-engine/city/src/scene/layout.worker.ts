@@ -1,6 +1,6 @@
-import { buildParticles, type ParticleInput } from './layout'
+import { buildBrain, type BrainInput } from './world'
 
-self.onmessage = (e: MessageEvent<ParticleInput>) => {
-  const out = buildParticles(e.data)
-  ;(self as unknown as Worker).postMessage(out, [out.brain.buffer, out.city.buffer, out.scatter.buffer, out.info.buffer, out.info2.buffer])
+self.onmessage = (e: MessageEvent<BrainInput>) => {
+  const out = buildBrain(e.data)
+  ;(self as unknown as Worker).postMessage(out, [out.pos.buffer, out.scatter.buffer, out.info.buffer])
 }

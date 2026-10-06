@@ -1,28 +1,29 @@
 import * as THREE from 'three'
-import { MAX_TASKS } from './layout'
+import { MAX_TASKS } from './world'
 
 /**
- * Per-frame scene values shared between components without React re-renders.
- * One controller (CameraRig) writes; everything else reads inside useFrame.
+ * Per-frame values shared between scene components without React re-renders.
+ * The Rig writes; everything else reads inside useFrame.
  */
 export const live = {
-  city: 0,            // 0 = cortex, 1 = city
-  assemble: 0,        // 0 = scattered, 1 = assembled
+  assemble: 0,
   time: 0,
   mouse: new THREE.Vector3(0, -999, 0),
-  mouseR: 2,
+  mouseR: 1.8,
   mouseOn: 0,
-  focusPoint: new THREE.Vector3(0, 8.5, 0),
   focusTask: -1,
-  focusDistrict: -1,
+  focusAgent: -1,
   focusMix: 0,
-  windowR: 0.36,       // reticle radius as a fraction of min(viewport)
   status: new Float32Array(MAX_TASKS),
   progress: new Float32Array(MAX_TASKS),
   visible: new Float32Array(MAX_TASKS).fill(1),
   fresh: new Float32Array(MAX_TASKS),
+  agentGlow: new Float32Array(9),
   motion: 1,
   fps: 0,
+  idle: 0,
+  /** Panel sizes the DOM reports, so the camera can centre the subject between them. */
+  ui: { railW: 0, inspW: 0, sheetH: 0 },
 }
 
 export const PALETTE = {
@@ -32,7 +33,11 @@ export const PALETTE = {
   violet: new THREE.Color('#7a3cff'),
   mote: new THREE.Color('#8fe6ff'),
   rose: new THREE.Color('#ff4d7a'),
+  glass: new THREE.Color('#1a1147'),
 }
+
+/** Status code → tower fill and colour, shared by towers, signs and the brain. */
+export const STATUS_COLOR = ['#7a3cff', '#2bf0ff', '#ffffff', '#2bf0ff', '#a77bff', '#ff4d7a']
 
 export const SNOISE = /* glsl */ `
 vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}

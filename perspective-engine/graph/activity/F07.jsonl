@@ -1,0 +1,2 @@
+{"t": "2026-10-06T13:51:33Z", "node": "F07", "agent": "orchestrator", "kind": "plan", "text": "Task started", "src": "ledger"}
+{"t": "2026-10-06T13:51:33Z", "node": "F07", "agent": "orchestrator", "kind": "handoff", "text": "Task finished: 3D cortex-to-city with semantic zoom, guide, replay, deep links; a11y/BP/SEO 100", "src": "ledger"}

@@ -21,6 +21,17 @@ export interface TaskNode {
 export interface Agent { name: string; district: string; role: string }
 export interface LedgerEvent { t: string; event: string; node: string; note: string }
 
+/** One real, timestamped step an agent took: a search, a file read or written, a check, a handoff. */
+export interface ActivityEvent {
+  t: string
+  node: string
+  agent: string
+  kind: 'plan' | 'read' | 'search' | 'fetch' | 'write' | 'edit' | 'run' | 'check' | 'note' | 'blocked' | 'handoff'
+  text: string
+  /** transcript = extracted from the agent's tool calls; self = logged by the agent while working; ledger = a state change */
+  src: 'transcript' | 'self' | 'ledger'
+}
+
 export interface GraphState {
   generated: string
   project: string
@@ -29,6 +40,7 @@ export interface GraphState {
   nodes: TaskNode[]
   ledger: LedgerEvent[]
   excerpts: Record<string, string | null>
+  activity?: Record<string, ActivityEvent[]>
 }
 
 /** The one normalized record shape every level-4 atom is expressed in. */

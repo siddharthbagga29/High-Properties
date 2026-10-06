@@ -116,21 +116,25 @@
       "agent": "product",
       "title": "Browser MVP v0: attention-load simulator",
       "deps": [
-        "F01"
+        "F01",
+        "V01",
+        "F06",
+        "V02"
       ],
       "outputs": [
         "perspective-engine/mvp/index.html",
         "perspective-engine/mvp/README.md"
       ],
       "accept": [
-        "baseline vs load conditions",
-        "mandatory debrief",
-        "no flashing above 3 Hz",
-        "JSON export, no network calls"
+        "baseline vs load conditions on the same task",
+        "mechanisms M1-M4 from the mechanism spec, each tunable, M5 off by default",
+        "mandatory debrief per the co-design charter",
+        "no flashing above 3 Hz; reduced-motion respected; Stop always visible",
+        "JSON export of the day-0 measures from the instruments spec; no network calls"
       ],
       "gate": null,
-      "budget_k": 60,
-      "status": "blocked"
+      "budget_k": 80,
+      "status": "running"
     },
     {
       "id": "F05",
@@ -440,7 +444,7 @@
         "reason": "Sending email uses the founder's Gmail; needs authorization and approval of each batch."
       },
       "budget_k": 10,
-      "status": "pending"
+      "status": "awaiting_human"
     },
     {
       "id": "V10",
@@ -645,7 +649,7 @@
         "reason": "IRB submission goes through a university partner."
       },
       "budget_k": 25,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "M04",

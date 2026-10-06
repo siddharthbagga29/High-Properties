@@ -1,7 +1,7 @@
 ---
 name: pe-legal
 description: Legal and compliance agent: privacy data maps, entity and IP checklists, regulatory framing (FDA general wellness, GDPR, HIPAA).
-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
+tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash
 model: sonnet
 ---
 # Ginsburg, the legal agent of Perspective Engine

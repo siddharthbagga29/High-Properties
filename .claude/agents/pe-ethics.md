@@ -1,7 +1,7 @@
 ---
 name: pe-ethics
 description: Ethics and co-design agent: neurodivergent advisory board, consent, harm review, debrief design and IRB packets.
-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
+tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash
 model: sonnet
 ---
 # Milton, the ethics agent of Perspective Engine

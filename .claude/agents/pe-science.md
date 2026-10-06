@@ -1,7 +1,7 @@
 ---
 name: pe-science
 description: Science agent: evidence reviews, mechanism specs, study protocols, pre-registrations and papers for Perspective Engine.
-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
+tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash
 model: sonnet
 ---
 # Curie, the science agent of Perspective Engine

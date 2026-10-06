@@ -1,15 +1,15 @@
+import { AnimatePresence } from 'framer-motion'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { hush, sfx } from './audio/sound'
-import { formatLink, parseLink } from './data/deeplink'
-import { focusKind } from './data/model'
-import type { GraphState } from './data/types'
+import { startLive } from './data/live'
+import { workingNow } from './data/model'
 import { labelLayer } from './scene/portal'
-import { useStore } from './store'
-import { Dossier } from './ui/Dossier'
-import { Guide } from './ui/Guide'
-import { HUD, Reticle, Scrubber, ZoomDock } from './ui/HUD'
-import { Mirror, Palette, Pilot } from './ui/Panels'
-import { Story } from './ui/Story'
+import { live } from './scene/shared'
+import { RING } from './scene/world'
+import { focusKey, parseFocus, persist, useStore } from './store'
+import { AskBar, Gate, HintChip, MiniMap, Replay, Toasts, TopBar } from './ui/Chrome'
+import { Drawer } from './ui/Drawer'
+import { Help, Index, Pilot, Search } from './ui/Panels'
 
 const Scene = lazy(() => import('./scene/Scene'))
 
@@ -17,23 +17,9 @@ function hasWebGL() {
   try { return !!document.createElement('canvas').getContext('webgl2') } catch { return false }
 }
 
-/** Polls the graph export. The same file the agents update, so the city is live wherever it is hosted. */
-function useLiveData() {
-  useEffect(() => {
-    let stop = false
-    const load = async () => {
-      try {
-        const r = await fetch('./state.json', { cache: 'no-store' })
-        if (!r.ok) return
-        const d = (await r.json()) as GraphState
-        const cur = useStore.getState().data
-        if (!cur || cur.generated !== d.generated || cur.ledger.length !== d.ledger.length) useStore.getState().setData(d)
-      } catch { /* offline: keep the last state */ }
-    }
-    load()
-    const id = setInterval(() => { if (!stop && !document.hidden) load() }, 20_000)
-    return () => { stop = true; clearInterval(id) }
-  }, [])
+const useHint = (k: string) => {
+  const s = useStore.getState()
+  if (!s.hintsUsed.includes(k)) s.set({ hintsUsed: [...s.hintsUsed, k] })
 }
 
 function useDeepLink() {
@@ -42,115 +28,125 @@ function useDeepLink() {
   useEffect(() => {
     if (!data || applied.current) return
     applied.current = true
-    const l = parseLink(location.hash)
-    if (!l) return
-    const s = useStore.getState()
-    if (l.time !== null) s.setTime(l.time)
-    s.set({ mode: 'explore', entered: true })
-    s.dive(focusKind(data, l.focus) === 'venture' && l.focus !== 'venture' ? 'venture' : l.focus)
+    const f = parseFocus(location.hash.replace(/^#/, ''), data)
+    if (f) { useStore.getState().set({ introDone: true }); useStore.getState().select(f) }
   }, [data])
-  useEffect(() => useStore.subscribe(s => {
-    if (s.mode !== 'explore' || !s.data) return
-    const h = formatLink({ focus: s.focus, level: s.level, time: s.time })
+  useEffect(() => useStore.subscribe((s, p) => {
+    if (focusKey(s.focus) === focusKey(p.focus)) return
+    const h = '#' + focusKey(s.focus)
     if (location.hash !== h) try { history.replaceState(null, '', h) } catch { /* sandboxed */ }
   }), [])
 }
 
-function useControls() {
+function useKeys() {
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      live.idle = 0
       const s = useStore.getState()
-      const typing = (e.target as HTMLElement)?.closest('input, textarea')
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); s.set({ panel: s.panel === 'palette' ? 'none' : 'palette' }); return }
+      const typing = (e.target as HTMLElement)?.closest('input, textarea, select')
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); s.set({ panel: s.panel === 'search' ? 'none' : 'search' }); return }
       if (e.key === 'Escape') {
         if (s.panel !== 'none') return s.set({ panel: 'none' })
-        if (s.record) return s.set({ record: null })
-        if (s.mode === 'explore') { sfx.dive(); s.back() }
-        return
+        if (typing) return (e.target as HTMLElement).blur()
+        sfx.dive(); s.back(); return
       }
-      if (typing || s.mode !== 'explore') return
-      if (e.key === '+' || e.key === '=') { sfx.click(); s.zoomBy(0.6) }
-      if (e.key === '-' || e.key === '_') { sfx.click(); s.zoomBy(-0.6) }
+      if (typing) return
+      if (e.key === 'Home') { sfx.dive(); s.select({ kind: 'world' }) }
+      if (e.key === '/') { e.preventDefault(); document.getElementById('askbar-q')?.focus() }
+      if (e.key === '?') s.set({ panel: 'help' })
+      if (e.key.toLowerCase() === 'l') { const next = !s.sound; s.set({ sound: next }); persist('pe.sound', next ? '1' : '0') }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const cur = s.focus.kind === 'agent' ? RING.indexOf(s.focus.id as (typeof RING)[number]) : -1
+        const n = (cur + (e.key === 'ArrowRight' ? 1 : RING.length - 1) + (cur < 0 && e.key === 'ArrowLeft' ? 1 : 0)) % RING.length
+        sfx.dive(); s.select({ kind: 'agent', id: RING[n] })
+      }
     }
-    let acc = 0, last = 0
-    const wheel = (e: WheelEvent) => {
-      const s = useStore.getState()
-      if (s.mode !== 'explore' || s.panel !== 'none' || (e.target as HTMLElement).closest('.scrolls')) return
-      e.preventDefault()
-      const now = performance.now()
-      if (now - last > 400) acc = 0
-      last = now
-      acc += -e.deltaY * (e.ctrlKey ? 0.01 : 0.0018)
-      const step = Math.max(-0.3, Math.min(0.3, acc))
-      acc -= step
-      const before = s.level
-      s.zoomBy(step)
-      if (useStore.getState().level !== before) { sfx.dive(); acc = 0 }
-    }
-    let pinch = 0
-    const touchMove = (e: TouchEvent) => {
-      const s = useStore.getState()
-      if (s.mode !== 'explore' || e.touches.length !== 2) return
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
-      if (pinch) s.zoomBy((d - pinch) * 0.006)
-      pinch = d
-    }
-    const touchEnd = () => { pinch = 0 }
+    const wake = () => { live.idle = 0 }
+    const wheel = () => { live.idle = 0; useHint('scroll') }
+    let down: { x: number; y: number } | null = null
+    const pd = (e: PointerEvent) => { live.idle = 0; down = { x: e.clientX, y: e.clientY } }
+    const pm = (e: PointerEvent) => { if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 30 && (e.target as HTMLElement).tagName === 'CANVAS') useHint('drag') }
+    const pu = () => { down = null }
     window.addEventListener('keydown', key)
-    window.addEventListener('wheel', wheel, { passive: false })
-    window.addEventListener('touchmove', touchMove, { passive: true })
-    window.addEventListener('touchend', touchEnd)
+    window.addEventListener('wheel', wheel, { passive: true })
+    window.addEventListener('pointerdown', pd)
+    window.addEventListener('pointermove', pm)
+    window.addEventListener('pointerup', pu)
+    window.addEventListener('pointermove', wake, { passive: true })
     return () => {
-      window.removeEventListener('keydown', key)
-      window.removeEventListener('wheel', wheel)
-      window.removeEventListener('touchmove', touchMove)
-      window.removeEventListener('touchend', touchEnd)
+      window.removeEventListener('keydown', key); window.removeEventListener('wheel', wheel)
+      window.removeEventListener('pointerdown', pd); window.removeEventListener('pointermove', pm); window.removeEventListener('pointerup', pu)
+      window.removeEventListener('pointermove', wake)
     }
   }, [])
 }
 
 export default function App() {
-  useLiveData()
   useDeepLink()
-  useControls()
-  const mode = useStore(s => s.mode)
-  const data = useStore(s => s.data)
-  const sound = useStore(s => s.sound)
+  useKeys()
   const webgl = useStore(s => s.webgl)
+  const sound = useStore(s => s.sound)
+  const introDone = useStore(s => s.introDone)
+  const data = useStore(s => s.data)
+  const st = useStore(s => s.st)
   const [showScene, setShowScene] = useState(false)
+  const drawer = useRef<HTMLDivElement>(null)
 
+  useEffect(() => startLive(), [])
   useEffect(() => {
     const ok = hasWebGL()
     useStore.getState().set({ webgl: ok })
-    // Three.js loads after first paint: the headline and primary action never wait for WebGL.
     if (ok) {
+      // Three.js loads after first paint: the headline and the explanation never wait for WebGL.
       const go = () => setShowScene(true)
       const idle = () => ('requestIdleCallback' in window ? (window as unknown as { requestIdleCallback: (f: () => void, o: object) => void }).requestIdleCallback(go, { timeout: 900 }) : setTimeout(go, 300))
       document.readyState === 'complete' ? idle() : addEventListener('load', idle, { once: true })
     }
   }, [])
-  useEffect(() => { if (sound) sfx.enable(); else { sfx.disable(); hush() } }, [sound])
-  useEffect(() => { document.documentElement.dataset.mode = mode }, [mode])
+  useEffect(() => { if (sound && introDone) sfx.enable(); else { sfx.disable(); hush() } }, [sound, introDone])
+  useEffect(() => useStore.subscribe((s, p) => { if (s.bump !== p.bump) useHint('click') }), [])
+  // The tab title says who is working, so a background tab still shows life.
+  useEffect(() => {
+    if (!data) return
+    const w = workingNow(data, st).length
+    document.title = w ? `● ${w} agent${w > 1 ? 's' : ''} working · Perspective Engine` : 'Perspective Engine City'
+  }, [data, st])
+  // Tell the camera how much room the panels take, so the subject stays centred in what is visible.
+  useEffect(() => {
+    const el = drawer.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect()
+      const wide = innerWidth > 900
+      live.ui.inspW = wide ? r.width + 24 : 0
+      live.ui.railW = 0
+      live.ui.sheetH = wide ? 0 : r.height
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [webgl])
 
   return (
     <div className="app">
       <div className="stage" aria-hidden="true">
         {webgl && showScene ? <Suspense fallback={null}><Scene /></Suspense> : <div className="stage-fallback" />}
       </div>
-      {webgl && <Reticle />}
       <div className="labels" ref={el => { if (el) labelLayer.current = el }} />
-      <HUD />
-      {!webgl ? <Mirror forceOpen /> : mode === 'story' ? <Story /> : (
+      <TopBar />
+      {webgl ? (
         <>
-          <Dossier />
-          <Scrubber />
-          <ZoomDock />
+          <div ref={drawer} className="drawer-wrap"><Drawer /></div>
+          <MiniMap />
+          <HintChip />
+          <div className="bottom"><Replay /><AskBar /></div>
+          <Toasts />
+          <Index />
         </>
-      )}
-      {data && <Guide />}
-      <Palette />
+      ) : <Index forceOpen />}
+      <Search />
+      <Help />
       <Pilot />
-      {webgl && <Mirror />}
+      <AnimatePresence>{webgl && !introDone && <Gate />}</AnimatePresence>
     </div>
   )
 }
