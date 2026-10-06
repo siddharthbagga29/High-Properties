@@ -125,7 +125,7 @@
       ],
       "gate": null,
       "budget_k": 60,
-      "status": "running"
+      "status": "blocked"
     },
     {
       "id": "F05",
@@ -133,8 +133,7 @@
       "agent": "orchestrator",
       "title": "Execution plan v1",
       "deps": [
-        "F03",
-        "F04"
+        "F03"
       ],
       "outputs": [
         "perspective-engine/docs/execution-plan.md"
@@ -145,7 +144,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "F06",
@@ -310,7 +309,7 @@
       ],
       "gate": null,
       "budget_k": 8,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "V07",

@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:57:36Z",
+ "generated": "2026-10-06T12:57:56Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -128,8 +128,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 60,
-   "status": "running",
-   "view": "running"
+   "status": "blocked",
+   "view": "blocked"
   },
   {
    "id": "F05",
@@ -137,8 +137,7 @@ window.PE_STATE = {
    "agent": "orchestrator",
    "title": "Execution plan v1",
    "deps": [
-    "F03",
-    "F04"
+    "F03"
    ],
    "outputs": [
     "perspective-engine/docs/execution-plan.md"
@@ -149,8 +148,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "pending",
-   "view": "pending"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "F06",
@@ -322,8 +321,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 8,
-   "status": "pending",
-   "view": "pending"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V07",
@@ -913,6 +912,30 @@ window.PE_STATE = {
    "event": "done",
    "node": "V13",
    "note": "Landing page: no 'simulate' claims, inert pilot form, honest 'where this stands' box"
+  },
+  {
+   "t": "2026-10-06T12:57:56Z",
+   "event": "block",
+   "node": "F04",
+   "note": "Prototype agent was stopped by the founder; relaunch only on founder instruction"
+  },
+  {
+   "t": "2026-10-06T12:57:56Z",
+   "event": "start",
+   "node": "F05",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:57:56Z",
+   "event": "done",
+   "node": "F05",
+   "note": "Plan v1: 4 falsifiable hypotheses w/ kill criteria; browser-first; behavior outcome; MC shows $50M@48mo ~0.6%"
+  },
+  {
+   "t": "2026-10-06T12:57:56Z",
+   "event": "start",
+   "node": "V06",
+   "note": ""
   }
  ]
 };
