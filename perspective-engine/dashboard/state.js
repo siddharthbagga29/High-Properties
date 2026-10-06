@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:49:21Z",
+ "generated": "2026-10-06T12:50:55Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -385,8 +385,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 25,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V11",
@@ -404,8 +404,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 15,
-   "status": "pending",
-   "view": "ready"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V12",
@@ -838,6 +838,18 @@ window.PE_STATE = {
    "t": "2026-10-06T12:49:21Z",
    "event": "start",
    "node": "V15",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:50:55Z",
+   "event": "done",
+   "node": "V10",
+   "note": "MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M; P($5M by m48)=0.6%; H1 dominant driver"
+  },
+  {
+   "t": "2026-10-06T12:50:55Z",
+   "event": "start",
+   "node": "V11",
    "note": ""
   }
  ]

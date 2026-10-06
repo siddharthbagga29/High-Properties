@@ -61,7 +61,8 @@ The buyer sees an aggregate dashboard with n≥10 suppression (M02).
 
 - Pricing is a hypothesis to test in discovery. Start with paid pilots priced per cohort, then move to annual per-manager seats. No figure from the memo is reused until V10 recomputes it from sourced ranges.
 - Gross margin should be high: browser delivery, no hardware, no generative inference needed in the core loop. Facilitation is the main cost risk; productize it into self-run sessions by month 9.
-- $50M enterprise value in 48 months needs roughly $5–8M ARR at typical B2B software multiples. That is plausible only if H1 holds and is published. Treat it as the bull case, not the plan.
+- $50M enterprise value in 48 months needs roughly $5–8M ARR at typical B2B software multiples. The first bottom-up model (`finance/model.py`, 10,000 trials, every input an unsourced assumption) puts that at **about 0.6% by month 48**. Year-5 ARR comes out at $53k / $633k / $4.31M (P10/P50/P90), with gross margin near 68% at the median, not 84%. Whether H1 holds is the dominant driver: P50 year-5 ARR is $2.09M if it holds and $178k if it fails. Peak funding need is about $4.9M at P50.
+- What this means: the $50M goal is a tail outcome on today's assumptions. Two things move it. First, settle H1 early and cheaply. Second, find a larger seat footprint per account, such as a manager curriculum that HR adopts company-wide. Replace model inputs with interview and pilot data in this order: H1, pilot-rate growth, seats per account, price, conversion, churn.
 
 ## 6. Free-first resources
 

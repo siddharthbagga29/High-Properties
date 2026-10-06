@@ -18,7 +18,7 @@ A = "assumption"
 
 # (key, low, mode, high, unit, label, basis)
 PARAMS = [
- ("r0",        0.20, 0.35, 0.60, "pilots signed/month at launch", A, "Year-1 milestone is 3 paid pilots (execution plan); founder-led"),
+ ("r0",        0.15, 0.28, 0.50, "pilots signed/month at launch", A, "Year-1 milestone is 3 paid pilots (execution plan); founder-led; modelled 2027 pilot count is reported in the results"),
  ("cycle",     3, 5, 9, "months, first touch to signed pilot", A, "ICP: all cycle lengths are role-logic hypotheses; 2 months of 2026 interviewing assumed head-start"),
  ("growth",    1.3, 2.0, 3.2, "x per year on pilot signing rate", A, "Sales hires and references; no comparable growth data found"),
  ("n_reach",   500, 1500, 4000, "reachable target accounts", A, "ICP segments 1-3; size band 1,000-10,000 staff is untested; count unverified"),
@@ -27,9 +27,9 @@ PARAMS = [
  ("pilot_seats", 15, 30, 60, "managers per pilot cohort", A, "ICP: one cohort of managers"),
  ("conv",      0.25, 0.45, 0.65, "pilot-to-annual conversion", A, "No data; conditional on H1 holding"),
  ("lag",       1, 2, 5, "months, pilot end to annual start", A, "Budget-cycle and Legal/IT review (ICP blockers)"),
- ("seats",     40, 150, 600, "median managers per annual account", A, "No data; ICP size band implies a few hundred managers at most"),
+ ("seats",     30, 100, 400, "median managers per annual account", A, "No data; first contract assumed to cover one business unit of a 1,000-10,000 staff employer (ICP)"),
  ("sigma",     0.4, 0.6, 0.9, "lognormal sigma, account size spread", A, "Account sizes are skewed"),
- ("price",     120, 240, 480, "USD per manager seat per year", A, "Memo's $25k-60k/yr enterprise license is unverified and not used as an input"),
+ ("price",     100, 200, 400, "USD per manager seat per year", A, "No public pricing found (dossier section 7); memo's $25k-60k/yr is unverified and only a cross-check on the ACV line in the results, not an input"),
  ("exp",       0.0, 0.08, 0.25, "annual seat growth at renewal", A, "No data"),
  ("churn",     0.10, 0.20, 0.35, "annual logo churn at renewal", A, "Includes budget-line cuts (19% of firms cut DEI funding in 2025, https://www.hr-brew.com/stories/2025/12/04/2025-in-review-businesses-walked-a-fine-line-on-dei-as-the-government-ramped-up-threats-on-corporate-initiatives); product is positioned outside DEI"),
  ("p_fail",    0.30, 0.50, 0.70, "P(H1 value hypothesis fails)", A, "Dossier: no controlled ADHD-simulation trial; cognitive empathy d=0.08 (https://tmb.apaopen.org/pub/vr-improves-emotional-empathy-only); Nario-Redmond 2017 (https://pubmed.ncbi.nlm.nih.gov/28287757/)"),
@@ -158,7 +158,9 @@ def ym(t):
 
 
 def money(x):
-    return "$%.2fM" % (x / 1e6) if abs(x) >= 1e6 else "$%dk" % round(x / 1e3)
+    sg = "-" if x < 0 else ""
+    x = abs(x)
+    return sg + ("$%.2fM" % (x / 1e6) if x >= 1e6 else "$%dk" % round(x / 1e3))
 
 
 def run(trials=TRIALS, seed=SEED):
@@ -192,12 +194,16 @@ def report(S, R, secs, trials, seed):
     w("Gross margin (pilots + recurring, after facilitation, hosting, CS, co-designer fees), P10 / P50 / P90")
     for y in range(5):
         w("  %d: %s" % (2027 + y, trio([(1 - r[3][y] / r[2][y]) if r[2][y] > 0 else 0.0 for r in R], lambda x: "%.0f%%" % (100 * x))))
+    w("  P(year-5 gross margin >= 84%%, the memo's unverified figure) = %.1f%%" % (100 * sum((1 - r[3][4] / r[2][4]) >= 0.84 for r in R if r[2][4] > 0) / n))
     w("")
     m1 = sorted([next((t for t in range(1, H + 1) if a[t] >= 1e6), math.inf) for a in arr])
     def mo(x): return ym(x) if x < math.inf else ">m60"
     w("Months to $1M ARR (never within 60 months counts as >m60), P10 / P50 / P90: %s / %s / %s" % (mo(q(m1, .1)), mo(q(m1, .5)), mo(q(m1, .9))))
     w("  P(reach $1M ARR within 60 months) = %.1f%%; within 48 months = %.1f%%" % (
         100 * sum(x <= H for x in m1) / n, 100 * sum(x <= T48 for x in m1) / n))
+    hit = [x for x in m1 if x <= H]
+    if hit:
+        w("  Among trials that reach it (n=%d): P10 / P50 / P90 = %s / %s / %s" % (len(hit), mo(q(hit, .1)), mo(q(hit, .5)), mo(q(hit, .9))))
     p5_any = sum(max(a[1:T48 + 1]) >= TARGET_ARR for a in arr) / n
     w("P(ARR >= $5M at any month <= 48) = %.1f%%  | at month 48 exactly = %.1f%% | at month 60 = %.1f%%" % (
         100 * p5_any, 100 * sum(a[T48] >= TARGET_ARR for a in arr) / n, 100 * sum(a[H] >= TARGET_ARR for a in arr) / n))
@@ -285,7 +291,7 @@ Regenerate (numbers below are printed by the script, never hand-typed): `python3
 
 ## Limits and what to do next
 - No input is numerically sourced. The dossier states that no public pricing, buyer or conversion data were found (sections 7 and "Verdict" table), and the ICP says all cycle lengths and prices are hypotheses. The unverified $14.8B TAM, 72%% success figure and CPT reimbursement are not used. Treat all output percentiles as a structured statement of uncertainty, not a forecast.
-- Replace inputs in the order of the driver list above with data from the 10-20 buyer interviews and the three paid pilots: price per seat, seats per account, conversion, churn, then CAC and sales cycle. Re-run with the same seed to see the effect.
+- Replace inputs, starting with the drivers listed in the results, using data from the 10-20 buyer interviews and the three paid pilots: price per seat, seats per account, conversion, churn, then CAC and sales cycle. Re-run with the same seed to see the effect.
 - Not modelled: grants (SBIR/NIMH), reimbursement, equity financing, taxes, working capital, multi-year contracts, and channel partners (EAP and consultancy vendors, ICP section 4). Peak funding need is before any financing.
 - Inputs are independent. In reality price, seats and conversion are correlated (larger accounts negotiate discounts), so the tails are probably too wide in one direction and too narrow in another.
 - The H1 failure treatment is a regime switch, not a learning model; partial success (effect on behaviour but not attitudes) would sit between the two conditional rows.
