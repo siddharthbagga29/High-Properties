@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:53:55Z",
+ "generated": "2026-10-06T12:55:59Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -172,6 +172,29 @@ window.PE_STATE = {
    "budget_k": 15,
    "status": "done",
    "view": "done"
+  },
+  {
+   "id": "D01",
+   "phase": 1,
+   "agent": "orchestrator",
+   "title": "Founder decisions: country, ownership, budgets, accounts",
+   "deps": [
+    "V10",
+    "V11"
+   ],
+   "outputs": [
+    "perspective-engine/docs/founder-decisions.md"
+   ],
+   "accept": [
+    "each decision has options, a recommendation and the nodes it blocks"
+   ],
+   "gate": {
+    "type": "human",
+    "reason": "Only the founder can answer: country/ownership (decides US grant eligibility), advisor budget, effect size, facilitator."
+   },
+   "budget_k": 5,
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "V01",
@@ -404,8 +427,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 15,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V12",
@@ -456,7 +479,8 @@ window.PE_STATE = {
    "deps": [
     "F04",
     "V04",
-    "V01"
+    "V01",
+    "D01"
    ],
    "outputs": [
     "perspective-engine/mvp/CHANGELOG.md"
@@ -564,7 +588,8 @@ window.PE_STATE = {
    "agent": "legal",
    "title": "Entity formation and IP assignment checklist",
    "deps": [
-    "V12"
+    "V12",
+    "D01"
    ],
    "outputs": [
     "perspective-engine/legal/entity-checklist.md"
@@ -588,7 +613,8 @@ window.PE_STATE = {
    "title": "SBIR Phase I application draft",
    "deps": [
     "V11",
-    "M03"
+    "M03",
+    "D01"
    ],
    "outputs": [
     "perspective-engine/finance/sbir-draft.md"
@@ -863,6 +889,24 @@ window.PE_STATE = {
    "event": "start",
    "node": "V13",
    "note": ""
+  },
+  {
+   "t": "2026-10-06T12:55:40Z",
+   "event": "done",
+   "node": "V11",
+   "note": "Top: NIH SBIR I (~$307k, 2027-01-05), NIDILRR SBIR (employment fit), NSF SBIR; US tiers need 51% US ownership"
+  },
+  {
+   "t": "2026-10-06T12:55:59Z",
+   "event": "start",
+   "node": "D01",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:55:59Z",
+   "event": "done",
+   "node": "D01",
+   "note": "Decision sheet prepared"
   }
  ]
 };

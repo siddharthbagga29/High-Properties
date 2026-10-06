@@ -168,6 +168,28 @@
       "status": "done"
     },
     {
+      "id": "D01",
+      "phase": 1,
+      "agent": "orchestrator",
+      "title": "Founder decisions: country, ownership, budgets, accounts",
+      "deps": [
+        "V10",
+        "V11"
+      ],
+      "outputs": [
+        "perspective-engine/docs/founder-decisions.md"
+      ],
+      "accept": [
+        "each decision has options, a recommendation and the nodes it blocks"
+      ],
+      "gate": {
+        "type": "human",
+        "reason": "Only the founder can answer: country/ownership (decides US grant eligibility), advisor budget, effect size, facilitator."
+      },
+      "budget_k": 5,
+      "status": "awaiting_human"
+    },
+    {
       "id": "V01",
       "phase": 1,
       "agent": "science",
@@ -388,7 +410,7 @@
       ],
       "gate": null,
       "budget_k": 15,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "V12",
@@ -437,7 +459,8 @@
       "deps": [
         "F04",
         "V04",
-        "V01"
+        "V01",
+        "D01"
       ],
       "outputs": [
         "perspective-engine/mvp/CHANGELOG.md"
@@ -540,7 +563,8 @@
       "agent": "legal",
       "title": "Entity formation and IP assignment checklist",
       "deps": [
-        "V12"
+        "V12",
+        "D01"
       ],
       "outputs": [
         "perspective-engine/legal/entity-checklist.md"
@@ -563,7 +587,8 @@
       "title": "SBIR Phase I application draft",
       "deps": [
         "V11",
-        "M03"
+        "M03",
+        "D01"
       ],
       "outputs": [
         "perspective-engine/finance/sbir-draft.md"
