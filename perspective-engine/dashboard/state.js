@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:39:58Z",
+ "generated": "2026-10-06T12:40:18Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -170,8 +170,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 15,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V01",
@@ -256,8 +256,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 12,
-   "status": "pending",
-   "view": "pending"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V05",
@@ -446,7 +446,7 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 20,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "V14",
@@ -767,6 +767,18 @@ window.PE_STATE = {
    "event": "done",
    "node": "V05",
    "note": "3 segments: ND-program employers (People/L&D), accommodation/ADA owners, higher ed; pricing unverified"
+  },
+  {
+   "t": "2026-10-06T12:40:18Z",
+   "event": "done",
+   "node": "F06",
+   "note": "Charter: paid ND advisors w/ binding veto, mandatory debrief, never-claims register; draft pending advisor review"
+  },
+  {
+   "t": "2026-10-06T12:40:18Z",
+   "event": "start",
+   "node": "V04",
+   "note": ""
   }
  ]
 };
