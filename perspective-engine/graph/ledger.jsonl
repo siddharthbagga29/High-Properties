@@ -17,3 +17,5 @@
 {"t": "2026-10-06T12:49:21Z", "event": "start", "node": "V15", "note": ""}
 {"t": "2026-10-06T12:50:55Z", "event": "done", "node": "V10", "note": "MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M; P($5M by m48)=0.6%; H1 dominant driver"}
 {"t": "2026-10-06T12:50:55Z", "event": "start", "node": "V11", "note": ""}
+{"t": "2026-10-06T12:53:55Z", "event": "done", "node": "V15", "note": "10 labs (7 non-US), first wave Birkbeck/Edinburgh/KCL/Barcelona; brief drafted; M1 DMN caveat flagged"}
+{"t": "2026-10-06T12:53:55Z", "event": "start", "node": "V13", "note": ""}

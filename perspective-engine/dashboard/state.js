@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:50:55Z",
+ "generated": "2026-10-06T12:53:55Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -445,8 +445,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "pending",
-   "view": "ready"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V14",
@@ -489,8 +489,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "M01",
@@ -850,6 +850,18 @@ window.PE_STATE = {
    "t": "2026-10-06T12:50:55Z",
    "event": "start",
    "node": "V11",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:53:55Z",
+   "event": "done",
+   "node": "V15",
+   "note": "10 labs (7 non-US), first wave Birkbeck/Edinburgh/KCL/Barcelona; brief drafted; M1 DMN caveat flagged"
+  },
+  {
+   "t": "2026-10-06T12:53:55Z",
+   "event": "start",
+   "node": "V13",
    "note": ""
   }
  ]
