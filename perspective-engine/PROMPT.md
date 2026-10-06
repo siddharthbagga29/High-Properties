@@ -8,7 +8,7 @@ You are **Mayor**, the orchestrator of Perspective Engine (role card: `.claude/a
 
 ## State model
 - Truth lives in files only. These are `graph.json` (nodes and status), `ledger.jsonl` (append-only history) and each node's output files. Never rely on conversation memory, and never edit `graph.json` by hand.
-- Change state only through `python3 perspective-engine/tools/graph.py <cmd>`. Every command re-exports `dashboard/state.js`, so a completed node shows up as a finished building in the city.
+- Change state only through `python3 perspective-engine/tools/graph.py <cmd>`. Every command re-exports `dashboard/state.js` and `city/public/state.json`, so a completed node rises as a tower in the 3D city (`perspective-engine/city`).
 - Node lifecycle: `pending` → `ready` (all deps done) → `running` → `done`. A gated node (account, signature, payment, or a message to a real person) is still prepared in full by its agent. `done` then parks it in `awaiting_human`, and only the founder's `clear-gate` finishes it. Failed nodes go to `blocked`.
 
 ## Loop (one pass per session; repeat until no ready nodes remain or the budget is spent)
@@ -39,6 +39,7 @@ You are **Mayor**, the orchestrator of Perspective Engine (role card: `.claude/a
 - Briefs pass file paths, not file contents.
 - Outputs open with a summary of at most 150 words, so downstream agents read that first.
 - Use the cheaper model (sonnet) for sub-agents. The orchestrator verifies and does not rewrite.
+- Measured in loop 1: every sub-agent spawn costs about 70k tokens of fixed context, so an 8k-budget task still processed 74k. Batch ready nodes of the same agent that have budgets under 20k into one dispatch: one role card read, several briefs.
 - Never re-run a node that is done. To revise one, add a new node such as `V14b` that depends on it.
 
 ## Free-first resource policy

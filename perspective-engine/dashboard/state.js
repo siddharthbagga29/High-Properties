@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T13:01:18Z",
+ "generated": "2026-10-06T13:51:33Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -106,6 +106,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 60,
    "status": "done",
+   "run": {
+    "used_k": 93.2,
+    "duration_s": 82,
+    "tools": 21
+   },
    "view": "done"
   },
   {
@@ -152,6 +157,28 @@ window.PE_STATE = {
    "view": "done"
   },
   {
+   "id": "F07",
+   "phase": 0,
+   "agent": "orchestrator",
+   "title": "Immersive 3D city: semantic zoom from venture to records",
+   "deps": [
+    "F02"
+   ],
+   "outputs": [
+    "perspective-engine/city/src/App.tsx",
+    "perspective-engine/city/PLAN.md"
+   ],
+   "accept": [
+    "four semantic levels with dive and breadcrumb",
+    "live data from the graph export, nothing simulated",
+    "DOM mirror, reduced motion and no-WebGL fallbacks"
+   ],
+   "gate": null,
+   "budget_k": 0,
+   "status": "done",
+   "view": "done"
+  },
+  {
    "id": "F06",
    "phase": 0,
    "agent": "ethics",
@@ -170,6 +197,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 15,
    "status": "done",
+   "run": {
+    "used_k": 74.7,
+    "duration_s": 97,
+    "tools": 6
+   },
    "view": "done"
   },
   {
@@ -214,6 +246,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 25,
    "status": "done",
+   "run": {
+    "used_k": 84.1,
+    "duration_s": 145,
+    "tools": 12
+   },
    "view": "done"
   },
   {
@@ -235,6 +272,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 20,
    "status": "done",
+   "run": {
+    "used_k": 116.7,
+    "duration_s": 217,
+    "tools": 29
+   },
    "view": "done"
   },
   {
@@ -258,6 +300,11 @@ window.PE_STATE = {
    },
    "budget_k": 20,
    "status": "awaiting_human",
+   "run": {
+    "used_k": 103.1,
+    "duration_s": 226,
+    "tools": 11
+   },
    "view": "awaiting_human"
   },
   {
@@ -279,6 +326,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 12,
    "status": "done",
+   "run": {
+    "used_k": 81.2,
+    "duration_s": 125,
+    "tools": 10
+   },
    "view": "done"
   },
   {
@@ -300,6 +352,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 15,
    "status": "done",
+   "run": {
+    "used_k": 73.4,
+    "duration_s": 83,
+    "tools": 6
+   },
    "view": "done"
   },
   {
@@ -322,6 +379,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 8,
    "status": "done",
+   "run": {
+    "used_k": 74.4,
+    "duration_s": 67,
+    "tools": 5
+   },
    "view": "done"
   },
   {
@@ -342,6 +404,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 25,
    "status": "done",
+   "run": {
+    "used_k": 102.5,
+    "duration_s": 180,
+    "tools": 24
+   },
    "view": "done"
   },
   {
@@ -363,6 +430,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 8,
    "status": "done",
+   "run": {
+    "used_k": 82.7,
+    "duration_s": 107,
+    "tools": 7
+   },
    "view": "done"
   },
   {
@@ -408,6 +480,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 25,
    "status": "done",
+   "run": {
+    "used_k": 108.6,
+    "duration_s": 286,
+    "tools": 12
+   },
    "view": "done"
   },
   {
@@ -427,6 +504,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 15,
    "status": "done",
+   "run": {
+    "used_k": 131.8,
+    "duration_s": 271,
+    "tools": 39
+   },
    "view": "done"
   },
   {
@@ -468,6 +550,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 20,
    "status": "done",
+   "run": {
+    "used_k": 100.4,
+    "duration_s": 206,
+    "tools": 11
+   },
    "view": "done"
   },
   {
@@ -513,6 +600,11 @@ window.PE_STATE = {
    "gate": null,
    "budget_k": 20,
    "status": "done",
+   "run": {
+    "used_k": 122.2,
+    "duration_s": null,
+    "tools": 28
+   },
    "view": "done"
   },
   {
@@ -954,6 +1046,18 @@ window.PE_STATE = {
    "event": "done",
    "node": "V08",
    "note": "9 emails (3x3), max 104 words worst case; US-only until counsel; nothing sent"
+  },
+  {
+   "t": "2026-10-06T13:51:33Z",
+   "event": "start",
+   "node": "F07",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T13:51:33Z",
+   "event": "done",
+   "node": "F07",
+   "note": "3D cortex-to-city with semantic zoom, guide, replay, deep links; a11y/BP/SEO 100"
   }
  ]
 };

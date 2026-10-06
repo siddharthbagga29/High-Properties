@@ -18,6 +18,7 @@ graph/ledger.jsonl and re-exports dashboard/state.js.
 import datetime
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -25,6 +26,7 @@ PE = ROOT / "perspective-engine"
 GRAPH = PE / "graph" / "graph.json"
 LEDGER = PE / "graph" / "ledger.jsonl"
 STATE_JS = PE / "dashboard" / "state.js"
+CITY_JSON = PE / "city" / "public" / "state.json"
 STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
 
 
@@ -102,6 +104,38 @@ def export(g):
     state = {"generated": now(), "project": g["project"], "north_star": g["north_star"],
              "agents": g["agents"], "nodes": nodes, "ledger": ledger}
     STATE_JS.write_text("window.PE_STATE = " + json.dumps(state, indent=1) + ";\n")
+    if CITY_JSON.parent.exists():
+        city = dict(state, ledger=ledger_all(), excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]})
+        CITY_JSON.write_text(json.dumps(city, separators=(",", ":")))
+
+
+def ledger_all():
+    if not LEDGER.exists():
+        return []
+    return [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()]
+
+
+def excerpt(path, limit=520):
+    """First summary paragraph of an output file, so the city can show what an agent produced."""
+    f = ROOT / path
+    if not f.exists() or f.suffix not in (".md", ".py", ".csv", ".html"):
+        return None
+    text = f.read_text(errors="ignore")
+    if f.suffix == ".csv":
+        rows = text.strip().splitlines()
+        return f"{len(rows) - 1} rows. Columns: {rows[0]}" if rows else None
+    if f.suffix in (".py", ".html"):
+        return None
+    m = re.search(r"^#+ *summary[^\n]*\n(.*?)(?=^#|\Z)", text, re.I | re.M | re.S)
+    if m and m.group(1).strip():
+        pick = m.group(1).strip()
+    else:
+        lead = re.search(r"\*\*summary[^*]*\*\*(.*?)(?=\n\n|\Z)", text, re.I | re.S)
+        blocks = [b.strip() for b in text.split("\n\n") if b.strip() and not b.lstrip().startswith(("#", "|", "---", "```", "<!--"))]
+        pick = lead.group(1) if lead else next((b for b in blocks if len(b) > 120), blocks[0] if blocks else "")
+    pick = re.sub(r"^[-*] ", "", pick, flags=re.M)
+    pick = " ".join(pick.replace("**", "").split())
+    return pick[:limit] + ("…" if len(pick) > limit else "")
 
 
 def brief(n, g):
