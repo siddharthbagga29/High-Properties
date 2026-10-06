@@ -86,7 +86,7 @@ Everything below is placeholder wording by the product agent and must be reviewe
 - The analogue is partial by design: M2 is modelled as a delay in registering answers, which is not the same as a person's internal reaction-time variability. M4 pulls the view but does not block input.
 - Round 2 uses a different matched form by default. Counts in the comparison are small and noisy and are not results; the pilot's primary outcome is behaviour at day 30, not in-session counts.
 - M5 adds a block to round 2 only, so rounds differ in length when it is on.
-- Dimmed words stay in the DOM for layout, so assistive-technology users hear them as hidden but screen-reader support is untested. The paced read-along is not designed for screen-reader users in v0.
+- Dimmed words are marked `aria-hidden` as an analogue of missed information, but screen-reader behaviour is untested, and the paced read-along is not designed for screen-reader users in v0.
 - Debrief unlock relies on reaching the end of the page; reading is not verified.
 - Session time is a design estimate; no user has timed it.
 - Browser audio needs a click first; some browsers block it otherwise (the sound button handles this).
