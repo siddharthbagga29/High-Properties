@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:42:32Z",
+ "generated": "2026-10-06T12:45:35Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -212,8 +212,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V03",
@@ -235,8 +235,8 @@ window.PE_STATE = {
     "reason": "Posting to OSF needs the founder's OSF account."
    },
    "budget_k": 20,
-   "status": "pending",
-   "view": "pending"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V04",
@@ -536,7 +536,7 @@ window.PE_STATE = {
    "id": "M03",
    "phase": 2,
    "agent": "ethics",
-   "title": "Pilot study protocol and IRB packet (N=50)",
+   "title": "Pilot study protocol and IRB packet (80-150 managers)",
    "deps": [
     "V03",
     "V04",
@@ -802,6 +802,18 @@ window.PE_STATE = {
    "t": "2026-10-06T12:42:32Z",
    "event": "start",
    "node": "V07",
+   "note": ""
+  },
+  {
+   "t": "2026-10-06T12:45:17Z",
+   "event": "done",
+   "node": "V02",
+   "note": "Primary outcome: verified Accommodation Action Index at day 30; RCT vs info-only control; pilot of 80-150 estimates only"
+  },
+  {
+   "t": "2026-10-06T12:45:23Z",
+   "event": "start",
+   "node": "V03",
    "note": ""
   }
  ]

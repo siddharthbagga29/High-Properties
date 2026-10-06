@@ -205,7 +205,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "V03",
@@ -227,7 +227,7 @@
         "reason": "Posting to OSF needs the founder's OSF account."
       },
       "budget_k": 20,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "V04",
@@ -513,7 +513,7 @@
       "id": "M03",
       "phase": 2,
       "agent": "ethics",
-      "title": "Pilot study protocol and IRB packet (N=50)",
+      "title": "Pilot study protocol and IRB packet (80-150 managers)",
       "deps": [
         "V03",
         "V04",

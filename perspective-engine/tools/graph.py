@@ -25,7 +25,7 @@ PE = ROOT / "perspective-engine"
 GRAPH = PE / "graph" / "graph.json"
 LEDGER = PE / "graph" / "ledger.jsonl"
 STATE_JS = PE / "dashboard" / "state.js"
-STATUSES = {"pending", "running", "done", "blocked"}
+STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
 
 
 def now():
@@ -50,13 +50,13 @@ def log(event, node_id, note=""):
 
 
 def derived(n, idx):
-    """Status as the dashboard sees it: pending splits into ready / awaiting_human / pending."""
+    """Status as the dashboard sees it: a pending node whose deps are all done is ready.
+
+    Gates never stop an agent from preparing the work. A gated node that an agent
+    finishes moves to awaiting_human, and only the founder's clear-gate finishes it."""
     if n["status"] != "pending":
         return n["status"]
-    if all(idx[d]["status"] == "done" for d in n["deps"]):
-        gate = n.get("gate")
-        return "awaiting_human" if gate and not gate.get("cleared") else "ready"
-    return "pending"
+    return "ready" if all(idx[d]["status"] == "done" for d in n["deps"]) else "pending"
 
 
 def validate(g):
@@ -165,7 +165,10 @@ def main(argv):
         if missing:
             print("refused: missing or empty outputs: " + ", ".join(missing))
             return 1
-        n["status"] = "done"
+        gate = n.get("gate")
+        n["status"] = "awaiting_human" if gate and not gate.get("cleared") else "done"
+        if n["status"] == "awaiting_human":
+            print(f"prepared; waiting on founder: {gate['reason']}")
     elif cmd == "block":
         n["status"] = "blocked"
     elif cmd == "unblock":
@@ -175,6 +178,8 @@ def main(argv):
             print(f"{n['id']} has no gate")
             return 1
         n["gate"]["cleared"] = note or "cleared"
+        if n["status"] == "awaiting_human":
+            n["status"] = "done"
     else:
         print(f"unknown command {cmd}")
         return 1
