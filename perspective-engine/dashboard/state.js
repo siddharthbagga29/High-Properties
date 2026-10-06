@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T12:59:30Z",
+ "generated": "2026-10-06T13:01:18Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -362,8 +362,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 8,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V09",
@@ -385,7 +385,7 @@ window.PE_STATE = {
    },
    "budget_k": 10,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "V10",
@@ -948,6 +948,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "V08",
    "note": ""
+  },
+  {
+   "t": "2026-10-06T13:01:18Z",
+   "event": "done",
+   "node": "V08",
+   "note": "9 emails (3x3), max 104 words worst case; US-only until counsel; nothing sent"
   }
  ]
 };
