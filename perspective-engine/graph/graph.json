@@ -307,7 +307,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "V08",
@@ -370,7 +370,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "V11",
