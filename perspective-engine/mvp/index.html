@@ -7,16 +7,17 @@
 <title>Perspective Engine: attention-load illustration (prototype v0)</title>
 <!--
 SUMMARY (F04)
-One self-contained file: no build step, no network calls (CSP connect-src 'none'), optional sound.
-A manager does one short workplace task twice (read an email, wait for a file, answer 8 questions, follow an
-instruction). Round 1 is as usual; round 2 adds four tunable conditions from the mechanism spec: M1 inner-voice
-intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture. M5 hyperfocus is off by default.
-A facilitator panel tunes each within the spec's ranges (ceiling 0.8).
+One self-contained file: no network calls, optional sound.
+A manager does one short workplace task twice. Round 1 is as usual; round 2 adds four tunable
+conditions (mechanism spec): M1 inner-voice intrusions, M2 reaction-time variability, M3 delay
+aversion, M4 salience capture. M5 hyperfocus is off by default. A facilitator panel tunes each within
+the spec's ranges (ceiling 0.8).
 Flow: consent, day-0 questions, two rounds, comparison, mandatory debrief, planning, post questions, export.
 Export: dose counts, settings, day-0 answers; no identifiers or step times, so wait choice, wait time and
-reaction times cannot be derived.
-Safety: nothing flashes, reduced motion honoured, Stop always visible. Never claims to show what ADHD is like.
-Wording is a draft pending neurodivergent advisor review.
+reaction times cannot be separated out. Residual: the read part of a run is fixed, so duration minus fixed
+parts leaves wait time plus total response time as one sum.
+Safety: nothing flashes, reduced motion honoured, Stop always visible, also in the panel. Never claims
+to show what ADHD is like. Wording is a draft pending neurodivergent advisor review.
 -->
 <style>
 :root{--bg:#0f1420;--s1:#182033;--s2:#212c47;--line:#6b7ba3;--line2:#33405e;--tx:#f1f4fa;--mu:#bcc5d8;--ac:#8fd0ff;--aci:#06121f;--ok:#8de0a8;--wa:#ffd166;--st:#ff8a7a;--sti:#2a0703;--fo:#ffd166;--miss:#33405e}
@@ -121,8 +122,12 @@ body.pulling .run,body.pulling #adaptBox{opacity:.8}
 body.gm #innerWrap{animation:fadein .4s ease-out}
 #pauseOv{position:fixed;inset:0;z-index:150;background:rgba(5,8,14,.88);display:grid;place-items:center}
 #pauseOv .card{max-width:440px;text-align:center}
-#fac{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:120;background:#121a2c;border-left:2px solid var(--line);overflow:auto;padding:14px 16px 40px}
+#fac{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:120;background:#121a2c;border-left:2px solid var(--line);overflow:auto;padding:0 16px 40px}
 #fac h2{font-size:1.15rem}
+#facHead{position:sticky;top:0;z-index:5;background:#121a2c;border-bottom:2px solid var(--line);margin:0 -16px 10px;padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between}
+#facHead h2{margin:0}
+#facHead .btns{display:flex;gap:8px;align-items:center}
+#facHead .btn.small{min-height:44px}
 .mech{border:1px solid var(--line2);border-radius:12px;padding:10px 12px;margin:0 0 12px;background:var(--s1)}
 .mech.off{opacity:.8}
 .grade{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:0 8px;margin-left:6px;color:var(--ac);vertical-align:middle}
@@ -1025,7 +1030,7 @@ function mechCard(m){
 function buildFac(){
   const fac=$('#fac');
   const adv=mechCard('M5');
-  mount(fac,[h('div',{class:'row',style:'justify-content:space-between'},h('h2',{id:'facH'},'Facilitator panel'),h('span',{class:'row'},h('button',{class:'btn small stop',id:'facStop',type:'button',onclick:doStop},'■ Stop'),h('button',{class:'btn small',id:'facClose',type:'button',onclick:()=>toggleFac(false)},'Close'))),
+  mount(fac,[h('div',{id:'facHead'},h('h2',{id:'facH'},'Facilitator panel'),h('span',{class:'btns'},h('button',{class:'btn small stop',id:'facStop',type:'button',onclick:doStop},'■ Stop'),h('button',{class:'btn small',id:'facClose',type:'button',onclick:()=>toggleFac(false)},'Close'))),
    h('p',{class:'small'},'Tune each condition independently. Changes apply live, and lowering a setting during a run is always allowed. Every number is a design parameter from the mechanism spec, not an empirical ADHD estimate. There are no ADHD profile presets, on purpose: people differ widely.'),
    ['M1','M2','M3','M4'].map(mechCard),
    h('details',{class:'mech'},h('summary',null,h('strong',null,'Advanced: M5 hyperfocus (off by default, weakest evidence)')),adv),
@@ -1251,6 +1256,23 @@ function selfTest(){
   const ex=JSON.stringify(buildExport()),keys=ex.match(/"[a-z_0-9]+":/g)||[];
   t('Export has no identifier-like keys',!keys.some(k=>/name"|email|phone|ip_|user_?agent|employer|company|location/.test(k.replace('framing','').replace('screen_seconds',''))),'');
   t('Stop button visible and not hidden',!$('#stopBtn').hidden);
+  /* Stop must stay hit-testable with the facilitator panel open and scrolled. A page cannot resize itself, so this measures the
+     current window: open #selftest at 390 px and at 1280 px wide (README, Verification) to cover both. Header shown as on intro
+     and as in a live round (Pause and Ease off visible); scroll 0, 300, 600 px and the bottom. */
+  {
+    const fac=$('#fac'),wasHidden=fac.hidden,top0=fac.scrollTop,pb=$('#pauseBtn').hidden,eb=$('#easeBtn').hidden,miss=[];
+    const hit=el=>{if(!el||el.closest('[hidden]'))return false;const b=el.getBoundingClientRect();
+      if(b.width<=0||b.height<=0||b.left<0||b.top<0||b.right>innerWidth||b.bottom>innerHeight)return false;
+      return [[.5,.5],[.1,.1],[.9,.1],[.1,.9],[.9,.9]].every(f=>{const e=document.elementFromPoint(b.left+b.width*f[0],b.top+b.height*f[1]);return !!e&&(e===el||el.contains(e));});};
+    let reach=0;
+    try{
+      fac.hidden=false;
+      [false,true].forEach(live=>{$('#pauseBtn').hidden=!live;$('#easeBtn').hidden=!live;
+        [0,300,600,'bottom'].forEach(sc=>{fac.scrollTop=sc==='bottom'?fac.scrollHeight:sc;reach=Math.max(reach,fac.scrollTop);
+          if(!hit($('#stopBtn'))&&!hit($('#facStop')))miss.push((live?'live ':'intro ')+sc);});});
+    }finally{fac.scrollTop=top0;fac.hidden=wasHidden;$('#pauseBtn').hidden=pb;$('#easeBtn').hidden=eb;}
+    t('Stop hit-testable with the panel open and scrolled to 0, 300, 600 px and the bottom, on intro and live-round headers ('+innerWidth+'x'+innerHeight+')',miss.length===0&&reach>=600,miss.length?'no Stop in view at: '+miss.join(', '):'panel scrolled up to '+Math.round(reach)+' px');
+  }
   window.__selftest=out;
   const fails=out.filter(x=>!x.pass);
   const box=h('div',{class:'card '+(fails.length?'warn':''),id:'selftestBox'},h('h2',null,'Self-test: '+(out.length-fails.length)+' of '+out.length+' passed'),h('ul',null,(fails.length?fails:out).slice(0,60).map(x=>h('li',null,(x.pass?'PASS ':'FAIL ')+x.test+(x.detail?' ('+x.detail+')':'')))));
