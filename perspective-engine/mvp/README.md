@@ -135,7 +135,7 @@ Everything below is placeholder wording by the product agent and must be reviewe
 - Headless Chromium end-to-end rerun (full flow to export, Stop, Esc pause, reduced-motion emulation): 0 page errors, 0 console errors, 0 external requests. The real export was inspected: no `rt_s`, correctness, chosen options, reply choices, wait choice or `response` events.
 
 ## Revision check 2 (by the product agent, 2026-10-07): summary length and timing in the export
-- Top comment of `index.html`: 173 words before (lines 10-20); 140 after, counted with `wc -w` on lines 10-20 (141 for the comment body, 143 with the comment markers). Role-card cap is 150. The `## Summary` paragraph of this file: 145 words.
+- Top comment of `index.html`: 173 words before (lines 10-20); 140 after, counted with `wc -w` on lines 10-20 (141 for the comment body, 143 with the comment markers). Role-card cap is 150. The `## Summary` paragraph of this file: 146 words (`wc -w`).
 - `node --check` on the script extracted from `index.html`: passes.
 - Headless Chromium `#selftest`: 58 of 58 pass (3 new checks on timing in the export), 0 page errors, 0 external requests, no cue elements left behind. Mutation test on scratch copies: re-adding step labels and event times, `pull_peak`, or cue times and step labels to the export fails 2, 3 and 2 checks respectively.
 - Four full headless sessions with the real Download JSON: 0 page errors, 0 external requests, 0 derivations of wait choice, wait time or send reaction time from the file (see Export, Timing). Before the change the same driver and attack recovered all of them from the step lines. Reduced-motion emulation gave `motion: reduced` and the same result.

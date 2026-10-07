@@ -65,6 +65,8 @@ Perspective Engine is a browser session that illustrates four attention and timi
 
 ## 3. Research Strategy outline (NIH Phase I, 6 pages; page split is assumption A17)
 
+Length caution: the NIDILRR FY2025 narrative limit was 40 pages (R7) and NSF's Project Description may be 15 (R22), against NIH's 6 (R13). This outline is modular: each numbered item below can be expanded to a section for NIDILRR or NSF, or cut for NIH. No page counts are confirmed for FY2027.
+
 **Significance (about 1.25 pages).**
 - Employment gap (R24) and the manager-practice lever. Accommodation behaviour, not empathy, is the target.
 - Why simulations are risky (R25) and what a safer design must do.
@@ -75,7 +77,7 @@ Perspective Engine is a browser session that illustrates four attention and timi
 - Advisor veto and a mandatory debrief designed against the known failure modes.
 - Behaviour verified by direct reports or system counts, not only self-report.
 - Equal-length active control, a harm monitor with stop rules, an independent blinded analyst, and results reported whatever they show.
-- R&D risks (this is also the NSF "technical risk" story): (1) can behaviour be verified at useful coverage; (2) can the session be safe and still engaging; (3) can the build meet accessibility limits.
+- R&D risks (this is also the NSF "technical risk" story): (1) can behaviour be verified at useful coverage; (2) can the session be safe and still engaging; (3) can the build meet accessibility limits (flashing under WCAG 2.3.1; Section 508 and WCAG 2.1 AA for the whole product are expected by NIDILRR per aggregator text, R7).
 
 **Approach (about 4 pages).** Content comes from irb-packet sections 1, 5, 6 and 7.
 1. Intervention and control. T-arm: four patterns (M1 default-mode intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture; M5 hyperfocus off), intensity default 0.5, ceiling 0.8, no ADHD presets, debrief, planning. C-arm: information module of the same length, same planning step.
