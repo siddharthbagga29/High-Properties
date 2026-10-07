@@ -672,7 +672,7 @@
         "reason": "Incorporation needs founder identity and payment."
       },
       "budget_k": 10,
-      "status": "pending"
+      "status": "running"
     },
     {
       "id": "M05",

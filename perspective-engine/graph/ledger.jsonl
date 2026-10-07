@@ -57,3 +57,4 @@
 {"t": "2026-10-07T19:25:34Z", "event": "start", "node": "V14", "note": ""}
 {"t": "2026-10-07T19:35:03Z", "event": "done", "node": "V14", "note": "Advisor review kit + empty CHANGELOG verified: 0 sessions, 0 changes, note-ID entry format; MVP unchanged; awaits paid ND sessions"}
 {"t": "2026-10-07T19:35:32Z", "event": "done", "node": "V12", "note": "Verified: no biometrics (code + 4 real exports), GDPR/UK GDPR/HIPAA/FERPA stated; 0 requests, 0 storage, 59/59 selftest"}
+{"t": "2026-10-07T19:36:30Z", "event": "start", "node": "M04", "note": ""}

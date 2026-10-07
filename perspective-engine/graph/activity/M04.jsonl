@@ -1,0 +1,2 @@
+{"t": "2026-10-07T19:36:30Z", "node": "M04", "agent": "legal", "kind": "plan", "text": "start", "src": "ledger"}
+{"t": "2026-10-07T19:36:38Z", "node": "M04", "agent": "legal", "kind": "read", "text": "Read brief, privacy.md and founder-decisions.md (allowed inputs)", "src": "self"}
