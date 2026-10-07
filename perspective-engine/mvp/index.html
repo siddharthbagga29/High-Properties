@@ -439,7 +439,7 @@ const DEBRIEF=[
 /* ===== audio (Web Audio, opt-in, synthesised on device; no files, no network) ===== */
 const Aud={ctx:null,master:null,mur:null,
  ensure(){
-  if(!S.set.sound)return false;
+  if(SIM||!S.set.sound)return false;
   if(!this.ctx){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;this.ctx=new C();this.master=this.ctx.createGain();this.master.gain.value=S.set.vol;this.master.connect(this.ctx.destination);}catch(e){return false;}}
   if(this.ctx.state==='suspended'&&!S.paused)this.ctx.resume();
   return true;},
@@ -742,13 +742,20 @@ function summarize(R){
    phrases_total:R.chunks.length,phrases_missed:R.chunks.filter(c=>c.missed).length,
    responses:n,delay_mean_s:mean==null?null:r2(mean),delay_cv:mean?r2(sd/mean):null,delay_max_s:n?r2(Math.max.apply(null,ds)):null,
    late_responses:ds.filter(x=>x>2*BASE_DELAY).length,
-   intrusions:R.events.intr.length,outside_events:R.events.sal.length,pulled:R.events.sal.filter(e=>e.captured).length,
+   intrusions:R.events.intr.length,intrusions_per_min:R.t>0?r2(R.events.intr.length/(R.t/60)):null,words_lost_total:R.events.intr.reduce((a,x)=>a+x.words_lost,0),
+   outside_events:R.events.sal.length,outside_events_per_min:R.t>0?r2(R.events.sal.length/(R.t/60)):null,pulled:R.events.sal.filter(e=>e.captured).length,
    wait_choice:R.wait?R.wait.choice:null,wait_elapsed_s:R.wait?R.wait.elapsed:null,
    m5_cues_missed:R.flow?R.flow.missed:null,duration_s:r2(R.t)};
 }
+/* Data minimisation (charter section 4; instruments spec section 2.2: sim telemetry is dose only). summarize() feeds the on-screen
+   comparison and keeps the participant's own task counts. Only the dose keys below (what the conditions delivered, plus duration)
+   go into the export or the event log. Correctness, answers, response times, wait choice and per-click word loss stay on screen. */
+const DOSE_KEYS=['form','phrases_total','phrases_missed','words_lost_total','responses','delay_mean_s','delay_cv','delay_max_s','late_responses','intrusions','intrusions_per_min','outside_events','outside_events_per_min','pulled','m5_cues_missed','duration_s'];
+const LOCAL_ONLY=new Set(['response','wait_resolved']);   // live-panel lines that carry per-click timing or the wait choice; never exported
+function doseOnly(sum){const o={};DOSE_KEYS.forEach(k=>{if(k in sum)o[k]=sum[k];});return o;}
 function finishRun(R){
   R.over=true;R.tEnd=r2(sessT());clearEffects(R);R.sum=summarize(R);
-  logEv('run_end',R.sum);S.run=null;
+  logEv('run_end',doseOnly(R.sum));S.run=null;
   $('#pauseBtn').hidden=true;$('#easeBtn').hidden=true;
   go(R.cond==='baseline'?'brief2':'compare');
 }
@@ -987,7 +994,7 @@ function buildDone(){
   const done=!!S.debrief.completed&&!S.stopped;
   root.replaceChildren(h('h1',{id:'h-done',tabindex:'-1'},done?'Session complete':'Session ended'),
    h('div',{class:'card'},h('p',{class:'lead'},done?'Thank you. The debrief is complete.':(S.stopped?'You stopped early. The debrief was '+(S.debrief.completed?'read':'not read')+', so the session is not recorded as complete.':'The session ended before the debrief, so it is not recorded as complete.')),
-    h('ul',null,h('li',null,'Nothing has left this device. There is no server, account or analytics.'),h('li',null,'The export holds your task counts, settings and answers. It has no name, email, employer, device or location data.'),
+    h('ul',null,h('li',null,'Nothing has left this device. There is no server, account or analytics.'),h('li',null,'The export holds what the conditions delivered (counts and delays), your settings and your answers to the optional questions. It has no name, email, employer, device or location data, and no task answers, correctness or response times: those stay on screen.'),
       h('li',null,'Per the co-design charter, an employer must not require this file or see individual responses. Share it only if you choose to.'))),
    h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:()=>{downloadText('perspective-engine-session-'+S.sid+'.json',txt,'application/json');logEv('export_download');}},'Download JSON'),
     h('button',{class:'btn',type:'button',onclick:()=>{copyText(txt);say('JSON copied');}},'Copy JSON'),h('button',{class:'btn',type:'button',onclick:()=>location.reload()},'Erase everything and start over')),
@@ -1028,7 +1035,7 @@ function buildFac(){
     h('label',{class:'chk'},h('input',{type:'checkbox',id:'sAdapt',checked:S.set.offerAdapt,onchange:ev=>{S.set.offerAdapt=ev.target.checked;logEv('setting',{offerAdapt:S.set.offerAdapt});}}),h('span',null,'Offer workplace changes (illustrative) during round 2')),
     h('label',{class:'chk'},h('input',{type:'checkbox',id:'sMeas',checked:S.set.measures,onchange:ev=>{S.set.measures=ev.target.checked;logEv('setting',{measures:S.set.measures});}}),h('span',null,'Include the day-0 questions (T0 before, T1 after)')),
     h('div',{class:'row'},h('button',{class:'btn small',type:'button',onclick:()=>{const f=initMech();MKEYS.forEach(m=>Object.assign(S.mech[m],f[m]));logEv('reset_defaults');syncFac();}},'Reset all conditions to defaults'),h('button',{class:'btn small',type:'button',onclick:()=>easeOff()},'Ease off to 0.2'))),
-   h('section',{class:'mech'},h('h3',null,'Live session log'),h('p',{class:'small'},'Every cue, delay and setting change, with session time (mm:ss.s). The same events are in the JSON export.'),h('ol',{id:'facLog','aria-label':'Session log'}))]);
+   h('section',{class:'mech'},h('h3',null,'Live session log'),h('p',{class:'small'},'Every cue, delay and setting change, with session time (mm:ss.s). Response and wait-choice lines appear here only; the JSON export leaves them out.'),h('ol',{id:'facLog','aria-label':'Session log'}))]);
   const ul=$('#facLog');S.events.slice(-90).forEach(e=>ul.prepend(h('li',null,h('b',null,fmtT(e.t)+' '),e.type)));
   syncFac();
 }
@@ -1077,13 +1084,16 @@ function deriveMeasures(D){
 }
 function runExport(R){
   if(!R)return null;
-  const F=R.flow;
-  return {form:R.form.id,started_s:R.tStart,ended_s:R.tEnd,stopped_at_run_s:R.stoppedAt,summary:R.sum||summarize(R),
-   phrases:R.chunks.map((c,i)=>({i:i,shown_t:c.shownT,missed:c.missed})),answers:R.qa.items,reply:R.reply?R.reply.res:null,
-   wait:R.wait?{D_s:r2(R.wait.D),choice:R.wait.choice,elapsed_s:R.wait.elapsed,pull_peak:r2(R.wait.pullMax)}:null,
+  const F=R.flow,rs=R.qa.items.filter(x=>!x.skipped).concat(R.reply&&R.reply.res?[R.reply.res]:[]);
+  /* Dose only: no chosen answers, correctness, per-question or send timing, per-click word loss, wait choice or M5 block accuracy. */
+  return {form:R.form.id,started_s:R.tStart,ended_s:R.tEnd,stopped_at_run_s:R.stoppedAt,summary:doseOnly(R.sum||summarize(R)),
+   phrases:R.chunks.map((c,i)=>({i:i,shown_t:c.shownT,missed:c.missed})),
+   m2_responses:{registered:rs.length,slow_tail:rs.filter(x=>x.slow_tail).length,coupled_to_m1:rs.filter(x=>x.coupled_to_m1).length},
+   wait:R.wait?{D_s:r2(R.wait.D),pull_peak:r2(R.wait.pullMax)}:null,
    m2_delays_s:R.m2.draws.map(r2),m1_intrusions:R.events.intr,m4_events:R.events.sal,
-   m5:F?{rounds:F.rounds,wrong_clicks:F.wrong,lock_start_t:F.lockStart,lock_end_t:F.lockEnd,cues_shown:F.shown,cues_missed:F.missed}:null,skips:R.skips};
+   m5:F?{lock_start_t:F.lockStart,lock_end_t:F.lockEnd,cues_shown:F.shown,cues_missed:F.missed}:null,skips:R.skips};
 }
+const exportEvents=()=>S.events.filter(e=>!LOCAL_ONLY.has(e.type));
 function buildExport(){
   const mech={};
   MKEYS.forEach(m=>{const E=S.mech[m],v={};Object.keys(E.v).forEach(k=>{v[k]=r3(E.v[k]);});
@@ -1091,7 +1101,7 @@ function buildExport(){
   const r=S.runs;
   return {
    schema:'perspective-engine/session-export/v0',app_version:VERSION,node:'F04',session_id:S.sid,started_at_utc_minute:S.startISO,
-   privacy:{personal_identifiers_collected:false,device_and_place_data_collected:false,biometrics_stored:false,network_requests_made:false,free_text_collected:false},
+   privacy:{personal_identifiers_collected:false,device_and_place_data_collected:false,biometrics_stored:false,network_requests_made:false,free_text_collected:false,task_answers_and_timing_collected:false},
    framing:'Interactive illustration of documented group-level attention and timing patterns. Not what ADHD is, not what any person’s day is like. No diagnosis, score or prediction of any person.',
    parameter_note:'All mechanism values are design parameters from perspective-engine/science/mechanism-spec.md (intensity ceiling 0.8), not empirical ADHD estimates.',
    consent:S.consent,
@@ -1104,7 +1114,38 @@ function buildExport(){
    telemetry:{total_duration_s:r2(sessT()),screen_seconds:S.screenT,pauses:S.pauses,ease_off_count:S.easeOff,stop:S.stopped,
     debrief:{seen:S.debrief.seen,reached_end:S.debrief.reachedEnd,seconds:S.debrief.seconds,completed:!!S.debrief.completed},
     session_completed:!!(S.debrief.completed&&!S.stopped&&r.baseline&&r.load&&r.load.over)},
-   events:S.events};
+   events:exportEvents()};
+}
+
+/* ===== scheduler measurement (used by the self-test and by the node simulation) =====
+   Drives the real stepRun (m1Tick, m4Tick, notification expiry) on a virtual clock and watches R.intr and R.notif after every
+   step, so spacing and rates are measured from what the scheduler did, not read from constants. Sound is muted, no session
+   events are logged, and it refuses to run while a session is in progress (it shares the cue elements). */
+function simCues(o){
+  if(S.run&&!S.run.over)return null;
+  o=o||{};
+  const keep={mech:S.mech,adapt:S.adapt,sim:SIM};
+  SIM=true;S.mech=initMech();S.adapt={follow:false,quiet:false,deadline:false};
+  S.mech.M1.enabled=o.m1!==false;S.mech.M4.enabled=o.m4!==false;
+  Object.assign(S.mech.M1.v,o.v1||{});Object.assign(S.mech.M4.v,o.v4||{});
+  const res={minutes:0,n1:0,n4:0,pairs:0,under:0,overlaps:0,minGap:Infinity,maxChanges1s:0,setM1:S.mech.M1.v.rate,setM4:S.mech.M4.v.rate};
+  try{
+    for(let r=0;r<(o.runs||1);r++){
+      const R=newRun('load');R.step='qa';          // the scheduler does not depend on the step; qa has no DOM needs here
+      let ci=null,cn=null,si=0,sn=0;const spans=[],T=(o.minutes||10)*60;
+      while(R.t<T){
+        stepRun(R,o.jitter?0.05+rnd()*0.45:0.1);   // jitter: uneven timer steps, as when a tab is throttled
+        if(R.intr!==ci){if(ci)spans.push({s:si,e:R.t});ci=R.intr;si=R.t;if(ci)res.n1++;}
+        if(R.notif!==cn){if(cn)spans.push({s:sn,e:R.t});cn=R.notif;sn=R.t;if(cn)res.n4++;}
+      }
+      res.minutes+=R.t/60;clearEffects(R);
+      spans.sort((a,b)=>a.s-b.s);
+      for(let k=1;k<spans.length;k++){const g=spans[k].s-spans[k-1].e;res.pairs++;if(g<MIN_VIS_GAP-1e-9)res.under++;if(g<0)res.overlaps++;res.minGap=Math.min(res.minGap,g);}
+      const ch=[];spans.forEach(x=>{ch.push(x.s,x.e);});ch.sort((a,b)=>a-b);
+      for(let i=0,j=0;i<ch.length;i++){while(ch[i]-ch[j]>=1)j++;res.maxChanges1s=Math.max(res.maxChanges1s,i-j+1);}
+    }
+  }finally{S.mech=keep.mech;S.adapt=keep.adapt;SIM=keep.sim;}
+  return res;
 }
 
 /* ===== self-test: open the page with #selftest ===== */
@@ -1130,7 +1171,37 @@ function selfTest(){
     t('Form '+k+': 8 questions, 4 options, answer text appears in email',F.qs.length===8&&F.qs.every(q=>q.o.length===4&&q.a>=0&&q.a<4),'');
     t('Form '+k+': correct options are supported by the email',F.qs.every(q=>{const a=q.o[q.a];return a.split(/ and /).every(x=>txt.indexOf(x.replace(/^The /,'the ').replace(/^the /,''))>=0||txt.toLowerCase().indexOf(x.toLowerCase().replace(/^the /,''))>=0);}),'');
     t('Form '+k+': instruction answers present',['to','cc','att'].every(x=>{const o=F.reply[x][F.reply.ans[x]];return txt.toLowerCase().indexOf(o.toLowerCase())>=0;}),'');});
-  t('Visual events spaced at least 2.5 s (well under 3 Hz)',MIN_VIS_GAP>=0.34&&GAP_MIN>=5,MIN_VIS_GAP+' s');
+  /* measured from the real scheduler on a virtual clock (simCues), not from constants */
+  const ceilV=m=>{const o={};MECH[m].params.forEach(p=>{if(p.drv)o[p.k]=pMax(p);});return o;};
+  const sA=simCues({runs:6,minutes:20}),sB=simCues({runs:6,minutes:20,v1:ceilV('M1'),v4:ceilV('M4')}),sC=simCues({runs:6,minutes:20,jitter:true});
+  const sM4=simCues({runs:12,minutes:20,m1:false}),sM1=simCues({runs:12,minutes:20,m4:false});
+  if(!sA)t('Cue scheduler measurement ran (needs no session in progress; reload with #selftest)',false,'session in progress');
+  else{
+    const gp=x=>x.pairs+' adjacent pairs, min gap '+r2(x.minGap)+' s';
+    t('Measured spacing, defaults (M1+M4, 120 virtual min): no overlaps, every cue starts >= 2.5 s after the previous one ended',sA.pairs>200&&sA.under===0&&sA.overlaps===0,gp(sA));
+    t('Measured spacing, all intensities at the 0.8 ceiling: same',sB.pairs>200&&sB.under===0&&sB.overlaps===0,gp(sB));
+    t('Measured spacing with uneven timer steps (0.05 to 0.5 s): same',sC.pairs>200&&sC.under===0&&sC.overlaps===0,gp(sC));
+    t('Measured visual changes: at most 2 (one on-off pair) in any 1 s window, so under 3 flashes per second',Math.max(sA.maxChanges1s,sB.maxChanges1s,sC.maxChanges1s)<=2,'max '+Math.max(sA.maxChanges1s,sB.maxChanges1s,sC.maxChanges1s)+' per 1 s');
+    const near=(d,s)=>Math.abs(d/s-1)<=0.10,pm=(n,x)=>r2(n/x.minutes);
+    t('M4 delivered rate within 10% of the set rate (M4 alone, defaults)',near(sM4.n4/sM4.minutes,sM4.setM4),pm(sM4.n4,sM4)+'/min delivered vs '+sM4.setM4+' set');
+    t('M1 delivered rate within 10% of the set rate (M1 alone, defaults)',near(sM1.n1/sM1.minutes,sM1.setM1),pm(sM1.n1,sM1)+'/min delivered vs '+sM1.setM1+' set');
+    t('M1 and M4 together at defaults: both delivered rates within 10% of set',near(sA.n1/sA.minutes,sA.setM1)&&near(sA.n4/sA.minutes,sA.setM4),'M1 '+pm(sA.n1,sA)+' vs '+sA.setM1+', M4 '+pm(sA.n4,sA)+' vs '+sA.setM4);
+    t('Delivered rates never exceed the set rates by more than 10% (at the ceiling the shared screen caps them, see README)',sB.n1/sB.minutes<=sB.setM1*1.1&&sB.n4/sB.minutes<=sB.setM4*1.1,'ceiling: M1 '+pm(sB.n1,sB)+' of '+r2(sB.setM1)+', M4 '+pm(sB.n4,sB)+' of '+r2(sB.setM4)+' per min');
+  }
+  /* data minimisation: a run holding the full local record must export dose only */
+  {
+    const R=newRun('load');
+    R.qa.items=[{i:0,opt:2,correct:true,shown_t:3.1,rt_s:2.4,delay_s:1.1,slow_tail:true,coupled_to_m1:false,words_lost_at_click:4,intrusion_active:true},{i:1,skipped:true}];
+    R.reply={shown:5,res:{to:0,cc:1,att:2,rt_s:3.3,delay_s:0.9,slow_tail:false,coupled_to_m1:false}};
+    R.wait={D:15,t0:0,choice:'quick',elapsed:4.2,pullMax:0.3};R.m2.draws=[1.1,0.9];R.flow={rounds:3,wrong:2,lockStart:null,lockEnd:null,shown:1,missed:0};
+    R.sum=summarize(R);
+    const rx=runExport(R),rj=JSON.stringify(rx),badK=['rt_s','correct','words_lost_at_click','"opt"','"choice"','elapsed','details_matching','instruction_parts','wrong_clicks','"rounds"','"to"','"cc"','"att"','shown_t":3.1'].filter(k=>rj.indexOf(k)>=0);
+    t('Export keeps no answers, correctness, per-question or send timing, per-click word loss, wait choice or M5 accuracy',badK.length===0,badK.join(','));
+    t('Export keeps dose-level counts instead (registered responses, slow-tail, intrusions, outside events)',rx.m2_responses.registered===2&&rx.m2_responses.slow_tail===1&&'intrusions' in rx.summary&&'outside_events_per_min' in rx.summary,JSON.stringify(rx.m2_responses));
+    S.events.push({t:0,run:'load',type:'response',q:1,delay:1.1},{t:0,run:'load',type:'wait_resolved',choice:'quick',elapsed:4.2});
+    const ety=exportEvents().map(e=>e.type);S.events.length-=2;
+    t('Export event log leaves out per-click response and wait-choice events',ety.indexOf('response')<0&&ety.indexOf('wait_resolved')<0,'');
+  }
   const code=Array.from(document.scripts).map(s=>s.textContent).join('\n').replace(/http:\/\/www\.w3\.org\/2000\/svg/g,'');
   const bad=['fe'+'tch\\(','XMLHt'+'tpRequest','Web'+'Socket','send'+'Beacon','https?'+':\\/\\/','import'+'Scripts','new Im'+'age\\('].filter(p=>new RegExp(p).test(code));
   t('No network calls in script',bad.length===0,bad.join(','));
@@ -1177,7 +1248,7 @@ function init(){
     if(++n%5===0&&!$('#fac').hidden)updateStatus();
   },100);
   go('intro',true);
-  window.PE={S:S,go:go,startRun:startRun,stepRun:stepRun,buildExport:buildExport,selfTest:selfTest,doStop:doStop,pause:pause,drawDelay:drawDelay};
+  window.PE={S:S,go:go,startRun:startRun,stepRun:stepRun,buildExport:buildExport,selfTest:selfTest,simCues:simCues,doStop:doStop,pause:pause,drawDelay:drawDelay};
   if(location.hash==='#selftest')selfTest();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
