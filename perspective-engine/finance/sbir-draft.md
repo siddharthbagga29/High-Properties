@@ -1,10 +1,10 @@
 # SBIR Phase I application draft (M05, 2026-10-07, agent Pacioli). DRAFT v0.2, nothing submitted
 
-**Summary (under 150 words).** SBIR Phase I draft for the Perspective Engine pilot in two scopes: Tier A for NIDILRR (forecast only: due about 2026-12-16, $95k-$100k, 6 months, 40 managers) and Tier B for NIH or NSF (12 months, 120 managers, about $269k). Contains a Specific Aims page, Research Strategy outline, budget with justification, a Monte Carlo (Tier A total P10/P50/P90 $89k/$96k/$102k, 82% within $100k), and the founder's registration list (US entity, SAM.gov/UEI, SBA registry, Grants.gov, eRA Commons, Research.gov). Biggest risks: the indirect-cost rule is unresolved and moves the budget by up to $20k; the NIDILRR notice may not post (36 FY2026 competitions were reported removed); registration takes 6+ weeks, so start by 2026-11-04. Agency sites were blocked again, so rules come from search snippets tagged V1, V2 or U. Nothing was registered, submitted or sent.
+**Summary (under 150 words).** SBIR Phase I draft for the Perspective Engine pilot in two scopes: Tier A for NIDILRR (forecast only: due about 2026-12-16, $95k-$100k, 6 months, 40 managers) and Tier B for NIH or NSF (12 months, 120 managers, about $269k). Contains a Specific Aims page, Research Strategy outline, budget with justification, a Monte Carlo (Tier A total P10/P50/P90 $89k/$96k/$102k, 82% within $100k), and the founder's registration list (US entity, SAM.gov/UEI, SBA registry, Grants.gov, eRA Commons, Research.gov). Biggest risks: the indirect-cost rule is unresolved (Tier A mode total moves -$4k to +$20k); the NIDILRR notice may not post (36 FY2026 competitions were reported removed); registration takes 6+ weeks, so start by 2026-11-04. Agency sites were blocked again, so rules come from search snippets tagged V1, V2 or U. Nothing was registered, submitted or sent.
 
 ## 0. How to read this
 
-- Inputs used: finance/grants.md, ethics/irb-packet.md, docs/founder-decisions.md, plus web search. Every official-site fetch (acl.gov, nsf.gov, sbir.gov, grants.nih.gov, seed.nih.gov, simpler.grants.gov, seedfund.nsf.gov, in both the v0.1 run and this v0.2 run) and the aahd.us letter returned EGRESS_BLOCKED from the network proxy. I opened no cited page and did not work around the block. The v0.2 pass re-checked rules with about 17 web searches; those re-checks are the only evidence added.
+- Inputs used: finance/grants.md, ethics/irb-packet.md, docs/founder-decisions.md, plus web search. Every official-site fetch (acl.gov, nsf.gov, sbir.gov, grants.nih.gov, seed.nih.gov, simpler.grants.gov, seedfund.nsf.gov, in both the v0.1 run and this v0.2 run) and the aahd.us letter returned EGRESS_BLOCKED from the network proxy. I opened no cited page and did not work around the block. The v0.2 pass re-checked rules with about 19 web searches; those re-checks are the only evidence added.
 - **V1** = a page on an official domain came back in search and its snippet supports the rule. **V2** = secondary or aggregator source only. **U** = unverified. Re-read the live NOFO before relying on any V1 or V2 row.
 - **v0.2 changes from v0.1:** NIH parent number resolved to PA-27-100 (R8); NIH Phase I cap changed to $314,363 (R9); indirect rate demoted from fact to sensitivity (R12, section 5.3); NIDILRR continuity risk added (R26); Nario-Redmond wording made balanced (R25); cost model re-run so the appendix reproduces section 5.3 exactly.
 - **A#** = assumption (section 5.4). Excluded as unverified, per the finance role card: the original memo's $14.8B TAM, the 72% success figure and CPT reimbursement. No market-size number is used anywhere.
@@ -96,9 +96,9 @@ Length caution: the NIDILRR FY2025 narrative limit was 40 pages (R7) and NSF's P
 
 | Agency | Scope | Frame | Gap to close |
 |---|---|---|---|
-| NIDILRR (best fit, grants.md fit 0.80) | Tier A, 6 months, at most $100k | Employment outcome for people with disabilities (R5). ADHD qualifies only as a disability | NOFO not posted until about 2026-10-16. Read page limits, fee, indirect (R7) |
-| NIH (NIMH, NICHD, NIA) | Tier B, 12 months, under $306,872 | Needs a health or mental-health relevant outcome, not only manager attitudes (grants.md row 1) | Program officer call on institute fit and clinical-trial status (R15). Founder gate |
-| NSF 26-510 | Tier B, up to $305,000 | "Deep technology" R&D risk, Learning and Cognition topic. A training course alone will not score (grants.md row 3) | Project Pitch first, then an invitation (R18). Founder gate |
+| NIDILRR (best fit, grants.md fit 0.80) | Tier A, 6 months, at most $100k | Employment outcome for people with disabilities (R5). ADHD qualifies only as a disability | NOFO not posted until about 2026-10-16 and may not post at all (R26). Read page limits, fee, indirect (R7) |
+| NIH (NIMH, NICHD, NIA) | Tier B, 12 months, under $314,363 (R9) | Needs a health or mental-health relevant outcome, not only manager attitudes (grants.md row 1). Route is PA-27-100 (R8) | Program officer call on institute fit and clinical-trial status (R15). Founder gate |
+| NSF 26-510 | Tier B, up to $305,000 | "Deep technology" R&D risk, Learning and Cognition topic. A training course alone will not score (grants.md row 3). Topic text (preview-domain copy, V2) asks for proposals built on solid research or lived experience, which matches advisor co-design | Project Pitch first, then an invitation (R18). Founder gate |
 
 Overlap: Tier A is wave 1 of Tier B. Disclose it to every agency, and do not submit the same aims to two agencies without a disclosure strategy (R23). FY2027 per-company proposal caps may limit how many we can send (R2, details U).
 
@@ -119,7 +119,7 @@ Overlap: Tier A is wave 1 of Tier B. Disclose it to every agency, and do not sub
 | Legal counsel (site agreements, COI) | A9 | 3,000 |
 | University subaward (IRB of record, faculty sponsor, independent analyst, safety reviewer; includes its F&A) | A11 | 14,000 |
 | **Total direct** | | **76,140** |
-| Indirect | 15% x $75,140 (excludes incentives) (A12, R12) | 11,271 |
+| Indirect | 15% x $75,140 (excludes incentives) (A12, R12; rate unresolved, see 5.3) | 11,271 |
 | Fee | 7% of direct + indirect (A13, R11) | 6,119 |
 | **Total request** | | **93,530** |
 
@@ -127,16 +127,25 @@ Headroom to the $100,000 ceiling: $6,470. Third-party share (advisors, legal, su
 
 ### 5.2 Tier B: NIH or NSF, 12 months, 120 managers (mode values)
 
-PI 1,040 h x $50 = 52,000; engineer 480 h x $70 = 33,600; operations lead 800 h x $35 = 28,000; fringe 11,360; platform 4,000; incentives 120 x $25 = 3,000; supplies 2,000; advisors 4 quarters x $5,850 = 23,400; legal 6,000; external accessibility audit 4,000; university subaward 52,000. Direct 219,360; indirect 32,454; fee 17,627. **Total request 269,441.** Headroom: $35,559 to NSF's $305,000 (R18) and $37,431 to NIH's $306,872 (R9). Third-party share 31.7%. The headroom could fund the optional T3 wave or a second analyst; not allocated.
+PI 1,040 h x $50 = 52,000; engineer 480 h x $70 = 33,600; operations lead 800 h x $35 = 28,000; fringe 11,360; platform 4,000; incentives 120 x $25 = 3,000; supplies 2,000; advisors 4 quarters x $5,850 = 23,400; legal 6,000; external accessibility audit 4,000; university subaward 52,000. Direct 219,360; indirect 32,454; fee 17,627. **Total request 269,441.** Headroom: $35,559 to NSF's $305,000 (R18) and $44,922 to NIH's $314,363 (R9). Third-party share 31.7%. The headroom could fund the optional T3 wave or a second analyst; not allocated.
 
-### 5.3 Monte Carlo on cost (python3 stdlib, 20,000 draws, seed 20261007, script in the appendix)
+### 5.3 Monte Carlo on cost (python3 stdlib, 20,000 draws, seed 20261007, script in the appendix, output reproduced as shown)
 
-| Tier | Total P10 / P50 / P90 | Third-party share P10 / P50 / P90 | P(total within ceiling) | P(share at most 33%) | P(both) |
+All inputs are the A1-A12 ranges. The same draws feed every indirect-rate row, so rows differ only by the rate (R12 is unresolved). Ceilings: Tier A $100,000 (R4); Tier B NSF $305,000 (R18) and NIH $314,363 (R9). Third-party share limit 33% (R6, R10).
+
+| Tier and indirect rule | Total P10 / P50 / P90 | Third-party share P10 / P50 / P90 | P(total within ceiling) | P(share at most 33%) | P(both) |
 |---|---|---|---|---|---|
-| A (ceiling $100,000) | $89,138 / $95,693 / $101,751 | 28.0% / 30.6% / 33.0% | 0.81 | 0.90 | 0.71 |
-| B (ceiling $305,000) | $254,063 / $271,935 / $288,021 | 29.3% / 32.0% / 34.4% | about 1.00 | 0.69 | 0.69 |
+| A, 15% of direct less incentives (base case) | $89,128 / $95,683 / $101,739 | 28.0% / 30.6% / 33.0% | 0.82 | 0.90 | 0.72 |
+| A, 10% of direct less incentives | $85,304 / $91,567 / $97,366 | 29.3% / 31.9% / 34.5% | 0.97 | 0.70 | 0.67 |
+| A, 40% of total direct (stress) | $108,687 / $116,674 / $124,055 | 23.0% / 25.1% / 27.1% | 0.00 | 1.00 | 0.00 |
+| B, 15% (base case) | $253,986 / $271,967 / $288,150 | 29.3% / 32.1% / 34.4% | 1.00 (NSF and NIH) | 0.69 | 0.69 |
+| B, 10% | $243,069 / $260,286 / $275,747 | 30.7% / 33.5% / 35.9% | 1.00 (NSF and NIH) | 0.41 | 0.41 |
+| B, 40% of total direct (stress) | $309,739 / $331,613 / $351,325 | 24.1% / 26.3% / 28.2% | 0.06 NSF, 0.16 NIH | 1.00 | 0.06 NSF, 0.16 NIH |
 
-Reading: Tier A fits the NIDILRR ceiling about four times in five and fails both tests about three in ten. The university subaward is the swing line. If it grows, move the analyst or coordinator in-house, or cut N. Tier B's binding limit is the one-third rule, not the dollar cap.
+Reading.
+- Base case: Tier A fits the NIDILRR ceiling about four times in five and passes both tests about seven times in ten. Tier B's binding limit is the one-third rule, not the dollar cap.
+- A lower indirect rate relieves the dollar cap but pushes the third-party share up, because the total shrinks. At the mode, Tier A passes the share test only if the subaward is at most about $15,400 (10% rate) or $17,600 (15%); Tier B only if it is at most about $51,500 (10%) or $57,900 (15%). The subaward is the swing line; if it grows, move the coordinator in-house or cut N.
+- A 40% rate is a stress case taken from the NIH figure in R12 (applicability to this company U). If the company could document such a rate, both tiers break their caps (mode totals $114,058 and $328,601) and N or scope would have to shrink. Resolve R12 before fixing the budget.
 
 ### 5.4 Assumptions (none is a sourced figure unless stated)
 
@@ -153,7 +162,7 @@ Reading: Tier A fits the NIDILRR ceiling about four times in five and fails both
 | A9 | Legal A $1.5k/3k/6k; B $3k/6k/10k | Placeholder, counsel to quote |
 | A10 | External accessibility audit, Tier B only, $2k/4k/7k. Tier A does it in-house | Placeholder |
 | A11 | University subaward incl. F&A: A $9k/14k/22k; B $35k/52k/80k | Placeholder. No partner contacted; rate and IRB fee U |
-| A12 | Indirect 15% (the rule maximum, as a worst case), base excludes incentives | R12. MTDC definition not checked here. NIDILRR indirect rules U |
+| A12 | Indirect: base case 15% of direct less incentives; sensitivity 10% and a 40%-of-total-direct stress case. The model keeps the whole subaward in the base (the $50,000 or $25,000 subaward limit in the MTDC definition only matters for Tier B and lowers cost slightly, so the base case is the cautious one) | R12 is unresolved for a first-time company with no federal rate. NIDILRR and NSF indirect rules U |
 | A13 | Fee 7%, held inside the ceiling | NIH and NSF rule (R11, R20). NIDILRR treatment U |
 | A14 | Triangular draws, independent lines | Simplification |
 | A15 | Team size about 5; Tier A 8 teams, Tier B 24 teams | irb-packet planning assumption |
@@ -172,7 +181,8 @@ Reading: Tier A fits the NIDILRR ceiling about four times in five and fails both
 - **Advisors.** Paid neurodivergent advisors review content and hold a veto (irb-packet sections 4.5 and 8). No advisor is seated yet; seating and payment are founder-gated.
 - **Legal.** Employer site agreements, conflict-of-interest management, consent wording (irb-packet sections 3.3 and 8).
 - **University subaward.** IRB of record, faculty sponsor, independent blinded analyst and safety reviewer, which the conflict-of-interest safeguards need (irb-packet section 1). Partner not chosen.
-- **Not budgeted.** Travel (virtual study), equipment, publication fees, and any Phase II work.
+- **Indirect and fee.** Indirect at 15% of direct costs less incentives is the base case and is a stand-in until R12 is resolved; a rate must be justified in the application (no federal rate is held, U). Fee at 7% of direct plus indirect follows NIH and NSF (R11, R20); NIDILRR counts fee inside its ceiling (R7).
+- **Not budgeted.** Travel (virtual study), equipment, publication fees, any Phase II work, a full-product Section 508/WCAG 2.1 AA audit in Tier A (Tier B has a $4,000 external accessibility audit), and the pre-award work that must exist before the est. 2027-06-01 start (advisors, partner IRB route, site letters; A18).
 
 ## 6. Registrations and accounts the founder must hold
 
@@ -181,13 +191,13 @@ Nothing below was created or touched. Each needs the founder's identity, signatu
 | # | Item | Needed for | Source | Lead time or note |
 |---|---|---|---|---|
 | G0 | Decision D01 #1: country and majority owners (more than 50% US citizens or permanent residents, R3) | all three | founder-decisions.md | Blocks everything below. Foreign-owned or foreign-based applicants are not eligible for NIDILRR (R3) |
-| G1 | US for-profit legal entity, plus an EIN from the IRS | all | R3; EIN requirement U | Formation time U. Counsel |
+| G1 | US for-profit legal entity, plus an EIN from the IRS. The founder must hold a role in it (SAM's Entity Administrator must be an employee, officer or board member, V2: https://www.thompsongrants.com/editorial-commentary/samgov-changes-entity-administrator-requirement ) | all | R3; EIN requirement U | Formation time U. Counsel |
 | G2 | Business bank account | SAM payment details, U | U | U |
-| G3 | Login.gov account in the founder's name | SAM.gov | R21 | Minutes |
-| G4 | SAM.gov entity registration, which issues the UEI. Free; do not pay a third party | all | R17, R21 | Up to about a month (R21) |
-| G5 | SBA Company Registry, which issues the SBC Control ID. Needs the UEI | all | R17, R21 | U |
-| G6 | Grants.gov organization registration and an authorized organization representative role | NIH, NIDILRR (U for NOFO) | R17 | Needs active SAM |
-| G7 | eRA Commons: organization, Signing Official, PD/PI account | NIH | R17 | Part of the 6 weeks or more |
+| G3 | Login.gov account in the founder's name (the sign-in route for SAM.gov; V2: https://kdla.ky.gov/Library-Support/Library-Staff-Development/Documents/Webinar-Attachments/SAM.gov%20for%20Public%20Libraries.pdf ) | SAM.gov | V2 | Minutes (U) |
+| G4 | SAM.gov entity registration, which issues the UEI. Free; do not pay a third party. Legal name must match IRS taxpayer name. Notarized Entity Administrator letter: SBIR.gov FY26 instructions mention it, other sources conflict on whether a new registration needs it, so U | all | R17, R21 | NSF: up to about a month. NIH: 3 weeks or more. SBIR.gov FY26: up to 10 business days to activate after a complete submission plus 24 hours to propagate. Use the longest |
+| G5 | SBA Company Registry, which issues the SBC Control ID. Needs the UEI. Free | all | R17, R21 | Minutes once the UEI exists (NSF guide, V2) |
+| G6 | Grants.gov organization registration and an authorized organization representative (AOR) role, assigned through the SAM EBiz point of contact | NIH, NIDILRR (U for NOFO) | R17 | Needs active SAM |
+| G7 | eRA Commons: organization, Signing Official, PD/PI account | NIH | R17 | Part of the 6 weeks or more; one search result says 2-4 weeks for eRA alone (U) |
 | G8 | Research.gov organization and PI accounts | NSF | R21 | Needs UEI and SAM |
 | G9 | OSF account for the pre-registration | all (D01 #5) | founder-decisions.md | Founder authorizes when V03 reaches them |
 | G10 | Partner-university IRB route: PI, faculty sponsor, IRB submission | all | irb-packet section 8 | Partner not chosen; no contact made |
@@ -203,9 +213,9 @@ Nothing below was created or touched. Each needs the founder's identity, signatu
 | NSF | yes | yes | not seen | no | yes |
 
 **Critical path (today 2026-10-07; NIDILRR est. due 2026-12-16 is 70 days away).**
-- G0 decision and G1 entity come first, then G3-G5. Starting registrations by **2026-11-04** is the latest for a 2026-12-16 due date, with zero slack. Earlier is safer.
+- G0 decision and G1 entity come first, then G3-G5. Starting registrations by **2026-11-04** is the latest for a 2026-12-16 due date, with zero slack, and that date assumes the entity and EIN already exist (formation time U). If the entity and EIN do not exist by 2026-11-04, treat 2026-12-16 as out of reach and aim for NIH 2027-01-05 or 2027-04-05, or the next NIDILRR cycle. Earlier is safer. No probability of making any date is computed.
 - NIH 2027-01-05: start by 2026-11-24. NIH 2027-04-05: start by 2027-02-22. NSF full proposal 2027-03-04: start by 2027-01-21, after a Project Pitch invitation (U on turnaround).
-- The NIDILRR NOFO was forecast for about 2026-10-16. Replace every U in R7 once it posts.
+- The NIDILRR NOFO was forecast for about 2026-10-16. Replace every U in R7 once it posts. ACL advises submitting 3-5 days before the close (FY2024-25 text via an aggregator, V2), so plan the real deadline as about 2026-12-11.
 - Founder-gated before any submission: G0-G14, plus advisors seated, partner IRB route, site letters, and final sign-off on the aims text.
 
 ## 7. What reviewers will probe
@@ -218,51 +228,90 @@ Nothing below was created or touched. Each needs the founder's identity, signatu
 | Harm risk (pity, stereotype, distress) | Intensity ceiling, stop button, debrief, pause rule, advisor veto (irb-packet sections 4-5, 7) |
 | Pilot cannot confirm an effect | Aims estimate; CI half-width stated (irb-packet section 1) |
 | NIH health relevance of an employment outcome | NIDILRR is the best fit; NIH needs an institute conversation (G12) |
-| Thin Tier A margin | 81% within ceiling (section 5.3). Subaward is the lever |
+| Thin Tier A margin | 82% within the ceiling and 72% passing both tests in the base case (section 5.3). Subaward is the lever; the indirect rule (R12) moves the mode total by about -$4k at 10% and +$20k at the 40% stress case |
 | Founder eligibility | PI employed more than 50% by the company; more than 50% US ownership (R3, R10) |
+| Evidence base is other impairments, not ADHD | The aims say so (R25) and ask only for feasibility and harm signals; advisor veto and stop rules answer the harm risk |
+| Funding source may not exist | NIDILRR forecast is not a notice and FY2026 saw removed competitions (R26). Keep NIH and NSF variants ready; do not plan cash flow on a NIDILRR award |
 
 Expected value is not computed. The award probabilities in grants.md (0.20 NIDILRR, 0.12 NIH, 0.10 NSF) are that node's assumptions, not published rates.
 
 ## 8. Checks and open items
 
-- **Claims check.** Phrases flagged in irb-packet section 9 do not appear in this draft. The Specific Aims text makes no claim that the session works, and no symptom, diagnosis or treatment claim.
-- **Unverified, left open.** NIDILRR forms, page limits, fee and indirect (R7); NIH NOFO number (R8) and current cap (R9); clinical-trial classification (R15); NSF Project Description length (R22); NSF Project Pitch turnaround; FY2027 proposal caps (R2); entity formation time; human-subjects training requirement; university subaward and IRB fee; founder's employment and pay.
+- **Claims check.** Phrases flagged in irb-packet section 9 ("know what ADHD is like", "walk in their shoes", "experience ADHD", "proven to", "reduces stigma", "builds empathy", "evidence-based") do not appear in this draft as claims about the product. The Specific Aims text reports another study's finding that empathic concern rose, and says nothing about our session building empathy. No claim that the session works, and no symptom, diagnosis or treatment claim.
+- **Acceptance check.** Specific Aims page: section 2. Budget justification: sections 5.1-5.5. Research Strategy outline: section 3. Registrations and accounts: section 6. Each rule is cited in section 1 with a URL and a V1, V2 or U tag.
+- **Unverified, left open.** NIDILRR FY2027 notice itself, forms, page limits, fee and indirect (R4, R7); indirect rule for a first-time company (R12); FY2027 NIH Phase I cap (R9); NIH institute acceptance of trials and whether this pilot is a clinical trial (R8, R15); NSF Project Description length (R22); NSF Project Pitch turnaround; FY2027 proposal caps (R2); notarized-letter need and entity formation time (G1, G4); human-subjects training requirement; university subaward and IRB fee; founder's employment and pay.
+- **Inconsistency in another file (not mine to edit).** grants.md row 1 gives "PA-27-102" for NIH SBIR (R8 says PA-27-100), $306,872 as the Phase I cap (R9 says $314,363) and "at least 51%" ownership (R3 says more than 50%). The owner of grants.md should reconcile.
 - **For the founder.** G0 first. Then approve or change A1-A4 and A6, decide Tier A vs B first, and clear the gates in section 6.
 - **Not read.** preregistration.md and advisory-board.md (outside this node's inputs). Statistical detail and the advisor rate come only through the three input files.
 
 ## Appendix: cost model (python3 stdlib only)
 
+Save as a .py file and run `python3 file.py`. It is the exact script that produced section 5.3 (checked: output below matches the table). Input ranges are the A1-A12 assumptions; the three indirect rows share the same random draws.
+
 ```python
 import random
 random.seed(20261007); T = random.triangular
-FEE, IDC, FR = 0.07, 0.15, (0.08, 0.10, 0.15)
-RATE = dict(pi=(40,50,70), eng=(50,70,100), ops=(28,35,45))
+FEE, FR = 0.07, (0.08, 0.10, 0.15)
+RATE = dict(pi=(40, 50, 70), eng=(50, 70, 100), ops=(28, 35, 45))
+IDC = {'15% of direct less incentives (base case)': lambda d, inc: 0.15 * (d - inc),
+       '10% of direct less incentives': lambda d, inc: 0.10 * (d - inc),
+       '40% of total direct (stress test)': lambda d, inc: 0.40 * d}
 def pct(x, p):
-    x = sorted(x); k = (len(x)-1)*p/100; f = int(k); c = min(f+1, len(x)-1)
-    return x[f] + (x[c]-x[f])*(k-f)
-A = dict(N=40, hours=dict(pi=(350,416,480), eng=(150,200,280), ops=(100,160,220)),
-  incent=(0,25,50), platform=(800,1500,3000), misc=500, advisors=(9400,11700,14000),
-  legal=(1500,3000,6000), audit=(0,0,0), subaward=(9000,14000,22000), cap=100000)
-B = dict(N=120, hours=dict(pi=(900,1040,1100), eng=(350,480,600), ops=(600,800,1000)),
-  incent=(0,25,50), platform=(2000,4000,7000), misc=2000, advisors=(18800,23400,28000),
-  legal=(3000,6000,10000), audit=(2000,4000,7000), subaward=(35000,52000,80000), cap=305000)
+    x = sorted(x); k = (len(x) - 1) * p / 100; f = int(k); c = min(f + 1, len(x) - 1)
+    return x[f] + (x[c] - x[f]) * (k - f)
+A = dict(N=40, hours=dict(pi=(350, 416, 480), eng=(150, 200, 280), ops=(100, 160, 220)),
+         incent=(0, 25, 50), platform=(800, 1500, 3000), misc=500, advisors=(9400, 11700, 14000),
+         legal=(1500, 3000, 6000), audit=(0, 0, 0), subaward=(9000, 14000, 22000), caps=(100000,))
+B = dict(N=120, hours=dict(pi=(900, 1040, 1100), eng=(350, 480, 600), ops=(600, 800, 1000)),
+         incent=(0, 25, 50), platform=(2000, 4000, 7000), misc=2000, advisors=(18800, 23400, 28000),
+         legal=(3000, 6000, 10000), audit=(2000, 4000, 7000), subaward=(35000, 52000, 80000),
+         caps=(305000, 314363))
 def run(t, n=20000):
-    out = []
-    for _ in range(n):
+    out = {k: [] for k in IDC}
+    for _ in range(n):                      # same input draws feed every indirect scenario
         r = {k: T(*v) for k, v in RATE.items()}
         sal = sum(T(*t['hours'][k]) * r[k] for k in r)
         inc = t['N'] * T(*t['incent'])
         tp = T(*t['advisors']) + T(*t['legal']) + T(*t['audit']) + T(*t['subaward'])
-        direct = sal*(1+T(*FR)) + T(*t['platform']) + inc + t['misc'] + tp
-        costs = direct + IDC*(direct-inc)
-        total = costs*(1+FEE)
-        out.append((total, tp/total))
+        direct = sal * (1 + T(*FR)) + T(*t['platform']) + inc + t['misc'] + tp
+        for k, f in IDC.items():
+            total = (direct + f(direct, inc)) * (1 + FEE)
+            out[k].append((total, tp / total))
     return out
 for name, t in (('A', A), ('B', B)):
-    res = run(t); tot = [a for a, b in res]; sh = [b for a, b in res]
-    print(name, [round(pct(tot, p)) for p in (10, 50, 90)], [round(pct(sh, p), 3) for p in (10, 50, 90)],
-          sum(a <= t['cap'] for a in tot)/len(tot), sum(b <= .33 for b in sh)/len(sh),
-          sum(a <= t['cap'] and b <= .33 for a, b in res)/len(res))
+    for scen, res in run(t).items():
+        tot = [a for a, b in res]; sh = [b for a, b in res]
+        print(f"Tier {name} | {scen}")
+        print("  total P10/P50/P90:", [round(pct(tot, p)) for p in (10, 50, 90)],
+              "| third-party share P10/P50/P90:", [round(pct(sh, p), 3) for p in (10, 50, 90)])
+        for cap in t['caps']:
+            print(f"  P(total <= {cap:,}) = {sum(a <= cap for a in tot) / len(tot):.2f}",
+                  f"| P(share <= 0.33) = {sum(b <= .33 for b in sh) / len(sh):.2f}",
+                  f"| P(both) = {sum(a <= cap and b <= .33 for a, b in res) / len(res):.2f}")
 ```
 
-Note on the appendix: it reproduces the section 5.3 figures only if the draw order matches the working script; re-run it to confirm before quoting a figure externally. The working script (scratch file, not a deliverable) printed the section 5.3 numbers.
+Output (P10/P50/P90 for total and third-party share, then probabilities):
+
+```
+Tier A | 15% of direct less incentives (base case)
+  total P10/P50/P90: [89128, 95683, 101739] | third-party share P10/P50/P90: [0.28, 0.306, 0.33]
+  P(total <= 100,000) = 0.82 | P(share <= 0.33) = 0.90 | P(both) = 0.72
+Tier A | 10% of direct less incentives
+  total P10/P50/P90: [85304, 91567, 97366] | third-party share P10/P50/P90: [0.293, 0.319, 0.345]
+  P(total <= 100,000) = 0.97 | P(share <= 0.33) = 0.70 | P(both) = 0.67
+Tier A | 40% of total direct (stress test)
+  total P10/P50/P90: [108687, 116674, 124055] | third-party share P10/P50/P90: [0.23, 0.251, 0.271]
+  P(total <= 100,000) = 0.00 | P(share <= 0.33) = 1.00 | P(both) = 0.00
+Tier B | 15% of direct less incentives (base case)
+  total P10/P50/P90: [253986, 271967, 288150] | third-party share P10/P50/P90: [0.293, 0.321, 0.344]
+  P(total <= 305,000) = 1.00 | P(share <= 0.33) = 0.69 | P(both) = 0.69
+  P(total <= 314,363) = 1.00 | P(share <= 0.33) = 0.69 | P(both) = 0.69
+Tier B | 10% of direct less incentives
+  total P10/P50/P90: [243069, 260286, 275747] | third-party share P10/P50/P90: [0.307, 0.335, 0.359]
+  P(total <= 305,000) = 1.00 | P(share <= 0.33) = 0.41 | P(both) = 0.41
+  P(total <= 314,363) = 1.00 | P(share <= 0.33) = 0.41 | P(both) = 0.41
+Tier B | 40% of total direct (stress test)
+  total P10/P50/P90: [309739, 331613, 351325] | third-party share P10/P50/P90: [0.241, 0.263, 0.282]
+  P(total <= 305,000) = 0.06 | P(share <= 0.33) = 1.00 | P(both) = 0.06
+  P(total <= 314,363) = 0.16 | P(share <= 0.33) = 1.00 | P(both) = 0.16
+```
