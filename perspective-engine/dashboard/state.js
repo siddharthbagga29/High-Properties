@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T19:31:18Z",
+ "generated": "2026-10-07T19:35:32Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -532,8 +532,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 10,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "V13",
@@ -583,8 +583,8 @@ window.PE_STATE = {
     "reason": "Needs real feedback sessions with paid ND advisors."
    },
    "budget_k": 40,
-   "status": "running",
-   "view": "running"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "V15",
@@ -699,7 +699,7 @@ window.PE_STATE = {
    },
    "budget_k": 10,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "M05",
@@ -859,18 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:50:55Z",
-   "event": "done",
-   "node": "V10",
-   "note": "MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M; P($5M by m48)=0.6%; H1 dominant driver"
-  },
-  {
-   "t": "2026-10-06T12:50:55Z",
-   "event": "start",
-   "node": "V11",
-   "note": ""
-  },
   {
    "t": "2026-10-06T12:53:55Z",
    "event": "done",
@@ -1098,6 +1086,18 @@ window.PE_STATE = {
    "event": "start",
    "node": "V14",
    "note": ""
+  },
+  {
+   "t": "2026-10-07T19:35:03Z",
+   "event": "done",
+   "node": "V14",
+   "note": "Advisor review kit + empty CHANGELOG verified: 0 sessions, 0 changes, note-ID entry format; MVP unchanged; awaits paid ND sessions"
+  },
+  {
+   "t": "2026-10-07T19:35:32Z",
+   "event": "done",
+   "node": "V12",
+   "note": "Verified: no biometrics (code + 4 real exports), GDPR/UK GDPR/HIPAA/FERPA stated; 0 requests, 0 storage, 59/59 selftest"
   }
  ]
 };

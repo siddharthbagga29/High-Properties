@@ -513,7 +513,7 @@
       ],
       "gate": null,
       "budget_k": 10,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "V13",
@@ -562,7 +562,7 @@
         "reason": "Needs real feedback sessions with paid ND advisors."
       },
       "budget_k": 40,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "V15",
