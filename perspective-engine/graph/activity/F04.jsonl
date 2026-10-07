@@ -85,3 +85,5 @@
 {"t": "2026-10-06T19:36:54Z", "node": "F04", "agent": "product", "kind": "run", "text": "Final syntax check, regression, and log completion steps", "src": "transcript"}
 {"t": "2026-10-07T00:39:52Z", "node": "F04", "agent": "product", "kind": "note", "text": "Verification interrupted by the session limit at 19:40 UTC; re-running an independent verifier now", "src": "self"}
 {"t": "2026-10-07T00:40:55Z", "node": "F04", "agent": "product", "kind": "read", "text": "Verifier: ran brief F04; read role card, mechanism-spec, codesign-charter s6, instruments spec, mvp/README.md", "src": "self"}
+{"t": "2026-10-07T00:42:50Z", "node": "F04", "agent": "product", "kind": "check", "text": "Verifier: extracted the single inline script; node --check passes", "src": "self"}
+{"t": "2026-10-07T00:42:50Z", "node": "F04", "agent": "product", "kind": "check", "text": "Verifier: grep finds no fetch/XHR/WebSocket/sendBeacon/EventSource/iframe/@import, no script src or link tags; only http string is the SVG namespace; CSP default-src none, connect-src none: PASS", "src": "self"}
