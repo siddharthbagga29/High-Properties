@@ -1,6 +1,6 @@
 import { Billboard } from '@react-three/drei'
-import { type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useState } from 'react'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { sfx } from '../audio/sound'
 import { useStore } from '../store'
@@ -73,20 +73,32 @@ function Sign({ s, position }: { s: SignStat; position: [number, number, number]
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { draw(ctx, s); tex.needsUpdate = true }, [ctx, tex, key, fontsReady])
   useEffect(() => () => tex.dispose(), [tex])
+  const group = useRef<THREE.Group>(null!)
+  const board = useRef<THREE.MeshBasicMaterial>(null!)
+  const pole = useRef<THREE.MeshBasicMaterial>(null!)
+  // In this agent's own view the camera faces the district from outside, so its sign would stand in front: fade it.
+  useFrame((_, dt) => {
+    const f = useStore.getState().focus
+    const want = f.kind === 'agent' && f.id === s.agent ? 0 : 1
+    const o = board.current.opacity + (want - board.current.opacity) * (1 - Math.exp(-dt * 6))
+    board.current.opacity = o
+    pole.current.opacity = 0.35 * o
+    group.current.visible = o > 0.02
+  })
   const st = useStore.getState
   const onOver = (e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (st().hover?.id !== s.agent) sfx.hover(); st().set({ hover: { kind: 'agent', id: s.agent } }); document.body.style.cursor = 'pointer' }
   const onOut = () => { if (st().hover?.id === s.agent) st().set({ hover: null }); document.body.style.cursor = '' }
   const onClick = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); if (e.delta > 25) return; sfx.dive(); st().select({ kind: 'agent', id: s.agent }) }
   return (
-    <group position={position}>
+    <group ref={group} position={position}>
       <mesh position={[0, -position[1] / 2, 0]} raycast={() => null}>
         <cylinderGeometry args={[0.06, 0.06, position[1], 6]} />
-        <meshBasicMaterial color="#2bf0ff" transparent opacity={0.35} />
+        <meshBasicMaterial ref={pole} color="#2bf0ff" transparent opacity={0.35} />
       </mesh>
       <Billboard>
         <mesh onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
           <planeGeometry args={[PW, PH]} />
-          <meshBasicMaterial map={tex} transparent toneMapped={false} />
+          <meshBasicMaterial ref={board} map={tex} transparent toneMapped={false} />
         </mesh>
       </Billboard>
     </group>

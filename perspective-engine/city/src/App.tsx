@@ -199,7 +199,7 @@ export default function App() {
         <Search />
         <Help />
         <Pilot />
-        {webgl && <Index />}
+        <Index />
         <AnimatePresence>{gate && <Gate />}</AnimatePresence>
       </div>
     </MotionConfig>

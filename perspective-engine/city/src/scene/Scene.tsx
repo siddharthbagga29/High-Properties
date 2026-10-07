@@ -101,7 +101,7 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
 }
 
 /** Under the brain in the world view: it is the plan, run by the Mayor, and how much of it is built. */
-function BrainLabel({ stats, run, live: isLive }: { stats: AgentStats[]; run: Map<string, 'working' | 'stalled'>; live: boolean }) {
+function BrainLabel() {
   const focus = useStore(s => s.focus)
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
@@ -110,25 +110,18 @@ function BrainLabel({ stats, run, live: isLive }: { stats: AgentStats[]; run: Ma
   const dir = useMemo(() => new THREE.Vector3(), [])
   useFrame(({ camera }) => {
     if (!group.current) return
-    // Always on the camera's side of the brain, on the plaza floor just in front of it.
-    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 1.05)
-    group.current.position.set(BRAIN_C[0] + dir.x, 0.8, BRAIN_C[2] + dir.z)
+    // On the camera's side of the brain, just under its lower edge, above the district tags of the near ring.
+    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 0.99)
+    group.current.position.set(BRAIN_C[0] + dir.x, 4.5, BRAIN_C[2] + dir.z)
     if (el.current) el.current.style.opacity = live.assemble > 0.9 ? '1' : '0'
   })
   if (!data || focus.kind !== 'world') return null
   const done = data.nodes.filter(n => st.get(n.id) === 'done').length
-  const working = stats.filter(a => a.running).length, stalled = [...run.values()].filter(x => x === 'stalled').length
-  const waiting = data.nodes.filter(n => st.get(n.id) === 'awaiting_human').length
-  const mayor = stats.find(a => a.key === 'orchestrator')
-  const now = isLive ? ' now' : ''
   return (
     <group ref={group}>
       <Html portal={labelLayer} zIndexRange={[18, 0]} style={{ transform: 'translate3d(-50%,0,0)', pointerEvents: 'none' }}>
-        <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: '4px 10px', whiteSpace: 'nowrap', textAlign: 'center', display: 'grid', gap: 2 }}>
-          <b style={{ font: '600 12px var(--mono)', letterSpacing: '0.08em', color: '#8fe6ff' }}>THE PLAN · {(mayor?.name ?? 'Mayor').toUpperCase()} · {done}/{data.nodes.length} BUILT</b>
-          <span style={{ font: '500 10.5px var(--mono)', color: working ? '#ffb547' : '#a7a4c6' }}>
-            {working ? `${working} agent${working > 1 ? 's' : ''} working${now}` : `nobody working${now}`}{stalled ? ` · ${stalled} stalled` : ''}{waiting ? ` · ${waiting} need${waiting > 1 ? '' : 's'} the founder` : ''}
-          </span>
+        <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: '3px 9px', whiteSpace: 'nowrap', font: '600 12px var(--mono)', letterSpacing: '0.08em', color: '#8fe6ff' }}>
+          THE PLAN · {(data.agents.orchestrator?.name ?? 'Mayor').toUpperCase()} · {done}/{data.nodes.length} BUILT
         </div>
       </Html>
     </group>
@@ -194,7 +187,7 @@ export default function Scene() {
           <Workers towers={towers} stats={stats} at={at} />
           <Packets towers={towers} />
           <Records towers={towers} />
-          <BrainLabel stats={stats} run={run} live={time === null} />
+          <BrainLabel />
           <HoverLabel towers={towers} stats={stats} run={run} at={at} />
           <Rig towers={towers} links={links} run={run} />
         </>

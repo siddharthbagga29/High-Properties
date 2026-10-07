@@ -17,6 +17,7 @@ const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced
 /** Default world view: looking down 52°, so the far district sits above the brain instead of behind it. */
 const WORLD_EL = THREE.MathUtils.degToRad(52)
 const WORLD_T = new THREE.Vector3(0, 4, -2)
+const AGENT_EL = THREE.MathUtils.degToRad(40)
 
 /**
  * Distance at which the whole ring, signposts included, fits in the space the panels leave free.
@@ -34,11 +35,13 @@ export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], port
   if (f.kind === 'brain') return [new THREE.Vector3(BRAIN_C[0] + 16 * k, BRAIN_C[1] + 7 * k, BRAIN_C[2] + 30 * k), new THREE.Vector3(BRAIN_C[0], BRAIN_C[1] - 1, BRAIN_C[2])]
   if (f.kind === 'agent') {
     if (f.id === CENTER_AGENT) return [new THREE.Vector3(0, 22 * k, 34 * k), new THREE.Vector3(0, 6, -R_PLAZA * 0.5)]
-    // Stand beside the district, slightly outside it: the signpost stays clear of the towers and the brain sits behind them.
-    const a = ringAngle(ringIndex(f.id)), u = new THREE.Vector3(Math.cos(a), 0, Math.sin(a)), v = new THREE.Vector3(-u.z, 0, u.x)
+    // Face the district from outside, looking in: its towers spread into rows and columns so every tower's tag reads,
+    // and the brain sits behind them. (Its own signpost fades out in this view; it would stand in front.)
+    const a = ringAngle(ringIndex(f.id)), u = new THREE.Vector3(Math.cos(a), 0, Math.sin(a))
     const [cx, cz] = districtCenter(f.id)
-    const c = new THREE.Vector3(cx, 2, cz)
-    return [c.clone().addScaledVector(u, 9 * k).addScaledVector(v, 18 * k).add(new THREE.Vector3(0, 15 * k, 0)), c.clone().addScaledVector(u, -6)]
+    const t = new THREE.Vector3(cx, 3, cz).addScaledVector(u, -1.5)
+    const d = 27 * k
+    return [t.clone().addScaledVector(u, d * Math.cos(AGENT_EL)).add(new THREE.Vector3(0, d * Math.sin(AGENT_EL), 0)), t]
   }
   if (f.kind === 'task') {
     const i = nodes.findIndex(n => n.id === f.id)

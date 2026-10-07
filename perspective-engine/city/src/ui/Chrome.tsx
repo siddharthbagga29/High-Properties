@@ -128,7 +128,7 @@ export function TopBar({ ref }: { ref?: Ref<HTMLElement> }) {
       </button>
       {v && (
         <div className="status">
-          <span><b>{v.done}</b> of {v.total} tasks built</span>
+          <span><b>{v.done}</b> of {v.total}<span className="long"> tasks</span> built</span>
           <span className={v.running ? 'hot' : ''} title={`An agent recorded a step in the last ${LIVE_WINDOW_MIN} minutes`}><b>{v.running}</b> working {when}</span>
           {v.stalled > 0 && <span className="stalled" title={`Marked running, but nothing recorded for ${LIVE_WINDOW_MIN} minutes: no session is on it`}><b>{v.stalled}</b> stalled</span>}
           <button className="linkish" onClick={() => { sfx.dive(); useStore.getState().select({ kind: 'world' }) }}><b>{v.waiting}</b> need{v.waiting === 1 ? 's' : ''} the founder</button>
@@ -142,7 +142,10 @@ export function TopBar({ ref }: { ref?: Ref<HTMLElement> }) {
         </div>
       )}
       <nav className="actions" aria-label="Actions">
-        <button className="chip-btn" onClick={() => set({ panel: 'search' })} aria-label="Find or ask (Command K)"><span>Find</span><kbd>⌘K</kbd></button>
+        <button className="chip-btn find" onClick={() => set({ panel: 'search' })} aria-label="Find or ask (Command K)">
+          <svg viewBox="0 0 20 20" aria-hidden="true" className="ico"><circle cx="8.5" cy="8.5" r="5.2" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12.5 12.5l4.5 4.5" stroke="currentColor" strokeWidth="1.6" /></svg>
+          <span>Find</span><kbd>⌘K</kbd>
+        </button>
         <button className="chip-btn opt" onClick={() => set({ replayOpen: !replayOpen })} aria-pressed={replayOpen}><span>Replay</span></button>
         {webgl && <button className="chip-btn opt" onClick={() => set({ panel: 'index' })}><span>Index</span></button>}
         <button className="chip-btn opt" onClick={() => set({ panel: 'help' })} aria-label="How to read the city"><span>?</span></button>
