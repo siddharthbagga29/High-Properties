@@ -236,6 +236,8 @@ const TAIL_RATIO=6, TAIL_CV=0.4;      // slow-tail mean = 6x normal-component me
 const N_DRAWS=9;                      // 8 answers + 1 send per run
 const DRIFT=0.05;                     // mean-delay drift allowed (spec M2): +-5%
 const GAP_MIN=5;                      // M1 minimum gap between intrusions (spec)
+const NOTIF_S=3.0;                    // s an ordinary (non-capturing) notification stays on screen
+let SIM=false;                        // true only inside the self-test scheduler simulation: keeps logEv quiet
 
 /* ===== utilities ===== */
 const $=(s,r)=>(r||document).querySelector(s);
@@ -335,6 +337,7 @@ const S={
 S.mech=initMech();
 const sessT=()=>(performance.now()-S.t0)/1000;
 function logEv(type,data){
+  if(SIM)return;
   const e=Object.assign({t:r2(sessT()),run:S.run?S.run.cond:null,type:type},data||{});
   S.events.push(e);
   const ul=$('#facLog');
@@ -472,7 +475,7 @@ const on=(R,m)=>R.cond==='load'&&S.mech[m].enabled;
 function newRun(cond){
   const form=FORMS[S.forms[cond]];
   return {cond:cond,form:form,chunks:chunksOf(form),t:0,stepT:0,step:null,over:false,
-   intr:null,nIntr:0,nextIntr:null,lastFrag:-1,nextSal:null,notif:null,lastEnd:-99,
+   intr:null,nIntr:0,nextIntr:null,lastFrag:-1,nextSal:null,notif:null,lastEnd:-99,m1End:-99,
    m2:{draws:[],sum:0,pendingCouple:false},pend:null,qa:{i:0,items:[],cur:null},wait:null,reply:null,flow:null,lockMult:1,
    stream:{idx:0,sched:null,end:0},events:{intr:[],sal:[],cues:[]},skips:[],tStart:r2(sessT()),tEnd:null,sum:null};
 }
@@ -503,10 +506,16 @@ function drawDelay(R){
   return {v:d,tail:tail,coupled:coupled};
 }
 
+/* Cue spacing (all mechanisms): an M1 intrusion or an M4/M5 notification starts only when no other cue is on screen and
+   the last one ended at least MIN_VIS_GAP ago. A cue held back by this gate starts as soon as it opens. Due times follow
+   a planned timeline (next due = this due + interval), so a held-back cue is caught up by a shorter wait, never by
+   adding to the rate; at most one nominal period of delay is carried. When M1 and M4 together ask for more screen time
+   than the gate leaves, the delivered rates fall below the set rates (cap documented in the README). */
+const cueFree=R=>!R.intr&&!R.notif&&R.t-R.lastEnd>=MIN_VIS_GAP;
 /* M1 */
 function startIntr(R){
   const P=S.mech.M1.v;let i;do{i=Math.floor(rnd()*INNER.length);}while(i===R.lastFrag&&INNER.length>1);R.lastFrag=i;
-  R.intr={id:++R.nIntr,t0:R.t,end:R.t+P.dur,share:P.share,frag:INNER[i],wordsLost:0,chMissed:0};
+  R.intr={id:++R.nIntr,t0:R.t,end:R.t+P.dur,share:P.share,frag:INNER[i],wordsLost:0,chMissed:0,late:Math.max(0,R.t-R.nextIntr)};
   $('#inner').textContent=INNER[i];$('#innerWrap').hidden=false;
   Aud.murStart(P.dur);applyMask(R);
   logEv('M1_start',{dur:r2(P.dur),share:r2(P.share),text:INNER[i]});
@@ -515,8 +524,8 @@ function endIntr(R){
   const x=R.intr;if(!x)return;
   clearMask();$('#innerWrap').hidden=true;Aud.murStop();
   R.events.intr.push({id:x.id,t:r2(x.t0),dur:r2(R.t-x.t0),share:r2(x.share),words_lost:x.wordsLost,phrases_missed:x.chMissed,step:R.step});
-  R.intr=null;R.m2.pendingCouple=true;
-  const P=S.mech.M1.v;R.nextIntr=R.t+GAP_MIN+expS(Math.max(0.5,60/P.rate-P.dur-GAP_MIN));
+  R.intr=null;R.m2.pendingCouple=true;R.lastEnd=R.t;R.m1End=R.t;
+  const P=S.mech.M1.v;R.nextIntr=Math.max(R.t+GAP_MIN+expS(Math.max(0.5,60/P.rate-P.dur-GAP_MIN))-x.late,R.t-60/P.rate);
   logEv('M1_end',{words_lost:x.wordsLost,phrases_missed:x.chMissed});
 }
 function m1Tick(R){
@@ -524,16 +533,18 @@ function m1Tick(R){
   if(R.intr){if(R.t>=R.intr.end)endIntr(R);return;}
   if(R.nextIntr==null)R.nextIntr=R.t+rand(8,22);   // design: at least one early intrusion so the condition is perceptible
   if(R.t<R.nextIntr)return;
+  if(!cueFree(R)||R.t-R.m1End<GAP_MIN)return;   // held back: screen quiet for MIN_VIS_GAP, and the spec's 5 s gap between intrusions
   if(R.lockMult<1&&rnd()>R.lockMult){R.nextIntr=R.t+GAP_MIN+expS(Math.max(0.5,60/P.rate-P.dur-GAP_MIN));logEv('M1_damped_by_M5');return;}
   startIntr(R);
 }
 
 /* M4 */
+const notifLen=(cap,dwell)=>cap?dwell+0.4:NOTIF_S;   // s a notification stays on screen
 function showNotif(R,cap,dwell,custom){
   const n=custom||pick(NOTIFS),style=rnd()<0.5?'toast':'banner';
   const el=h('div',{class:'notif '+style+(cap?' pulled':'')},h('strong',null,n.l),h('span',null,n.t));
   (cap?$('#pullbox'):$('#notif')).append(el);
-  R.notif={el:el,end:R.t+(cap?dwell+0.4:3.0),cap:cap};
+  R.notif={el:el,end:R.t+notifLen(cap,dwell),cap:cap};
   if(cap){$('#vig').classList.add('on');document.body.classList.add('pulling');}
   Aud.ping();
 }
@@ -545,10 +556,13 @@ function m4Tick(R){
   const P=S.mech.M4.v;
   if(R.nextSal==null)R.nextSal=R.t+rand(6,14);
   if(R.t<R.nextSal)return;
-  if(R.notif||R.t-R.lastEnd<MIN_VIS_GAP||R.step==='fin'){R.nextSal=R.t+1;return;}
+  if(R.step==='fin'||!cueFree(R))return;   // held back until the screen has been quiet for MIN_VIS_GAP
   const rate=P.rate*(S.adapt.quiet?ADAPT_FACTOR.quiet:1);
-  R.nextSal=R.t+Math.max(MIN_VIS_GAP+3,expS(60/rate));
   const p=Math.min(0.95,P.p*P.diff*R.lockMult),cap=rnd()<p,n=pick(NOTIFS);
+  /* Scheduled like M1: onset-to-onset = notification length + MIN_VIS_GAP + Exp(rest of the period), so the mean is
+     60/rate whenever the period is long enough to hold the notification and the gap. */
+  const fl=notifLen(cap,P.dwell)+MIN_VIS_GAP,iv=fl+expS(Math.max(0.5,60/rate-fl));
+  R.nextSal=Math.max(R.nextSal+iv,R.t-60/rate);   // planned timeline: a held-back event is caught up, at most one period
   showNotif(R,cap,P.dwell,n);
   R.events.sal.push({t:r2(R.t),captured:cap,p:r2(p),dwell:cap?r2(P.dwell):0,step:R.step});
   logEv('M4_event',{captured:cap,p:r2(p),text:n.t});
@@ -690,7 +704,7 @@ function flowTick(R){
   if(e>=F.nextCue){
     const cue=pick(CUES),missed=F.locked&&rnd()<P.miss;
     if(missed){F.missed++;F.nextCue=e+rand(14,24);R.events.cues.push({t:r2(R.t),missed:true,locked:true});logEv('M5_cue_missed',{text:cue.t});}
-    else if(!R.notif&&R.t-R.lastEnd>=MIN_VIS_GAP){F.shown++;F.nextCue=e+rand(14,24);showNotif(R,false,0,cue);R.events.cues.push({t:r2(R.t),missed:false,locked:F.locked});logEv('M5_cue_shown',{text:cue.t});}
+    else if(cueFree(R)){F.shown++;F.nextCue=e+rand(14,24);showNotif(R,false,0,cue);R.events.cues.push({t:r2(R.t),missed:false,locked:F.locked});logEv('M5_cue_shown',{text:cue.t});}
     else F.nextCue=e+1;
   }
   if(e>=F.len){R.lockMult=1;beginStep(R,'fin');}
