@@ -1,1 +1,2 @@
 {"t": "2026-10-07T19:25:34Z", "node": "V14", "agent": "product", "kind": "plan", "text": "start", "src": "ledger"}
+{"t": "2026-10-07T19:25:54Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read brief inputs: advisory-board.md, founder-decisions.md, mechanism-spec.md, mvp/README.md; reading index.html by section", "src": "self"}
