@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T01:01:22Z",
+ "generated": "2026-10-07T01:03:17Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -674,8 +674,8 @@ window.PE_STATE = {
     "reason": "IRB submission goes through a university partner."
    },
    "budget_k": 25,
-   "status": "running",
-   "view": "running"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "M04",
@@ -724,7 +724,7 @@ window.PE_STATE = {
    },
    "budget_k": 40,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "M06",
@@ -859,12 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:38:19Z",
-   "event": "start",
-   "node": "V01",
-   "note": ""
-  },
   {
    "t": "2026-10-06T12:38:19Z",
    "event": "start",
@@ -1098,6 +1092,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "M03",
    "note": ""
+  },
+  {
+   "t": "2026-10-07T01:03:04Z",
+   "event": "done",
+   "node": "M03",
+   "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"
   }
  ]
 };

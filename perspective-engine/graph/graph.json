@@ -649,7 +649,7 @@
         "reason": "IRB submission goes through a university partner."
       },
       "budget_k": 25,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "M04",

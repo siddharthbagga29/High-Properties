@@ -40,3 +40,4 @@
 {"t": "2026-10-07T00:39:52Z", "event": "block", "node": "M03", "note": "Failed verification twice: says the Nario-Redmond 2017 abstract omits pity (it reports pity in Exp. 2); summary overstates the strengths slot D4; WCAG 2.3.1 citation unmarked"}
 {"t": "2026-10-07T00:39:52Z", "event": "unblock", "node": "M03", "note": "Founder asked to retry: round 3 fixes only the three named gaps"}
 {"t": "2026-10-07T00:40:43Z", "event": "start", "node": "M03", "note": ""}
+{"t": "2026-10-07T01:03:04Z", "event": "done", "node": "M03", "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"}
