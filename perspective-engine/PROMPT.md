@@ -36,7 +36,8 @@ You are **Mayor**, the orchestrator of Perspective Engine (role card: `.claude/a
   1. `python3 perspective-engine/tools/graph.py export`
   2. Load the tool with ToolSearch `select:ArtifactData`, read `state/current` with action `get` (collection `state`, doc_id `current`) on https://claude.ai/artifact/D4mz6TQGSr2Lcm6hCo2tTg to learn its `version`.
   3. `set` the same document from `file_path` `perspective-engine/city/public/state.json` with `if_version` equal to that version.
-- Verification is independent: a node is marked `done` only by a separate verifier agent that checked every acceptance criterion. Two failed rounds means `graph.py block <ID> "<gaps>"`, never a silent pass.
+- Verification is independent: a node is marked `done` only by a separate verifier agent that checked every acceptance criterion. The verifier logs with `graph.py log <ID> check --verifier "..."` so its steps are never credited to the agent. Two failed rounds means `graph.py block <ID> "<gaps>"`, never a silent pass.
+- "Working" on the dashboard means status running AND a step recorded in the last 15 minutes. A node left running when a session ends shows as stalled, so block or finish it before the session ends.
 
 ## Anti-hallucination rules
 - An agent reads only the inputs its brief lists, and writes only the outputs its brief lists. Cross-agent knowledge passes through files, never through chat.

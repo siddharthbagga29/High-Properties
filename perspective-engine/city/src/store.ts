@@ -7,6 +7,8 @@ export type Tab = 'overview' | 'activity' | 'output' | 'ask'
 export type Panel = 'none' | 'search' | 'help' | 'pilot' | 'index'
 export interface Hover { kind: 'agent' | 'task' | 'brain' | 'worker'; id: string }
 export type Source = 'loading' | 'live' | 'file' | 'offline'
+/** The last Ask answer. Lives in the store so it survives the drawer remounting when the focus changes. */
+export interface AskOut { q: string; text: string; via: 'claude' | 'files' | null; busy: boolean; dive?: Focus; error?: string }
 
 const read = (k: string) => { try { return localStorage.getItem(k) } catch { return null } }
 export const persist = (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* storage unavailable */ } }
@@ -16,7 +18,7 @@ export function parseFocus(key: string, d: GraphState | null): Focus | null {
   if (key === 'world' || key === 'brain') return { kind: key }
   const m = /^(agent|task)-([A-Za-z0-9_]+)$/.exec(key)
   if (!m) return null
-  if (d && m[1] === 'agent' && !d.agents[m[2]]) return null
+  if (d && m[1] === 'agent' && !Object.hasOwn(d.agents, m[2])) return null
   if (d && m[1] === 'task' && !d.nodes.some(n => n.id === m[2])) return null
   return m[1] === 'agent' ? { kind: 'agent', id: m[2] } : { kind: 'task', id: m[2] }
 }
@@ -41,6 +43,7 @@ interface S {
   bump: number
   enteredAt: number | null
   pendingAsk: string | null
+  askOut: AskOut | null
   replayOpen: boolean
   hintsUsed: string[]
   statusFilter: Status[]
@@ -71,6 +74,7 @@ export const useStore = create<S>((set, get) => ({
   bump: 0,
   enteredAt: null,
   pendingAsk: null,
+  askOut: null,
   replayOpen: false,
   hintsUsed: [],
   statusFilter: [],

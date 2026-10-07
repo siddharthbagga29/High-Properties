@@ -75,9 +75,11 @@ def ledger_append(event, node_id, note=""):
         f.write(json.dumps({"t": now(), "event": event, "node": node_id, "note": note}) + "\n")
 
 
-def activity_append(node_id, agent, kind, text, src="self", t=None):
+def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None):
     ACTIVITY.mkdir(parents=True, exist_ok=True)
     rec = {"t": t or now(), "node": node_id, "agent": agent, "kind": kind, "text": text[:300], "src": src}
+    if actor:
+        rec["actor"] = actor
     with (ACTIVITY / f"{node_id}.jsonl").open("a") as f:
         f.write(json.dumps(rec) + "\n")
 
@@ -250,10 +252,13 @@ def run(cmd, args):
         print(brief(n, g))
         return 0
     if cmd == "log":
+        # --verifier marks a step taken by the independent verifier, so the dashboard never credits it to the agent.
+        actor = "verifier" if "--verifier" in args else None
+        args = [a for a in args if a != "--verifier"]
         if len(args) < 3 or args[1] not in LOG_KINDS:
-            print(f"usage: log <NODE_ID> <{'|'.join(sorted(LOG_KINDS))}> \"text\"")
+            print(f"usage: log <NODE_ID> <{'|'.join(sorted(LOG_KINDS))}> [--verifier] \"text\"")
             return 1
-        activity_append(n["id"], n["agent"], args[1], " ".join(args[2:]))
+        activity_append(n["id"], n["agent"], args[1], " ".join(args[2:]), actor=actor)
         export(g)
         print(f"{n['id']} logged {args[1]}")
         return 0

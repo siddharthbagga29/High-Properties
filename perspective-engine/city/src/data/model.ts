@@ -1,6 +1,5 @@
-import type { ActivityEvent, AtomRecord, FocusKind, GraphState, LedgerEvent, Status, TaskNode } from './types'
+import type { ActivityEvent, AtomRecord, GraphState, LedgerEvent, Status, TaskNode } from './types'
 
-/** City grid order (row-major, City Hall in the centre). Shared by the layout and the UI. */
 /** Orchestrator first, then the ring clockwise from the top (matches scene/world.ts). */
 export const AGENT_ORDER = ['orchestrator', 'science', 'data', 'finance', 'legal', 'gtm', 'brand', 'product', 'ethics'] as const
 export type AgentKey = (typeof AGENT_ORDER)[number]
@@ -9,8 +8,6 @@ export const STATUS_CODE: Record<Status, number> = { pending: 0, ready: 1, runni
 export const STATUS_LABEL: Record<Status, string> = {
   pending: 'Planned', ready: 'Ready', running: 'Building', done: 'Built', awaiting_human: 'Needs founder', blocked: 'Blocked',
 }
-export const LEVEL_MAG = ['', '×1', '×12', '×140', '×2000'] as const
-export const LEVEL_NAME = ['', 'Venture', 'Districts', 'Agent', 'Records'] as const
 
 export const ms = (iso: string) => Date.parse(iso)
 
@@ -53,7 +50,8 @@ export function statusesAt(state: GraphState, t: number | null): Map<string, Sta
   }
   for (const n of state.nodes) {
     const s = raw.get(n.id)!
-    const depsDone = n.deps.every(d => raw.get(d) === 'done')
+    // Same rule as graph.py dep_ok: a gated task may start from a dependency that is prepared and waiting on the founder.
+    const depsDone = n.deps.every(d => raw.get(d) === 'done' || (!!n.gate && raw.get(d) === 'awaiting_human'))
     out.set(n.id, s === 'pending' && depsDone ? 'ready' : s)
   }
   return out
@@ -66,7 +64,16 @@ export interface AgentStats {
   role: string
   tasks: TaskNode[]
   done: number
+  /** A task with status running AND a recorded step in the last LIVE_WINDOW_MIN minutes: really being worked on. */
   running: TaskNode | null
+  /** A task whose status says running but nothing was recorded for LIVE_WINDOW_MIN minutes: no session is on it. */
+  stalled: TaskNode | null
+  /** Time of the agent's own latest step (verifier and ledger rows excluded), or null. */
+  lastStep: number | null
+  /** Real tool calls extracted from the agent's transcripts. */
+  toolCalls: number
+  /** Tasks the agent worked on whose token use has not been measured yet (running, gated or failed rounds). */
+  unmeasured: number
   next: TaskNode | null
   waiting: number
   budget: number
@@ -76,7 +83,8 @@ export interface AgentStats {
   outbound: Set<string>
 }
 
-export function agentStats(state: GraphState, st: Map<string, Status>): AgentStats[] {
+export function agentStats(state: GraphState, st: Map<string, Status>, at: number = Date.now()): AgentStats[] {
+  const live = runState(state, st, at)
   const byId = new Map(state.nodes.map(n => [n.id, n]))
   const doneAt = new Map<string, number>()
   state.ledger.forEach(e => { if (e.event === 'done') doneAt.set(e.node, ms(e.t)) })
@@ -93,7 +101,11 @@ export function agentStats(state: GraphState, st: Map<string, Status>): AgentSta
     return {
       key, name: a.name, district: a.district, role: a.role, tasks,
       done: tasks.filter(n => st.get(n.id) === 'done').length,
-      running: tasks.find(n => st.get(n.id) === 'running') ?? null,
+      running: tasks.find(n => live.get(n.id) === 'working') ?? null,
+      stalled: tasks.find(n => live.get(n.id) === 'stalled') ?? null,
+      lastStep: lastOwnStep(state, key, at),
+      toolCalls: tasks.reduce((s, n) => s + (state.activity?.[n.id] ?? []).filter(e => e.src === 'transcript' && ms(e.t) <= at).length, 0),
+      unmeasured: tasks.filter(n => !n.run && (state.activity?.[n.id] ?? []).some(e => e.src !== 'ledger' && ms(e.t) <= at)).length,
       next: tasks.find(n => st.get(n.id) === 'ready') ?? null,
       waiting: tasks.filter(n => st.get(n.id) === 'awaiting_human').length,
       budget: tasks.reduce((s, n) => s + n.budget_k, 0),
@@ -106,10 +118,16 @@ export function agentStats(state: GraphState, st: Map<string, Status>): AgentSta
 export function ventureStats(state: GraphState, st: Map<string, Status>, t: number | null) {
   const count = (s: Status) => state.nodes.filter(n => st.get(n.id) === s).length
   const events = state.ledger.filter(e => t === null || ms(e.t) <= t)
+  const live = [...runState(state, st, t ?? Date.now()).values()]
   return {
     total: state.nodes.length,
     done: count('done'),
-    running: count('running'),
+    /** Status running AND a step recorded in the last LIVE_WINDOW_MIN minutes. */
+    running: live.filter(x => x === 'working').length,
+    /** Status running but silent: no session is working on it. */
+    stalled: live.filter(x => x === 'stalled').length,
+    toolCalls: feed(state, t).filter(e => e.src === 'transcript').length,
+    steps: feed(state, t).length,
     ready: count('ready'),
     waiting: count('awaiting_human'),
     blocked: count('blocked'),
@@ -120,39 +138,21 @@ export function ventureStats(state: GraphState, st: Map<string, Status>, t: numb
   }
 }
 
-export function focusKind(state: GraphState, id: string): FocusKind {
-  if (id === 'venture') return 'venture'
-  if (id === 'city') return 'city'
-  if (state.agents[id]) return 'agent'
-  return state.nodes.some(n => n.id === id) ? 'task' : 'venture'
-}
-
-export const levelOf = (k: FocusKind) => ({ venture: 1, city: 2, agent: 3, task: 4 } as const)[k]
-
-/** Parent focus one level up (Esc / breadcrumb). */
-export function parentOf(state: GraphState, id: string): string {
-  const k = focusKind(state, id)
-  if (k === 'task') return state.nodes.find(n => n.id === id)!.agent
-  if (k === 'agent') return 'city'
-  return 'venture'
-}
-
 /** Level-4 atoms of one task, all in the normalized record shape. */
 export function atomsOf(state: GraphState, id: string, st: Map<string, Status>, t: number | null): AtomRecord[] {
   const n = state.nodes.find(x => x.id === id)
   if (!n) return []
   const p: [string, string, string] = ['venture', n.agent, n.id]
-  const s = st.get(n.id)
-  const met = s === 'done' || s === 'awaiting_human'
+  const cs = criterionState(st.get(n.id))
   const byId = new Map(state.nodes.map(x => [x.id, x]))
   const atoms: AtomRecord[] = []
   n.accept.forEach((a, i) => atoms.push({
     id: `${id}:c${i}`, level4Type: 'criterion', parentIds: p, timestamp: null, value: null, category: n.agent,
-    status: met ? 'met' : 'open', meta: { label: a, detail: met ? 'Checked by the orchestrator before marking done' : 'Not yet checked' },
+    status: cs, meta: { label: a, detail: CRITERION_NOTE[cs] },
   }))
   n.outputs.forEach((o, i) => atoms.push({
     id: `${id}:o${i}`, level4Type: 'output', parentIds: p, timestamp: null, value: null, category: n.agent,
-    status: met ? 'met' : 'open', meta: { label: o.split('/').slice(-2).join('/'), detail: state.excerpts[o] ?? undefined, source: o },
+    status: cs, meta: { label: o.split('/').slice(-2).join('/'), detail: cs === 'open' ? undefined : state.excerpts[o] ?? undefined, source: o },
   }))
   n.deps.forEach((d, i) => {
     const dn = byId.get(d)
@@ -204,9 +204,88 @@ export function feed(state: GraphState, t: number | null): ActivityEvent[] {
 export const agentFeed = (state: GraphState, agent: string, t: number | null) => feed(state, t).filter(e => e.agent === agent)
 export const taskFeed = (state: GraphState, id: string, t: number | null) => feed(state, t).filter(e => e.node === id)
 
-/** Agents with a task whose status is really "running" right now. */
-export function workingNow(state: GraphState, st: Map<string, Status>) {
-  return state.nodes.filter(n => st.get(n.id) === 'running').map(n => ({ agent: n.agent, node: n }))
+// ---------- liveness: "running" in the graph is not proof that anyone is working ----------
+
+/** Minutes without any recorded step after which a running task counts as stalled (no session is on it). */
+export const LIVE_WINDOW_MIN = 15
+const WINDOW = LIVE_WINDOW_MIN * 60_000
+
+/** Rows written by the independent verifier, not by the agent that owns the task. */
+export const isVerifier = (e: ActivityEvent) => e.actor === 'verifier' || /^verifier\b/i.test(e.text)
+
+/** Latest recorded moment for a task (any activity row or ledger event) at or before `at`. */
+export function lastSignal(state: GraphState, id: string, at: number): number | null {
+  let best = -Infinity
+  for (const e of state.activity?.[id] ?? []) { const t = ms(e.t); if (t <= at && t > best) best = t }
+  for (const e of state.ledger) if (e.node === id) { const t = ms(e.t); if (t <= at && t > best) best = t }
+  return Number.isFinite(best) ? best : null
+}
+
+/** The agent's own latest step: its transcript and self-logged rows, not the verifier's or the ledger's. */
+export function lastOwnStep(state: GraphState, agent: string, at: number): number | null {
+  let best = -Infinity
+  for (const n of state.nodes) if (n.agent === agent)
+    for (const e of state.activity?.[n.id] ?? []) {
+      if (e.src === 'ledger' || isVerifier(e)) continue
+      const t = ms(e.t); if (t <= at && t > best) best = t
+    }
+  return Number.isFinite(best) ? best : null
+}
+
+/** Every running task, judged at time `at`: 'working' if something was recorded in the window, else 'stalled'. */
+export function runState(state: GraphState, st: Map<string, Status>, at: number): Map<string, 'working' | 'stalled'> {
+  const out = new Map<string, 'working' | 'stalled'>()
+  for (const n of state.nodes) {
+    if (st.get(n.id) !== 'running') continue
+    const last = lastSignal(state, n.id, at)
+    out.set(n.id, last !== null && at - last <= WINDOW ? 'working' : 'stalled')
+  }
+  return out
+}
+
+/** Tasks really being worked on at `at` (default now): status running and a step recorded within the window. */
+export function workingNow(state: GraphState, st: Map<string, Status>, at: number = Date.now()) {
+  const live = runState(state, st, at)
+  return state.nodes.filter(n => live.get(n.id) === 'working').map(n => ({ agent: n.agent, node: n, last: lastSignal(state, n.id, at)! }))
+}
+
+/** Tasks marked running that nobody has touched within the window. */
+export function stalledNow(state: GraphState, st: Map<string, Status>, at: number = Date.now()) {
+  const live = runState(state, st, at)
+  return state.nodes.filter(n => live.get(n.id) === 'stalled').map(n => ({ agent: n.agent, node: n, last: lastSignal(state, n.id, at) }))
+}
+
+/** Acceptance criteria are met only once a task is done. A gated task is prepared, not finished. */
+export function criterionState(s: Status | undefined): 'met' | 'prepared' | 'open' {
+  return s === 'done' ? 'met' : s === 'awaiting_human' ? 'prepared' : 'open'
+}
+export const CRITERION_NOTE = {
+  met: 'Checked by an independent verifier before the task was marked done',
+  prepared: 'Prepared and verified; the last step waits on the founder',
+  open: 'Not yet checked',
+} as const
+
+/** Ledger events that are new in this export AND recent enough to animate (no flashes for old history). */
+export function freshEvents(prev: GraphState | null, next: GraphState, now: number = Date.now(), maxAgeMs = 180_000): LedgerEvent[] {
+  return newEvents(prev, next).filter(e => now - ms(e.t) <= maxAgeMs)
+}
+
+/** Feed rows ready to display: a step immediately followed by its own failure becomes one "Failed" row. */
+export function collapseFeed(events: ActivityEvent[]): ActivityEvent[] {
+  const out: ActivityEvent[] = []
+  for (let i = 0; i < events.length; i++) {
+    const a = events[i], b = events[i + 1]
+    const fail = a?.kind === 'blocked' ? a : b?.kind === 'blocked' ? b : null
+    const step = fail === a ? b : a
+    const m = fail && step && step !== fail && a.node === b?.node && Math.abs(ms(a.t) - ms(b.t)) <= 1000
+      ? /^Failed \((.*?)\): (.*)$/s.exec(fail.text) : null
+    if (m && step && m[2].startsWith(step.text.slice(0, 60))) {
+      const host = step.kind === 'fetch' ? /https?:\/\/([^/\s]+)/.exec(step.text)?.[1] : null
+      out.push({ ...fail!, text: host ? `Couldn't open ${host} (${m[1]})` : `${step.text}: failed (${m[1]})` })
+      i++
+    } else out.push(a)
+  }
+  return out
 }
 
 export function ago(iso: string | number, now = Date.now()) {

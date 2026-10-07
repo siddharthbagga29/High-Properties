@@ -13,9 +13,11 @@ instruction): round 1 as usual, round 2 with four tunable conditions from the me
 intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture. M5 hyperfocus is off by default
 and advanced only. A facilitator drawer tunes each within the spec's ranges (intensity ceiling 0.8).
 Flow: consent, day-0 questions (T0), round 1, round 2, comparison, mandatory debrief, planning, T1 questions,
-JSON export with no personal identifiers. Safety: nothing loops or pulses, the largest cue cycles at most
-0.3 Hz, reduced motion honoured, Stop always visible, keyboard operable. It never claims to show what ADHD is
-like. Wording is a draft pending neurodivergent advisor review (charter section 3).
+JSON export of dose counts, settings and day-0 answers, no personal identifiers. Safety: nothing flashes, cue events
+(intrusion or notification) never overlap and start 2.5 s or more after the last one ended (the self-test measures
+this), the largest cue repeats at most about 0.3 Hz, reduced motion honoured, Stop always visible, keyboard
+operable. It never claims to show what ADHD is like. Wording is a draft pending neurodivergent advisor review
+(charter section 3).
 -->
 <style>
 :root{--bg:#0f1420;--s1:#182033;--s2:#212c47;--line:#6b7ba3;--line2:#33405e;--tx:#f1f4fa;--mu:#bcc5d8;--ac:#8fd0ff;--aci:#06121f;--ok:#8de0a8;--wa:#ffd166;--st:#ff8a7a;--sti:#2a0703;--fo:#ffd166;--miss:#33405e}
@@ -166,7 +168,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
 
 <section id="s-intro" class="screen" aria-labelledby="h-intro" hidden>
   <h1 id="h-intro" tabindex="-1">A short, honest illustration of four attention and timing patterns</h1>
-  <p class="lead">You will do one small workplace task twice, in about 15 minutes in all. The second time, four patterns that research reports for some people with ADHD at group level are added in an adjustable, made-up way. Then comes a debrief, a few questions and a planning step.</p>
+  <p class="lead">You will do one small workplace task twice, in about 15 to 18 minutes in all (an estimate; it has not been timed with real users). The second time, four patterns that research reports for some people with ADHD at group level are added in an adjustable, made-up way. Then comes a debrief, a few questions and a planning step.</p>
   <div class="cols">
     <div class="card"><h2>What this is</h2><ul>
       <li>An interactive illustration of documented attention and timing patterns that some people with ADHD report or show at group level.</li>
@@ -174,7 +176,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
     <div class="card"><h2>What this is not</h2><ul>
       <li>It is an analogue. It is not what ADHD is, and not what any person's day is like. Group findings do not describe individuals, and people with ADHD differ widely.</li>
       <li>It does not diagnose, screen, score or rank you or anyone else. It is not an attention test.</li>
-      <li>It has not been shown to build empathy or change behaviour. One review found simulations can raise discomfort without improving attitudes (Nario-Redmond et al., 2017), so this one is short and has a mandatory debrief.</li></ul></div>
+      <li>It has not been shown to build empathy or change behaviour. One study found simulations can raise discomfort without improving attitudes (Nario-Redmond et al., 2017), so this one is short and has a mandatory debrief.</li></ul></div>
   </div>
   <div class="card"><h2>Your data and your control</h2><ul>
     <li>Everything stays on this device. No account, camera, microphone or name. Nothing is sent anywhere. At the end you may download a file that holds no personal identifiers; sharing it is your choice.</li>
@@ -905,7 +907,7 @@ function buildDebrief(){
   const root=$('#s-debrief');
   S.debrief.t=sessT();
   const kids=[h('h1',{id:'h-debrief',tabindex:'-1'},'Debrief'),
-   h('p',{class:'lead'},S.stopped?'You stopped early. The debrief is still worth reading, and you can stop reading at any point.':'This part is required: it is how the session ends. It takes about three minutes.'),
+   h('p',{class:'lead'},S.stopped?'You stopped early. The debrief is still worth reading, and you can stop reading at any point.':'This part is required: it is how the session ends. It should take about three minutes (an estimate; it has not been timed with real users).'),
    h('p',{class:'small'},'Draft wording written by the product agent from the co-design charter. Not yet reviewed or approved by any neurodivergent advisor. Text only in this prototype; audio and a brief video need advisor-recorded content.')];
   DEBRIEF.forEach((d,i)=>kids.push(h('article',null,h('h2',null,(i+1)+'. '+d[0]),d[1].map(p=>h('p',null,p)))));
   kids.push(h('div',{id:'debEnd'}),h('p',null,h('button',{class:'btn primary',id:'debDone',type:'button',disabled:true,onclick:finishDebrief},S.stopped?'I have read the debrief':'I have read the debrief, continue')),h('p',{class:'small',id:'debHint'},'The button unlocks when you reach the end of the page.'));

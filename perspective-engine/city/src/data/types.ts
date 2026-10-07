@@ -30,6 +30,8 @@ export interface ActivityEvent {
   text: string
   /** transcript = extracted from the agent's tool calls; self = logged by the agent while working; ledger = a state change */
   src: 'transcript' | 'self' | 'ledger'
+  /** Who took the step. Absent means the owning agent; 'verifier' is the independent checker. */
+  actor?: 'agent' | 'verifier'
 }
 
 export interface GraphState {
@@ -51,8 +53,7 @@ export interface AtomRecord {
   timestamp: number | null
   value: number | null
   category: string
-  status: 'met' | 'open' | 'event' | 'waiting'
+  status: 'met' | 'prepared' | 'open' | 'event' | 'waiting'
   meta: { label: string; detail?: string; source?: string }
 }
 
-export type FocusKind = 'venture' | 'city' | 'agent' | 'task'

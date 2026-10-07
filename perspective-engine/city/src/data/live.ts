@@ -15,8 +15,12 @@ interface ClaudeLike { use(name: string): Promise<unknown> }
 const isState = (v: unknown): v is GraphState =>
   !!v && typeof v === 'object' && Array.isArray((v as GraphState).nodes) && typeof (v as GraphState).agents === 'object'
 
-const newer = (a: GraphState | null, b: GraphState) =>
-  !a || Date.parse(b.generated) >= Date.parse(a.generated) || b.ledger.length !== a.ledger.length
+/** Accept a snapshot only if it moves forward: a later export, or the same export time with more ledger events. */
+export const newer = (a: GraphState | null, b: GraphState) => {
+  if (!a) return true
+  const ta = Date.parse(a.generated), tb = Date.parse(b.generated)
+  return tb > ta || (tb === ta && b.ledger.length > a.ledger.length)
+}
 
 export function startLive(): () => void {
   let stopped = false
