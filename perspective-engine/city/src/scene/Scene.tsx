@@ -3,7 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { agentStats, fmtK, STATUS_LABEL } from '../data/model'
+import { agentStats, clock, fmtK, lastSignal, runState, STATUS_LABEL, type AgentStats } from '../data/model'
 import type { GraphState } from '../data/types'
 import { useStore } from '../store'
 import { Arcs } from './Arcs'
@@ -13,11 +13,11 @@ import { Ground, LegendRing, Plates, Shockwave, Spokes, type PlateStat } from '.
 import { labelLayer } from './portal'
 import { Records } from './Records'
 import { Rig } from './Rig'
-import { live } from './shared'
+import { agentState, live } from './shared'
 import { Signs, type SignStat } from './Signs'
-import { Towers } from './Towers'
+import { TowerTags, Towers } from './Towers'
 import { Packets, Workers, workerPos } from './Workers'
-import { BRAIN_C, buildBrain, towers as layTowers, type BrainOutput, type LayoutNode, type Tower } from './world'
+import { agentLabel, BRAIN_C, BRAIN_S, buildBrain, DEPT, towers as layTowers, type BrainOutput, type LayoutNode, type Tower } from './world'
 
 const phone = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 760px), (pointer: coarse)').matches
 const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency ?? 4 : 4
@@ -27,6 +27,14 @@ export const PARTICLES = phone ? 36_000 : cores <= 4 ? 80_000 : 140_000
 if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore }
 
 const layoutNodes = (d: GraphState): LayoutNode[] => d.nodes.map(n => ({ id: n.id, agent: n.agent, budget_k: n.budget_k, used_k: n.run?.used_k ?? 0, phase: n.phase }))
+
+/** Wall clock for liveness: a running task turns stalled with the passage of time alone, without any new data. */
+function useNow(every = 15_000) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), every); return () => clearInterval(id) }, [every])
+  return now
+}
+
 
 function useBrain(data: GraphState | null) {
   const key = data ? data.nodes.map(n => `${n.id}:${n.agent}:${n.run?.used_k ?? 0}`).join('|') : ''
@@ -47,7 +55,7 @@ function useBrain(data: GraphState | null) {
   return buf
 }
 
-function HoverLabel({ towers }: { towers: Tower[] }) {
+function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentStats[]; run: Map<string, 'working' | 'stalled'>; at: number }) {
   const hover = useStore(s => s.hover)
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
@@ -65,17 +73,23 @@ function HoverLabel({ towers }: { towers: Tower[] }) {
   if (hover.kind === 'task') {
     const n = data.nodes.find(x => x.id === hover.id)
     if (!n) return null
+    const r = run.get(n.id), last = r === 'stalled' ? lastSignal(data, n.id, at) : null
     title = `${n.id} · ${n.title}`
-    lines = [STATUS_LABEL[st.get(n.id)!], n.run ? `${fmtK(n.run.used_k)} spent / ${n.budget_k}k plan` : `${n.budget_k}k token plan`, data.agents[n.agent].name]
+    lines = [
+      r === 'working' ? 'Working now' : r === 'stalled' ? `Stalled${last ? ` since ${clock(last).slice(0, 5)}` : ''} — no session running` : STATUS_LABEL[st.get(n.id) ?? 'pending'],
+      n.run ? `${fmtK(n.run.used_k)} spent / ${n.budget_k}k plan` : `${n.budget_k}k token plan`,
+      agentLabel(n.agent, data.agents[n.agent].name),
+    ]
   } else if (hover.kind === 'brain') {
     const done = data.nodes.filter(n => st.get(n.id) === 'done').length
+    const working = [...run.values()].filter(x => x === 'working').length, stalled = run.size - working
     title = 'The brain · the plan and the orchestrator'
-    lines = [`${done}/${data.nodes.length} tasks built`, `${data.nodes.filter(n => st.get(n.id) === 'running').length} running`, 'click to open']
+    lines = [`${done}/${data.nodes.length} tasks built`, `${working || 'nobody'} working${stalled ? ` · ${stalled} stalled` : ''}`, 'click to open']
   } else {
-    const a = agentStats(data, st).find(x => x.key === hover.id)
+    const a = stats.find(x => x.key === hover.id)
     if (!a) return null
-    title = `${a.name} · ${a.district}`
-    lines = [`${a.done}/${a.tasks.length} built`, a.running ? `building ${a.running.id}` : a.waiting ? 'waiting on founder' : 'idle', 'click for timeline']
+    title = agentLabel(a.key, a.name)
+    lines = [`${a.done}/${a.tasks.length} built`, agentState(a, data, at, true), 'click for timeline']
   }
   return (
     <group ref={group}>
@@ -86,25 +100,69 @@ function HoverLabel({ towers }: { towers: Tower[] }) {
   )
 }
 
+/** Under the brain in the world view: it is the plan, run by the Mayor, and how much of it is built. */
+function BrainLabel({ stats, run, live: isLive }: { stats: AgentStats[]; run: Map<string, 'working' | 'stalled'>; live: boolean }) {
+  const focus = useStore(s => s.focus)
+  const data = useStore(s => s.data)
+  const st = useStore(s => s.st)
+  const group = useRef<THREE.Group>(null!)
+  const el = useRef<HTMLDivElement>(null)
+  const dir = useMemo(() => new THREE.Vector3(), [])
+  useFrame(({ camera }) => {
+    if (!group.current) return
+    // Always on the camera's side of the brain, on the plaza floor just in front of it.
+    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 1.05)
+    group.current.position.set(BRAIN_C[0] + dir.x, 0.8, BRAIN_C[2] + dir.z)
+    if (el.current) el.current.style.opacity = live.assemble > 0.9 ? '1' : '0'
+  })
+  if (!data || focus.kind !== 'world') return null
+  const done = data.nodes.filter(n => st.get(n.id) === 'done').length
+  const working = stats.filter(a => a.running).length, stalled = [...run.values()].filter(x => x === 'stalled').length
+  const waiting = data.nodes.filter(n => st.get(n.id) === 'awaiting_human').length
+  const mayor = stats.find(a => a.key === 'orchestrator')
+  const now = isLive ? ' now' : ''
+  return (
+    <group ref={group}>
+      <Html portal={labelLayer} zIndexRange={[18, 0]} style={{ transform: 'translate3d(-50%,0,0)', pointerEvents: 'none' }}>
+        <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: '4px 10px', whiteSpace: 'nowrap', textAlign: 'center', display: 'grid', gap: 2 }}>
+          <b style={{ font: '600 12px var(--mono)', letterSpacing: '0.08em', color: '#8fe6ff' }}>THE PLAN · {(mayor?.name ?? 'Mayor').toUpperCase()} · {done}/{data.nodes.length} BUILT</b>
+          <span style={{ font: '500 10.5px var(--mono)', color: working ? '#ffb547' : '#a7a4c6' }}>
+            {working ? `${working} agent${working > 1 ? 's' : ''} working${now}` : `nobody working${now}`}{stalled ? ` · ${stalled} stalled` : ''}{waiting ? ` · ${waiting} need${waiting > 1 ? '' : 's'} the founder` : ''}
+          </span>
+        </div>
+      </Html>
+    </group>
+  )
+}
+
 export default function Scene() {
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
+  const time = useStore(s => s.time)
   const enteredAt = useStore(s => s.enteredAt)
+  const now = useNow()
+  // Liveness is judged at the replay moment, or now: "running" alone is not proof that anyone is working.
+  const at = time ?? now
   const buf = useBrain(data)
   const [dpr, setDpr] = useState<number>(phone ? 1.25 : Math.min(2, window.devicePixelRatio || 1))
   const [hidden, setHidden] = useState(false)
-  const towers = useMemo(() => (data ? layTowers(layoutNodes(data)) : []), [data])
+  // Rebuild towers and arcs only when the graph's shape changes, not on every new step in the record.
+  const shape = data ? data.nodes.map(n => `${n.id}:${n.agent}:${n.budget_k}:${n.deps.join(',')}`).join('|') : ''
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const towers = useMemo(() => (data ? layTowers(layoutNodes(data)) : []), [shape])
   const links = useMemo<[number, number][]>(() => {
     if (!data) return []
     const idx = new Map(data.nodes.map((n, i) => [n.id, i]))
     return data.nodes.flatMap((n, j) => n.deps.filter(d => idx.has(d)).map(d => [idx.get(d)!, j] as [number, number]))
-  }, [data])
-  const stats = useMemo(() => (data ? agentStats(data, st) : []), [data, st])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shape])
+  const stats = useMemo(() => (data ? agentStats(data, st, at) : []), [data, st, at])
+  const run = useMemo(() => (data ? runState(data, st, at) : new Map<string, 'working' | 'stalled'>()), [data, st, at])
   const plates: PlateStat[] = stats.map(a => ({ agent: a.key, done: a.done, total: a.tasks.length, working: !!a.running, waiting: a.waiting > 0 }))
   const signs: SignStat[] = stats.map(a => ({
-    agent: a.key, name: a.name, district: a.key === 'orchestrator' ? 'The Brain' : a.district, role: a.role, done: a.done, total: a.tasks.length,
-    state: a.running ? 'working' : a.waiting ? 'waiting' : a.next ? 'ready' : 'idle',
-    line: a.running ? `Building ${a.running.id}: ${a.running.title}` : a.waiting ? `${a.waiting} task${a.waiting > 1 ? 's' : ''} waiting on the founder` : a.next ? `Next: ${a.next.id} ${a.next.title}` : 'Idle until upstream work lands',
+    agent: a.key, dept: DEPT[a.key] ?? a.district, name: a.name, done: a.done, total: a.tasks.length,
+    state: a.running ? 'working' : a.stalled ? 'stalled' : a.waiting ? 'waiting' : a.next ? 'ready' : 'idle',
+    cells: a.tasks.map(n => (st.get(n.id) === 'running' ? (run.get(n.id) ?? 'stalled') : st.get(n.id) ?? 'pending')),
   }))
   const working = stats.filter(a => a.running).map(a => a.key)
 
@@ -130,13 +188,15 @@ export default function Scene() {
           <Plates stats={plates} />
           <Spokes working={working} />
           <Towers towers={towers} />
+          <TowerTags towers={towers} run={run} at={at} />
           <Signs stats={signs} />
           <Arcs towers={towers} links={links} />
-          <Workers towers={towers} />
+          <Workers towers={towers} stats={stats} at={at} />
           <Packets towers={towers} />
           <Records towers={towers} />
-          <HoverLabel towers={towers} />
-          <Rig towers={towers} links={links} />
+          <BrainLabel stats={stats} run={run} live={time === null} />
+          <HoverLabel towers={towers} stats={stats} run={run} at={at} />
+          <Rig towers={towers} links={links} run={run} />
         </>
       )}
       {buf && <Brain buf={buf} />}

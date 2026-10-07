@@ -3,32 +3,45 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { sfx } from '../audio/sound'
-import { clock, ms, newEvents } from '../data/model'
+import { freshEvents, type AgentStats } from '../data/model'
 import { useStore } from '../store'
 import { labelLayer } from './portal'
-import { live, PALETTE } from './shared'
-import { ALL_AGENTS, BRAIN_C, CENTER_AGENT, districtCenter, R_PLAZA, ringAngle, ringIndex, type Tower } from './world'
+import { agentState, live, PALETTE, verifying } from './shared'
+import { agentLabel, ALL_AGENTS, CENTER_AGENT, BRAIN_C, districtCenter, R_PLAZA, ringAngle, ringIndex, type Tower } from './world'
 
 export const workerPos: Record<string, THREE.Vector3> = Object.fromEntries(ALL_AGENTS.map(a => [a, new THREE.Vector3(0, 4, 0)]))
 const SPARKS = 16
+const PARKED = new THREE.Color('#6d6880')
+const TAG_COLOR = { building: '#ffb547', verifying: '#8fe6ff', stalled: '#c9bca9', waiting: '#bda6ff', idle: '' }
 
-/** The nine agents as small luminous drones. Building: hovering over their tower with a work beam. Idle: circling home. */
-export function Workers({ towers }: { towers: Tower[] }) {
-  return <>{ALL_AGENTS.map((a, i) => <Worker key={a} agent={a} index={i} towers={towers} />)}</>
+/**
+ * The nine agents as small luminous drones. Only an agent whose own steps are recent moves: it orbits its tower
+ * with a work beam. While only the verifier is on its task it waits beside the tower. A stalled agent parks, grey,
+ * at the foot of its tower. Everyone else rests at home, still.
+ */
+export function Workers({ towers, stats, at }: { towers: Tower[]; stats: AgentStats[]; at: number }) {
+  return <>{ALL_AGENTS.map((a, i) => <Worker key={a} agent={a} index={i} towers={towers} stat={stats.find(s => s.key === a)} at={at} />)}</>
 }
 
-function Worker({ agent, index, towers }: { agent: string; index: number; towers: Tower[] }) {
+function Worker({ agent, index, towers, stat, at }: { agent: string; index: number; towers: Tower[]; stat?: AgentStats; at: number }) {
   const group = useRef<THREE.Group>(null!)
   const body = useRef<THREE.Mesh>(null!)
   const ring = useRef<THREE.Mesh>(null!)
+  const ringMat = useRef<THREE.MeshBasicMaterial>(null!)
   const tag = useRef<HTMLDivElement>(null!)
-  const name = useStore(s => s.data?.agents[agent]?.name ?? agent)
-  // Last real step this agent logged: workers only move when there is recent work behind it.
-  const lastStep = useStore(s => {
-    let best = 0
-    for (const evs of Object.values(s.data?.activity ?? {})) for (const e of evs) if (e.agent === agent && e.src !== 'ledger') best = Math.max(best, ms(e.t))
-    return best
-  })
+  const data = useStore(s => s.data)
+  const name = data?.agents[agent]?.name ?? agent
+  // Liveness from the record (agentStats at the replay moment or now), refreshed whenever the scene re-renders.
+  const state = useRef({ building: -1, verifying: -1, stalled: -1, waiting: false, label: '' })
+  const checked = !!stat && !!data && verifying(stat, data, at)
+  const live_ = stat?.running ? towers.findIndex(t => t.id === stat.running!.id) : -1
+  state.current = {
+    building: checked ? -1 : live_,
+    verifying: checked ? live_ : -1,
+    stalled: stat?.stalled ? towers.findIndex(t => t.id === stat.stalled!.id) : -1,
+    waiting: (stat?.waiting ?? 0) > 0,
+    label: stat && data ? agentState(stat, data, at) : 'not started',
+  }
   const target = useMemo(() => new THREE.Vector3(), [])
   const [hx, hz] = districtCenter(agent)
   const beam = useMemo(() => {
@@ -43,36 +56,46 @@ function Worker({ agent, index, towers }: { agent: string; index: number; towers
   }, [])
 
   useFrame((_, dt) => {
-    const { data, st, hover, focus } = useStore.getState()
+    const { data, hover, focus } = useStore.getState()
     if (!data) return
     const t = live.time * (live.motion || 0.2)
-    const mine = towers.map((tw, i) => ({ tw, n: data.nodes[i] })).filter(x => x.n.agent === agent)
-    const building = mine.find(x => st.get(x.n.id) === 'running')
-    const waiting = mine.some(x => st.get(x.n.id) === 'awaiting_human')
-    const recent = Date.now() - lastStep < 5 * 60_000
-    const ph = (recent || building ? t : 0) * 0.35 + index
+    const { building: bi, verifying: vi, stalled: si, waiting, label } = state.current
+    const building = bi >= 0 ? towers[bi] : null, checked = !building && vi >= 0 ? towers[vi] : null
+    const stalled = !building && !checked && si >= 0 ? towers[si] : null
+    const beside = checked ?? stalled
     if (building) {
-      const tw = building.tw
-      target.set(tw.x + Math.cos(t * 1.3 + index) * 1.0, tw.h + 2.0 + Math.sin(t * 2.1) * 0.3, tw.z + Math.sin(t * 1.3 + index) * 1.0)
+      target.set(building.x + Math.cos(t * 1.3 + index) * 1.0, building.h + 2.0 + Math.sin(t * 2.1) * 0.3, building.z + Math.sin(t * 1.3 + index) * 1.0)
+    } else if (beside) {
+      // Beside its tower on the side facing the brain: waiting on the verifier, or parked (low) when stalled.
+      const r = Math.hypot(beside.x, beside.z) || 1
+      target.set(beside.x - (beside.x / r) * 1.4, stalled ? 0.7 : 1.8, beside.z - (beside.z / r) * 1.4)
     } else if (agent === CENTER_AGENT) {
-      target.set(Math.cos(ph * 0.6) * (R_PLAZA - 2), BRAIN_C[1] - 4.5 + Math.sin(t) * 0.4, Math.sin(ph * 0.6) * (R_PLAZA - 2))
+      // Off the brain: the Mayor rests at the front-left of the plaza.
+      const a = Math.PI * 0.8
+      target.set(Math.cos(a) * (R_PLAZA - 2.5), 2.6, Math.sin(a) * (R_PLAZA - 2.5))
     } else {
+      // Home is the outer edge of the district, so the far district's tag never sits on the brain.
       const a = ringAngle(ringIndex(agent))
-      target.set(hx - Math.cos(a) * 1.5 + Math.cos(ph) * 3.2, 3.2 + Math.sin(t * 0.9 + index) * 0.35, hz - Math.sin(a) * 1.5 + Math.sin(ph) * 3.2)
+      target.set(hx + Math.cos(a) * 2.2, 3.2, hz + Math.sin(a) * 2.2)
     }
     group.current.position.lerp(target, 1 - Math.exp(-dt * 2.5))
     const big = hover?.id === agent || (focus.kind === 'agent' && focus.id === agent)
-    group.current.scale.setScalar(Math.min(1, live.assemble * 1.5) * (big ? 1.35 : 1))
+    group.current.scale.setScalar(Math.min(1, live.assemble * 1.5) * (big ? 1.35 : 1) * (stalled ? 0.8 : 1))
     workerPos[agent].copy(group.current.position)
     const m = body.current.material as THREE.MeshBasicMaterial
-    m.color.copy(building ? PALETTE.active : waiting ? PALETTE.violet : PALETTE.mote).multiplyScalar(building ? 2.4 : 1.2)
-    ring.current.rotation.set(t * 0.8 + index, t * 0.6, 0)
+    if (stalled) m.color.copy(PARKED)
+    else m.color.copy(building ? PALETTE.active : waiting ? PALETTE.violet : PALETTE.mote).multiplyScalar(building ? 2.4 : 1.2)
+    ringMat.current.color.copy(stalled ? PARKED : PALETTE.active)
+    ringMat.current.opacity = stalled ? 0.35 : 0.75
+    // Only a drone with a session behind it spins its ring.
+    if (building) ring.current.rotation.set(t * 0.8 + index, t * 0.6, 0)
+    else ring.current.rotation.set(1.2 + index * 0.4, 0.3, 0)
 
     const on = !!building && live.assemble > 0.8
     if (building) {
       const p = beam.geometry.attributes.position as THREE.BufferAttribute
-      const gp = group.current.position, tw = building.tw
-      p.setXYZ(0, gp.x, gp.y, gp.z); p.setXYZ(1, tw.x, tw.h * live.progress[data.nodes.indexOf(building.n)], tw.z); p.needsUpdate = true
+      const gp = group.current.position, tw = building
+      p.setXYZ(0, gp.x, gp.y, gp.z); p.setXYZ(1, tw.x, tw.h * live.progress[bi], tw.z); p.needsUpdate = true
       const sp = sparks.geometry.attributes.position as THREE.BufferAttribute
       for (let k = 0; k < SPARKS; k++) {
         const f = (t * 0.9 + k / SPARKS) % 1
@@ -83,11 +106,13 @@ function Worker({ agent, index, towers }: { agent: string; index: number; towers
     ;(beam.material as THREE.LineBasicMaterial).opacity = on ? 0.6 : 0
     ;(sparks.material as THREE.PointsMaterial).opacity = on ? 0.9 : 0
     if (tag.current) {
-      const label = building ? `working on ${building.n.id}` : waiting ? 'waiting on founder' : lastStep ? `idle since ${clock(lastStep).slice(0, 5)}` : 'not started'
-      tag.current.dataset.state = building ? 'building' : waiting ? 'waiting' : 'idle'
-      const span = tag.current.lastElementChild
-      if (span && span.textContent !== label) span.textContent = label
-      tag.current.style.opacity = live.assemble > 0.9 ? '1' : '0'
+      const kind = building ? 'building' : checked ? 'verifying' : stalled ? 'stalled' : waiting ? 'waiting' : 'idle'
+      tag.current.dataset.state = kind
+      const span = tag.current.lastElementChild as HTMLElement | null
+      if (span && span.textContent !== label) { span.textContent = label; span.style.color = TAG_COLOR[kind] }
+      // The brain label speaks for the Mayor in the world view, so its tag never sits on the brain.
+      const hide = agent === CENTER_AGENT && focus.kind === 'world'
+      tag.current.style.opacity = live.assemble > 0.9 && !hide ? (stalled ? '0.8' : '1') : '0'
     }
   })
 
@@ -105,14 +130,14 @@ function Worker({ agent, index, towers }: { agent: string; index: number; towers
         </mesh>
         <mesh ref={ring}>
           <torusGeometry args={[0.7, 0.014, 6, 48]} />
-          <meshBasicMaterial color={PALETTE.active} transparent opacity={0.75} toneMapped={false} />
+          <meshBasicMaterial ref={ringMat} color={PALETTE.active} transparent opacity={0.75} toneMapped={false} />
         </mesh>
         <mesh onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
           <sphereGeometry args={[1.2, 8, 8]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
         </mesh>
         <Html portal={labelLayer} center position={[0, 1.2, 0]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-          <div ref={tag} className="worker-tag" style={{ opacity: 0 }}><b>{name}</b><span>idle</span></div>
+          <div ref={tag} className="worker-tag" style={{ opacity: 0 }}><b>{agentLabel(agent, name)}</b><span>idle</span></div>
         </Html>
       </group>
       <primitive object={beam} />
@@ -124,12 +149,15 @@ function Worker({ agent, index, towers }: { agent: string; index: number; towers
 interface Packet { from: THREE.Vector3; to: THREE.Vector3; t0: number; dur: number; color: THREE.Color }
 const packets: Packet[] = []
 
-/** Real ledger events become packets: a start flies from the brain to the tower; a finish flies home to the brain. */
+/**
+ * Real ledger events become packets: a start flies from the brain to the tower; a finish flies home to the brain.
+ * Only events recorded in the last few minutes, while the page is live: old history never flies.
+ */
 export function Packets({ towers }: { towers: Tower[] }) {
   const COUNT = 48
   useEffect(() => useStore.subscribe((s, p) => {
-    if (!s.data || !p.data || s.data === p.data) return
-    newEvents(p.data, s.data).forEach((e, k) => {
+    if (!s.data || !p.data || s.data === p.data || s.time !== null) return
+    freshEvents(p.data, s.data).forEach((e, k) => {
       const i = s.data!.nodes.findIndex(n => n.id === e.node)
       const tw = towers[i]
       if (!tw) return

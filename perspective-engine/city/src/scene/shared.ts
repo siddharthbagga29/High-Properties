@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { clock, isVerifier, lastSignal, LIVE_WINDOW_MIN, ms, type AgentStats } from '../data/model'
+import type { ActivityEvent, GraphState } from '../data/types'
 import { MAX_TASKS } from './world'
 
 /**
@@ -42,6 +44,25 @@ export const PALETTE = {
 export const STALLED = 6
 /** Status code → tower colour (pending, ready, working, done, needs founder, blocked, stalled). */
 export const STATUS_COLOR = ['#6b5bb8', '#2bf0ff', '#ffb547', '#2bf0ff', '#a77bff', '#ff4d7a', '#8a7d6c']
+
+/** The agent's task is live only because the independent verifier is on it: the agent itself has gone quiet. */
+export function verifying(a: AgentStats, data: GraphState, at: number) {
+  if (!a.running || (a.lastStep !== null && at - a.lastStep <= LIVE_WINDOW_MIN * 60_000)) return false
+  let last: ActivityEvent | null = null
+  for (const e of data.activity?.[a.running.id] ?? []) if (ms(e.t) <= at && (!last || ms(e.t) >= ms(last.t))) last = e
+  return !!last && isVerifier(last)
+}
+
+/** One wording for what an agent is doing, for tags and labels: "working on V03", "stalled since 19:37 — no session". */
+export function agentState(a: AgentStats, data: GraphState, at: number, long = false) {
+  if (a.running) return verifying(a, data, at) ? `verifier checking ${a.running.id}` : `working on ${a.running.id}`
+  if (a.stalled) {
+    const t = lastSignal(data, a.stalled.id, at)
+    return `${long ? `${a.stalled.id} ` : ''}stalled${t ? ` since ${clock(t).slice(0, 5)}` : ''} — no session${long ? ' running' : ''}`
+  }
+  if (a.waiting) return 'needs the founder'
+  return a.lastStep ? `idle since ${clock(a.lastStep).slice(0, 5)}` : 'not started'
+}
 
 export const SNOISE = /* glsl */ `
 vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}

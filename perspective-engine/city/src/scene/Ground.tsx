@@ -89,7 +89,7 @@ function Plate({ agent, stat }: { agent: string; stat?: PlateStat }) {
   )
 }
 
-/** Spokes from the brain's plaza to each district. Work flows along them; brighter while that agent is working. */
+/** Spokes from the brain's plaza to each district. Static; dashes flow only while that agent really has a session working. */
 export function Spokes({ working }: { working: string[] }) {
   const material = useMemo(() => new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -136,17 +136,19 @@ export function Spokes({ working }: { working: string[] }) {
 /** Words on the ground, Bruno-style: a ring around the plaza that says how to read the city. */
 export function LegendRing() {
   const { geometry, material } = useMemo(() => {
-    const text = 'THE BRAIN = THE PLAN AND THE ORCHESTRATOR  ·  DISTRICTS = AI AGENTS  ·  TOWERS = TASKS  ·  LIGHTS = HAND-OFFS  ·  '
+    const text = 'THE BRAIN = THE PLAN AND THE ORCHESTRATOR  ·  DISTRICTS = AI AGENTS  ·  TOWERS = TASKS  ·  ARCS = WHO FEEDS WHOM  ·  PULSES = A LIVE HAND-OFF  ·  '
     const c = document.createElement('canvas')
     c.width = 4096; c.height = 96
     const ctx = c.getContext('2d')!
     const drawText = () => {
       ctx.clearRect(0, 0, c.width, c.height)
       ctx.fillStyle = 'rgba(143,230,255,0.85)'
-      ctx.font = '600 52px "IBM Plex Mono", ui-monospace, monospace'
       ctx.textBaseline = 'middle'
-      const w = ctx.measureText(text).width
-      for (let x = 0; x < c.width; x += w) ctx.fillText(text, x, 50)
+      // Size the text to fill the texture exactly once, so the wrap-around has no seam.
+      ctx.font = '600 52px "IBM Plex Mono", ui-monospace, monospace'
+      const size = Math.min(60, (52 * c.width) / ctx.measureText(text).width)
+      ctx.font = `600 ${size.toFixed(2)}px "IBM Plex Mono", ui-monospace, monospace`
+      ctx.fillText(text, 0, 50)
       tex.needsUpdate = true
     }
     const tex = new THREE.CanvasTexture(c)

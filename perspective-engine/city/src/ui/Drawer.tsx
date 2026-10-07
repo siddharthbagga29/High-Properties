@@ -318,7 +318,7 @@ function AgentView({ data, st, id, time }: { data: GraphState; st: St; id: strin
       <M variants={rise} className="stats">
         <div><b>{a.done}<small>/{a.tasks.length}</small></b><span>built</span></div>
         <div><b>{agentFeed(data, id, time).length}</b><span>steps logged</span></div>
-        <div><b>{a.used ? fmtK(a.used) : '—'}</b><span>tokens, finished tasks</span></div>
+        <div><b>{a.used ? fmtK(a.used) : '—'}</b><span>tokens · finished</span></div>
         <div><b>{a.toolCalls}</b><span>tool calls</span></div>
       </M>
       {a.unmeasured > 0 && <M variants={rise}><p className="note small unmeasured">Tokens are measured on finished tasks only. {plural(a.unmeasured, 'task', 'tasks')} {a.name} worked on {a.unmeasured === 1 ? 'is' : 'are'} not measured yet, so real use is higher.</p></M>}

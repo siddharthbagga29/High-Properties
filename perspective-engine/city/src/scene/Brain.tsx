@@ -7,7 +7,7 @@ import { live, PALETTE, SNOISE } from './shared'
 import { BRAIN_C, BRAIN_S, MAX_TASKS, type BrainOutput } from './world'
 
 const vertex = /* glsl */ `
-uniform float uTime, uAssemble, uSize, uPR, uMotion, uFocusTask, uFocusAgent, uFocusMix, uMouseR, uMouseOn, uHover;
+uniform float uTime, uAssemble, uSize, uPR, uMotion, uFocusTask, uFocusAgent, uFocusMix, uMouseR, uMouseOn, uHover, uFlow;
 uniform vec3 uMouse, uBrainC;
 uniform float uStatus[${MAX_TASKS}];
 uniform float uFresh[${MAX_TASKS}];
@@ -32,7 +32,8 @@ void main() {
     else if (st < 2.5) { float s = 0.5 + 0.5 * sin(uTime * 5.0 + rnd * 30.0); col = mix(cViolet, vec3(1.0), 0.35 + 0.5 * s); alpha = 0.9; size = 1.15; }
     else if (st < 3.5) { col = mix(cActive, vec3(1.0), 0.18); alpha = 1.0; size = 1.1; }
     else if (st < 4.5) { float p = 0.6 + 0.4 * sin(uTime * 2.2); col = mix(cViolet, cActive, 0.2 * p); alpha = 0.65 + 0.3 * p; }
-    else               { col = cRose; alpha = 0.7; }
+    else if (st < 5.5) { col = cRose; alpha = 0.7; }
+    else               { col = mix(cIdle, vec3(0.62, 0.55, 0.46), 0.7); alpha = 0.5; }
     float fr = uFresh[ti];
     col = mix(col, vec3(1.0), fr * 0.9); size += fr * 1.8;
     alpha *= mix(0.08, 1.0, uVisible[ti]);
@@ -43,7 +44,8 @@ void main() {
     float isF = uFocusAgent >= 0.0 ? step(abs(aInfo.y - uFocusAgent), 0.5) : 1.0;
     alpha *= mix(1.0, mix(0.3, 1.3, isF), uFocusMix);
   } else if (kind < 2.5) {
-    float flow = 0.5 + 0.5 * sin(uTime * 2.0 - rnd * 40.0);
+    // White matter: signals travel along the tracts only while some agent really has a session working.
+    float flow = mix(0.3, 0.5 + 0.5 * sin(uTime * 2.0 - rnd * 40.0), uFlow);
     col = mix(cViolet, cActive, flow); alpha = 0.18 + 0.3 * flow; size = 0.8;
   } else {
     col = cMote; alpha = 0.07 + 0.08 * rnd; size = 0.7 + rnd;
@@ -73,7 +75,11 @@ void main() {
   gl_FragColor = vec4(vColor, s * vAlpha);
 }`
 
-/** The brain at the centre of the world: the plan and the orchestrator, one patch of cortex per task. */
+/**
+ * The brain at the centre of the world: the plan and the orchestrator, one patch of cortex per task.
+ * Data-driven: each patch's colour (its task's status), the tracts' flow (someone working) and agent glows (fresh events).
+ * Not data: the slow breathing, the drift noise and the cursor field.
+ */
 export function Brain({ buf }: { buf: BrainOutput }) {
   const pr = useThree(s => s.viewport.dpr)
   const geometry = useMemo(() => {
@@ -89,7 +95,7 @@ export function Brain({ buf }: { buf: BrainOutput }) {
     vertexShader: vertex, fragmentShader: fragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     uniforms: {
       uTime: { value: 0 }, uAssemble: { value: 0 }, uSize: { value: 1.75 }, uPR: { value: 1 }, uMotion: { value: 1 },
-      uFocusTask: { value: -1 }, uFocusAgent: { value: -1 }, uFocusMix: { value: 0 }, uHover: { value: 0 },
+      uFocusTask: { value: -1 }, uFocusAgent: { value: -1 }, uFocusMix: { value: 0 }, uHover: { value: 0 }, uFlow: { value: 0 },
       uMouse: { value: live.mouse }, uMouseR: { value: 1.8 }, uMouseOn: { value: 0 }, uBrainC: { value: new THREE.Vector3(...BRAIN_C) },
       uStatus: { value: live.status }, uFresh: { value: live.fresh }, uVisible: { value: live.visible }, uGlow: { value: live.agentGlow },
       cIdle: { value: PALETTE.idle }, cActive: { value: PALETTE.active }, cViolet: { value: PALETTE.violet }, cRose: { value: PALETTE.rose }, cMote: { value: PALETTE.mote },
@@ -103,6 +109,7 @@ export function Brain({ buf }: { buf: BrainOutput }) {
     u.uMouseR.value = live.mouseR; u.uMouseOn.value = live.mouseOn
     const h = useStore.getState().hover?.kind === 'brain' ? 1 : 0
     u.uHover.value += (h - u.uHover.value) * (1 - Math.exp(-dt * 6))
+    u.uFlow.value += ((live.working > 0 ? 1 : 0) - u.uFlow.value) * (1 - Math.exp(-dt * 1.5))
   })
   const s = useStore.getState
   return (

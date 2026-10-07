@@ -1,9 +1,12 @@
+import { Html } from '@react-three/drei'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { sfx } from '../audio/sound'
+import { clock, lastSignal } from '../data/model'
 import { useStore } from '../store'
-import { live, PALETTE } from './shared'
+import { labelLayer } from './portal'
+import { live, PALETTE, STALLED, STATUS_COLOR } from './shared'
 import type { Tower } from './world'
 
 const box = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
@@ -33,7 +36,9 @@ void main(){
   float front = (1.0 - smoothstep(0.0, 0.03, abs(y - uFill))) * step(uStatus, 2.5) * step(1.5, uStatus);
   col += vec3(1.0, 0.85, 0.6) * front * (0.9 + 0.5 * sin(uTime * 3.0));
   col += cA * (uHover * 0.35 + uSel * 0.25) + vec3(1.0) * uFresh * 0.8;
-  if (uStatus > 4.5) col = mix(col, cRose, 0.6);
+  if (uStatus > 4.5 && uStatus < 5.5) col = mix(col, cRose, 0.6);
+  // Stalled: half-built like running, but unlit and with no construction front. Nobody is on it.
+  if (uStatus > 5.5) col *= 0.55;
   float ghost = uStatus < 0.5 ? 0.14 : (uStatus < 1.5 ? 0.24 : 0.5);
   float alpha = mix(ghost + fres * 0.3, 1.0, filled);
   gl_FragColor = vec4(col, alpha);
@@ -44,8 +49,8 @@ export function Towers({ towers }: { towers: Tower[] }) {
   return <>{towers.map((t, i) => <TowerMesh key={t.id} t={t} index={i} />)}</>
 }
 
-/** Fill per status. Running is drawn half-built: the real record says "in progress", not a percentage. */
-const FILL = [0, 0.06, 0.5, 1, 1, 0.12]
+/** Fill per status. Running (and stalled) is drawn half-built: the real record says "in progress", not a percentage. */
+const FILL = [0, 0.06, 0.5, 1, 1, 0.12, 0.5]
 
 function TowerMesh({ t, index }: { t: Tower; index: number }) {
   const group = useRef<THREE.Group>(null!)
@@ -58,6 +63,7 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
       cA: { value: PALETTE.active.clone() }, cB: { value: PALETTE.violet.clone() }, cGlass: { value: PALETTE.glass }, cRose: { value: PALETTE.rose } },
   }), [t.h])
   const lineMat = useMemo(() => new THREE.LineBasicMaterial({ color: PALETTE.active, transparent: true, opacity: 0.6 }), [])
+  useEffect(() => () => { material.dispose(); lineMat.dispose() }, [material, lineMat])
 
   useFrame((_, dt) => {
     const s = useStore.getState()
@@ -69,7 +75,7 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
     u.uStatus.value = st
     u.uTime.value = live.time
     u.uFresh.value = live.fresh[index]
-    color.set(st === 2 ? '#ffb547' : st === 4 ? '#a77bff' : st === 5 ? '#ff4d7a' : st === 0 ? '#6b5bb8' : '#2bf0ff')
+    color.set(STATUS_COLOR[Math.round(st)] ?? STATUS_COLOR[0])
     ;(u.cA.value as THREE.Color).copy(color)
     const hov = s.hover?.kind === 'task' && s.hover.id === t.id ? 1 : 0
     const sel = s.focus.kind === 'task' && s.focus.id === t.id ? 1 : 0
@@ -81,7 +87,7 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
     sp.v += (220 * (goal - sp.y) - 26 * sp.v) * Math.min(dt, 0.033)
     sp.y += sp.v * Math.min(dt, 0.033)
     group.current.scale.set(t.w, t.h * Math.max(sp.y, 0.05) * Math.min(1, live.assemble * 1.4), t.w)
-    lineMat.opacity = (st === 0 ? 0.35 : 0.65) * (live.visible[index] ? 1 : 0.15)
+    lineMat.opacity = (st === 0 ? 0.35 : st === STALLED ? 0.4 : 0.65) * (live.visible[index] ? 1 : 0.15)
     lineMat.color.copy(color)
     material.opacity = live.visible[index] ? 1 : 0.2
     group.current.visible = live.assemble > 0.05
@@ -104,5 +110,42 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
         <lineSegments geometry={edges} material={lineMat} raycast={() => null} />
       </group>
     </group>
+  )
+}
+
+const TAG: Record<string, [string, string]> = {
+  done: ['BUILT', '#2bf0ff'], working: ['WORKING', '#ffb547'], stalled: ['STALLED', '#c9bca9'], awaiting_human: ['NEEDS FOUNDER', '#bda6ff'],
+  ready: ['READY', '#8fe6ff'], pending: ['PLANNED', '#a7a4c6'], blocked: ['BLOCKED', '#ff4d7a'],
+}
+
+/** In an agent's view every tower in its district says which task it is and where it stands. */
+export function TowerTags({ towers, run, at }: { towers: Tower[]; run: Map<string, 'working' | 'stalled'>; at: number }) {
+  const focus = useStore(s => s.focus)
+  const data = useStore(s => s.data)
+  const st = useStore(s => s.st)
+  if (!data || focus.kind !== 'agent') return null
+  return (
+    <>
+      {towers.map((t, i) => {
+        const n = data.nodes[i]
+        if (!n || t.agent !== focus.id) return null
+        const s = st.get(n.id) ?? 'pending'
+        const key = s === 'running' ? run.get(n.id) ?? 'stalled' : s
+        const [word, color] = TAG[key] ?? TAG.pending
+        const since = key === 'stalled' ? lastSignal(data, n.id, at) : null
+        return (
+          <group key={t.id} position={[t.x, t.h * (s === 'blocked' ? 0.18 : 1) + 0.5, t.z]}>
+            <Html portal={labelLayer} zIndexRange={[20, 0]} style={{ transform: 'translate3d(-50%,-100%,0)' }}>
+              <button className="tower-tag" tabIndex={-1} onClick={() => { sfx.click(); useStore.getState().select({ kind: 'task', id: n.id }) }}
+                style={{ pointerEvents: 'auto', cursor: 'pointer', display: 'grid', gap: 1, maxWidth: 170, padding: '3px 7px', textAlign: 'left',
+                  background: 'rgba(10,5,36,0.82)', border: `1px solid ${color}66`, borderRadius: 3, color: '#efeee8', font: '500 11px/1.35 var(--mono)' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} · {n.title}</span>
+                <span style={{ color, fontWeight: 600, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{word}{since ? ` SINCE ${clock(since).slice(0, 5)}` : ''}</span>
+              </button>
+            </Html>
+          </group>
+        )
+      })}
+    </>
   )
 }
