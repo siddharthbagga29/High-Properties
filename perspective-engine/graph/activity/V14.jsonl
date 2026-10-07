@@ -12,3 +12,34 @@
 {"t": "2026-10-07T19:35:00Z", "node": "V14", "agent": "product", "kind": "check", "text": "(e) PASS: summaries 131 and 136 words; no claim to simulate ADHD; numbers sourced to advisory-board/README/spec or marked unverified/proposal; nothing sent, no one contacted (activity log read/write only)", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:35:00Z", "node": "V14", "agent": "product", "kind": "check", "text": "Non-blocking: advisor-review-kit.md is outside V14 WRITE list (CHANGELOG only); STP-05 says Ease off 'sets' M1-M4 to 0.2 but code only lowers those above 0.2", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:35:03Z", "node": "V14", "agent": "product", "kind": "handoff", "text": "done: Advisor review kit + empty CHANGELOG verified: 0 sessions, 0 changes, note-ID entry format; MVP unchanged; awaits paid ND sessions", "src": "ledger"}
+{"t": "2026-10-07T19:25:34Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read .claude/agents/pe-product.md", "src": "transcript"}
+{"t": "2026-10-07T19:25:34Z", "node": "V14", "agent": "product", "kind": "run", "text": "Start node V14 and fetch its brief", "src": "transcript"}
+{"t": "2026-10-07T19:25:41Z", "node": "V14", "agent": "product", "kind": "run", "text": "List relevant directories and input file sizes", "src": "transcript"}
+{"t": "2026-10-07T19:25:45Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/ethics/advisory-board.md", "src": "transcript"}
+{"t": "2026-10-07T19:25:45Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/docs/founder-decisions.md", "src": "transcript"}
+{"t": "2026-10-07T19:25:46Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/science/mechanism-spec.md", "src": "transcript"}
+{"t": "2026-10-07T19:25:49Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/README.md", "src": "transcript"}
+{"t": "2026-10-07T19:25:53Z", "node": "V14", "agent": "product", "kind": "run", "text": "Log reads and list screen/section markers in index.html", "src": "transcript"}
+{"t": "2026-10-07T19:25:56Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:25:56Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:25:58Z", "node": "V14", "agent": "product", "kind": "run", "text": "Locate debrief code in index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:00Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:04Z", "node": "V14", "agent": "product", "kind": "run", "text": "Locate key functions in index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:07Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:07Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:07Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:11Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:12Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:26:12Z", "node": "V14", "agent": "product", "kind": "run", "text": "Find wait-card text and prohibited-phrase list", "src": "transcript"}
+{"t": "2026-10-07T19:26:16Z", "node": "V14", "agent": "product", "kind": "run", "text": "Read prohibited phrase check and log progress", "src": "transcript"}
+{"t": "2026-10-07T19:28:30Z", "node": "V14", "agent": "product", "kind": "run", "text": "Find function line numbers, hash baseline, syntax-check script", "src": "transcript"}
+{"t": "2026-10-07T19:28:35Z", "node": "V14", "agent": "product", "kind": "run", "text": "Find mechanism code lines and compute default and ceiling values", "src": "transcript"}
+{"t": "2026-10-07T19:28:38Z", "node": "V14", "agent": "product", "kind": "run", "text": "Log check and inspect M1/M2 and M5 code for line anchors", "src": "transcript"}
+{"t": "2026-10-07T19:29:51Z", "node": "V14", "agent": "product", "kind": "run", "text": "Get exact line numbers for mechanism functions", "src": "transcript"}
+{"t": "2026-10-07T19:31:37Z", "node": "V14", "agent": "product", "kind": "write", "text": "Wrote perspective-engine/mvp/advisor-review-kit.md (7,731 words)", "src": "transcript"}
+{"t": "2026-10-07T19:31:58Z", "node": "V14", "agent": "product", "kind": "run", "text": "Count note IDs, duplicates, core items, and summary words", "src": "transcript"}
+{"t": "2026-10-07T19:32:03Z", "node": "V14", "agent": "product", "kind": "run", "text": "Apply accuracy corrections to the kit", "src": "transcript"}
+{"t": "2026-10-07T19:32:06Z", "node": "V14", "agent": "product", "kind": "run", "text": "Log kit write", "src": "transcript"}
+{"t": "2026-10-07T19:32:17Z", "node": "V14", "agent": "product", "kind": "write", "text": "Wrote perspective-engine/mvp/CHANGELOG.md (635 words)", "src": "transcript"}
+{"t": "2026-10-07T19:32:23Z", "node": "V14", "agent": "product", "kind": "run", "text": "Fix bullet, recount summaries, confirm index.html unchanged", "src": "transcript"}
+{"t": "2026-10-07T19:32:30Z", "node": "V14", "agent": "product", "kind": "run", "text": "Log CHANGELOG write and blocked gate", "src": "transcript"}

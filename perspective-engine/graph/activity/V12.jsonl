@@ -21,3 +21,55 @@
 {"t": "2026-10-07T19:35:30Z", "node": "V12", "agent": "legal", "kind": "check", "text": "Role card PASS: 'DRAFT. REVIEW WITH COUNSEL' header; summary 134 words (<=150); no 'simulate ADHD' or diagnosis/treatment claim; legal citations checked (GDPR Arts 4(7)/(8)/(14)/(15), 5(1)(c), 9, 25, 28, 33, 35; 45 CFR 160.103; 34 CFR 99.3) and uncertain items marked unverified; numbers trace to cod", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:35:30Z", "node": "V12", "agent": "legal", "kind": "check", "text": "Non-blocking: row 14 event list omits M5_lock_start(onset,mult)/M5_lock_end/M5_cue_shown/M5_cue_missed/M1_damped_by_M5/reset_defaults (all verified untimed in real export d); summary 'no ... identifiers' could read 'no personal identifiers' given exported random session_id", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:35:32Z", "node": "V12", "agent": "legal", "kind": "handoff", "text": "done: Verified: no biometrics (code + 4 real exports), GDPR/UK GDPR/HIPAA/FERPA stated; 0 requests, 0 storage, 59/59 selftest", "src": "ledger"}
+{"t": "2026-10-07T19:22:52Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read .claude/agents/pe-legal.md", "src": "transcript"}
+{"t": "2026-10-07T19:22:53Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Start graph node V12", "src": "transcript"}
+{"t": "2026-10-07T19:22:54Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Get V12 brief packet", "src": "transcript"}
+{"t": "2026-10-07T19:22:57Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/README.md", "src": "transcript"}
+{"t": "2026-10-07T19:22:57Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Check file sizes and directories", "src": "transcript"}
+{"t": "2026-10-07T19:22:57Z", "node": "V12", "agent": "legal", "kind": "blocked", "text": "Failed (Exit code 2 119994 perspective-engine/mvp/index.html ls: cannot access 'perspective-engin\u2026): Check file sizes and directories", "src": "transcript"}
+{"t": "2026-10-07T19:23:00Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log reads", "src": "transcript"}
+{"t": "2026-10-07T19:23:00Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:03Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Looked up grep localStorage|sessionStorage|indexedDB|document\\.cookie|fetch\\(|XMLHttpRequest|W\u2026", "src": "transcript"}
+{"t": "2026-10-07T19:23:03Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Looked up grep function buildExport|buildExport\\(", "src": "transcript"}
+{"t": "2026-10-07T19:23:05Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:05Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:09Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log and check for headless browser tooling", "src": "transcript"}
+{"t": "2026-10-07T19:23:10Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Looked up grep sid:|S\\.sid\\s*=|startISO|EV_STRIP|LOCAL_ONLY|function doseOnly|const DOSE|DOSE_\u2026", "src": "transcript"}
+{"t": "2026-10-07T19:23:13Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Looked up grep perspective-engine/session-export/v0", "src": "transcript"}
+{"t": "2026-10-07T19:23:14Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Look for headless browser or jsdom availability", "src": "transcript"}
+{"t": "2026-10-07T19:23:19Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Find how the page exposes its API", "src": "transcript"}
+{"t": "2026-10-07T19:23:22Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:22Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:32Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Explore the page flow with headless Chromium", "src": "transcript"}
+{"t": "2026-10-07T19:23:37Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:23:43Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Locate step DOM ids for wait, question and reply", "src": "transcript"}
+{"t": "2026-10-07T19:23:44Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:24:04Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Drive two real sessions and download real JSON exports", "src": "transcript"}
+{"t": "2026-10-07T19:24:45Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Rerun M5 and Stop session", "src": "transcript"}
+{"t": "2026-10-07T19:24:57Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Recheck storage APIs at runtime and log", "src": "transcript"}
+{"t": "2026-10-07T19:25:05Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Rerun full session with corrected storage check", "src": "transcript"}
+{"t": "2026-10-07T19:25:15Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log correction and list key paths in real full export", "src": "transcript"}
+{"t": "2026-10-07T19:25:21Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Inspect event types and field values in real exports", "src": "transcript"}
+{"t": "2026-10-07T19:25:58Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Search for outbound links, age gate, uid generator, media APIs", "src": "transcript"}
+{"t": "2026-10-07T19:26:58Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Check selftest coverage of camera/biometric/network/identifier claims", "src": "transcript"}
+{"t": "2026-10-07T19:27:03Z", "node": "V12", "agent": "legal", "kind": "read", "text": "Read perspective-engine/mvp/index.html", "src": "transcript"}
+{"t": "2026-10-07T19:27:09Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Run a third session with M5 completed and a skip", "src": "transcript"}
+{"t": "2026-10-07T19:27:19Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Audit three real exports for identifiers and timestamps", "src": "transcript"}
+{"t": "2026-10-07T19:27:27Z", "node": "V12", "agent": "legal", "kind": "run", "text": "See how self-test reports results", "src": "transcript"}
+{"t": "2026-10-07T19:27:32Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Run the page's built-in self-test headless", "src": "transcript"}
+{"t": "2026-10-07T19:27:58Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log self-test check and enumerate event types in code", "src": "transcript"}
+{"t": "2026-10-07T19:28:43Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Confirm dropped fields are absent from the three real exports", "src": "transcript"}
+{"t": "2026-10-07T19:28:47Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log audit and create output directory", "src": "transcript"}
+{"t": "2026-10-07T19:29:36Z", "node": "V12", "agent": "legal", "kind": "write", "text": "Wrote perspective-engine/legal/privacy.md (3,008 words)", "src": "transcript"}
+{"t": "2026-10-07T19:29:52Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Verify line numbers, event counts and summary word count", "src": "transcript"}
+{"t": "2026-10-07T19:29:55Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:29:56Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:29:57Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:29:58Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:29:59Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:30:00Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:30:00Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:30:01Z", "node": "V12", "agent": "legal", "kind": "edit", "text": "Edited perspective-engine/legal/privacy.md", "src": "transcript"}
+{"t": "2026-10-07T19:30:08Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Shorten checklist, log write, count words", "src": "transcript"}
+{"t": "2026-10-07T19:30:11Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Verify privacy.md state and that mvp files are untouched", "src": "transcript"}
+{"t": "2026-10-07T19:30:16Z", "node": "V12", "agent": "legal", "kind": "run", "text": "Log acceptance self-check", "src": "transcript"}

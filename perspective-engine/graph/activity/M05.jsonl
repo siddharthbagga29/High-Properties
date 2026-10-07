@@ -50,3 +50,100 @@
 {"t": "2026-10-07T19:07:42Z", "node": "M05", "agent": "finance", "kind": "check", "text": "Role card: summary 132 words; aims 628 words with trim note; memo TAM/72%/CPT only named as excluded; no 'simulate ADHD' claim (aims say it does not show what ADHD is like); activity log shows only searches and blocked fetches, nothing sent/submitted/registered. PASS", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:07:42Z", "node": "M05", "agent": "finance", "kind": "check", "text": "Acceptance: Specific Aims page present (section 2); budget justification present (5.1-5.5 with line-by-line text); dates (70 days, 42-day lead times) re-computed and correct; IRB-derived figures (CI 0.36-0.50 SD, 3-respondent rule, 0-10 distress) match irb-packet. PASS", "src": "self", "actor": "verifier"}
 {"t": "2026-10-07T19:07:48Z", "node": "M05", "agent": "finance", "kind": "handoff", "text": "done: SBIR draft v0.2 verified: aims page, line-by-line budget justification, arithmetic and Monte Carlo reproduce; caps and eligibility checked", "src": "ledger"}
+{"t": "2026-10-07T18:51:11Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read .claude/agents/pe-finance.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:11Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Start node M05 in the graph", "src": "transcript"}
+{"t": "2026-10-07T18:51:14Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Get the M05 brief packet", "src": "transcript"}
+{"t": "2026-10-07T18:51:17Z", "node": "M05", "agent": "finance", "kind": "run", "text": "List input files and sizes", "src": "transcript"}
+{"t": "2026-10-07T18:51:21Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/grants.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:21Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/docs/founder-decisions.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:21Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:27Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log reads and plan", "src": "transcript"}
+{"t": "2026-10-07T18:51:27Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/ethics/irb-packet.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:31Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/ethics/irb-packet.md", "src": "transcript"}
+{"t": "2026-10-07T18:51:34Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log read and check proxy status", "src": "transcript"}
+{"t": "2026-10-07T18:51:48Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://simpler.grants.gov/opportunity/474541a4-7569-4d5f-9ca2-b7ecd7aaf9d6", "src": "transcript"}
+{"t": "2026-10-07T18:51:48Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://simpler.grants.gov/opportunity/474541a4-7569-4d5f-9ca2-b7ecd7aaf9d6", "src": "transcript"}
+{"t": "2026-10-07T18:51:49Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://seed.nih.gov/small-business-funding/how-to-apply/before-you-apply/register-company", "src": "transcript"}
+{"t": "2026-10-07T18:51:49Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://seed.nih.gov/small-business-funding/how-to-apply/before-you-apply/register-company", "src": "transcript"}
+{"t": "2026-10-07T18:51:50Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://www.nsf.gov/funding/opportunities/small-business-innovation-research-small-business-technology/nsf26-510/solicitation", "src": "transcript"}
+{"t": "2026-10-07T18:51:50Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.nsf.gov/funding/opportunities/small-business-innovation-research-small-business-technology/nsf26-510/solicitation", "src": "transcript"}
+{"t": "2026-10-07T18:51:54Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://www.sbir.gov/about", "src": "transcript"}
+{"t": "2026-10-07T18:51:54Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.sbir.gov/about", "src": "transcript"}
+{"t": "2026-10-07T18:51:55Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://acl.gov/grants/small-business-innovation-research-program-sbir-phase-i-2", "src": "transcript"}
+{"t": "2026-10-07T18:51:55Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://acl.gov/grants/small-business-innovation-research-program-sbir-phase-i-2", "src": "transcript"}
+{"t": "2026-10-07T18:51:55Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://grants.nih.gov/funding/nih-guide-for-grants-and-contracts", "src": "transcript"}
+{"t": "2026-10-07T18:51:56Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://grants.nih.gov/funding/nih-guide-for-grants-and-contracts", "src": "transcript"}
+{"t": "2026-10-07T18:51:56Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://seedfund.nsf.gov/solicitation-budget/", "src": "transcript"}
+{"t": "2026-10-07T18:51:56Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://seedfund.nsf.gov/solicitation-budget/", "src": "transcript"}
+{"t": "2026-10-07T18:52:01Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log fetch blocks", "src": "transcript"}
+{"t": "2026-10-07T18:52:02Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NIDILRR Small Business Innovation Research SBIR Phase I 2027 HHS-2027-ACL-NIDILRR-BISA funding opportunity", "src": "transcript"}
+{"t": "2026-10-07T18:52:02Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NIH SBIR parent notice PA-27 R43 R44 clinical trial optional receipt dates January 5 2027", "src": "transcript"}
+{"t": "2026-10-07T18:52:38Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: \"PA-27-102\" OR \"PA-27-101\" NIH SBIR parent clinical trial not allowed OR required", "src": "transcript"}
+{"t": "2026-10-07T18:52:39Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: simpler.grants.gov HHS-2027-ACL-NIDILRR-BISA-0308 forecast Small Business Innovation Research Phase I", "src": "transcript"}
+{"t": "2026-10-07T18:52:39Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NSF SBIR Phase I NSF 26-510 Project Pitch full proposal deadline November 2026 March 2027 award amount $305,000", "src": "transcript"}
+{"t": "2026-10-07T18:53:17Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://aahd.us/wp-content/uploads/2026/08/NIDILRR-grant-funding-delays-DRRC-to-ACL-August-10-2026.pdf", "src": "transcript"}
+{"t": "2026-10-07T18:53:17Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://aahd.us/wp-content/uploads/2026/08/NIDILRR-grant-funding-delays-DRRC-to-ACL-August-10-2026.pdf", "src": "transcript"}
+{"t": "2026-10-07T18:53:18Z", "node": "M05", "agent": "finance", "kind": "fetch", "text": "Opened https://simpler.grants.gov/opportunity/e7d0e12f-fafe-4802-868e-1f2c7ebfb258", "src": "transcript"}
+{"t": "2026-10-07T18:53:18Z", "node": "M05", "agent": "finance", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://simpler.grants.gov/opportunity/e7d0e12f-fafe-4802-868e-1f2c7ebfb258", "src": "transcript"}
+{"t": "2026-10-07T18:53:26Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log search findings", "src": "transcript"}
+{"t": "2026-10-07T18:53:26Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NIDILRR SBIR Phase I NOFO page limit indirect cost fee \"small business\" application requirements project narrative ACL", "src": "transcript"}
+{"t": "2026-10-07T18:53:27Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: DRRC letter August 2026 NIDILRR competitions removed from grants.gov FY2026 ACL 36 competitions", "src": "transcript"}
+{"t": "2026-10-07T18:53:27Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: SBIR STTR reauthorization 2026 proposals per company cap FY2027 foreign risk due diligence SBA policy directive", "src": "transcript"}
+{"t": "2026-10-07T18:54:34Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NIH SBIR STTR inflation adjustment award guidelines Phase I $314,363 Phase II notice NOT-OD", "src": "transcript"}
+{"t": "2026-10-07T18:54:34Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: SAM.gov entity registration UEI how long does it take small business SBIR SBA company registry required before applying", "src": "transcript"}
+{"t": "2026-10-07T18:54:35Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: SBIR eligibility \"more than 50 percent\" owned and controlled by United States citizens permanent resident 13 CFR 121.702 employee principal\u2026", "src": "transcript"}
+{"t": "2026-10-07T18:55:31Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log search findings", "src": "transcript"}
+{"t": "2026-10-07T18:55:32Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: BLS persons with a disability labor force characteristics 2025 employment-population ratio 22.8 percent 65.2 percent", "src": "transcript"}
+{"t": "2026-10-07T18:55:32Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NSF 26-510 SBIR Phase I full proposal project description page limit Learning and Cognition Technologies topic workforce training", "src": "transcript"}
+{"t": "2026-10-07T18:56:09Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: SBA Company Registry SBC Control ID register SBIR.gov requires UEI SAM.gov free", "src": "transcript"}
+{"t": "2026-10-07T18:56:10Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: Grants.gov applicant registration SAM.gov active before registering AOR role Workspace timeline \"Get Registered\" eRA Commons Signing Offici\u2026", "src": "transcript"}
+{"t": "2026-10-07T18:56:10Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: Nario-Redmond Gospodinov Cobb 2017 Crip for a day disability simulations Rehabilitation Psychology abstract", "src": "transcript"}
+{"t": "2026-10-07T18:57:07Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: 2 CFR 200.1 modified total direct costs definition first $50,000 of each subaward 2024 revision effective October 1 2024 de minimis 15 perc\u2026", "src": "transcript"}
+{"t": "2026-10-07T18:57:08Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: NIH SBIR small business indirect costs without negotiated rate de minimis 15% fee 7% NIH Grants Policy Statement 18.5.4 SBIR budget consult\u2026", "src": "transcript"}
+{"t": "2026-10-07T18:58:35Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log findings and prepare scratchpad", "src": "transcript"}
+{"t": "2026-10-07T18:58:40Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Inspect existing budget script in scratchpad", "src": "transcript"}
+{"t": "2026-10-07T18:58:56Z", "node": "M05", "agent": "finance", "kind": "write", "text": "Wrote /tmp/claude-0/-home-user-High-Properties/fe7389e3-a3cc-53e4-bd68-0d1c75ff91d1/scratchpad/m05_cost_model.py (364 words)", "src": "transcript"}
+{"t": "2026-10-07T18:58:59Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Run the cost Monte Carlo model", "src": "transcript"}
+{"t": "2026-10-07T18:59:16Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Compute mode-value budgets and date checks", "src": "transcript"}
+{"t": "2026-10-07T18:59:27Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log model runs and checks", "src": "transcript"}
+{"t": "2026-10-07T18:59:35Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T18:59:39Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T18:59:53Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:01Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:09Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:11Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:21Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:25Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:30Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:36Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:38Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:41Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log edit progress", "src": "transcript"}
+{"t": "2026-10-07T19:00:42Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:49Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:52Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:00:57Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Count words in Aims and Summary", "src": "transcript"}
+{"t": "2026-10-07T19:01:02Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:02Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:09Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:10Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:13Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:17Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:30Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:31Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:38Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:40Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:01:48Z", "node": "M05", "agent": "finance", "kind": "search", "text": "Searched: SAM.gov entity registration requires Login.gov account notarized letter entity administrator 2026 new entity registration steps", "src": "transcript"}
+{"t": "2026-10-07T19:02:16Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Log search and edit progress", "src": "transcript"}
+{"t": "2026-10-07T19:02:17Z", "node": "M05", "agent": "finance", "kind": "read", "text": "Read perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:31Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:33Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:34Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:39Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:41Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:46Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:51Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:53Z", "node": "M05", "agent": "finance", "kind": "edit", "text": "Edited perspective-engine/finance/sbir-draft.md", "src": "transcript"}
+{"t": "2026-10-07T19:02:54Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Show current appendix section", "src": "transcript"}
+{"t": "2026-10-07T19:03:00Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Replace appendix with the run script and output", "src": "transcript"}
+{"t": "2026-10-07T19:03:08Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Verify appendix reproduces and run consistency checks", "src": "transcript"}
+{"t": "2026-10-07T19:03:20Z", "node": "M05", "agent": "finance", "kind": "run", "text": "Patch summary, run final checks and log", "src": "transcript"}
