@@ -1,0 +1,123 @@
+# Entity formation and IP assignment checklist (node M04)
+
+**DRAFT. REVIEW WITH COUNSEL. A checklist and templates for counsel, not legal advice.** Prepared by Ginsburg (legal agent), 2026-10-07. Nothing here has been filed, signed, paid for or sent. Every blank in the templates is for the founder and counsel.
+
+## Summary
+Entity choice waits on founder decision D01 #1 (country, majority owners). Under 13 CFR 121.702, SBIR/STTR needs a for-profit with a US place of business, more than 50% owned and controlled by US citizens or permanent residents (not "at least 51%"; agency-specific VC exceptions exist). An India or UK company, or a US subsidiary of one, fails that on its face. A Delaware C-corp is the usual investor vehicle (state fee $109, about 10-15 business days); a home-state LLC is simpler but harder to fund. SBIR/STTR was reauthorized on 2026-04-13 through 2031-09-30. Below: option table, effects on grants, funding and the privacy map, a formation checklist with founder-only steps flagged, and two IP templates (founder assignment; no-equity contributor clause). Official pages could not be opened; figures carry [S] or [U] tags. Name risk found: see section 1.
+
+## 0. How to read the tags
+- **[S]** seen in a search-engine summary of an official-domain page. The page itself was not opened (direct fetch was blocked by the network proxy). Re-check on the page before budgeting.
+- **[U]** unverified: from memory, a third-party site, or not found.
+- **Gate marks (section 4):** **ID** founder identity or personal data needed; **SIG** founder signature or authorization; **PAY** payment; **DEC** founder decision; **OPEN** no gate, read-only or drafting work.
+
+## 1. Facts that drive the choice (from `docs/founder-decisions.md`)
+- Open: D01 #1 country of residence and of the majority owners; D01 #6 name ("Perspective Engine" is a working name). Founder citizenship or residence: **unverified, not assumed.**
+- `founder-decisions.md` states the SBIR test as "at least 51%". The rule text reads "more than 50%" [S: law.cornell.edu / ecfr.gov summaries]. Use more than 50% as the legal test and 51% as a safe margin. Exactly 50% fails.
+- Name: a third-party mirror of a USPTO record lists PERSPECTIVE ENGINE, serial 88900125, for search-engine services, filed May 2020, status "suspended" in 2022 [U: https://trademarks.justia.com/889/00/perspective-88900125.html]. Different goods, but not a clearance. No USPTO/WIPO search has been run in this draft (step 2).
+- Advisor equity: the co-design charter's no-equity rule (as stated in the task brief; the charter text was not in this node's inputs, so wording is **unverified**, conform clause B to it) also protects the cap table, which matters for the more-than-50% test.
+
+## 2. Options compared
+State or government fees only. Excludes registered agent, counsel, publication, and tax. All amounts as of 2026-10-07.
+
+| | A. Delaware C-corp | B. Home-state LLC (state undecided; 3 examples) | C. Non-US: India Pvt Ltd; UK Ltd |
+|---|---|---|---|
+| Formation fee | $109 for domestic incorporation [S: corpfiles.delaware.gov Aug-2026 schedule; footnote meaning not seen] | CA $70 Articles + $20 first Statement of Information within 90 days [S]. TX $300 [S]. NY $200 + newspaper notice (2 papers, 6 weeks, within 120 days; paper costs [U]) + $50 certificate of publication [S] | UK £100 online since 2026-02-01 [S]. India: MCA fee is zero up to INR 15 lakh authorised capital, plus state stamp duty (varies); standalone name reservation INR 1,000, PAN/TAN under INR 100 each (2022 FAQ, possibly stale) [S] |
+| Time | Average 10-15 business days; 3-4 weeks in March, June, December. Expedite: next-day $50-100, same-day $100-200, 2-hour $500, 1-hour $1,000 [S]. The same FAQ also says mailed filings are often same-day: ask the Division | CA: formation processing time not found [U]. TX: expedited $50 (2-3 business days), $500 next day, $750 same day; online filing was paused in late Sept 2026 for a portal change, check status [S]. NY: online receipt within minutes [S] | UK: usually within 24 hours [S]. India: not found [U] |
+| Recurring | Franchise tax minimum $175 (authorized-shares method, up to 5,000 shares) + $50 annual report, due March 1 [S]. Registered agent required; price [U]. HB 400 (signed 2026-05-21) raised other Division fees from 2026-08-01; domestic franchise rates appear unchanged [S] | CA: annual minimum franchise tax **$800** [U, from memory; check ftb.ca.gov]. TX: franchise tax report [U]. NY: biennial statement [U]. For reference, a Delaware LLC is $110 to file [U, third party] and $400 annual tax due June 1 (HB 400; effective-date wording unclear) [S] | UK: confirmation statement and accounts [U]. India: annual filings, at least 2 directors with one India-resident, foreign director needs DIN, digital signature and attested passport copy [S] |
+| Extra costs if the founder lives in another state | **Foreign qualification** in the home state (fee and state tax vary) [U] | None if home state = formation state | UK/India company working with US buyers: a US entity is likely needed later [U] |
+| Non-state duties | EIN (IRS, free) [S]. Federal BOI report: domestic companies exempt, final rule effective 2026-08-14 [S] | Same | UK: identity verification, registered office, SIC code, PSC register [S]. India: FDI rules apply to foreign shareholders, extra limits for land-border countries [S] |
+
+## 3. What each choice means
+SBIR/STTR authority lapsed 2025-10-01 and was restored 2026-04-13 through 2031-09-30; when each agency reopens solicitations is **unverified** (SBA, NIH notices below).
+
+| | SBIR/STTR (13 CFR 121.702) | Raising money | Privacy map (`legal/privacy.md`) |
+|---|---|---|---|
+| **A. Delaware C-corp** | Eligible only if for-profit, US place of business, and more than 50% directly owned **and controlled** by US citizens/permanent residents (or qualifying US small businesses owned that way). Tested at the Phase I/II award date [S]. If the founder is not a citizen or permanent resident, a US co-founder must hold the majority **and** control (board, votes, vesting): counsel to review. NIH asks for governing documents and ID proof [S: NIH STTR certification]. VC-majority is allowed only where an agency has adopted it, and one investor is capped at 50% [S]. Which agencies: **unverified**. STTR also needs a formal research-institution partner [U] | Usual vehicle for priced rounds, SAFEs and option pools with US investors [U, market practice]. C-corp is the form QSBS (IRC 1202) can apply to; details [U]. Founder stock with vesting: 83(b) election within 30 days [S]. Seed investors above 50% would end SBIR eligibility at most agencies | Controller = the corporation. privacy.md section 9, item 1 (name the controller, publish a contact) needs this entity before any file or server. EU/UK participants: Art. 27 representative question (privacy.md section 6, UK note). US state laws follow users, not the entity [U] |
+| **B. Home-state LLC** | Same ownership test; LLC is a for-profit form. NIH asks for operating agreement [S]. Control sits in the operating agreement: manager vs member control must match the ownership story | Weaker for VC (partnership tax, K-1s) [U]; fine for grants, bootstrapping, angels. Conversion to a C-corp later has cost and tax questions for counsel. Team incentives use profits interests rather than stock, with different tax rules [U] | Same as A. Controller = the LLC. The v0 app alone needs none (privacy.md summary) |
+| **C. India Pvt Ltd or UK Ltd** | **No US SBIR/STTR.** No US place of business, and a foreign company is neither a US citizen nor a qualifying US small business owner. A later US subsidiary owned by it fails the ownership test on its face [counsel to confirm]. UK KTP/Innovate UK route named in D01: **not researched, unverified** | US investors often ask for a US parent [U]. India: FDI and FEMA reporting [S]; an India-resident founder holding shares in a US company raises FEMA outbound rules [U] | UK: UK GDPR home, ICO data-protection fee once personal data is processed [U]; EU Art. 27 representative [U]. India: DPDP Act 2023 [U]. Controller and hosting region must be decided together (privacy.md section 9) |
+
+**Working recommendation for counsel, not advice:** if the SBIR path matters, form a US entity (A, or B if no outside investors are planned) only once the cap table can show a qualifying majority holder with control. If it cannot, A or B still works for non-grant revenue, but D01 option B/C (foreign-first) closes SBIR for as long as it is foreign-owned.
+
+## 4. Formation checklist (US path A/B; non-US differences at the end)
+Order matters: decisions, counsel, name, filing, then equity and IP, then registrations.
+
+| # | Step | Gate | Notes |
+|---|---|---|---|
+| 1 | Settle D01 #1: country, each owner's citizenship/permanent-resident status, target percentages and who controls | **DEC, ID** | Proof documents are needed later for SBIR (passport or naturalization papers) [S] |
+| 2 | Name clearance: USPTO trademark search, WIPO Global Brand Database, state name database, domain and handles | OPEN (read-only; **not run in this draft**) | See the name finding in section 1. Optional Delaware name reservation $75 for 120 days [S] = **PAY** |
+| 3 | Pick and engage counsel; engagement letter and retainer | **SIG, PAY, ID** | The agent does not contact anyone |
+| 4 | Counsel decides entity type, state, share structure, vesting | **DEC** | Use section 3 as input |
+| 5 | Choose a registered agent (Delaware requires a Delaware street address agent) [S] | **ID, SIG, PAY** | Price [U] |
+| 6 | Counsel drafts Certificate of Incorporation / Certificate of Formation | OPEN | Drafting only |
+| 7 | File online with the state and pay the fee (+ optional expedite) | **ID, SIG (incorporator), PAY** | Do not start before step 1 is final: amendments cost $214 for a corporation [S] |
+| 8 | Bylaws or operating agreement; initial board consent; appoint officers | **SIG** | |
+| 9 | Issue founder shares / units under a purchase agreement, with vesting | **SIG, PAY (purchase price)** | Keep cap table to the more-than-50% rule |
+| 10 | 83(b) election within **30 days** of the stock transfer if shares vest | **SIG, ID (SSN/ITIN)** | IRS Form 15620 or statement; giving it to the company is not filing [S]. Deadline is firm |
+| 11 | Founder-to-company IP assignment (template A, section 5) | **SIG** | Execute at or right after step 9 |
+| 12 | EIN from the IRS, free; do not pay third-party sites | **ID** | Online form needs the responsible party's SSN/ITIN, runs 15 minutes, no save [S]. Non-US founders: phone/fax/mail [S] |
+| 13 | Foreign qualification in the home state (if A and the founder works elsewhere) | **ID, SIG, PAY** | |
+| 14 | Business bank account | **ID, SIG, PAY** | Needs formation papers, EIN, ID |
+| 15 | Founder and co-founder agreements (roles, vesting, control, departures) | **SIG** | Control language must support SBIR if pursued |
+| 16 | Federal BOI report | none expected | Domestic companies exempt (final rule effective 2026-08-14) [S]; counsel to confirm. A foreign-formed company registered in the US is covered |
+| 17 | Foreign-owner tax filings (for example Form 5472 if 25%+ foreign-owned) | **ID** | [U], counsel/accountant |
+| 18 | Advisor and contributor agreements with clause B; pay advisors from the company | **SIG, PAY** | Paid advisors are a charter requirement (D01 #2) |
+| 19 | Privacy go-live gates: name controller, publish contact, DPIA screening (privacy.md section 9) | **DEC, SIG** | Needed before receiving any file or adding a server |
+| 20 | Grant registrations: SAM.gov (UEI), SBIR.gov, eRA Commons/Grants.gov | **ID, SIG** | D01 #5: each needs the founder's authorization. SAM.gov fee: believed none [U] |
+| 21 | Insurance (general, cyber, professional) | **PAY** | Optional, counsel/broker advice |
+| 22 | Compliance calendar: Delaware March 1 report/tax; LLC tax June 1; federal return; state filings | **ID, PAY** | Late Delaware filing carries $200 penalty plus 1.5% monthly interest [S] |
+
+**Non-US differences.** UK: Companies House identity verification and personal code, registered office, SIC code, PSC confirmation; HMRC Corporation Tax registers with incorporation [S] (**ID, SIG, PAY**). India: SPICe+ with DIN, digital signature certificate, MoA/AoA, stamp duty, an India-resident director, and a bank account application in the same form; foreign subscribers need business visa or apostilled documents [S] (**ID, SIG, PAY**). Either path ends SBIR eligibility while foreign-owned.
+
+## 5. IP templates (TEMPLATES FOR COUNSEL; NOT FOR SIGNATURE; REVIEW WITH COUNSEL)
+Brackets are blanks. No name, date or signature is filled in. Counsel to fit to the chosen jurisdiction.
+
+### Template A. Founder-to-company assignment of prior Perspective Engine work
+**Parties.** [FOUNDER LEGAL NAME] ("Founder") and [COMPANY LEGAL NAME], a [entity type, state/country] ("Company"). **Effective Date:** [date, on or after formation].
+
+**Recitals.** (A) Before the Effective Date, Founder created materials and ideas for an education and general-wellness tool working-named "Perspective Engine" (the "Project"). (B) Founder wishes to assign them to Company in return for the Consideration.
+
+1. **Assignment.** Founder irrevocably assigns to Company all worldwide right, title and interest in the Assigned IP, including copyright, patent and design rights, trade secrets, database rights, rights in names, marks and goodwill, domain names, and the right to sue for past infringement.
+2. **Assigned IP.** All works, code, inventions, designs, text, data schemas, instruments, protocols and other materials conceived or made by Founder, alone or with others, before the Effective Date and relating to the Project, including those listed in Schedule 1 (source repository `[repo path], commit [hash]`; browser MVP build `0.1.0-F04`; legal, science, ethics, finance and design drafts; names `[Perspective Engine and variants]`; domain names `[list]`).
+3. **Excluded IP.** Schedule 2: Founder's general tools and know-how not specific to the Project; third-party and open-source components (each listed with its licence, which continues to apply); anything owned by an employer, institution or funder `[list or "none"]`.
+4. **AI-assisted material.** Founder assigns whatever rights exist in portions drafted with AI tools and gives no promise that those portions are protectable. Founder will keep a record of human selection, editing and authorship. `[Counsel: authorship rules for AI-assisted works by jurisdiction, unverified here.]`
+5. **Moral rights.** To the extent permitted, Founder waives or agrees not to assert moral rights against Company and its successors.
+6. **Founder statements.** Founder states that, to the best of Founder's knowledge: (a) Founder is the author or has the right to assign each item; (b) no earlier assignment, licence or lien exists; (c) no employer, university, funder or client has a claim (Schedule 3 lists every employment, funding or consulting agreement with an IP or invention clause that overlapped with the work); (d) no third party's confidential information is included; (e) Founder has listed in Schedule 4 every other person who contributed, and will obtain a confirmatory assignment from each (use clause B).
+7. **Consideration.** `[number and class of shares / cash amount / other]`. `[Counsel: tax treatment and valuation.]`
+8. **Further assurances.** Founder will sign further documents reasonably needed to record or perfect the assignment, and appoints Company as attorney-in-fact solely for that purpose if Founder is unavailable `[counsel to confirm enforceability]`.
+9. **Formalities.** `[Counsel: written and signed assignment is required in many jurisdictions (for example 17 U.S.C. 204(a); UK CDPA 1988 s.90(3); both from memory, unverified). Under India's Copyright Act s.19 an assignment should state rights, duration and territory, or defaults may apply (about five years, India only; from memory, unverified).]` State here: rights assigned: all; duration: perpetual; territory: worldwide.
+10. **General.** Governing law `[ ]`; entire agreement; counterparts and electronic signature `[counsel to confirm acceptance]`.
+
+**Signatures.** Founder: ____________ `[FOUNDER SIGNATURE REQUIRED]` Date: ______. Company, by: ____________ `[AUTHORIZED OFFICER]`, title: ______ Date: ______. Witness or notary `[if counsel advises]`.
+**Schedules.** 1 Assigned IP; 2 Excluded IP; 3 Overlapping agreements; 4 Other contributors.
+
+### Template B. Contributor / advisor IP and no-equity clause
+For insertion in each advisor or contributor agreement. `[Counsel: align wording with the co-design charter's no-equity and paid-advisor rules; the charter text was not available to this node and is unverified here.]`
+
+**X.1 No equity.** Advisor's only compensation is the fee in Schedule `[ ]`. Nothing in this agreement or in any statement by the Company gives Advisor, or promises Advisor, now or later, any shares, units, options, warrants, SAFEs, convertible notes, phantom equity, profit or revenue share, royalty, or any right to acquire or share in any of them. Any change needs a written amendment that names this clause and is signed by `[two authorized signatories / board approval]`.
+**X.2 Payment.** The fee is paid on `[invoice/schedule]` and is not conditional on Advisor endorsing, approving or agreeing with any Company content. Advisor may stop at any time; fees for work done remain due.
+**X.3 Assignment of contributions.** Advisor assigns to Company, on creation, all rights in comments, drafts, wording, critiques, designs and other work product Advisor makes for Company under this agreement ("Contributions"). The fee is the consideration. If an assignment is not effective in a jurisdiction, Advisor grants Company an exclusive, perpetual, worldwide, irrevocable, transferable licence to use the Contributions.
+**X.4 Not assigned.** Advisor's lived experience, personal story and own pre-existing materials (listed in Schedule `[ ]`) stay Advisor's. Advisor may speak about their own experience, but not disclose Company confidential information `[counsel to confirm scope]`.
+**X.5 Credit and endorsement.** Company names Advisor publicly only with Advisor's written consent, and never states or implies that Advisor endorses the product. Credit is not consideration and is not equity.
+**X.6 Moral rights.** Advisor waives or agrees not to assert moral rights in the Contributions to the extent permitted.
+**X.7 Third-party and employer IP.** Advisor will not contribute confidential, employer, client or third-party material, and states that no employer, university or other body has a claim to the Contributions. If an employer policy might apply, Advisor discloses it before starting, and Company may require the employer's written waiver.
+**X.8 Health information.** Company does not ask Advisor to disclose any diagnosis or health information. Anything Advisor chooses to share is handled under the privacy notice `[to be written; privacy.md section 9]`.
+**X.9 Status.** Advisor is independent, has no authority to bind Company, and is not an employee `[counsel: worker classification in Advisor's jurisdiction]`.
+**X.10 General.** Survival of X.1, X.3-X.7; governing law `[ ]`.
+
+**Signatures.** Advisor: ____________ `[ADVISOR SIGNATURE]` Date: ______. Company, by: ____________ `[AUTHORIZED SIGNATORY]` Date: ______.
+
+## 6. Questions for counsel
+1. With founder citizenship unknown, which ownership and control structure supports a more-than-50% test without harming the founder's real control? 2. Which agencies currently accept VC-majority firms, and are any solicitations open after the April 2026 reauthorization? 3. Delaware plus foreign qualification, or a home-state entity, for a solo or two-person team? 4. Is a foreign-first company followed by a US flip realistic without losing SBIR eligibility? 5. Who owns work already in the repository, including AI-assisted drafts? 6. Does PERSPECTIVE ENGINE need a new name? 7. Is clause X.1 enough, or must the charter's no-equity rule appear in the bylaws or option plan?
+
+## 7. Sources (retrieved 2026-10-07 by search summary; direct page fetch blocked)
+- SBIR/STTR rule: https://www.law.cornell.edu/cfr/text/13/121.702 ; https://www.ecfr.gov/current/title-13/chapter-I/part-121/subpart-A/subject-group-ECFRb7921b3fcf04228/section-121.702 ; https://grants.nih.gov/sites/default/files/STTR-Funding-Agreement-Certification.pdf
+- Reauthorization: https://www.sba.gov/article/2026/04/13/administrator-loeffler-applauds-sbir-sttr-reauthorization ; https://grants.nih.gov/news-events/nih-extramural-nexus-news/2026/04/its-official-nihs-small-business-program-is-back
+- Delaware: https://corpfiles.delaware.gov/Fee_Schedule/AugustFee2026.pdf ; https://corp.delaware.gov/expserv/ ; https://corp.delaware.gov/howtoform/ ; https://corp.delaware.gov/paytaxes/ ; https://corp.delaware.gov/alt-entitytaxinstructions/ ; https://legis.delaware.gov/BillDetail/143069
+- California: https://www.sos.ca.gov/business-programs/business-entities/faqs ; https://www.sos.ca.gov/business-programs/business-entities/processing-dates ; https://www.ftb.ca.gov/file/business/types/limited-liability-company/index.html
+- Texas: https://www.sos.state.tx.us/corp/instructions/205.shtml ; https://www.sos.state.tx.us/corp/options.shtml ; https://www.sos.state.tx.us/about/newsreleases/2026/092326.shtml
+- New York: https://dos.ny.gov/forming-limited-liability-company-new-york ; https://dos.ny.gov/fee-schedules
+- UK: https://www.gov.uk/government/publications/companies-house-fees/companies-house-fees ; https://www.gov.uk/limited-company-formation/register-your-company
+- India: https://www.mca.gov.in/MinistryV2/spiceplusfaqs.html ; https://www.mca.gov.in/MinistryV2/dinprocess.html ; https://www.mca.gov.in/Ministry/pdf/SPICe+and_linked_filings_FAQs_V3_13%20Jan_2022_updated.pdf
+- US federal: https://www.fincen.gov/boi ; https://www.irs.gov/businesses/small-businesses-self-employed/get-an-employer-identification-number ; https://www.irs.gov/pub/irs-pdf/f15620.pdf
+- Name (third-party mirror, [U]): https://trademarks.justia.com/889/00/perspective-88900125.html
+- Inside the repo: `perspective-engine/docs/founder-decisions.md`; `perspective-engine/legal/privacy.md`.
