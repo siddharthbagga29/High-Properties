@@ -11,6 +11,7 @@ import { edgeHi, edgeOn } from './Arcs'
 import { live, STALLED } from './shared'
 import { ALL_AGENTS, BRAIN_C, CENTER_AGENT, districtCenter, MAX_TASKS, R_PLAZA, ringAngle, ringIndex, type Tower } from './world'
 
+const NO_RUN = new Map<string, 'working' | 'stalled'>()
 export const controlsRef: { current: CameraControlsImpl | null } = { current: null }
 const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -20,13 +21,14 @@ const WORLD_T = new THREE.Vector3(0, 4, -2)
 const AGENT_EL = THREE.MathUtils.degToRad(40)
 
 /**
- * Distance at which the whole ring, signposts included, fits in the space the panels leave free.
- * Fitted on 1280x800 to 2560x1440: the ring needs about 1.07 viewport heights of free width, or 0.96 of free height.
+ * Distance at which the whole ring, signposts and plate rims included, fits in the space the panels leave free
+ * (between the mini-map and the drawer, above the ask bar). Checked by projection at 1180x820 to 2560x1440:
+ * the ring needs about 1.18 viewport heights of free width, or 1.06 of free height, with a margin all round.
  */
 export function worldDistance(w: number, h: number, portrait: boolean) {
   if (portrait) return 87 * 1.3
   const fw = (w - live.ui.railW - live.ui.inspW) / h, fh = (h - 136 - live.ui.sheetH) / h
-  return THREE.MathUtils.clamp(100 * Math.max(1.07 / Math.max(fw, 0.3), 0.96 / Math.max(fh, 0.3)), 87, 190)
+  return THREE.MathUtils.clamp(100 * Math.max(1.18 / Math.max(fw, 0.3), 1.06 / Math.max(fh, 0.3)), 96, 190)
 }
 
 /** Where the camera stands for each focus: always looking inward, so the brain stays in the frame. */
@@ -39,8 +41,9 @@ export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], port
     // and the brain sits behind them. (Its own signpost fades out in this view; it would stand in front.)
     const a = ringAngle(ringIndex(f.id)), u = new THREE.Vector3(Math.cos(a), 0, Math.sin(a))
     const [cx, cz] = districtCenter(f.id)
-    const t = new THREE.Vector3(cx, 3, cz).addScaledVector(u, -1.5)
-    const d = 27 * k
+    // Far enough that the tallest tower (about 9 units) and its tag fit below the top bar.
+    const t = new THREE.Vector3(cx, 4, cz).addScaledVector(u, -2)
+    const d = 38 * k
     return [t.clone().addScaledVector(u, d * Math.cos(AGENT_EL)).add(new THREE.Vector3(0, d * Math.sin(AGENT_EL), 0)), t]
   }
   if (f.kind === 'task') {
@@ -56,7 +59,7 @@ export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], port
 }
 
 /** The one per-frame controller: camera flights, status → shader uniforms, cursor field, framing between panels. */
-export function Rig({ towers, links, run }: { towers: Tower[]; links: [number, number][]; run: Map<string, 'working' | 'stalled'> }) {
+export function Rig({ towers, links, run = NO_RUN }: { towers: Tower[]; links: [number, number][]; run?: Map<string, 'working' | 'stalled'> }) {
   const ref = useRef<CameraControlsImpl>(null)
   const { size, pointer, raycaster, camera } = useThree()
   const lastSt = useRef<Map<string, Status> | null>(null)
@@ -114,13 +117,13 @@ export function Rig({ towers, links, run }: { towers: Tower[]; links: [number, n
       let changed = false
       data.nodes.forEach((n, i) => {
         if (i >= MAX_TASKS) return
-        const st = s.st.get(n.id) ?? 'pending'
+        const st = s.st?.get(n.id) ?? 'pending'
         if (prev && prev.get(n.id) !== st) {
           changed = true
           // Live flashes come only from fresh ledger events (Packets); in replay a change at the replay moment flashes.
           if (s.time !== null) live.fresh[i] = 1
         }
-        live.status[i] = st === 'running' && run.get(n.id) === 'stalled' ? STALLED : STATUS_CODE[st]
+        live.status[i] = st === 'running' && run.get(n.id) === 'stalled' ? STALLED : STATUS_CODE[st] ?? 0
       })
       links.forEach(([a], e) => { edgeOn[e] = live.status[a] === 3 ? 1 : live.status[a] === 4 ? 0.5 : 0 })
       live.working = [...run.values()].filter(x => x === 'working').length
@@ -133,7 +136,7 @@ export function Rig({ towers, links, run }: { towers: Tower[]; links: [number, n
     for (let i = 0; i < Math.min(data.nodes.length, MAX_TASKS); i++) {
       live.progress[i] = 0.5
       live.fresh[i] *= Math.exp(-dt * 1.0)
-      live.visible[i] = !s.statusFilter.length || s.statusFilter.includes(s.st.get(data.nodes[i].id) ?? 'pending') ? 1 : 0
+      live.visible[i] = !s.statusFilter.length || s.statusFilter.includes(s.st?.get(data.nodes[i].id) ?? 'pending') ? 1 : 0
     }
 
     const f = s.focus
@@ -141,9 +144,10 @@ export function Rig({ towers, links, run }: { towers: Tower[]; links: [number, n
     live.focusTask = ti
     live.focusAgent = f.kind === 'agent' ? ALL_AGENTS.indexOf(f.id) : ti >= 0 ? ALL_AGENTS.indexOf(data.nodes[ti].agent) : -1
     live.focusMix += ((f.kind === 'agent' || f.kind === 'task' ? 1 : 0) - live.focusMix) * (1 - Math.exp(-dt * 3))
+    // The store can hold newer data than this render's links for a frame: every index lookup is guarded.
     links.forEach(([a, b], e) => {
       const touch = ti >= 0 ? a === ti || b === ti
-        : f.kind === 'agent' ? data.nodes[a].agent === f.id || data.nodes[b].agent === f.id : false
+        : f.kind === 'agent' ? data.nodes[a]?.agent === f.id || data.nodes[b]?.agent === f.id : false
       edgeHi[e] += ((touch ? 1 : 0) - edgeHi[e]) * (1 - Math.exp(-dt * 4))
     })
 

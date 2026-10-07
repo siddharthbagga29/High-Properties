@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { sfx } from '../audio/sound'
 import { ask } from '../data/ask'
 import { BRIEF, reality } from '../data/brief'
@@ -8,7 +8,7 @@ import {
   lastSignal, LIVE_WINDOW_MIN, ms, runState, stalledNow, STATUS_LABEL, taskFeed, ventureStats, workingNow,
   isToolCall,
 } from '../data/model'
-import type { ActivityEvent, GraphState, Status } from '../data/types'
+import type { ActivityEvent, GraphState, Status, TaskNode } from '../data/types'
 import { focusKey, useStore, type AskOut, type Focus, type Tab } from '../store'
 import { BudgetDumbbell, RatioSpark } from './Charts'
 import { Timeline } from './Timeline'
@@ -22,6 +22,16 @@ type St = Map<string, Status>
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 /** Output files and run figures exist only once a task is finished (or prepared for the founder) at the moment shown. */
 const finished = (s: Status | undefined) => s === 'done' || s === 'awaiting_human'
+/** A task's token run counts only if the task was finished at the moment shown (replay must not borrow later runs). */
+const measured = (n: TaskNode, st: St) => !!n.run && finished(st.get(n.id))
+/** Tasks worked on by `at` whose tokens are not measured at that moment. */
+const unmeasuredOf = (data: GraphState, tasks: TaskNode[], st: St, time: number | null) =>
+  tasks.filter(n => !measured(n, st) && taskFeed(data, n.id, time).some(e => e.src !== 'ledger')).length
+/** The latest step on a running task was the verifier's: the task is being checked, not built. */
+const inCheck = (data: GraphState, id: string, time: number | null) => {
+  const e = taskFeed(data, id, time).find(x => x.src !== 'ledger')
+  return !!e && isVerifier(e)
+}
 
 export function Pill({ s, stalled }: { s: Status; stalled?: boolean }) {
   return stalled ? <span className="pill st-stalled"><i />Stalled</span> : <span className={`pill st-${s}`}><i />{STATUS_LABEL[s]}</span>
@@ -51,6 +61,14 @@ export function Drawer() {
   const record = useStore(s => s.record)
   const askOut = useStore(s => s.askOut)
   useTick(time === null)
+  const box = useRef<HTMLElement>(null)
+  const fk = focusKey(focus)
+  // A new selection opens at its title, and a new tab at its first line, never part-way down the previous view.
+  useEffect(() => { if (box.current) box.current.scrollTop = 0 }, [fk])
+  useEffect(() => {
+    const el = box.current, p = el?.querySelector<HTMLElement>('[role=tabpanel]'), t = el?.querySelector<HTMLElement>('[role=tablist]')
+    if (el && p && t) el.scrollTop = Math.min(el.scrollTop, Math.max(0, p.offsetTop - t.offsetHeight - 18))
+  }, [tab])
   if (!data) return <aside className="drawer"><p className="muted">Loading the live plan…</p></aside>
   const tabs = TABS.filter(t => t.key !== 'output' || focus.kind === 'agent' || focus.kind === 'task')
   const active = tabs.some(t => t.key === tab) ? tab : 'overview'
@@ -67,7 +85,7 @@ export function Drawer() {
   }
   return (
     <MotionConfig reducedMotion="user">
-      <aside className="drawer scrolls" aria-label="Inspector">
+      <aside ref={box} className="drawer scrolls" aria-label="Inspector">
         <Header data={data} st={st} time={time} focus={focus} />
         <nav className="tabs" role="tablist" aria-label="Views" onKeyDown={onKeys}>
           {tabs.map(t => (
@@ -78,10 +96,10 @@ export function Drawer() {
         {record && focus.kind === 'task' && <Record data={data} st={st} time={time} id={focus.id} rid={record} />}
         <div role="tabpanel" id="drawer-panel" aria-labelledby={`dtab-${active}`} tabIndex={0} className="dpanel">
           <AnimatePresence initial={false}>
-            <M key={focusKey(focus) + active} initial="h" animate="s" exit={{ opacity: 0, position: 'absolute', transition: { duration: 0.08 } }} variants={{ s: { transition: { staggerChildren: 0.045 } }, h: {} }}>
+            <M key={fk + active} initial="h" animate="s" exit={{ opacity: 0, position: 'absolute', transition: { duration: 0.08 } }} variants={{ s: { transition: { staggerChildren: 0.045 } }, h: {} }}>
               {active === 'ask' ? <AskTab data={data} st={st} focus={focus} time={time} />
                 : active === 'activity' ? <ActivityTab data={data} focus={focus} time={time} />
-                : active === 'output' ? <OutputTab data={data} st={st} focus={focus} />
+                : active === 'output' ? <OutputTab data={data} st={st} focus={focus} time={time} />
                 : focus.kind === 'world' ? <WorldView data={data} st={st} time={time} />
                 : focus.kind === 'brain' ? <BrainView data={data} st={st} time={time} />
                 : focus.kind === 'agent' ? <AgentView data={data} st={st} id={focus.id} time={time} />
@@ -139,7 +157,7 @@ function Now({ data, st, time }: { data: GraphState; st: St; time: number | null
           <ul>
             {working.map(({ agent, node }) => {
               const step = collapseFeed(taskFeed(data, node.id, time))[0]
-              const checking = step && isVerifier(step)
+              const checking = inCheck(data, node.id, time)
               return (
                 <li key={node.id}>
                   <button onClick={go({ kind: 'agent', id: agent }, 'activity')}>
@@ -233,7 +251,7 @@ function WorldView({ data, st, time }: { data: GraphState; st: St; time: number 
                 <span className="a-num">{a.done}/{a.tasks.length}</span>
                 <span className="bar"><i style={{ width: `${(a.done / Math.max(a.tasks.length, 1)) * 100}%` }} /></span>
                 <span className={`a-now${a.running ? ' working' : a.stalled ? ' stalled' : ''}`}>
-                  {a.running ? `Working on ${a.running.id}: ${a.running.title}`
+                  {a.running ? `${inCheck(data, a.running.id, time) ? 'Being verified' : 'Working on'} ${a.running.id}: ${a.running.title}`
                     : a.stalled ? `${a.stalled.id} stalled: marked running, no session on it`
                     : a.waiting ? `${plural(a.waiting, 'task needs', 'tasks need')} the founder`
                     : a.next ? `Next: ${a.next.id} ${a.next.title}` : 'Idle until upstream work lands'}
@@ -262,7 +280,7 @@ function BrainView({ data, st, time }: { data: GraphState; st: St; time: number 
   const doneAt = new Map(data.ledger.filter(e => e.event === 'done').map(e => [e.node, ms(e.t)]))
   const rows = data.nodes.filter(n => n.run && doneAt.has(n.id) && (time === null || doneAt.get(n.id)! <= time))
     .sort((a, b) => doneAt.get(a.id)! - doneAt.get(b.id)!).map(n => ({ id: n.id, title: n.title, budget: n.budget_k, spent: Math.round(n.run!.used_k) }))
-  const unmeasured = agentStats(data, st, time ?? Date.now()).reduce((s, a) => s + a.unmeasured, 0)
+  const unmeasured = unmeasuredOf(data, data.nodes, st, time)
   const NAMES = ['Phase 0 · foundation', 'Phase 1 · validation', 'Phase 2 · MVP and study', 'Phase 3 · pilots']
   const mayor = data.agents.orchestrator?.name ?? 'Mayor'
   return (
@@ -298,16 +316,25 @@ function AgentView({ data, st, id, time }: { data: GraphState; st: St; id: strin
   const at = time ?? Date.now()
   const a = agentStats(data, st, at).find(x => x.key === id)!
   const rs = runState(data, st, at)
-  const ev = collapseFeed(agentFeed(data, id, time))
+  const all = agentFeed(data, id, time)
+  const ev = collapseFeed(all)
   const own = ev.find(e => !isVerifier(e) && e.src !== 'ledger')
+  const when = time === null ? 'right now' : `at ${fmtTime(time)}`
+  const checking = a.running && inCheck(data, a.running.id, time)
   const stalledAt = a.stalled ? lastSignal(data, a.stalled.id, at) : null
   const stalledLine = a.stalled && `${a.stalled.id} ${stalledAt ? `stalled since ${fmtTime(stalledAt)}` : 'stalled'}: marked running, but no session is working on it.`
+  // Token figures only from runs finished at the moment shown, so replay never borrows later measurements.
+  const done = a.tasks.filter(n => measured(n, st))
+  const used = done.reduce((s, n) => s + n.run!.used_k, 0)
+  const unmeasured = unmeasuredOf(data, a.tasks, st, time)
+  const eff = a.efficiency.filter(p => done.some(n => n.id === p.id))
+  const checks = all.filter(isVerifier).length
   return (
     <>
       <M variants={rise}>
         {a.running
-          ? <div className="now"><b>Working {time === null ? 'right now' : `at ${fmtTime(time)}`} on {a.running.id}</b><span>{a.running.title}</span>
-              {own && <small>Latest step {clock(own.t)} UTC ({ago(own.t, at)}): {own.text}</small>}
+          ? <div className="now"><b>{checking ? `${a.running.id} is being checked by the independent verifier ${when}` : `Working ${when} on ${a.running.id}`}</b><span>{a.running.title}</span>
+              {own && <small>{checking ? 'Own last step' : 'Latest step'} {clock(own.t)} UTC ({ago(own.t, at)}): {own.text}</small>}
               {stalledLine && <small>{stalledLine}</small>}</div>
           : a.stalled
             ? <div className="now stalled"><b>{stalledAt ? `Stalled since ${fmtTime(stalledAt)}` : 'Stalled'}: no session running</b>
@@ -318,11 +345,18 @@ function AgentView({ data, st, id, time }: { data: GraphState; st: St; id: strin
       </M>
       <M variants={rise} className="stats">
         <div><b>{a.done}<small>/{a.tasks.length}</small></b><span>built</span></div>
-        <div><b>{agentFeed(data, id, time).length}</b><span>steps logged</span></div>
-        <div><b>{a.used ? fmtK(a.used) : '—'}</b><span>tokens · finished</span></div>
+        <div><b>{all.length - checks}</b><span>steps logged</span></div>
+        <div><b>{used ? fmtK(used) : '—'}</b><span>tokens · finished</span></div>
         <div><b>{a.toolCalls}</b><span>tool calls</span></div>
       </M>
-      {a.unmeasured > 0 && <M variants={rise}><p className="note small unmeasured">Tokens are measured on finished tasks only. {plural(a.unmeasured, 'task', 'tasks')} {a.name} worked on {a.unmeasured === 1 ? 'is' : 'are'} not measured yet, so real use is higher.</p></M>}
+      {(unmeasured > 0 || checks > 0) && (
+        <M variants={rise}>
+          <p className="note small unmeasured">
+            {unmeasured > 0 && `Tokens are measured on finished tasks only: ${plural(unmeasured, 'task', 'tasks')} ${a.name} worked on ${unmeasured === 1 ? 'is' : 'are'} not measured yet, so real use is higher. `}
+            {checks > 0 && `Steps leave out ${plural(checks, 'row', 'rows')} logged by the independent verifier on ${a.name}’s tasks.`}
+          </p>
+        </M>
+      )}
       <M variants={rise}>
         <h3>Latest steps <button className="link" onClick={() => useStore.getState().set({ tab: 'activity' })}>Full timeline</button></h3>
         <Timeline events={ev.slice(0, 8)} showTask />
@@ -331,7 +365,7 @@ function AgentView({ data, st, id, time }: { data: GraphState; st: St; id: strin
         <h3>Its towers</h3>
         <ul className="tasks">{a.tasks.map(n => <li key={n.id}><button onClick={go({ kind: 'task', id: n.id })}><code>{n.id}</code><span>{n.title}</span><Pill s={st.get(n.id)!} stalled={rs.get(n.id) === 'stalled'} /></button></li>)}</ul>
       </M>
-      <M variants={rise}><h3>Effort vs plan, finished tasks</h3><RatioSpark points={a.efficiency} /></M>
+      <M variants={rise}><h3>Effort vs plan, finished tasks</h3><RatioSpark points={eff} /></M>
       <M variants={rise}>
         <h3>Works with</h3>
         <div className="collab"><span>Reads from</span>{[...a.inbound].map(k => <button key={k} onClick={go({ kind: 'agent', id: k })}>{data.agents[k].name}</button>)}{!a.inbound.size && <em>no one yet</em>}</div>
@@ -356,12 +390,13 @@ function TaskView({ data, st, id, time }: { data: GraphState; st: St; id: string
   const live = rs.get(id)
   const lastT = live === 'stalled' ? lastSignal(data, id, at) : null
   const run = shown ? n.run : undefined
-  const gate = !n.gate ? null : s === 'done' ? 'cleared' : s === 'awaiting_human' ? 'now' : 'later'
+  // Not 'now': that class is the amber "working" card.
+  const gate = !n.gate ? null : s === 'done' ? 'cleared' : s === 'awaiting_human' ? 'due' : 'later'
   return (
     <>
       <M variants={rise}><Pill s={s} stalled={live === 'stalled'} /></M>
       {live === 'working' && (
-        <M variants={rise}><div className="now"><b>Being worked on {time === null ? 'right now' : `at ${fmtTime(time)}`}</b>{ev[0] && <small>Latest step {clock(ev[0].t)} UTC ({ago(ev[0].t, at)}): {ev[0].text}</small>}</div></M>
+        <M variants={rise}><div className="now"><b>{inCheck(data, id, time) ? 'Being checked by the independent verifier' : 'Being worked on'} {time === null ? 'right now' : `at ${fmtTime(time)}`}</b>{ev[0] && <small>Latest step {clock(ev[0].t)} UTC ({ago(ev[0].t, at)}): {ev[0].text}</small>}</div></M>
       )}
       {live === 'stalled' && (
         <M variants={rise}><div className="now stalled"><b>{lastT ? `Stalled since ${fmtTime(lastT)}` : 'Stalled'}: no session running</b><span>Marked running, but nothing has been recorded for it in the last {LIVE_WINDOW_MIN} minutes.</span></div></M>
@@ -375,14 +410,14 @@ function TaskView({ data, st, id, time }: { data: GraphState; st: St; id: string
       </M>
       {n.gate && gate && (
         <M variants={rise} className={`gate-note ${gate}`}>
-          <b>{gate === 'cleared' ? 'Founder step done' : gate === 'now' ? 'Needs the founder' : 'Will need the founder'}</b>
+          <b>{gate === 'cleared' ? 'Founder step done' : gate === 'due' ? 'Needs the founder' : 'Will need the founder'}</b>
           <span>{n.gate.reason}</span>
         </M>
       )}
       <M variants={rise}>
         <h3>Done means</h3>
         <ul className="checks">{n.accept.map(a => <li key={a} className={`c-${cs}`}>{a}<span className="c-tag">{C_TAG[cs]}</span></li>)}</ul>
-        <p className="note small">{CRITERION_NOTE[cs]}.</p>
+        <p className="note small">{cs === 'open' ? 'An independent verifier checks each criterion before the task can be marked done' : CRITERION_NOTE[cs]}.</p>
       </M>
       <M variants={rise}>
         <h3>Needs work from</h3>
@@ -406,8 +441,9 @@ function ActivityTab({ data, focus, time }: { data: GraphState; focus: Focus; ti
   )
 }
 
-function OutputTab({ data, st, focus }: { data: GraphState; st: St; focus: Focus }) {
+function OutputTab({ data, st, focus, time }: { data: GraphState; st: St; focus: Focus; time: number | null }) {
   const nodes = focus.kind === 'agent' ? data.nodes.filter(n => n.agent === focus.id) : data.nodes.filter(n => focus.kind === 'task' && n.id === focus.id)
+  const rs = runState(data, st, time ?? Date.now())
   return (
     <>
       <M variants={rise}><p className="note">What the work produced: each file in the repository, with its opening summary. Files appear once their task is finished or prepared for the founder.</p></M>
@@ -415,12 +451,13 @@ function OutputTab({ data, st, focus }: { data: GraphState; st: St; focus: Focus
         const s = st.get(n.id)!
         return (
           <M variants={rise} key={n.id}>
-            <h3>{n.id} · {n.title} <Pill s={s} /></h3>
+            <h3>{n.id} · {n.title} <Pill s={s} stalled={rs.get(n.id) === 'stalled'} /></h3>
             <ul className="outputs">
               {n.outputs.map(o => (
                 <li key={o}><code>{o.replace('perspective-engine/', '')}</code>
                   {finished(s) && data.excerpts[o] ? <p>{data.excerpts[o]}</p>
-                    : <p className="muted">{finished(s) ? 'Code or data file (no prose summary).' : s === 'running' ? 'Being worked on: shown once the task is finished.' : 'Not written yet.'}</p>}
+                    : <p className="muted">{finished(s) ? 'Code or data file (no prose summary).' : rs.get(n.id) === 'working' ? 'Being worked on: shown once the task is finished.'
+                      : rs.get(n.id) === 'stalled' ? 'Stalled before it was finished: shown once the task is finished.' : 'Not written yet.'}</p>}
                 </li>
               ))}
             </ul>

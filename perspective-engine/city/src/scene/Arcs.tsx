@@ -28,6 +28,7 @@ export function Arcs({ towers, links }: { towers: Tower[]; links: [number, numbe
     let v = 0
     for (let e = 0; e < n; e++) {
       const [i, j] = links[e]
+      if (!towers[i] || !towers[j]) { v += SEG * 2; continue }
       from.set(towers[i].id, [...(from.get(towers[i].id) ?? []), e])
       into.set(towers[j].id, [...(into.get(towers[j].id) ?? []), e])
       const a = new THREE.Vector3(towers[i].x, towers[i].h, towers[i].z), b = new THREE.Vector3(towers[j].x, towers[j].h, towers[j].z)

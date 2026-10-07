@@ -27,8 +27,8 @@ export function Records({ towers }: { towers: Tower[] }) {
   const ti = data && id ? data.nodes.findIndex(n => n.id === id) : -1
   const atoms = useMemo(() => (data && id && ti >= 0 ? atomsOf(data, id, st, time).slice(0, 14) : []), [data, id, st, time, ti])
   useFrame(() => { if (group.current) group.current.rotation.y = live.motion ? live.time * 0.04 : 0 })
-  if (!atoms.length || ti < 0) return null
   const t = towers[ti]
+  if (!atoms.length || !t || t.id !== id) return null
   return (
     <group position={[t.x, 0, t.z]}>
       <group ref={group}>

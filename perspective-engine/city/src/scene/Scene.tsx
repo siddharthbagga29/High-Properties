@@ -13,8 +13,7 @@ import { Ground, LegendRing, Plates, Shockwave, Spokes, type PlateStat } from '.
 import { labelLayer } from './portal'
 import { Records } from './Records'
 import { Rig } from './Rig'
-import { agentState, live } from './shared'
-import { Signs, type SignStat } from './Signs'
+import { agentState, live, verifying } from './shared'
 import { TowerTags, Towers } from './Towers'
 import { Packets, Workers, workerPos } from './Workers'
 import { agentLabel, BRAIN_C, BRAIN_S, buildBrain, DEPT, towers as layTowers, type BrainOutput, type LayoutNode, type Tower } from './world'
@@ -64,7 +63,7 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
   useFrame(() => {
     if (!hover || !group.current || !data) return
     if (hover.kind === 'task') { const t = towers[data.nodes.findIndex(n => n.id === hover.id)]; if (t) v.set(t.x, t.h + 1, t.z) }
-    else if (hover.kind === 'worker' || hover.kind === 'agent') v.copy(workerPos[hover.id]).add(new THREE.Vector3(0, 2.2, 0))
+    else if (hover.kind === 'worker' || hover.kind === 'agent') { const w = workerPos[hover.id]; if (w) v.copy(w).add(new THREE.Vector3(0, 2.2, 0)) }
     else v.set(BRAIN_C[0], BRAIN_C[1] + 4.5, BRAIN_C[2])
     group.current.position.lerp(v, 0.35)
   })
@@ -78,7 +77,7 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
     lines = [
       r === 'working' ? 'Working now' : r === 'stalled' ? `Stalled${last ? ` since ${clock(last).slice(0, 5)}` : ''} — no session running` : STATUS_LABEL[st.get(n.id) ?? 'pending'],
       n.run ? `${fmtK(n.run.used_k)} spent / ${n.budget_k}k plan` : `${n.budget_k}k token plan`,
-      agentLabel(n.agent, data.agents[n.agent].name),
+      agentLabel(n.agent, data.agents[n.agent]?.name ?? n.agent),
     ]
   } else if (hover.kind === 'brain') {
     const done = data.nodes.filter(n => st.get(n.id) === 'done').length
@@ -151,13 +150,10 @@ export default function Scene() {
   }, [shape])
   const stats = useMemo(() => (data ? agentStats(data, st, at) : []), [data, st, at])
   const run = useMemo(() => (data ? runState(data, st, at) : new Map<string, 'working' | 'stalled'>()), [data, st, at])
-  const plates: PlateStat[] = stats.map(a => ({ agent: a.key, done: a.done, total: a.tasks.length, working: !!a.running, waiting: a.waiting > 0 }))
-  const signs: SignStat[] = stats.map(a => ({
-    agent: a.key, dept: DEPT[a.key] ?? a.district, name: a.name, done: a.done, total: a.tasks.length,
-    state: a.running ? 'working' : a.stalled ? 'stalled' : a.waiting ? 'waiting' : a.next ? 'ready' : 'idle',
-    cells: a.tasks.map(n => (st.get(n.id) === 'running' ? (run.get(n.id) ?? 'stalled') : st.get(n.id) ?? 'pending')),
-  }))
-  const working = stats.filter(a => a.running).map(a => a.key)
+  // An agent counts as working only on its own recent steps: a task kept live by the verifier alone does not light its district.
+  const own = (a: AgentStats) => !!a.running && !!data && !verifying(a, data, at)
+  const plates: PlateStat[] = stats.map(a => ({ agent: a.key, done: a.done, total: a.tasks.length, working: own(a), waiting: a.waiting > 0 }))
+  const working = stats.filter(own).map(a => a.key)
 
   useEffect(() => {
     const on = () => setHidden(document.hidden)
@@ -182,7 +178,6 @@ export default function Scene() {
           <Spokes working={working} />
           <Towers towers={towers} />
           <TowerTags towers={towers} run={run} at={at} />
-          <Signs stats={signs} />
           <Arcs towers={towers} links={links} />
           <Workers towers={towers} stats={stats} at={at} />
           <Packets towers={towers} />

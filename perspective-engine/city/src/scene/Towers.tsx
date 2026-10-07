@@ -7,7 +7,7 @@ import { clock, lastSignal } from '../data/model'
 import { useStore } from '../store'
 import { labelLayer } from './portal'
 import { live, PALETTE, STALLED, STATUS_COLOR } from './shared'
-import type { Tower } from './world'
+import { MAX_TASKS, type Tower } from './world'
 
 const box = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)
 const edges = new THREE.EdgesGeometry(box)
@@ -67,7 +67,7 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
 
   useFrame((_, dt) => {
     const s = useStore.getState()
-    const st = live.status[index]
+    const st = index < MAX_TASKS ? live.status[index] : 0
     const u = material.uniforms
     const target = FILL[Math.round(st)] ?? 0
     fill.current += (target - fill.current) * (1 - Math.exp(-dt * 3))
@@ -124,10 +124,11 @@ export function TowerTags({ towers, run, at }: { towers: Tower[]; run: Map<strin
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
   if (!data || focus.kind !== 'agent') return null
+  const byId = new Map(data.nodes.map(n => [n.id, n]))
   return (
     <>
-      {towers.map((t, i) => {
-        const n = data.nodes[i]
+      {towers.map(t => {
+        const n = byId.get(t.id)
         if (!n || t.agent !== focus.id) return null
         const s = st.get(n.id) ?? 'pending'
         const key = s === 'running' ? run.get(n.id) ?? 'stalled' : s

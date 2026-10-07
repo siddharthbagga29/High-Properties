@@ -7,17 +7,16 @@
 <title>Perspective Engine: attention-load illustration (prototype v0)</title>
 <!--
 SUMMARY (F04)
-One self-contained file: no build step, no network calls (CSP connect-src 'none'), optional Web Audio sound.
+One self-contained file: no build step, no network calls (CSP connect-src 'none'), optional sound.
 A manager does one short workplace task twice (read an email, wait for a file, answer 8 questions, follow an
-instruction): round 1 as usual, round 2 with four tunable conditions from the mechanism spec: M1 inner-voice
-intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture. M5 hyperfocus is off by default
-and advanced only. A facilitator drawer tunes each within the spec's ranges (intensity ceiling 0.8).
-Flow: consent, day-0 questions (T0), round 1, round 2, comparison, mandatory debrief, planning, T1 questions,
-JSON export of dose counts, settings and day-0 answers, no personal identifiers. Safety: nothing flashes, cue events
-(intrusion or notification) never overlap and start 2.5 s or more after the last one ended (the self-test measures
-this), the largest cue repeats at most about 0.3 Hz, reduced motion honoured, Stop always visible, keyboard
-operable. It never claims to show what ADHD is like. Wording is a draft pending neurodivergent advisor review
-(charter section 3).
+instruction). Round 1 is as usual; round 2 adds four tunable conditions from the mechanism spec: M1 inner-voice
+intrusions, M2 reaction-time variability, M3 delay aversion, M4 salience capture. M5 hyperfocus is off by default.
+A facilitator panel tunes each within the spec's ranges (ceiling 0.8).
+Flow: consent, day-0 questions, two rounds, comparison, mandatory debrief, planning, post questions, export.
+Export: dose counts, settings, day-0 answers; no identifiers or clock stamps, so wait choice, wait time and
+reaction times cannot be derived.
+Safety: nothing flashes, reduced motion honoured, Stop always visible. Never claims to show what ADHD is like.
+Wording is a draft pending neurodivergent advisor review.
 -->
 <style>
 :root{--bg:#0f1420;--s1:#182033;--s2:#212c47;--line:#6b7ba3;--line2:#33405e;--tx:#f1f4fa;--mu:#bcc5d8;--ac:#8fd0ff;--aci:#06121f;--ok:#8de0a8;--wa:#ffd166;--st:#ff8a7a;--sti:#2a0703;--fo:#ffd166;--miss:#33405e}
@@ -749,9 +748,12 @@ function summarize(R){
 }
 /* Data minimisation (charter section 4; instruments spec section 2.2: sim telemetry is dose only). summarize() feeds the on-screen
    comparison and keeps the participant's own task counts. Only the dose keys below (what the conditions delivered, plus duration)
-   go into the export or the event log. Correctness, answers, response times, wait choice and per-click word loss stay on screen. */
+   go into the export or the event log. Correctness, answers, response times, wait choice and per-click word loss stay on screen.
+   Timing: the export carries NO session-clock or run-clock stamps and no step labels, because step boundaries and cue times with
+   step labels let the wait choice, wait time and send reaction time be worked out. Durations only (run, debrief, pauses, screens). */
 const DOSE_KEYS=['form','phrases_total','phrases_missed','words_lost_total','responses','delay_mean_s','delay_cv','delay_max_s','late_responses','intrusions','intrusions_per_min','outside_events','outside_events_per_min','pulled','m5_cues_missed','duration_s'];
-const LOCAL_ONLY=new Set(['response','wait_resolved']);   // live-panel lines that carry per-click timing or the wait choice; never exported
+const LOCAL_ONLY=new Set(['response','wait_resolved','step','screen']);   // live-panel lines that mark step or screen boundaries, per-click timing or the wait choice; never exported
+const EV_STRIP=new Set(['t','step','phase']);   // keys removed from every exported event line: clock stamp and step labels
 function doseOnly(sum){const o={};DOSE_KEYS.forEach(k=>{if(k in sum)o[k]=sum[k];});return o;}
 function finishRun(R){
   R.over=true;R.tEnd=r2(sessT());clearEffects(R);R.sum=summarize(R);
@@ -994,7 +996,7 @@ function buildDone(){
   const done=!!S.debrief.completed&&!S.stopped;
   root.replaceChildren(h('h1',{id:'h-done',tabindex:'-1'},done?'Session complete':'Session ended'),
    h('div',{class:'card'},h('p',{class:'lead'},done?'Thank you. The debrief is complete.':(S.stopped?'You stopped early. The debrief was '+(S.debrief.completed?'read':'not read')+', so the session is not recorded as complete.':'The session ended before the debrief, so it is not recorded as complete.')),
-    h('ul',null,h('li',null,'Nothing has left this device. There is no server, account or analytics.'),h('li',null,'The export holds what the conditions delivered (counts and delays), your settings and your answers to the optional questions. It has no name, email, employer, device or location data, and no task answers, correctness or response times: those stay on screen.'),
+    h('ul',null,h('li',null,'Nothing has left this device. There is no server, account or analytics.'),h('li',null,'The export holds what the conditions delivered (counts and delays), your settings and your answers to the optional questions. It has no name, email, employer, device or location data, and no task answers, correctness, step times or response times: those stay on screen.'),
       h('li',null,'Per the co-design charter, an employer must not require this file or see individual responses. Share it only if you choose to.'))),
    h('div',{class:'row'},h('button',{class:'btn primary',type:'button',onclick:()=>{downloadText('perspective-engine-session-'+S.sid+'.json',txt,'application/json');logEv('export_download');}},'Download JSON'),
     h('button',{class:'btn',type:'button',onclick:()=>{copyText(txt);say('JSON copied');}},'Copy JSON'),h('button',{class:'btn',type:'button',onclick:()=>location.reload()},'Erase everything and start over')),
@@ -1035,7 +1037,7 @@ function buildFac(){
     h('label',{class:'chk'},h('input',{type:'checkbox',id:'sAdapt',checked:S.set.offerAdapt,onchange:ev=>{S.set.offerAdapt=ev.target.checked;logEv('setting',{offerAdapt:S.set.offerAdapt});}}),h('span',null,'Offer workplace changes (illustrative) during round 2')),
     h('label',{class:'chk'},h('input',{type:'checkbox',id:'sMeas',checked:S.set.measures,onchange:ev=>{S.set.measures=ev.target.checked;logEv('setting',{measures:S.set.measures});}}),h('span',null,'Include the day-0 questions (T0 before, T1 after)')),
     h('div',{class:'row'},h('button',{class:'btn small',type:'button',onclick:()=>{const f=initMech();MKEYS.forEach(m=>Object.assign(S.mech[m],f[m]));logEv('reset_defaults');syncFac();}},'Reset all conditions to defaults'),h('button',{class:'btn small',type:'button',onclick:()=>easeOff()},'Ease off to 0.2'))),
-   h('section',{class:'mech'},h('h3',null,'Live session log'),h('p',{class:'small'},'Every cue, delay and setting change, with session time (mm:ss.s). Response and wait-choice lines appear here only; the JSON export leaves them out.'),h('ol',{id:'facLog','aria-label':'Session log'}))]);
+   h('section',{class:'mech'},h('h3',null,'Live session log'),h('p',{class:'small'},'Every cue, delay and setting change, with session time (mm:ss.s). Times, step and screen lines, response lines and wait-choice lines appear here only; the JSON export carries the remaining lines without times.'),h('ol',{id:'facLog','aria-label':'Session log'}))]);
   const ul=$('#facLog');S.events.slice(-90).forEach(e=>ul.prepend(h('li',null,h('b',null,fmtT(e.t)+' '),e.type)));
   syncFac();
 }
@@ -1085,15 +1087,20 @@ function deriveMeasures(D){
 function runExport(R){
   if(!R)return null;
   const F=R.flow,rs=R.qa.items.filter(x=>!x.skipped).concat(R.reply&&R.reply.res?[R.reply.res]:[]);
-  /* Dose only: no chosen answers, correctness, per-question or send timing, per-click word loss, wait choice or M5 block accuracy. */
-  return {form:R.form.id,started_s:R.tStart,ended_s:R.tEnd,stopped_at_run_s:R.stoppedAt,summary:doseOnly(R.sum||summarize(R)),
-   phrases:R.chunks.map((c,i)=>({i:i,shown_t:c.shownT,missed:c.missed})),
+  /* Dose only: no chosen answers, correctness, per-question or send timing, per-click word loss, wait choice or M5 block accuracy.
+     No clock values: cue events keep what was delivered (length, share, words lost) but not when or in which step; the wait keeps its
+     scenario-set length only (the peak pull cue is a function of how long the participant waited, so it is not exported). */
+  return {form:R.form.id,summary:doseOnly(R.sum||summarize(R)),
+   phrases:R.chunks.map((c,i)=>({i:i,missed:c.missed})),
    m2_responses:{registered:rs.length,slow_tail:rs.filter(x=>x.slow_tail).length,coupled_to_m1:rs.filter(x=>x.coupled_to_m1).length},
-   wait:R.wait?{D_s:r2(R.wait.D),pull_peak:r2(R.wait.pullMax)}:null,
-   m2_delays_s:R.m2.draws.map(r2),m1_intrusions:R.events.intr,m4_events:R.events.sal,
-   m5:F?{lock_start_t:F.lockStart,lock_end_t:F.lockEnd,cues_shown:F.shown,cues_missed:F.missed}:null,skips:R.skips};
+   wait:R.wait?{D_s:r2(R.wait.D)}:null,
+   m2_delays_s:R.m2.draws.map(r2),
+   m1_intrusions:R.events.intr.map(x=>({id:x.id,dur:x.dur,share:x.share,words_lost:x.words_lost,phrases_missed:x.phrases_missed})),
+   m4_events:R.events.sal.map(x=>({captured:x.captured,p:x.p,dwell:x.dwell})),
+   m5:F?{locked_s:F.lockStart!=null&&F.lockEnd!=null?r2(F.lockEnd-F.lockStart):null,cues_shown:F.shown,cues_missed:F.missed}:null,skips_count:R.skips.length};
 }
-const exportEvents=()=>S.events.filter(e=>!LOCAL_ONLY.has(e.type));
+const exportEvents=()=>S.events.filter(e=>!LOCAL_ONLY.has(e.type)).map(e=>{const o={};Object.keys(e).forEach(k=>{if(!EV_STRIP.has(k))o[k]=e[k];});return o;});
+const untimed=D=>{if(!D)return null;const o=Object.assign({},D);delete o.started;delete o.ended;return o;};   // day-0 answers without the questionnaire clock stamps
 function buildExport(){
   const mech={};
   MKEYS.forEach(m=>{const E=S.mech[m],v={};Object.keys(E.v).forEach(k=>{v[k]=r3(E.v[k]);});
@@ -1101,17 +1108,17 @@ function buildExport(){
   const r=S.runs;
   return {
    schema:'perspective-engine/session-export/v0',app_version:VERSION,node:'F04',session_id:S.sid,started_at_utc_minute:S.startISO,
-   privacy:{personal_identifiers_collected:false,device_and_place_data_collected:false,biometrics_stored:false,network_requests_made:false,free_text_collected:false,task_answers_and_timing_collected:false},
+   privacy:{personal_identifiers_collected:false,device_and_place_data_collected:false,biometrics_stored:false,network_requests_made:false,free_text_collected:false,task_answers_collected:false,step_and_response_timing_collected:false},
    framing:'Interactive illustration of documented group-level attention and timing patterns. Not what ADHD is, not what any person’s day is like. No diagnosis, score or prediction of any person.',
    parameter_note:'All mechanism values are design parameters from perspective-engine/science/mechanism-spec.md (intensity ceiling 0.8), not empirical ADHD estimates.',
-   consent:S.consent,
+   consent:S.consent?{given:S.consent.given,text_version:S.consent.text_version}:null,
    settings:{sound:S.set.sound,volume:S.set.sound?S.set.vol:null,motion:S.rm?'reduced':'gentle',reading_pace_s:S.set.pace,form_mode:S.set.formMode,forms:S.forms,adaptations_offered:S.set.offerAdapt,day0_measures_included:S.set.measures,m5_block_in_load_round_only:true},
-   mechanisms:mech,adaptations:{toggles:S.adaptLog,note:'Illustrative and co-design pending; not proven interventions.'},
+   mechanisms:mech,adaptations:{toggles:S.adaptLog.map(a=>({adaptation:a.adaptation,on:a.on})),note:'Illustrative and co-design pending; not proven interventions.'},
    conditions:{baseline:runExport(r.baseline),load:runExport(r.load)},
-   day0_measures:{T0:S.T0,T1:S.T1,derived:{T0:deriveMeasures(S.T0),T1:deriveMeasures(S.T1)},practice_selection:S.practice,toolkit_clicks:S.toolkit,
+   day0_measures:{T0:untimed(S.T0),T1:untimed(S.T1),derived:{T0:deriveMeasures(S.T0),T1:deriveMeasures(S.T1)},practice_selection:S.practice,toolkit_clicks:S.toolkit.map(x=>({item:x.item,action:x.action})),
     administered:['AAI-self (10 items, T0, study-specific, unvalidated)','Behavioral intention (5 items, T0/T1, unvalidated; top-5 choice unspecified in spec)','Self-efficacy item 1 of 3 (T0/T1, unvalidated)','Knowledge items 1 and 2 of 8 (T0/T1, unvalidated)','IOS (1 item, T0/T1; group use unvalidated)','Distress now 0-10 (T0/T1)','Instruction-check items (2 per wave)','Practice-selection task (T1, study-specific, unvalidated)','Toolkit take-up click log (T1)'],
     not_administered:NOT_ADMIN},
-   telemetry:{total_duration_s:r2(sessT()),screen_seconds:S.screenT,pauses:S.pauses,ease_off_count:S.easeOff,stop:S.stopped,
+   telemetry:{total_duration_s:r2(sessT()),screen_seconds:S.screenT,pauses:S.pauses.map(p=>({why:p.why,seconds:p.t1!=null?r2(p.t1-p.t0):null})),ease_off_count:S.easeOff,stop:S.stopped?{screen:S.stopped.screen,cond:S.stopped.cond}:null,
     debrief:{seen:S.debrief.seen,reached_end:S.debrief.reachedEnd,seconds:S.debrief.seconds,completed:!!S.debrief.completed},
     session_completed:!!(S.debrief.completed&&!S.stopped&&r.baseline&&r.load&&r.load.over)},
    events:exportEvents()};
@@ -1195,12 +1202,45 @@ function selfTest(){
     R.reply={shown:5,res:{to:0,cc:1,att:2,rt_s:3.3,delay_s:0.9,slow_tail:false,coupled_to_m1:false}};
     R.wait={D:15,t0:0,choice:'quick',elapsed:4.2,pullMax:0.3};R.m2.draws=[1.1,0.9];R.flow={rounds:3,wrong:2,lockStart:null,lockEnd:null,shown:1,missed:0};
     R.sum=summarize(R);
-    const rx=runExport(R),rj=JSON.stringify(rx),badK=['rt_s','correct','words_lost_at_click','"opt"','"choice"','elapsed','details_matching','instruction_parts','wrong_clicks','"rounds"','"to"','"cc"','"att"','shown_t":3.1'].filter(k=>rj.indexOf(k)>=0);
+    const rx=runExport(R),rj=JSON.stringify(rx),badK=['rt_s','correct','words_lost_at_click','"opt"','"choice"','elapsed','details_matching','instruction_parts','wrong_clicks','"rounds"','"to"','"cc"','"att"','shown_t','pull_peak'].filter(k=>rj.indexOf(k)>=0);
     t('Export keeps no answers, correctness, per-question or send timing, per-click word loss, wait choice or M5 accuracy',badK.length===0,badK.join(','));
     t('Export keeps dose-level counts instead (registered responses, slow-tail, intrusions, outside events)',rx.m2_responses.registered===2&&rx.m2_responses.slow_tail===1&&'intrusions' in rx.summary&&'outside_events_per_min' in rx.summary,JSON.stringify(rx.m2_responses));
     S.events.push({t:0,run:'load',type:'response',q:1,delay:1.1},{t:0,run:'load',type:'wait_resolved',choice:'quick',elapsed:4.2});
     const ety=exportEvents().map(e=>e.type);S.events.length-=2;
     t('Export event log leaves out per-click response and wait-choice events',ety.indexOf('response')<0&&ety.indexOf('wait_resolved')<0,'');
+  }
+  /* timing minimisation: a full export built from a session whose local record carries clock stamps, step labels, a wait choice and a send time
+     must hold none of them, so wait choice, wait time and send reaction time cannot be worked out from the file */
+  {
+    const keep={ev:S.events,pa:S.pauses,al:S.adaptLog,tk:S.toolkit,st:S.stopped,co:S.consent,rn:S.runs,t0:S.T0,t1:S.T1};
+    let ex=null,exj='',hits=[];
+    try{
+      const R=newRun('load');
+      R.wait={D:15,t0:0,choice:'waited',elapsed:15.213,pullMax:0.5637};
+      R.reply={shown:5,res:{to:0,cc:0,att:0,rt_s:2.137,delay_s:0.9,slow_tail:false,coupled_to_m1:false}};
+      R.m2.draws=[1.1,0.9];R.skips=[{step:'wait',t:5.519}];
+      R.events.intr=[{id:1,t:12.347,dur:5,share:0.5,words_lost:7,phrases_missed:2,step:'wait'}];
+      R.events.sal=[{t:20.213,captured:true,p:0.4,dwell:1.75,step:'qa'}];
+      R.flow={rounds:1,wrong:0,lockStart:40.337,lockEnd:115.331,shown:1,missed:0};R.chunks[0].shownT=1.117;
+      R.tStart=3.337;R.tEnd=190.771;R.stoppedAt=77.771;R.sum=summarize(R);R.over=true;
+      S.runs={baseline:null,load:R};
+      S.events=[{t:10.517,run:'load',type:'step',phase:'wait'},{t:25.719,run:'load',type:'step',phase:'qa'},{t:26.103,run:'load',type:'screen',screen:'run'},
+       {t:27.307,run:'load',type:'response',kind:'send',delay:0.9},{t:28.409,run:'load',type:'wait_resolved',choice:'waited',elapsed:15.213},
+       {t:29.503,run:'load',type:'skip',step:'wait'},{t:30.607,run:'load',type:'M4_event',captured:true,p:0.4,text:'x'},{t:31.709,run:'load',type:'STOP',screen:'run',step:'wait',cond:'load'}];
+      S.pauses=[{t0:50.173,t1:52.619,why:'user'}];S.adaptLog=[{t:44.457,adaptation:'follow',on:true,step:'wait'}];S.toolkit=[{t:66.661,item:'agenda',action:'open'}];
+      S.stopped={t:31.709,screen:'run',step:'wait',cond:'load'};S.consent={given:true,at_s:4.447,text_version:'v'};
+      S.T0={wave:'T0',started:1.117,answers:{ios:3},skipped:false,ended:9.997,n_answered:1};S.T1=null;
+      ex=buildExport();exj=JSON.stringify(ex);
+      const TIMEK=/^(t|t0|t1|step|phase|elapsed|at_s|started|ended|started_s|ended_s|shown_t|rt_s|pull_peak|stopped_at_run_s|lock_start_t|lock_end_t)$/;
+      (function walk(o,parent){if(Array.isArray(o))return o.forEach(x=>walk(x,parent));if(o&&typeof o==='object')Object.keys(o).forEach(k=>{if(parent!=='screen_seconds'&&TIMEK.test(k))hits.push(parent+'.'+k);walk(o[k],k);});})(ex,'$');
+    }finally{S.events=keep.ev;S.pauses=keep.pa;S.adaptLog=keep.al;S.toolkit=keep.tk;S.stopped=keep.st;S.consent=keep.co;S.runs=keep.rn;S.T0=keep.t0;S.T1=keep.t1;}
+    const stamps=['15.213','0.5637','2.137','5.519','12.347','20.213','40.337','115.331','1.117','3.337','190.771','77.771','10.517','25.719','26.103','27.307','28.409','29.503','30.607','31.709','50.173','52.619','44.457','66.661','4.447','9.997'].filter(v=>exj.indexOf(v)>=0);
+    const evs=ex?ex.events:[],L=ex?ex.conditions.load:{};
+    t('Export holds no clock stamps or step labels in any key (full export built from a session that carries them locally)',hits.length===0&&stamps.length===0,hits.concat(stamps).join(','));
+    t('Export event lines: no step, screen, response or wait-choice lines, and no time on the rest (3 of 8 local lines kept)',evs.length===3&&evs.every(e=>!('t' in e)&&!('step' in e)&&!('phase' in e)&&['step','screen','response','wait_resolved'].indexOf(e.type)<0),evs.map(e=>e.type).join(','));
+    t('Wait choice, wait time and send reaction time cannot be derived: wait keeps only its set length, skips are a count, cue events carry no time or step, stop and pauses carry no clock',
+      !!ex&&Object.keys(L.wait).join()==='D_s'&&L.skips_count===1&&L.m1_intrusions.every(x=>!('t' in x)&&!('step' in x))&&L.m4_events.every(x=>!('t' in x)&&!('step' in x))&&Object.keys(ex.telemetry.stop).sort().join()==='cond,screen'&&Object.keys(ex.telemetry.pauses[0]).sort().join()==='seconds,why'&&ex.telemetry.pauses[0].seconds===2.45&&L.m5.locked_s===74.99&&!('lock_start_t' in L.m5),
+      ex?JSON.stringify({wait:L.wait,skips_count:L.skips_count,m5:L.m5,stop:ex.telemetry.stop,pause:ex.telemetry.pauses[0]}):'no export');
   }
   const code=Array.from(document.scripts).map(s=>s.textContent).join('\n').replace(/http:\/\/www\.w3\.org\/2000\/svg/g,'');
   const bad=['fe'+'tch\\(','XMLHt'+'tpRequest','Web'+'Socket','send'+'Beacon','https?'+':\\/\\/','import'+'Scripts','new Im'+'age\\('].filter(p=>new RegExp(p).test(code));

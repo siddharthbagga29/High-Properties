@@ -32,6 +32,16 @@ function useDeepLink() {
     const f = parseFocus(location.hash.replace(/^#/, ''), data)
     if (f) { useStore.getState().set({ introDone: true }); useStore.getState().select(f) }
   }, [data])
+  // A link changed after load (pasted, or the back button) flies there too.
+  useEffect(() => {
+    const on = () => {
+      const s = useStore.getState()
+      const f = parseFocus(location.hash.replace(/^#/, ''), s.data)
+      if (f && focusKey(f) !== focusKey(s.focus)) s.select(f)
+    }
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
   useEffect(() => useStore.subscribe((s, p) => {
     if (focusKey(s.focus) === focusKey(p.focus)) return
     const h = '#' + focusKey(s.focus)

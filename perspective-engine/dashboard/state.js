@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T11:44:00Z",
+ "generated": "2026-10-07T18:59:28Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -723,8 +723,8 @@ window.PE_STATE = {
     "reason": "SAM.gov / eRA Commons registration in the founder's name."
    },
    "budget_k": 40,
-   "status": "blocked",
-   "view": "blocked"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "M06",
@@ -859,36 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:40:18Z",
-   "event": "done",
-   "node": "F06",
-   "note": "Charter: paid ND advisors w/ binding veto, mandatory debrief, never-claims register; draft pending advisor review"
-  },
-  {
-   "t": "2026-10-06T12:40:18Z",
-   "event": "start",
-   "node": "V04",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T12:40:58Z",
-   "event": "done",
-   "node": "V01",
-   "note": "5 mechanisms graded S1-S3; design-parameter ranges; 15-item not-modeled list; M4/M5 sources snippet-level"
-  },
-  {
-   "t": "2026-10-06T12:40:58Z",
-   "event": "start",
-   "node": "V02",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T12:42:32Z",
-   "event": "done",
-   "node": "V04",
-   "note": "Advisor plan: USD 50/h floor (benchmarks snippet-level), 7 channels, session-1 script; all outreach gated"
-  },
   {
    "t": "2026-10-06T12:42:32Z",
    "event": "start",
@@ -1098,6 +1068,36 @@ window.PE_STATE = {
    "event": "block",
    "node": "M05",
    "note": "Build interrupted by the usage limit at about 07:20 UTC with a partial draft on disk; rebuild queued after the current verification wave"
+  },
+  {
+   "t": "2026-10-07T18:50:26Z",
+   "event": "block",
+   "node": "F04",
+   "note": "Verification round 2 failed on two gaps: index.html top summary is 173 words (cap 150); exported step events keep timestamps that reveal the wait choice and time and the send reaction time"
+  },
+  {
+   "t": "2026-10-07T18:50:26Z",
+   "event": "unblock",
+   "node": "F04",
+   "note": "Founder asked to complete the loop: round 3 limited to the two named gaps"
+  },
+  {
+   "t": "2026-10-07T18:50:26Z",
+   "event": "unblock",
+   "node": "M05",
+   "note": "Usage limit cleared; rebuilding from the partial draft"
+  },
+  {
+   "t": "2026-10-07T18:51:10Z",
+   "event": "start",
+   "node": "F04",
+   "note": ""
+  },
+  {
+   "t": "2026-10-07T18:51:12Z",
+   "event": "start",
+   "node": "M05",
+   "note": ""
   }
  ]
 };

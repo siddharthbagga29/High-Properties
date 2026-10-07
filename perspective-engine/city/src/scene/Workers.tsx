@@ -70,9 +70,8 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
       const r = Math.hypot(beside.x, beside.z) || 1
       target.set(beside.x - (beside.x / r) * 1.4, stalled ? 0.7 : 1.8, beside.z - (beside.z / r) * 1.4)
     } else if (agent === CENTER_AGENT) {
-      // Off the brain: the Mayor rests at the front-left of the plaza.
-      const a = Math.PI * 0.8
-      target.set(Math.cos(a) * (R_PLAZA - 2.5), 2.6, Math.sin(a) * (R_PLAZA - 2.5))
+      // Off the brain: the Mayor rests at the front of the plaza, just under the brain's own label.
+      target.set(0, 2.2, R_PLAZA - 0.5)
     } else {
       const a = ringAngle(ringIndex(agent))
       target.set(hx - Math.cos(a) * 1.5, 3.2, hz - Math.sin(a) * 1.5)
@@ -106,9 +105,9 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
     ;(sparks.material as THREE.PointsMaterial).opacity = on ? 0.9 : 0
     if (tag.current) {
       const kind = building ? 'building' : checked ? 'verifying' : stalled ? 'stalled' : waiting ? 'waiting' : 'idle'
-      tag.current.dataset.state = kind
       const span = tag.current.lastElementChild as HTMLElement | null
-      if (span && span.textContent !== label) { span.textContent = label; span.style.color = TAG_COLOR[kind] }
+      if (tag.current.dataset.state !== kind) { tag.current.dataset.state = kind; if (span) span.style.color = TAG_COLOR[kind] }
+      if (span && span.textContent !== label) span.textContent = label
       // The brain label speaks for the Mayor in the world view, so its tag never sits on the brain.
       const hide = agent === CENTER_AGENT && focus.kind === 'world'
       tag.current.style.opacity = live.assemble > 0.9 && !hide ? (stalled ? '0.8' : '1') : '0'
