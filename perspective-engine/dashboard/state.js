@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T19:46:19Z",
+ "generated": "2026-10-07T19:47:28Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -698,8 +698,8 @@ window.PE_STATE = {
     "reason": "Incorporation needs founder identity and payment."
    },
    "budget_k": 10,
-   "status": "running",
-   "view": "running"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "M05",
@@ -859,12 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:53:55Z",
-   "event": "start",
-   "node": "V13",
-   "note": ""
-  },
   {
    "t": "2026-10-06T12:55:40Z",
    "event": "done",
@@ -1098,6 +1092,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "M04",
    "note": ""
+  },
+  {
+   "t": "2026-10-07T19:47:07Z",
+   "event": "done",
+   "node": "M04",
+   "note": "Entity checklist: DE C-corp/LLC/India-UK compared, SBIR >50% rule, 22-step gated checklist, founder IP assignment + no-equity clause"
   }
  ]
 };
