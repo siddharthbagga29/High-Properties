@@ -19,6 +19,8 @@ export const live = {
   visible: new Float32Array(MAX_TASKS).fill(1),
   fresh: new Float32Array(MAX_TASKS),
   agentGlow: new Float32Array(9),
+  /** Tasks with a session really on them right now (status running and a recent step). */
+  working: 0,
   motion: 1,
   fps: 0,
   idle: 0,
@@ -36,8 +38,10 @@ export const PALETTE = {
   glass: new THREE.Color('#1a1147'),
 }
 
-/** Status code → tower fill and colour, shared by towers, signs and the brain. */
-export const STATUS_COLOR = ['#7a3cff', '#2bf0ff', '#ffffff', '#2bf0ff', '#a77bff', '#ff4d7a']
+/** Scene-only status code: the graph says running but nothing was recorded lately, so no session is on it. */
+export const STALLED = 6
+/** Status code → tower colour (pending, ready, working, done, needs founder, blocked, stalled). */
+export const STATUS_COLOR = ['#6b5bb8', '#2bf0ff', '#ffb547', '#2bf0ff', '#a77bff', '#ff4d7a', '#8a7d6c']
 
 export const SNOISE = /* glsl */ `
 vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}

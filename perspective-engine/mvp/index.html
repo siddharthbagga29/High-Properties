@@ -1173,12 +1173,12 @@ function selfTest(){
     t('Form '+k+': instruction answers present',['to','cc','att'].every(x=>{const o=F.reply[x][F.reply.ans[x]];return txt.toLowerCase().indexOf(o.toLowerCase())>=0;}),'');});
   /* measured from the real scheduler on a virtual clock (simCues), not from constants */
   const ceilV=m=>{const o={};MECH[m].params.forEach(p=>{if(p.drv)o[p.k]=pMax(p);});return o;};
-  const sA=simCues({runs:6,minutes:20}),sB=simCues({runs:6,minutes:20,v1:ceilV('M1'),v4:ceilV('M4')}),sC=simCues({runs:6,minutes:20,jitter:true});
-  const sM4=simCues({runs:12,minutes:20,m1:false}),sM1=simCues({runs:12,minutes:20,m4:false});
+  const sA=simCues({runs:20,minutes:20}),sB=simCues({runs:12,minutes:20,v1:ceilV('M1'),v4:ceilV('M4')}),sC=simCues({runs:6,minutes:20,jitter:true});
+  const sM4=simCues({runs:12,minutes:20,m1:false}),sM1=simCues({runs:24,minutes:20,m4:false});   // enough virtual time that the 10% bands are about 5 standard errors wide
   if(!sA)t('Cue scheduler measurement ran (needs no session in progress; reload with #selftest)',false,'session in progress');
   else{
     const gp=x=>x.pairs+' adjacent pairs, min gap '+r2(x.minGap)+' s';
-    t('Measured spacing, defaults (M1+M4, 120 virtual min): no overlaps, every cue starts >= 2.5 s after the previous one ended',sA.pairs>200&&sA.under===0&&sA.overlaps===0,gp(sA));
+    t('Measured spacing, defaults (M1+M4, 400 virtual min): no overlaps, every cue starts >= 2.5 s after the previous one ended',sA.pairs>200&&sA.under===0&&sA.overlaps===0,gp(sA));
     t('Measured spacing, all intensities at the 0.8 ceiling: same',sB.pairs>200&&sB.under===0&&sB.overlaps===0,gp(sB));
     t('Measured spacing with uneven timer steps (0.05 to 0.5 s): same',sC.pairs>200&&sC.under===0&&sC.overlaps===0,gp(sC));
     t('Measured visual changes: at most 2 (one on-off pair) in any 1 s window, so under 3 flashes per second',Math.max(sA.maxChanges1s,sB.maxChanges1s,sC.maxChanges1s)<=2,'max '+Math.max(sA.maxChanges1s,sB.maxChanges1s,sC.maxChanges1s)+' per 1 s');

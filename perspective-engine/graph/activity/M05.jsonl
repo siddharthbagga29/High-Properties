@@ -1,0 +1,1 @@
+{"t": "2026-10-07T06:39:59Z", "node": "M05", "agent": "finance", "kind": "note", "text": "A scheduled run (06:33 UTC) drafted finance/sbir-draft.md, but its push failed with 403: the routine has no access to this repo. The draft exists only in that run's container, so M05 stays pending here until the founder gives the routine repo access or recovers the draft.", "src": "self"}

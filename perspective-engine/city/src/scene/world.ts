@@ -11,6 +11,13 @@ export const CENTER_AGENT = 'orchestrator'
 export const ALL_AGENTS = [CENTER_AGENT, ...RING] as string[]
 export const MAX_TASKS = 48
 
+/** What each agent does, read first by a visitor: "RESEARCH · Curie". Used by signs, tags and labels alike. */
+export const DEPT: Record<string, string> = {
+  orchestrator: 'The plan', science: 'Research', data: 'Data', finance: 'Finance', legal: 'Legal',
+  gtm: 'Go-to-market', brand: 'Brand', product: 'Product', ethics: 'Ethics',
+}
+export const agentLabel = (key: string, name: string) => `${DEPT[key] ?? key} · ${name}`
+
 export const BRAIN_C: V3 = [0, 12.5, 0]
 export const BRAIN_S = 9.6
 export const R_DISTRICT = 27
