@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T19:20:54Z",
+ "generated": "2026-10-07T19:25:15Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -137,8 +137,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 80,
-   "status": "running",
-   "view": "running"
+   "status": "done",
+   "view": "done"
   },
   {
    "id": "F05",
@@ -532,8 +532,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 10,
-   "status": "pending",
-   "view": "pending"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V13",
@@ -584,7 +584,7 @@ window.PE_STATE = {
    },
    "budget_k": 40,
    "status": "pending",
-   "view": "pending"
+   "view": "ready"
   },
   {
    "id": "V15",
@@ -860,18 +860,6 @@ window.PE_STATE = {
  ],
  "ledger": [
   {
-   "t": "2026-10-06T12:45:44Z",
-   "event": "start",
-   "node": "V10",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T12:49:21Z",
-   "event": "done",
-   "node": "V03",
-   "note": "OSF-ready prereg: 120-manager cluster-randomized estimation pilot; CI half-width ~0.41 SD; slots to fill"
-  },
-  {
    "t": "2026-10-06T12:49:21Z",
    "event": "start",
    "node": "V15",
@@ -1097,6 +1085,18 @@ window.PE_STATE = {
    "t": "2026-10-07T19:09:42Z",
    "event": "start",
    "node": "F04",
+   "note": ""
+  },
+  {
+   "t": "2026-10-07T19:22:35Z",
+   "event": "done",
+   "node": "F04",
+   "note": "Verified: sticky panel Stop hit-testable at 360-1920 px, all scrolls; selftest 59/59; 0 errors/requests; export, debrief, motion hold"
+  },
+  {
+   "t": "2026-10-07T19:22:53Z",
+   "event": "start",
+   "node": "V12",
    "note": ""
   }
  ]

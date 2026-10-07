@@ -52,3 +52,5 @@
 {"t": "2026-10-07T19:09:16Z", "event": "block", "node": "F04", "note": "Verification round 3: both named gaps fixed, but Stop is not visible when the facilitator panel is open and scrolled (phone during a live run; desktop on intro, brief2, compare)"}
 {"t": "2026-10-07T19:09:16Z", "event": "unblock", "node": "F04", "note": "Round 4 limited to the Stop-visibility gap (a hard safety rule)"}
 {"t": "2026-10-07T19:09:42Z", "event": "start", "node": "F04", "note": ""}
+{"t": "2026-10-07T19:22:35Z", "event": "done", "node": "F04", "note": "Verified: sticky panel Stop hit-testable at 360-1920 px, all scrolls; selftest 59/59; 0 errors/requests; export, debrief, motion hold"}
+{"t": "2026-10-07T19:22:53Z", "event": "start", "node": "V12", "note": ""}
