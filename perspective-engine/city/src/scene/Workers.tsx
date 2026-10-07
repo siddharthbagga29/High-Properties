@@ -74,9 +74,8 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
       const a = Math.PI * 0.8
       target.set(Math.cos(a) * (R_PLAZA - 2.5), 2.6, Math.sin(a) * (R_PLAZA - 2.5))
     } else {
-      // Home is the outer edge of the district, so the far district's tag never sits on the brain.
       const a = ringAngle(ringIndex(agent))
-      target.set(hx + Math.cos(a) * 2.2, 3.2, hz + Math.sin(a) * 2.2)
+      target.set(hx - Math.cos(a) * 1.5, 3.2, hz - Math.sin(a) * 1.5)
     }
     group.current.position.lerp(target, 1 - Math.exp(-dt * 2.5))
     const big = hover?.id === agent || (focus.kind === 'agent' && focus.id === agent)

@@ -137,7 +137,7 @@ export function TowerTags({ towers, run, at }: { towers: Tower[]; run: Map<strin
           <group key={t.id} position={[t.x, t.h * (s === 'blocked' ? 0.18 : 1) + 0.5, t.z]}>
             <Html portal={labelLayer} zIndexRange={[20, 0]} style={{ transform: 'translate3d(-50%,-100%,0)' }}>
               <button className="tower-tag" tabIndex={-1} onClick={() => { sfx.click(); useStore.getState().select({ kind: 'task', id: n.id }) }}
-                style={{ pointerEvents: 'auto', cursor: 'pointer', display: 'grid', gap: 1, maxWidth: 170, padding: '3px 7px', textAlign: 'left',
+                style={{ pointerEvents: 'auto', cursor: 'pointer', display: 'grid', gap: 1, width: 'max-content', maxWidth: 170, padding: '3px 7px', textAlign: 'left',
                   background: 'rgba(10,5,36,0.82)', border: `1px solid ${color}66`, borderRadius: 3, color: '#efeee8', font: '500 11px/1.35 var(--mono)' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.id} · {n.title}</span>
                 <span style={{ color, fontWeight: 600, letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{word}{since ? ` SINCE ${clock(since).slice(0, 5)}` : ''}</span>
