@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T19:08:54Z",
+ "generated": "2026-10-07T19:09:42Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -860,24 +860,6 @@ window.PE_STATE = {
  ],
  "ledger": [
   {
-   "t": "2026-10-06T12:45:17Z",
-   "event": "done",
-   "node": "V02",
-   "note": "Primary outcome: verified Accommodation Action Index at day 30; RCT vs info-only control; pilot of 80-150 estimates only"
-  },
-  {
-   "t": "2026-10-06T12:45:23Z",
-   "event": "start",
-   "node": "V03",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T12:45:44Z",
-   "event": "done",
-   "node": "V07",
-   "note": "50 accounts (26/12/12 by segment), 23 high-confidence; 14 roundtable rows need click-through"
-  },
-  {
    "t": "2026-10-06T12:45:44Z",
    "event": "start",
    "node": "V10",
@@ -1098,6 +1080,24 @@ window.PE_STATE = {
    "event": "done",
    "node": "M05",
    "note": "SBIR draft v0.2 verified: aims page, line-by-line budget justification, arithmetic and Monte Carlo reproduce; caps and eligibility checked"
+  },
+  {
+   "t": "2026-10-07T19:09:16Z",
+   "event": "block",
+   "node": "F04",
+   "note": "Verification round 3: both named gaps fixed, but Stop is not visible when the facilitator panel is open and scrolled (phone during a live run; desktop on intro, brief2, compare)"
+  },
+  {
+   "t": "2026-10-07T19:09:16Z",
+   "event": "unblock",
+   "node": "F04",
+   "note": "Round 4 limited to the Stop-visibility gap (a hard safety rule)"
+  },
+  {
+   "t": "2026-10-07T19:09:42Z",
+   "event": "start",
+   "node": "F04",
+   "note": ""
   }
  ]
 };
