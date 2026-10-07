@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-06T19:37:18Z",
+ "generated": "2026-10-07T00:41:00Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -860,18 +860,6 @@ window.PE_STATE = {
  ],
  "ledger": [
   {
-   "t": "2026-10-06T12:35:38Z",
-   "event": "done",
-   "node": "F03",
-   "note": "Dossier: Quest commercial sales ended 2026-02; quantum/18dB/CPT claims unsupported; sims need debrief"
-  },
-  {
-   "t": "2026-10-06T12:38:19Z",
-   "event": "start",
-   "node": "F06",
-   "note": ""
-  },
-  {
    "t": "2026-10-06T12:38:19Z",
    "event": "start",
    "node": "V01",
@@ -1092,6 +1080,24 @@ window.PE_STATE = {
    "event": "done",
    "node": "V09",
    "note": "Batch B1 prepared, NOT sent: 10 US accounts x 3 touches, signals re-checked, empty send/reply log; awaits founder Gmail OK"
+  },
+  {
+   "t": "2026-10-07T00:39:52Z",
+   "event": "block",
+   "node": "M03",
+   "note": "Failed verification twice: says the Nario-Redmond 2017 abstract omits pity (it reports pity in Exp. 2); summary overstates the strengths slot D4; WCAG 2.3.1 citation unmarked"
+  },
+  {
+   "t": "2026-10-07T00:39:52Z",
+   "event": "unblock",
+   "node": "M03",
+   "note": "Founder asked to retry: round 3 fixes only the three named gaps"
+  },
+  {
+   "t": "2026-10-07T00:40:43Z",
+   "event": "start",
+   "node": "M03",
+   "note": ""
   }
  ]
 };

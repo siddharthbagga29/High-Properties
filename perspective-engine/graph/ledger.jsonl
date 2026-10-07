@@ -37,3 +37,6 @@
 {"t": "2026-10-06T19:17:52Z", "event": "start", "node": "V09", "note": "Ogilvy preparing outreach batch 1 (not sending)"}
 {"t": "2026-10-06T19:17:52Z", "event": "start", "node": "M03", "note": "Milton preparing the IRB packet"}
 {"t": "2026-10-06T19:19:31Z", "event": "done", "node": "V09", "note": "Batch B1 prepared, NOT sent: 10 US accounts x 3 touches, signals re-checked, empty send/reply log; awaits founder Gmail OK"}
+{"t": "2026-10-07T00:39:52Z", "event": "block", "node": "M03", "note": "Failed verification twice: says the Nario-Redmond 2017 abstract omits pity (it reports pity in Exp. 2); summary overstates the strengths slot D4; WCAG 2.3.1 citation unmarked"}
+{"t": "2026-10-07T00:39:52Z", "event": "unblock", "node": "M03", "note": "Founder asked to retry: round 3 fixes only the three named gaps"}
+{"t": "2026-10-07T00:40:43Z", "event": "start", "node": "M03", "note": ""}

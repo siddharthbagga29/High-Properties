@@ -8,3 +8,61 @@
 {"t": "2026-10-06T19:19:27Z", "node": "V09", "agent": "gtm", "kind": "check", "text": "minor, non-blocking: Pitt series is a joint Pitt-CMU series (UCTL is one co-creator), year of Jan 29 kickoff unverified (flagged); 'at University of Pittsburgh' grammar flagged for founder; agent also read targets.csv and graph.json beyond listed input", "src": "self"}
 {"t": "2026-10-06T19:19:27Z", "node": "V09", "agent": "gtm", "kind": "check", "text": "verdict: prepared batch passes; acceptance (sends and replies) can only be met after founder clears Gmail gate, so done moves V09 to awaiting_human, not done", "src": "self"}
 {"t": "2026-10-06T19:19:31Z", "node": "V09", "agent": "gtm", "kind": "handoff", "text": "done: Batch B1 prepared, NOT sent: 10 US accounts x 3 touches, signals re-checked, empty send/reply log; awaits founder Gmail OK", "src": "ledger"}
+{"t": "2026-10-06T19:09:04Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Read .claude/agents/pe-gtm.md", "src": "transcript"}
+{"t": "2026-10-06T19:09:04Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Looked up glob perspective-engine/**/*", "src": "transcript"}
+{"t": "2026-10-06T19:09:08Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Read perspective-engine/gtm/outreach.md", "src": "transcript"}
+{"t": "2026-10-06T19:09:08Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Read perspective-engine/gtm/targets.csv", "src": "transcript"}
+{"t": "2026-10-06T19:09:09Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Looked up grep \"V09\"", "src": "transcript"}
+{"t": "2026-10-06T19:09:11Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Looked up grep \"id\": \"V09\"", "src": "transcript"}
+{"t": "2026-10-06T19:09:11Z", "node": "V09", "agent": "gtm", "kind": "read", "text": "Looked up glob perspective-engine/gtm/*", "src": "transcript"}
+{"t": "2026-10-06T19:09:15Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://uplight.com/blog/inside-uplights-neurodiversity-employee-resource-group/", "src": "transcript"}
+{"t": "2026-10-06T19:09:15Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://uplight.com/blog/inside-uplights-neurodiversity-employee-resource-group/", "src": "transcript"}
+{"t": "2026-10-06T19:09:16Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.hcamag.com/us/specialization/diversity-inclusion/dell-manager-how-tech-giant-recruits-and-supports-neurodivergent-talent/405669", "src": "transcript"}
+{"t": "2026-10-06T19:09:16Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.hcamag.com/us/specialization/diversity-inclusion/dell-manager-how-tech-giant-recruits-and-supports-neurodivergent-talent/405669", "src": "transcript"}
+{"t": "2026-10-06T19:09:17Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.salesforce.com/news/stories/best-places-to-work-disability-2025/", "src": "transcript"}
+{"t": "2026-10-06T19:09:17Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.salesforce.com/news/stories/best-places-to-work-disability-2025/", "src": "transcript"}
+{"t": "2026-10-06T19:09:17Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.careers.jnj.com/access-ability", "src": "transcript"}
+{"t": "2026-10-06T19:09:18Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.careers.jnj.com/access-ability", "src": "transcript"}
+{"t": "2026-10-06T19:09:18Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.principal.com/about-us/news-room/news-releases/2025-best-place-work-disability-inclusion", "src": "transcript"}
+{"t": "2026-10-06T19:09:18Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.principal.com/about-us/news-room/news-releases/2025-best-place-work-disability-inclusion", "src": "transcript"}
+{"t": "2026-10-06T19:09:21Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Uplight NEUROdiversity employee resource group ADHD autism dyslexia", "src": "transcript"}
+{"t": "2026-10-06T19:09:21Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Neurodiversity@Dell skills-based hiring internships career readiness Dell manager neurodivergent talent", "src": "transcript"}
+{"t": "2026-10-06T19:09:22Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Salesforce 2025 Disability Equality Index score 100 Best Places to Work for Disability Inclusion", "src": "transcript"}
+{"t": "2026-10-06T19:09:22Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Principal Financial Group 2025 Best Place to Work for Disability Inclusion score 100 sixth consecutive year", "src": "transcript"}
+{"t": "2026-10-06T19:09:22Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Johnson & Johnson Access Ability program applicants autistic neurodivergent disabled careers", "src": "transcript"}
+{"t": "2026-10-06T19:09:32Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Acxiom 2025 Disability Equality Index score 100 third time Best Place to Work for Disability Inclusion", "src": "transcript"}
+{"t": "2026-10-06T19:09:32Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Mercy named 2025 Best Place to Work for Disability Inclusion top score Disability Equality Index", "src": "transcript"}
+{"t": "2026-10-06T19:09:33Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Western Washington University workshop faculty and staff meeting diverse minds practical approaches teaching neurodivergent students Disabi\u2026", "src": "transcript"}
+{"t": "2026-10-06T19:09:33Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Cal State Fullerton Faculty Development Center Supporting Neurodivergent Students certificate NeuroPREP", "src": "transcript"}
+{"t": "2026-10-06T19:09:33Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: University of Pittsburgh Center for Teaching and Learning neurodiversity neuroinclusive pedagogy series", "src": "transcript"}
+{"t": "2026-10-06T19:10:05Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.acxiom.com/news/disability-inclusion-2025/", "src": "transcript"}
+{"t": "2026-10-06T19:10:06Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.acxiom.com/news/disability-inclusion-2025/", "src": "transcript"}
+{"t": "2026-10-06T19:10:06Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://fdc.fullerton.edu/workshops/certificates-and-badges/supporting-neurodivergent-students.html", "src": "transcript"}
+{"t": "2026-10-06T19:10:07Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://fdc.fullerton.edu/workshops/certificates-and-badges/supporting-neurodivergent-students.html", "src": "transcript"}
+{"t": "2026-10-06T19:10:07Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.utimes.pitt.edu/news/collaborative-series", "src": "transcript"}
+{"t": "2026-10-06T19:10:07Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.utimes.pitt.edu/news/collaborative-series", "src": "transcript"}
+{"t": "2026-10-06T19:10:08Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.mercy.net/newsroom/2025-07-29/mercy-named-a-best-place-to-work-for-disability-inclusion/", "src": "transcript"}
+{"t": "2026-10-06T19:10:08Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.mercy.net/newsroom/2025-07-29/mercy-named-a-best-place-to-work-for-disability-inclusion/", "src": "transcript"}
+{"t": "2026-10-06T19:10:08Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Salesforce Autism at Work program Specialisterne neurodiversity hiring", "src": "transcript"}
+{"t": "2026-10-06T19:10:44Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: 2026 Disability Index Best Places to Work for Disability Inclusion Principal Acxiom Salesforce Mercy", "src": "transcript"}
+{"t": "2026-10-06T19:10:45Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Johnson & Johnson Access Ability hiring program managers training coaching site careers.jnj.com", "src": "transcript"}
+{"t": "2026-10-06T19:12:18Z", "node": "V09", "agent": "gtm", "kind": "write", "text": "Wrote perspective-engine/gtm/outreach-log.md (4,431 words)", "src": "transcript"}
+{"t": "2026-10-06T19:17:57Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Show task brief for V09", "src": "transcript"}
+{"t": "2026-10-06T19:17:59Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Read output file and role card", "src": "transcript"}
+{"t": "2026-10-06T19:18:01Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Read outreach log", "src": "transcript"}
+{"t": "2026-10-06T19:18:06Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Read role card and outreach input", "src": "transcript"}
+{"t": "2026-10-06T19:18:13Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Check graph tool usage and V09 node definition", "src": "transcript"}
+{"t": "2026-10-06T19:18:15Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Inspect graph tool commands and gate handling", "src": "transcript"}
+{"t": "2026-10-06T19:18:18Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Check gate logic and V09 ledger/activity history", "src": "transcript"}
+{"t": "2026-10-06T19:18:21Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Read done/clear-gate implementation", "src": "transcript"}
+{"t": "2026-10-06T19:18:43Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "List founder-gated nodes and recent ledger", "src": "transcript"}
+{"t": "2026-10-06T19:18:52Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Log read step and run mechanical checks", "src": "transcript"}
+{"t": "2026-10-06T19:18:56Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Principal Financial Group 2025 Disability Equality Index score 100 sixth consecutive year", "src": "transcript"}
+{"t": "2026-10-06T19:18:56Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: Acxiom 2025 Disability Index score 100 Best Place to Work for Disability Inclusion", "src": "transcript"}
+{"t": "2026-10-06T19:19:04Z", "node": "V09", "agent": "gtm", "kind": "search", "text": "Searched: University of Pittsburgh Center for Teaching and Learning neuroinclusive teaching series Carnegie Mellon utimes", "src": "transcript"}
+{"t": "2026-10-06T19:19:04Z", "node": "V09", "agent": "gtm", "kind": "fetch", "text": "Opened https://www.careers.jnj.com/access-ability", "src": "transcript"}
+{"t": "2026-10-06T19:19:04Z", "node": "V09", "agent": "gtm", "kind": "blocked", "text": "Failed (blocked by the network proxy): Opened https://www.careers.jnj.com/access-ability", "src": "transcript"}
+{"t": "2026-10-06T19:19:20Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Verify email blocks placeholders and footers", "src": "transcript"}
+{"t": "2026-10-06T19:19:27Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Log verification checks to V09 activity", "src": "transcript"}
+{"t": "2026-10-06T19:19:31Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Mark V09 prepared and show founder-gated nodes", "src": "transcript"}
+{"t": "2026-10-06T19:19:37Z", "node": "V09", "agent": "gtm", "kind": "handoff", "text": "Handed the result back to the orchestrator", "src": "transcript"}
