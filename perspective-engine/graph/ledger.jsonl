@@ -48,3 +48,4 @@
 {"t": "2026-10-07T18:50:26Z", "event": "unblock", "node": "M05", "note": "Usage limit cleared; rebuilding from the partial draft"}
 {"t": "2026-10-07T18:51:10Z", "event": "start", "node": "F04", "note": ""}
 {"t": "2026-10-07T18:51:12Z", "event": "start", "node": "M05", "note": ""}
+{"t": "2026-10-07T19:07:48Z", "event": "done", "node": "M05", "note": "SBIR draft v0.2 verified: aims page, line-by-line budget justification, arithmetic and Monte Carlo reproduce; caps and eligibility checked"}

@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T19:04:54Z",
+ "generated": "2026-10-07T19:08:54Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -723,8 +723,8 @@ window.PE_STATE = {
     "reason": "SAM.gov / eRA Commons registration in the founder's name."
    },
    "budget_k": 40,
-   "status": "running",
-   "view": "running"
+   "status": "awaiting_human",
+   "view": "awaiting_human"
   },
   {
    "id": "M06",
@@ -859,12 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:42:32Z",
-   "event": "start",
-   "node": "V07",
-   "note": ""
-  },
   {
    "t": "2026-10-06T12:45:17Z",
    "event": "done",
@@ -1098,6 +1092,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "M05",
    "note": ""
+  },
+  {
+   "t": "2026-10-07T19:07:48Z",
+   "event": "done",
+   "node": "M05",
+   "note": "SBIR draft v0.2 verified: aims page, line-by-line budget justification, arithmetic and Monte Carlo reproduce; caps and eligibility checked"
   }
  ]
 };
