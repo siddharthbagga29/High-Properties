@@ -1,15 +1,13 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { sfx } from '../audio/sound'
 import { BRIEF } from '../data/brief'
 import { agentFeed, agentStats, atomsOf, clock, fmtK, LIVE_WINDOW_MIN, runState, STATUS_LABEL, taskFeed, ventureStats } from '../data/model'
 import type { GraphState, Status } from '../data/types'
 import { DEPT, RING } from '../scene/world'
 import { useStore, type Focus } from '../store'
-import { sourceText } from './Chrome'
+import { sourceText, trapTab } from './Chrome'
 import { spring } from './Drawer'
-
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, summary, [tabindex]:not([tabindex="-1"])'
 
 /** Whatever had focus when a panel opened gets it back when the panel closes. Captured on the store change itself, before the page behind goes inert. */
 let opener: HTMLElement | null = null
@@ -25,21 +23,12 @@ function Modal({ id, label, labelledBy, initialFocus, children, wide }: { id: st
     ;(initialFocus ? el?.querySelector<HTMLElement>(initialFocus) ?? el : el)?.focus()
     return () => { requestAnimationFrame(() => { if (useStore.getState().panel === 'none' && back?.isConnected) back.focus() }) }
   }, [open, initialFocus])
-  // Tab and Shift+Tab cycle inside the dialog; everything behind it is inert.
-  const trap = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Tab' || !ref.current) return
-    const f = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(x => x.getClientRects().length > 0)
-    if (!f.length) { e.preventDefault(); return }
-    const a = document.activeElement
-    if (e.shiftKey && (a === f[0] || a === ref.current)) { e.preventDefault(); f[f.length - 1].focus() }
-    else if (!e.shiftKey && a === f[f.length - 1]) { e.preventDefault(); f[0].focus() }
-  }
   return (
     <AnimatePresence>
       {open && (
         <motion.div className="modal-wrap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => useStore.getState().set({ panel: 'none' })}>
           <motion.div ref={ref} className={`modal scrolls${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : label}
-            tabIndex={-1} onKeyDown={trap}
+            tabIndex={-1} onKeyDown={e => trapTab(e, ref.current)}
             initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 14, opacity: 0 }} transition={spring} onClick={e => e.stopPropagation()}>
             {children}
           </motion.div>
@@ -232,7 +221,7 @@ export function IndexMirror() {
   const { data, st, time } = useIndexData()
   const open = useStore(s => s.panel === 'index')
   if (!data || open) return null
-  return <div className="sr-only">{<IndexBody data={data} st={st} time={time} mode="sr" />}</div>
+  return <div className="sr-only"><IndexBody data={data} st={st} time={time} mode="sr" /></div>
 }
 
 /** No WebGL: the tables are the page. It scrolls on its own, and task links open the inspector beside it. */
