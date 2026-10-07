@@ -169,3 +169,5 @@
 {"t": "2026-10-07T19:09:16Z", "node": "F04", "agent": "product", "kind": "blocked", "text": "block: Verification round 3: both named gaps fixed, but Stop is not visible when the facilitator panel is open and scrolled (phone during a live run; desktop on intro, brief2, compare)", "src": "ledger"}
 {"t": "2026-10-07T19:09:16Z", "node": "F04", "agent": "product", "kind": "note", "text": "unblock: Round 4 limited to the Stop-visibility gap (a hard safety rule)", "src": "ledger"}
 {"t": "2026-10-07T19:09:42Z", "node": "F04", "agent": "product", "kind": "plan", "text": "start", "src": "ledger"}
+{"t": "2026-10-07T19:09:50Z", "node": "F04", "agent": "product", "kind": "read", "text": "Read mvp/README.md (142 lines) for current Stop, export key and Residual wording", "src": "self"}
+{"t": "2026-10-07T19:09:55Z", "node": "F04", "agent": "product", "kind": "read", "text": "Read index.html lines 1-170 (head, CSS, header with #stopBtn, summary comment)", "src": "self"}
