@@ -6,6 +6,7 @@ import { BRIEF, reality } from '../data/brief'
 import {
   agentFeed, agentStats, ago, atomsOf, clock, collapseFeed, CRITERION_NOTE, criterionState, feed, fmtK, fmtTime, isVerifier,
   lastSignal, LIVE_WINDOW_MIN, ms, runState, stalledNow, STATUS_LABEL, taskFeed, ventureStats, workingNow,
+  isToolCall,
 } from '../data/model'
 import type { ActivityEvent, GraphState, Status } from '../data/types'
 import { focusKey, useStore, type AskOut, type Focus, type Tab } from '../store'
@@ -369,7 +370,7 @@ function TaskView({ data, st, id, time }: { data: GraphState; st: St; id: string
       <M variants={rise} className="stats">
         <div><b>{n.budget_k}k</b><span>tokens planned</span></div>
         <div><b>{run ? fmtK(run.used_k) : '—'}</b><span>{run ? `used${run.duration_s ? ` in ${(run.duration_s / 60).toFixed(1)}m` : ''}` : 'not yet measured'}</span></div>
-        <div><b>{raw.filter(e => e.src === 'transcript').length}</b><span>tool calls</span></div>
+        <div><b>{raw.filter(isToolCall).length}</b><span>tool calls</span></div>
         <div><b>{raw.length}</b><span>steps logged</span></div>
       </M>
       {n.gate && gate && (

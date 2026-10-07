@@ -104,7 +104,7 @@ export function agentStats(state: GraphState, st: Map<string, Status>, at: numbe
       running: tasks.find(n => live.get(n.id) === 'working') ?? null,
       stalled: tasks.find(n => live.get(n.id) === 'stalled') ?? null,
       lastStep: lastOwnStep(state, key, at),
-      toolCalls: tasks.reduce((s, n) => s + (state.activity?.[n.id] ?? []).filter(e => e.src === 'transcript' && ms(e.t) <= at).length, 0),
+      toolCalls: tasks.reduce((s, n) => s + (state.activity?.[n.id] ?? []).filter(e => isToolCall(e) && ms(e.t) <= at).length, 0),
       unmeasured: tasks.filter(n => !n.run && (state.activity?.[n.id] ?? []).some(e => e.src !== 'ledger' && ms(e.t) <= at)).length,
       next: tasks.find(n => st.get(n.id) === 'ready') ?? null,
       waiting: tasks.filter(n => st.get(n.id) === 'awaiting_human').length,
@@ -126,7 +126,7 @@ export function ventureStats(state: GraphState, st: Map<string, Status>, t: numb
     running: live.filter(x => x === 'working').length,
     /** Status running but silent: no session is working on it. */
     stalled: live.filter(x => x === 'stalled').length,
-    toolCalls: feed(state, t).filter(e => e.src === 'transcript').length,
+    toolCalls: feed(state, t).filter(isToolCall).length,
     steps: feed(state, t).length,
     ready: count('ready'),
     waiting: count('awaiting_human'),
@@ -209,6 +209,9 @@ export const taskFeed = (state: GraphState, id: string, t: number | null) => fee
 /** Minutes without any recorded step after which a running task counts as stalled (no session is on it). */
 export const LIVE_WINDOW_MIN = 15
 const WINDOW = LIVE_WINDOW_MIN * 60_000
+
+/** A real tool call from a transcript. A failed call is one call: its "Failed (...)" result row is not counted again. */
+export const isToolCall = (e: ActivityEvent) => e.src === 'transcript' && !(e.kind === 'blocked' && e.text.startsWith('Failed ('))
 
 /** Rows written by the independent verifier, not by the agent that owns the task. */
 export const isVerifier = (e: ActivityEvent) => e.actor === 'verifier' || /^verifier\b/i.test(e.text)

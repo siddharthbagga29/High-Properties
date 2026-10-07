@@ -42,3 +42,4 @@
 {"t": "2026-10-07T00:40:43Z", "event": "start", "node": "M03", "note": ""}
 {"t": "2026-10-07T01:03:04Z", "event": "done", "node": "M03", "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"}
 {"t": "2026-10-07T06:50:10Z", "event": "start", "node": "M05", "note": ""}
+{"t": "2026-10-07T11:42:02Z", "event": "block", "node": "M05", "note": "Build interrupted by the usage limit at about 07:20 UTC with a partial draft on disk; rebuild queued after the current verification wave"}

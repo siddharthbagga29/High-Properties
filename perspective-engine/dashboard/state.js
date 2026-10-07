@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T06:58:37Z",
+ "generated": "2026-10-07T11:42:06Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -723,8 +723,8 @@ window.PE_STATE = {
     "reason": "SAM.gov / eRA Commons registration in the founder's name."
    },
    "budget_k": 40,
-   "status": "running",
-   "view": "running"
+   "status": "blocked",
+   "view": "blocked"
   },
   {
    "id": "M06",
@@ -859,12 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:39:58Z",
-   "event": "done",
-   "node": "V05",
-   "note": "3 segments: ND-program employers (People/L&D), accommodation/ADA owners, higher ed; pricing unverified"
-  },
   {
    "t": "2026-10-06T12:40:18Z",
    "event": "done",
@@ -1098,6 +1092,12 @@ window.PE_STATE = {
    "event": "start",
    "node": "M05",
    "note": ""
+  },
+  {
+   "t": "2026-10-07T11:42:02Z",
+   "event": "block",
+   "node": "M05",
+   "note": "Build interrupted by the usage limit at about 07:20 UTC with a partial draft on disk; rebuild queued after the current verification wave"
   }
  ]
 };
