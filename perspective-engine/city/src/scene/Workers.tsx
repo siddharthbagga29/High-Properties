@@ -34,10 +34,10 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
   // Liveness from the record (agentStats at the replay moment or now), refreshed whenever the scene re-renders.
   const state = useRef({ building: -1, verifying: -1, stalled: -1, waiting: false, label: '' })
   const checked = !!stat && !!data && verifying(stat, data, at)
-  const live_ = stat?.running ? towers.findIndex(t => t.id === stat.running!.id) : -1
+  const onTask = stat?.running ? towers.findIndex(t => t.id === stat.running!.id) : -1
   state.current = {
-    building: checked ? -1 : live_,
-    verifying: checked ? live_ : -1,
+    building: checked ? -1 : onTask,
+    verifying: checked ? onTask : -1,
     stalled: stat?.stalled ? towers.findIndex(t => t.id === stat.stalled!.id) : -1,
     waiting: (stat?.waiting ?? 0) > 0,
     label: stat && data ? agentState(stat, data, at) : 'not started',

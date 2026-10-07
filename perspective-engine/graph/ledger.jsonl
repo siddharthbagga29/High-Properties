@@ -41,3 +41,4 @@
 {"t": "2026-10-07T00:39:52Z", "event": "unblock", "node": "M03", "note": "Founder asked to retry: round 3 fixes only the three named gaps"}
 {"t": "2026-10-07T00:40:43Z", "event": "start", "node": "M03", "note": ""}
 {"t": "2026-10-07T01:03:04Z", "event": "done", "node": "M03", "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"}
+{"t": "2026-10-07T06:50:10Z", "event": "start", "node": "M05", "note": ""}

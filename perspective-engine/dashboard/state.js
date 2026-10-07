@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-07T06:44:19Z",
+ "generated": "2026-10-07T06:50:10Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -723,8 +723,8 @@ window.PE_STATE = {
     "reason": "SAM.gov / eRA Commons registration in the founder's name."
    },
    "budget_k": 40,
-   "status": "pending",
-   "view": "ready"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "M06",
@@ -859,12 +859,6 @@ window.PE_STATE = {
   }
  ],
  "ledger": [
-  {
-   "t": "2026-10-06T12:38:19Z",
-   "event": "start",
-   "node": "V05",
-   "note": ""
-  },
   {
    "t": "2026-10-06T12:39:58Z",
    "event": "done",
@@ -1098,6 +1092,12 @@ window.PE_STATE = {
    "event": "done",
    "node": "M03",
    "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"
+  },
+  {
+   "t": "2026-10-07T06:50:10Z",
+   "event": "start",
+   "node": "M05",
+   "note": ""
   }
  ]
 };
