@@ -1,2 +1,4 @@
 {"t": "2026-10-07T19:25:34Z", "node": "V14", "agent": "product", "kind": "plan", "text": "start", "src": "ledger"}
 {"t": "2026-10-07T19:25:54Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read brief inputs: advisory-board.md, founder-decisions.md, mechanism-spec.md, mvp/README.md; reading index.html by section", "src": "self"}
+{"t": "2026-10-07T19:26:16Z", "node": "V14", "agent": "product", "kind": "read", "text": "Read index.html: intro, round briefs, mechanism defs, debrief (10 sections), compare, plan, stopped, done, facilitator panel", "src": "self"}
+{"t": "2026-10-07T19:28:38Z", "node": "V14", "agent": "product", "kind": "check", "text": "node --check on script extracted from mvp/index.html passes (baseline v0.1.0-F04, sha256 83f500ed...); gathered line anchors for note routing", "src": "self"}
