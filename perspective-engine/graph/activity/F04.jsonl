@@ -129,3 +129,4 @@
 {"t": "2026-10-07T11:42:02Z", "node": "F04", "agent": "product", "kind": "note", "text": "Revision round 2 finished at 07:19 UTC; independent verification was cut off by the usage limit and restarted at 11:42 UTC", "src": "self"}
 {"t": "2026-10-07T11:42:06Z", "node": "F04", "agent": "product", "kind": "read", "text": "verifier: read brief, role card, README (129 lines) and index.html (1258 lines) in full", "src": "self"}
 {"t": "2026-10-07T11:42:10Z", "node": "F04", "agent": "product", "kind": "check", "text": "verifier: README top summary is 143 words (cap 150): PASS. index.html header SUMMARY comment is about 172 words (not a gap previously raised)", "src": "self"}
+{"t": "2026-10-07T11:43:46Z", "node": "F04", "agent": "product", "kind": "check", "text": "verifier: extracted the single inline script (no external scripts) to scratchpad; node --check passes (node v22)", "src": "self"}
