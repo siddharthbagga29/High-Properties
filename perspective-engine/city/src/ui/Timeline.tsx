@@ -29,6 +29,7 @@ export function Timeline({ events, showAgent, showTask, empty }: { events: Activ
   const kinds = GROUPS.find(g => g.key === group)!.kinds
   const picked = useMemo(() => (kinds.length ? all.filter(e => kinds.includes(e.kind)) : all), [all, kinds])
   const rows = picked.slice(0, 300)
+  const merged = events.length - all.length
   const now = time ?? Date.now()
   let lastDay = '', lastNode = ''
   return (
@@ -73,7 +74,7 @@ export function Timeline({ events, showAgent, showTask, empty }: { events: Activ
         })}
       </ol>
       {picked.length > 300 && <p className="muted small">Showing the latest 300 of {picked.length} rows.</p>}
-      {events.length > all.length && <p className="muted small">{events.length - all.length} failed attempt{events.length - all.length > 1 ? 's are' : ' is'} shown merged with the step it belongs to.</p>}
+      {merged > 0 && <p className="muted small">{merged === 1 ? 'One failure is' : `${merged} failures are`} shown on the same row as the step that failed.</p>}
     </div>
   )
 }
