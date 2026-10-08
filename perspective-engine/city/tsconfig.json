@@ -17,13 +17,21 @@
     "resolveJsonModule": true,
     "types": [
       "vite/client"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@jarvis/*": [
+        "../jarvis/core/*"
+      ]
+    }
   },
   "include": [
     "src",
-    "vite.config.ts"
+    "vite.config.ts",
+    "../jarvis/core"
   ],
   "exclude": [
-    "src/**/*.test.ts"
+    "src/**/*.test.ts",
+    "../jarvis/core/**/*.test.ts"
   ]
 }

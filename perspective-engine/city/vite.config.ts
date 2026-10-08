@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: './',
   plugins: [react()],
+  // The Jarvis core lives beside the city so other apps can share it.
+  resolve: { alias: { '@jarvis': decodeURIComponent(new URL('../jarvis/core', import.meta.url).pathname) } },
+  server: { fs: { allow: ['..'] } },
   worker: { format: 'es' },
   build: {
     target: 'es2022',
