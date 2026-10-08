@@ -1,0 +1,17 @@
+{
+  "name": "@pe/jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "JARVIS for Perspective Engine: framework-free core, tests, and (later) the local Mac agent.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
