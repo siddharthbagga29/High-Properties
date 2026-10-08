@@ -4,7 +4,7 @@
 
 | # | Decision | Why it matters | Options (recommendation first) | Blocks |
 |---|---|---|---|---|
-| 1 | Country of residence and of the company's majority owners | Every US federal grant (NIH, NSF, NIDILRR SBIR) needs a for-profit that is at least 51% owned by US citizens or permanent residents (`finance/grants.md`) | A. US Delaware C-corp with a US co-founder holding the majority. B. India Pvt Ltd first, with a US subsidiary later (no SBIR at the start). C. UK Ltd (Innovate UK KTP route) | M04, M05 |
+| 1 | Country of residence and of the company's majority owners. **Decided 2026-10-08: United States.** Ownership structure still open | Every US federal grant (NIH, NSF, NIDILRR SBIR) needs a for-profit that is at least 51% owned by US citizens or permanent residents (`finance/grants.md`) | A. US Delaware C-corp with a US co-founder holding the majority. B. India Pvt Ltd first, with a US subsidiary later (no SBIR at the start). C. UK Ltd (Innovate UK KTP route) | M04, M05 |
 | 2 | Advisor budget for the first quarter | The co-design charter requires paid advisors before any content ships. About $4.7k–7k at $50–75/h (`ethics/advisory-board.md`) | Approve the $50/h floor for 5–7 advisors / set a different rate | V14 |
 | 3 | Smallest effect worth selling | The pre-registration uses +1 of 10 accommodation practices as a placeholder (`science/preregistration.md`) | Confirm +1 practice / set another value after 5 buyer interviews | V03 posting |
 | 4 | Who facilitates advisor sessions | The charter requires a named human facilitator; agents only draft | You / a hired facilitator / a university partner | V14 |

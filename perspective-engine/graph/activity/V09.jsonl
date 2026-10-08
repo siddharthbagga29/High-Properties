@@ -66,3 +66,5 @@
 {"t": "2026-10-06T19:19:27Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Log verification checks to V09 activity", "src": "transcript"}
 {"t": "2026-10-06T19:19:31Z", "node": "V09", "agent": "gtm", "kind": "run", "text": "Mark V09 prepared and show founder-gated nodes", "src": "transcript"}
 {"t": "2026-10-06T19:19:37Z", "node": "V09", "agent": "gtm", "kind": "handoff", "text": "Handed the result back to the orchestrator", "src": "transcript"}
+{"t": "2026-10-08T11:55:22Z", "node": "V09", "agent": "gtm", "kind": "edit", "text": "Orchestrator: corrected all 20 advisor mentions in batch B1 to future tense ('I plan to co-design'), because no advisors are engaged yet (checklist item 7)", "src": "self"}
+{"t": "2026-10-08T11:55:31Z", "node": "V09", "agent": "gtm", "kind": "edit", "text": "Orchestrator: also corrected the 12 Accommodations/ER and Higher-ed advisor mentions; 0 present-tense advisor claims remain in batch B1", "src": "self"}

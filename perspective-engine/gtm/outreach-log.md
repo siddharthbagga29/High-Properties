@@ -56,7 +56,7 @@ Positioning check: the offer is framed as manager effectiveness, retention and a
 4. [ ] Fill `{{first_name}}` only from a public company page or the role title. If none, use "Hello".
 5. [ ] Fill `{{sender_name}}` and `{{postal_address}}`. A valid postal address is required and the legal entity (M04) must exist. Entity status: unverified.
 6. [ ] Open each source URL on the send day. Drop or reword any signal that has changed or disappeared (Part D.5).
-7. [ ] Truth check on "being co-designed with paid ADHD advisors". If advisors are not yet engaged, change it to "I intend to co-design with". Advisor status: unverified here.
+7. [x] Truth check on advisors: no advisors are engaged yet (V14 is waiting on the founder), so on 2026-10-08 the orchestrator changed every email to "I plan to co-design ... with paid ADHD advisors". If advisors are engaged before sending, it may go back to the present tense.
 8. [ ] Confirm the merged text keeps the original rules: no efficacy claims, statistics, prices, LOIs, DEI framing or legal-outcome promises. The ask is one 20-minute conversation.
 9. [ ] Set up the suppression list before sending. Any "stop" or negative reply goes on it the same day.
 10. [ ] [COUNSEL] CAN-SPAM footer and opt-out deadline confirmed. All 10 rows here are US.
@@ -81,7 +81,7 @@ Hi {{first_name}},
 
 I noticed an internal NEUROdiversity employee resource group at Uplight. Hiring is one step; the day-to-day working-style conversations with managers are another.
 
-I'm building a browser-based practice module for managers, being co-designed with paid ADHD advisors. Before building further, I'd like to learn how Uplight prepares managers for these conversations.
+I'm building a browser-based practice module for managers, which I plan to co-design with paid ADHD advisors. Before building further, I'd like to learn how Uplight prepares managers for these conversations.
 
 Could we talk for 20 minutes? This is research, not a sales call.
 
@@ -93,7 +93,7 @@ Subject: What manager practice would look like
 
 Hi {{first_name}},
 
-A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. It is being co-designed with paid ADHD advisors, and it is educational only.
+A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. I plan to co-design it with paid ADHD advisors, and it is educational only.
 
 The open question is whether practice helps managers be more effective and helps teams keep good people. I don't know yet, which is why I'd like 20 minutes with someone at Uplight. If another team owns this, a pointer would help.
 
@@ -123,7 +123,7 @@ Hi {{first_name}},
 
 I noticed the Neurodiversity@Dell skills-based hiring program at Dell Technologies. Hiring is one step; the day-to-day working-style conversations with managers are another.
 
-I'm building a browser-based practice module for managers, being co-designed with paid ADHD advisors. Before building further, I'd like to learn how Dell Technologies prepares managers for these conversations.
+I'm building a browser-based practice module for managers, which I plan to co-design with paid ADHD advisors. Before building further, I'd like to learn how Dell Technologies prepares managers for these conversations.
 
 Could we talk for 20 minutes? This is research, not a sales call.
 
@@ -135,7 +135,7 @@ Subject: What manager practice would look like
 
 Hi {{first_name}},
 
-A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. It is being co-designed with paid ADHD advisors, and it is educational only.
+A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. I plan to co-design it with paid ADHD advisors, and it is educational only.
 
 The open question is whether practice helps managers be more effective and helps teams keep good people. I don't know yet, which is why I'd like 20 minutes with someone at Dell Technologies. If another team owns this, a pointer would help.
 
@@ -165,7 +165,7 @@ Hi {{first_name}},
 
 I noticed the Autism@Work hiring program built with Specialisterne at Salesforce. Hiring is one step; the day-to-day working-style conversations with managers are another.
 
-I'm building a browser-based practice module for managers, being co-designed with paid ADHD advisors. Before building further, I'd like to learn how Salesforce prepares managers for these conversations.
+I'm building a browser-based practice module for managers, which I plan to co-design with paid ADHD advisors. Before building further, I'd like to learn how Salesforce prepares managers for these conversations.
 
 Could we talk for 20 minutes? This is research, not a sales call.
 
@@ -177,7 +177,7 @@ Subject: What manager practice would look like
 
 Hi {{first_name}},
 
-A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. It is being co-designed with paid ADHD advisors, and it is educational only.
+A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. I plan to co-design it with paid ADHD advisors, and it is educational only.
 
 The open question is whether practice helps managers be more effective and helps teams keep good people. I don't know yet, which is why I'd like 20 minutes with someone at Salesforce. If another team owns this, a pointer would help.
 
@@ -207,7 +207,7 @@ Hi {{first_name}},
 
 I noticed the Access Ability hiring program for autistic, neurodivergent and disabled applicants at Johnson & Johnson. Hiring is one step; the day-to-day working-style conversations with managers are another.
 
-I'm building a browser-based practice module for managers, being co-designed with paid ADHD advisors. Before building further, I'd like to learn how Johnson & Johnson prepares managers for these conversations.
+I'm building a browser-based practice module for managers, which I plan to co-design with paid ADHD advisors. Before building further, I'd like to learn how Johnson & Johnson prepares managers for these conversations.
 
 Could we talk for 20 minutes? This is research, not a sales call.
 
@@ -219,7 +219,7 @@ Subject: What manager practice would look like
 
 Hi {{first_name}},
 
-A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. It is being co-designed with paid ADHD advisors, and it is educational only.
+A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. I plan to co-design it with paid ADHD advisors, and it is educational only.
 
 The open question is whether practice helps managers be more effective and helps teams keep good people. I don't know yet, which is why I'd like 20 minutes with someone at Johnson & Johnson. If another team owns this, a pointer would help.
 
@@ -251,7 +251,7 @@ Hi {{first_name}},
 
 I noticed a top score of 100 on the Disability Equality Index for six consecutive years, which suggests Principal Financial Group has a real accommodations function.
 
-I'm building a browser-based tool where managers practice the accommodation-request conversation, being co-designed with paid ADHD advisors. It is educational, not legal advice.
+I'm building a browser-based tool where managers practice the accommodation-request conversation, which I plan to co-design with paid ADHD advisors. It is educational, not legal advice.
 
 Could I have 20 minutes to hear where managers struggle with these requests in practice? This is a research conversation, not a sales call.
 
@@ -263,7 +263,7 @@ Subject: What would your team need to see?
 
 Hi {{first_name}},
 
-Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. It is being co-designed with paid ADHD advisors. It is educational only and makes no compliance promise.
+Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. I plan to co-design it with paid ADHD advisors. It is educational only and makes no compliance promise.
 
 In 20 minutes I'd like to ask two things: where do managers stumble first, and what would your HR and Legal colleagues at Principal Financial Group need to see before trying anything like this? I'm not selling anything yet.
 
@@ -293,7 +293,7 @@ Hi {{first_name}},
 
 I noticed a top score of 100 on the 2025 Disability Index, which suggests Acxiom has a real accommodations function.
 
-I'm building a browser-based tool where managers practice the accommodation-request conversation, being co-designed with paid ADHD advisors. It is educational, not legal advice.
+I'm building a browser-based tool where managers practice the accommodation-request conversation, which I plan to co-design with paid ADHD advisors. It is educational, not legal advice.
 
 Could I have 20 minutes to hear where managers struggle with these requests in practice? This is a research conversation, not a sales call.
 
@@ -305,7 +305,7 @@ Subject: What would your team need to see?
 
 Hi {{first_name}},
 
-Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. It is being co-designed with paid ADHD advisors. It is educational only and makes no compliance promise.
+Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. I plan to co-design it with paid ADHD advisors. It is educational only and makes no compliance promise.
 
 In 20 minutes I'd like to ask two things: where do managers stumble first, and what would your HR and Legal colleagues at Acxiom need to see before trying anything like this? I'm not selling anything yet.
 
@@ -335,7 +335,7 @@ Hi {{first_name}},
 
 I noticed a top score on the 2025 Disability Equality Index, which suggests Mercy has a real accommodations function.
 
-I'm building a browser-based tool where managers practice the accommodation-request conversation, being co-designed with paid ADHD advisors. It is educational, not legal advice.
+I'm building a browser-based tool where managers practice the accommodation-request conversation, which I plan to co-design with paid ADHD advisors. It is educational, not legal advice.
 
 Could I have 20 minutes to hear where managers struggle with these requests in practice? This is a research conversation, not a sales call.
 
@@ -347,7 +347,7 @@ Subject: What would your team need to see?
 
 Hi {{first_name}},
 
-Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. It is being co-designed with paid ADHD advisors. It is educational only and makes no compliance promise.
+Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. I plan to co-design it with paid ADHD advisors. It is educational only and makes no compliance promise.
 
 In 20 minutes I'd like to ask two things: where do managers stumble first, and what would your HR and Legal colleagues at Mercy need to see before trying anything like this? I'm not selling anything yet.
 
@@ -379,7 +379,7 @@ Hi {{first_name}},
 
 I noticed a Disability Access Center workshop for faculty and staff on teaching neurodivergent students at Western Washington University.
 
-I'm developing a short browser-based practice module for accommodation and working-style conversations, being co-designed with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
+I'm developing a short browser-based practice module for accommodation and working-style conversations, which I plan to co-design with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
 
 Could we talk for 20 minutes? I'm here to learn, not to sell.
 
@@ -391,7 +391,7 @@ Subject: A possible research partnership
 
 Hi {{first_name}},
 
-Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. The module is being co-designed with paid ADHD advisors.
+Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. I plan to co-design the module with paid ADHD advisors.
 
 Who is the right person at Western Washington University: a teaching-centre lead, disability-access staff, or a faculty member who studies this? Twenty minutes would be enough to find out.
 
@@ -421,7 +421,7 @@ Hi {{first_name}},
 
 I noticed the Faculty Development Center's Supporting Neurodivergent Students certificate, with ADHD and autism training at California State University Fullerton.
 
-I'm developing a short browser-based practice module for accommodation and working-style conversations, being co-designed with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
+I'm developing a short browser-based practice module for accommodation and working-style conversations, which I plan to co-design with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
 
 Could we talk for 20 minutes? I'm here to learn, not to sell.
 
@@ -433,7 +433,7 @@ Subject: A possible research partnership
 
 Hi {{first_name}},
 
-Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. The module is being co-designed with paid ADHD advisors.
+Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. I plan to co-design the module with paid ADHD advisors.
 
 Who is the right person at California State University Fullerton: a teaching-centre lead, disability-access staff, or a faculty member who studies this? Twenty minutes would be enough to find out.
 
@@ -463,7 +463,7 @@ Hi {{first_name}},
 
 I noticed the Center for Teaching and Learning series on neurodiversity and neuroinclusive pedagogy at University of Pittsburgh.
 
-I'm developing a short browser-based practice module for accommodation and working-style conversations, being co-designed with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
+I'm developing a short browser-based practice module for accommodation and working-style conversations, which I plan to co-design with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
 
 Could we talk for 20 minutes? I'm here to learn, not to sell.
 
@@ -475,7 +475,7 @@ Subject: A possible research partnership
 
 Hi {{first_name}},
 
-Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. The module is being co-designed with paid ADHD advisors.
+Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. I plan to co-design the module with paid ADHD advisors.
 
 Who is the right person at University of Pittsburgh: a teaching-centre lead, disability-access staff, or a faculty member who studies this? Twenty minutes would be enough to find out.
 
