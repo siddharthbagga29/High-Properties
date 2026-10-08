@@ -1,3 +1,4 @@
 {"t": "2026-10-06T12:55:59Z", "node": "D01", "agent": "orchestrator", "kind": "plan", "text": "Task started", "src": "ledger"}
 {"t": "2026-10-06T12:55:59Z", "node": "D01", "agent": "orchestrator", "kind": "handoff", "text": "Task finished: Decision sheet prepared", "src": "ledger"}
 {"t": "2026-10-08T11:55:39Z", "node": "D01", "agent": "orchestrator", "kind": "note", "text": "Founder decided: country = United States (2026-10-08). Ownership structure, advisor budget, effect size and facilitator still open", "src": "self"}
+{"t": "2026-10-08T12:07:24Z", "node": "D01", "agent": "orchestrator", "kind": "note", "text": "Mayor: tiered ownership options (4) and first-year budgets (min ~$8.2k / lean ~$41.7k / most effective ~$201k) prepared and number-checked in docs/ownership-and-budget-options.md", "src": "self"}

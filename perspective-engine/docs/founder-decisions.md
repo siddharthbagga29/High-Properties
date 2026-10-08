@@ -11,4 +11,6 @@
 | 5 | Accounts you will authorize | OSF (pre-registration), Gmail (outreach batches), later SAM.gov/eRA (grants), a form backend for the landing page | Authorize each one when its node reaches you on the dashboard | V03, V09, M05 |
 | 6 | Name | "Perspective Engine" is a working name. No trademark search has been done | Keep it for now; legal agent runs a free USPTO/WIPO search in M04 | M04 |
 
+Ownership and budget options for a US company, tiered from minimum to most effective: `docs/ownership-and-budget-options.md` (2026-10-08).
+
 Nothing here has been sent, filed or paid. Each item stays in "Waiting on you" on the city dashboard until you clear it.
