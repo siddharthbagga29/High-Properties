@@ -1,0 +1,41 @@
+[
+ {
+  "id": "AF-ethics-1",
+  "agent": "ethics",
+  "task": "V04",
+  "severity": "major",
+  "kind": "error",
+  "claim": "ethics/advisory-board.md:66 (draft recruitment call) \"Nothing has been built or tested with anyone.\"; :81 (Session 1 script) \"Plain description: for-profit; an educational simulation idea; nothing built; no one tested.\"",
+  "evidence": "This was true when V04 was written (2026-10-06 12:42Z) but is false now. The browser MVP v0.1.0-F04 was built and verified on 2026-10-07 (graph/ledger.jsonl:55; mvp/index.html sha256 83f500ed...). The V14 advisor kit asks the same advisors to review that build: mvp/advisor-review-kit.md:19 says 'We built a short browser prototype'. Posted or read out as written, the call and script would misstate the project to prospective advisors, who are the people the charter gives a veto. Fix: replace the text with 'a prototype exists; no one outside the team has used it'. The fix should be made before any outreach; the founder gate is still closed.",
+  "status": "open"
+ },
+ {
+  "id": "AF-ethics-2",
+  "agent": "ethics",
+  "task": "V04",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "ethics/advisory-board.md:7 \"anchored to one US lived-experience benchmark (Orange County CoC, USD 50 'Advisor' tier)\"; :15 \"USD 45/h Storyteller, 50/h Advisor, 55/h Leadership\"",
+  "evidence": "WebSearch, search-summary level; the PDF was not opened: https://ceo.oc.gov/sites/ceo/files/2025-08/Presentation_Final%2025.08.06%20-%20LEAC%20Meeting_0.pdf . The figures and the deck are real. The deck presents them as a recommended compensation framework for the LEAC to approve and then send to the CoC Board; a 2025-08-27 CoC Board presentation shows the same tiers as worked examples. I found no confirmation that they were adopted. Describing them as established tiers overstates a proposal. Add 'proposed, adoption unconfirmed'. This does not change the USD 50 floor recommendation.",
+  "status": "open"
+ },
+ {
+  "id": "AF-ethics-3",
+  "agent": "ethics",
+  "task": "F06",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl:6 \"done\", \"F06\" (2026-10-06T12:40:18Z) and :10 \"done\", \"V04\" (2026-10-06T12:42:32Z)",
+  "evidence": "Neither node has a verifier check in graph/activity/F06.jsonl or V04.jsonl. Both were closed 12 s and 4 s after the agent's handoff (12:40:06 and 12:42:28 in the subagent transcripts agent-a57aca20c172a30c2 and agent-ac2dd770518b91f99), and no verifier subagent ran in between. This breaks CLAUDE.md:7 ('say what verified it') and PROMPT.md:39. The gap is the orchestrator's (see AF-orchestrator-1), recorded here so the node history is complete. On the merits, my re-check found both acceptance criteria met (see AF-ethics-checked).",
+  "status": "open"
+ },
+ {
+  "id": "AF-ethics-checked",
+  "agent": "ethics",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "F06 codesign-charter.md meets its criteria: paid advisors with a binding veto (s2-s3), debrief and harm rules (s5-s6), and a never-claims register (s7). Every dossier citation in it matches research/evidence-dossier.md: Nario-Redmond s1; d = 0.08 cognitive / 0.33 emotional s2; double empathy is autism-specific s3; Song 2021 2.58% / 6.76% s5; 0770T is a therapy add-on s8; webcam error 2-4 degrees s10; follow-up 4-8 weeks; the memo figures 72%, $14.8B, 84% and $25k-60k all marked unverified. V04 advisory-board.md meets its criteria: rate floor, 7 channels and a 90-minute script. Its budget arithmetic recomputes: 0.5+1.5+2+2+4.5+4+0.5 = 15 h; 6 x 15 + 6 x 0.5 = 93 h; 93 x 50 = 4,650 and 93 x 75 = 6,975. NIHR confirmed by search summaries (York and UCL pages): +10%, GBP 25 to 27.50, from 16 Dec 2025, range GBP 13.80-495. CSG Justice Center 2024 'Establishing a Lived Experience Advisory Panel' exists (May 2024 PDF). M03 irb-packet.md meets its criteria: consent 3.1-3.4, debrief 4.1-4.5, adverse events 5.1-5.5. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333, doi 10.1037/rep0000127 is confirmed by abstract-level search: Exp 1 N=60 and Exp 2 N=50; more confused, embarrassed and helpless; pity, interaction discomfort and lower self-rated competence in Exp 2 only; not more willing to interview disabled students. The packet attributes all of this correctly. WCAG 2.3.1 (Level A three-flash rule) and GDPR Art. 33 (72 h) are correct. The packet matches its inputs: 80-150 managers with target 120; about 24 teams of about 5; CI half-width 0.36-0.50 SD; T2 day 30 (25-35); n<10 suppression; at least 3 direct-report responders (science/preregistration.md:14,87,147). The Tizard/Kent and Edinburgh entries match science/partners.md:32,36. PubMed ID 28287757 could not be confirmed: PubMed and E-utilities are blocked by the proxy and searches did not resolve it. It is not used for any number.",
+  "status": "accepted"
+ }
+]

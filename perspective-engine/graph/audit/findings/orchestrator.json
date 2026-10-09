@@ -1,0 +1,151 @@
+[
+ {
+  "id": "AF-orchestrator-1",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "process",
+  "claim": "CLAUDE.md:7 \"A task is complete only when verified; say what verified it.\" and PROMPT.md:39 \"a node is marked done only by a separate verifier agent\", against graph/ledger.jsonl:27-28 (F05 start and done both 2026-10-06T12:57:56Z), :33-34 (F07 start and done both 13:51:33Z), :23-24 (D01 start and done both 12:55:59Z)",
+  "evidence": "I replayed graph/activity/*.jsonl against the 26 nodes in done or awaiting_human. 19 have no verifier check entry at all: F01 F02 F03 F05 F06 F07 D01 V01 V02 V03 V04 V05 V06 V07 V08 V10 V11 V13 V15 (17 if the seeded F01/F02 are left out). Only F04, V09, V12, V14, M03, M04 and M05 have one. None of those 19 ledger notes says what verified the node. Mayor closed its own F05, F07 and D01 in the same second it started them, with no activity in between: self-verification. Domain nodes were closed 4-37 s after handoff (V04 4 s, F06 12 s, V02 37 s, from the subagent transcripts), and no verifier subagent exists for that wave (the 2026-10-06 transcript list holds only builder agents). The tooling cannot stop this: tools/graph.py 'done' (lines 383-395) checks only that output files exist and are non-empty, and needs no check --verifier record. Fix: add a verifier-record precondition to 'done' and re-verify the 19 nodes as new nodes or verification passes.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-2",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "docs/JARVIS_ARCHITECTURE.md:113 \"Revenue entries (which complete the face) can be written only by the founder through `graph.py revenue add --founder`\"; :170 \"No agent, routine or Jarvis itself can complete the face.\"; docs/JARVIS_PROGRESS.md:22 \"graph.py revenue add/list (founder-only, evidence required)\"",
+  "evidence": "The only founder check is a self-attested flag: tools/graph.py:257-258 refuses unless '--founder' is present, and the docstring says 'pass --founder to attest that you are the founder'. On a scratch copy (graph.py + graph.json + ledger copied to the scratchpad; the real graph was untouched), the command revenue add 1 \"Anyone\" --evidence \"x\" --founder from an agent shell wrote {\"amountUsd\": 1.0, \"payer\": \"Anyone\", \"evidence\": \"x\", \"recordedBy\": \"founder\"}. jarvis/core/body.ts faceState counts exactly such entries (recordedBy founder, amount > 0, non-empty evidence). So any agent, routine or session with shell access can complete the face. The 'founder-only' wording states an honour-system rule as an enforced control, and the face is shown to investors and visitors. Fix: say plainly that it is attestation only, or add a real control (for example founder-signed entries or entries made only in an owner-only database path), and have the auditor cross-check evidence references.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-3",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "tools/graph.py:395-398 \"elif cmd == \"block\": n[\"status\"] = \"blocked\"\" / \"elif cmd == \"unblock\": n[\"status\"] = \"pending\"\", and clear-gate (graph.py:399-405) with no actor check; PROMPT.md:12 \"only the founder's `clear-gate` finishes it\"",
+  "evidence": "block and unblock accept any current status. On the scratch copy, 'unblock F04' turned a verified done node into pending, and its dependent V12 then refused 'start' (V12 is pending, not ready). One mistyped command can silently undo verified work, and only the ledger records it. 'clear-gate V14 \"agent\"' run from an agent shell moved V14 from awaiting_human to done; nothing tells the founder's clear-gate apart from anyone else's. The ledger shows no clear-gate misuse so far. Fix: allow block from running or pending only, unblock from blocked only, and gate clear-gate the way revenue should be gated.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-4",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "error",
+  "claim": "docs/execution-plan.md:37 \"The load models four mechanisms grounded in published findings: salience capture, momentary lapses (RT variability and DMN interference), time-blindness (delay aversion), and hyperfocus.\"",
+  "evidence": "This contradicts the project's own spec and build. science/mechanism-spec.md section 6 (line 97) lists 'Time perception differences or \"time blindness\" (not in the evidence base here); M3 does not distort the clock'. M3 is delay aversion only. Hyperfocus is M5, graded S3 (self-report only) and OFF by default (spec line 62), so it is not one of the four default mechanisms. The four defaults are M1 DMN intrusions, M2 RT variability, M3 delay aversion and M4 salience capture (mvp/README.md:4). Calling time-blindness and hyperfocus 'grounded in published findings' overstates the evidence in the plan the founder and investors read. The same wrong label reached the F04 dispatch; the product agent caught it (mvp/README.md:62).",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-5",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "docs/execution-plan.md:3 \"Enterprise headset fleets collapsed when Meta ended commercial Quest sales in Feb 2026.\"; :24 \"Vision Pro scaled back\"; :28 \"DEI lines are mostly rebranded or cut in the US\"; :64 \"$50M enterprise value in 48 months needs roughly $5–8M ARR at typical B2B software multiples ... puts that at about 0.6% by month 48\"",
+  "evidence": "WebSearch at search-summary level (forwork.meta.com 'An update on Meta for Work'; UploadVR; ArborXR) confirms that Meta stopped selling commercial Quest SKUs and Horizon managed services on 2026-02-20, that HMS licences became free and that support runs to 2030-01-04. That is a channel change, not evidence that fleets 'collapsed'. The dossier (research/evidence-dossier.md:49) treats the Vision Pro cuts as secondary reports, 'treat as likely but verify'; the plan states them as fact. On DEI the dossier (line 47) says 'surveys disagree' (19% cut funding, 78% rebrand), which does not support 'mostly ... cut'. The '$5-8M ARR at typical multiples' range has no source and no 'assumption' label. The 0.6% is P(ARR >= $5M by month 48) (finance/model.md:31), the most favourable end of that range, so it is an upper bound on the $50M outcome, not an estimate of it.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-6",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "docs/execution-plan.md:3 \"**Summary (150 words).**\"; :13 H1 \"... than managers who watch an equivalent video\"; :36 \"**Before**: 3 attitude items and 1 scenario judgment (2 min).\"",
+  "evidence": "The summary is 161 words by wc -w, so its own '(150 words)' label is wrong and it breaks the role-card cap (.claude/agents/pe-orchestrator.md rule 4). The plan's H1 comparator is a video, but the pre-registration and IRB packet compare against an equal-length information module (science/preregistration.md:4; ethics/irb-packet.md:4). The plan's 2-minute pre-measure conflicts with T0 'about 12 min' (ethics/irb-packet.md:24). F05's brief lists only research/evidence-dossier.md as input, yet the plan quotes finance/model.md (line 64) and data/instruments.md (line 3), which breaks the input discipline in PROMPT.md. The figures quoted from them are correct (see checked).",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-7",
+  "agent": "orchestrator",
+  "task": "D01",
+  "severity": "major",
+  "kind": "error",
+  "claim": "docs/founder-decisions.md:8 item 2, options column 'recommendation first': \"Approve the $50/h floor for 5–7 advisors / set a different rate\"",
+  "evidence": "This is the opposite of the source it cites. ethics/advisory-board.md:7 and :22 say the founder should set the final rate at or above the floor. The ethics agent 'recommends the founder set the final rate above the floor and record the reasoning', because the benchmarks are public-sector and 'probably understate what a for-profit company asking for a binding veto should pay'. docs/ownership-and-budget-options.md (Minimum, gives up) repeats the caveat. The founder-facing decision sheet does not. Recommending the floor without the ethics agent's dissent is a material inconsistency on the pay of the people who hold the veto.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-8",
+  "agent": "orchestrator",
+  "task": "D01",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "docs/founder-decisions.md:7 \"Every US federal grant (NIH, NSF, NIDILRR SBIR) needs a for-profit that is at least 51% owned by US citizens or permanent residents\"",
+  "evidence": "The statement is overbroad. The ownership rule is an SBIR/STTR rule (13 CFR 121.702), not a rule for every federal grant, and the test is 'more than 50%' owned and controlled. Control is part of it, and the sentence omits control. docs/ownership-and-budget-options.md (Eligibility rules) itself says 'grants.md and founder-decisions.md say at least 51%, which is older wording'. Agencies that use the SBIR VC authority, NIH among them, also accept majority-VC-owned firms, so 'needs' is too strong for NIH. Fix the decision sheet, because it frames the founder's country and ownership choice.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-9",
+  "agent": "orchestrator",
+  "task": "D01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "graph/activity/D01.jsonl 2026-10-08T12:07:24Z \"Mayor: tiered ownership options (4) and first-year budgets ... prepared and number-checked in docs/ownership-and-budget-options.md\"; that file, line 3: \"An independent checker re-opened every cited file, recomputed every total and made the corrections listed at the end.\"",
+  "evidence": "D01's write list is docs/founder-decisions.md only. The 238-line ownership, tax and budget analysis is legal and finance domain work, which the orchestrator role card forbids outside F-series nodes ('You never do domain work yourself except F-series planning nodes'). D01 has no check entry and no actor 'verifier' entry, so the 'independent checker' claim is not supported by the record. On the merits, my recomputation agrees: $8,229, $41,699 and $201,139, every line product, 93 h, 27 one-off h, 57% and 68%, $9,729, and the registration lead times of 42 days (2026-11-04, 2026-11-24, 2027-02-22, 2027-01-21).",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-10",
+  "agent": "orchestrator",
+  "task": "D01",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "docs/ownership-and-budget-options.md (dated 2026-10-08) Tier 3: \"State: $109 formation [S] + $175 minimum franchise tax [S] + $50 annual report [S]\"; \"next-day expedite $50-100, same-day $100-200 [S]\"; \"A corporate amendment costs $214 [S]\"",
+  "evidence": "WebSearch, search-summary level; I could not open the fee schedule: InCorp 'Delaware Just Raised Its Business Filing Fees ... August 1, 2026', Capitol Services, Withum, and the HB 400 text at corpfiles.delaware.gov. Delaware HB 400, signed 2026-05-21, raised many filing, administrative and expedite fees from 2026-08-01; the authorised expedite maxima rose to $300 (24 h) and $500 (same day). The document already uses the HB 400 LLC tax of $400 but keeps pre-HB 400 filing and expedite figures. The new formation and amendment amounts were not confirmed. The figures come from legal/entity-checklist.md (legal owner) and are tagged [S] 're-check before paying', so the impact is small, but the Delaware C-corp line ($784) may be understated. Also confirmed by search: the FinCEN BOI exemption for domestic companies took effect 2026-08-14, which is correct as stated.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-11",
+  "agent": "orchestrator",
+  "task": "V14",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "graph/graph.json V14 \"MVP v0.2 from advisory feedback\" status awaiting_human; dashboard 'Your sign-off'; jarvis/core/body.ts:4 \"PREPARED_WEIGHT = 0.6\"",
+  "evidence": "V14's gate ('Needs real feedback sessions with paid ND advisors') is a precondition for the work, not a sign-off on a prepared output. mvp/CHANGELOG.md:9 records 0 sessions and 0 changes. Even so, graph.py 'done' parked the node in awaiting_human, so it counts as 60% built in the Heart (F04, V14, M01) and appears as a founder sign-off. A founder 'clear-gate V14' would mark v0.2 done with zero changes (shown on the scratch copy). The ledger note at line 58 is honest. The status model overstates it. Fix: model V14 as blocked or pending on an advisor-sessions node, not as prepared.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-12",
+  "agent": "orchestrator",
+  "task": "F04",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl:52-53 (2026-10-07T19:09:16Z) block F04 \"Verification round 3 ...\" and, in the same second, unblock F04 \"Round 4 limited to the Stop-visibility gap (a hard safety rule)\"; PROMPT.md:39 \"Two failed rounds means graph.py block <ID> ... never a silent pass\"",
+  "evidence": "F04 went through 4 verification rounds. The round-3 unblock (ledger:47) and M03's round-3 unblock (ledger:41) cite a founder request. The round-4 unblock cites none and was issued by the orchestrator in the same second as the block. The fix was a safety fix and was independently verified (ledger:55; I re-ran the self-test at 59/59), so the outcome is sound, but the two-round gate was bypassed without a recorded founder instruction. Separately, the first F04 attempt was dispatched outside the protocol. Subagent agent-a5918a173f5b18d05 was started at 2026-10-06T12:33:54Z with a bespoke prompt ('lets a neurotypical person feel ADHD-like attentional load', a framing the charter later bans), before F04's dependencies F06, V01 and V02 were done and without graph.py start. Its 12:35:24 mkdir is credited to F04 in graph/activity/F04.jsonl. The founder stopped it (ledger:26).",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-13",
+  "agent": "orchestrator",
+  "task": "M03",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "PROMPT.md:39 \"The verifier logs with `graph.py log <ID> check --verifier \\\"...\\\"` so its steps are never credited to the agent.\"",
+  "evidence": "None of M03's three verifier rounds is tagged as the verifier: 2026-10-06T19:21:10Z, 19:25:57Z and 2026-10-07T01:01:00Z-01:03:01Z. The text says 'Verifier ...', but the rows lack actor 'verifier', so the record and the dashboard credit them to Milton. The same is true of F04's round-1 and round-2 verifier rows (2026-10-07T00:42:50Z-11:47:43Z) and V09's (2026-10-06T19:18:52Z, 19:19:27Z). Tagging starts only at 2026-10-07T19:01:56Z. The deterministic audit metrics that read this tag (first-pass yield, effective challenge) are therefore computed on mislabelled rows for ethics, product and gtm.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-14",
+  "agent": "orchestrator",
+  "task": "F07",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "graph/ledger.jsonl:34 \"done\", \"F07\", \"3D cortex-to-city with semantic zoom, guide, replay, deep links; a11y/BP/SEO 100\"; city/PLAN.md:8 \"all 33 tasks as particle patches\"",
+  "evidence": "No Lighthouse or other audit run appears anywhere in the record. graph/activity/F07.jsonl has only the start and done rows, both at 13:51:33Z, and grep finds no 'lighthouse' in the repo outside node_modules. The 100 scores are unsupported. city/PLAN.md:8 says 33 tasks, but graph.json has 34 nodes (graph.py validate: 'ok: 34 nodes'). What I could check today holds up: the city has a DOM mirror (IndexMirror and IndexPage, used when WebGL is absent), MotionConfig reducedMotion='user', and a breadcrumb (src/ui/Drawer.tsx:133). npx vitest run in city/ passes 26 of 26. The F07 state at completion was not reconstructed: the audit brief excludes git history.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-checked",
+  "agent": "orchestrator",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "F01: graph.py validate gives 'ok: 34 nodes, 9 agents, acyclic'; every node has an agent and outputs. A ledger replay matches every node status in graph.json and is in time order; the only gaps are F01/F02, which were seeded as done, and F03's done without a start. F02: dashboard/index.html renders from state.js over file:// with 0 page errors; its only network requests are optional Google Fonts. It shows '19 of 34 buildings' (56%), which matches the 19 done nodes. F05 figures match finance/model.md:4,23-36,39: $53k/$633k/$4.31M, 0.6%, median margin 68%, H1 $2.09M vs $178k, peak funding $4.93M. VR empathy d 0.33/0.08 matches the dossier. SBIR/STTR reauthorised through 2031 is confirmed (P.L. 119-83, signed 2026-04-13; washington.edu and CRS IN12705, search summaries). Meta's 2026-02-20 end of commercial Quest SKUs and HMS sales is confirmed (forwork.meta.com, search summary). 0770T sunsetting in 2028 matches the dossier. 'Roughly 300+' for a confirmatory trial matches 312 at d = 0.36. D01: all six decisions have options and blocked nodes; the advisor range $4.7k-7k matches advisory-board.md. All three budget totals and the line items recompute exactly. Delaware LLC tax of $400 (HB 400) and the BOI domestic exemption (effective 2026-08-14) are confirmed by search summaries. Process: the 6-hourly build routine exists and is enabled (cron 49 */6 * * *, last fired 2026-10-08T18:49Z). Its prompt requires a separate verifier, which matches PROMPT.md. The PROMPT.md:59 cost note ('an 8k-budget task still processed 74k') matches the V06 transcript (peak context 73,382 tokens). From 2026-10-07 the verification practice on F04, V12, V14, M04 and M05 is real and recorded, with mutation tests, re-runs and named gaps.",
+  "status": "accepted"
+ }
+]

@@ -136,7 +136,7 @@ export function Spokes({ working }: { working: string[] }) {
 /** Words on the ground, Bruno-style: a ring around the plaza that says how to read the city. */
 export function LegendRing() {
   const { geometry, material } = useMemo(() => {
-    const text = 'THE BRAIN = THE PLAN AND THE ORCHESTRATOR  ·  DISTRICTS = AI AGENTS  ·  TOWERS = TASKS  ·  ARCS = WHO FEEDS WHOM  ·  PULSES = A LIVE HAND-OFF  ·  '
+    const text = 'THE BRAIN = THE PLAN  ·  BODY = VERIFIED WORK  ·  FACE = REVENUE  ·  DISTRICTS = AI AGENTS  ·  TOWERS = TASKS  ·  ARCS = WHO FEEDS WHOM  ·  PULSES = A LIVE HAND-OFF  ·  '
     const c = document.createElement('canvas')
     c.width = 4096; c.height = 96
     const ctx = c.getContext('2d')!

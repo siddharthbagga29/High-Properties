@@ -106,7 +106,7 @@ function TowerMesh({ t, index }: { t: Tower; index: number }) {
   return (
     <group position={[t.x, 0, t.z]} rotation-y={-t.angle}>
       <group ref={group}>
-        <mesh geometry={box} material={material} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick} />
+        <mesh geometry={box} material={material} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick} userData={{ solid: true }} />
         <lineSegments geometry={edges} material={lineMat} raycast={() => null} />
       </group>
     </group>

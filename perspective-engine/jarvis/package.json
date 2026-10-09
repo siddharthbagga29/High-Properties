@@ -6,13 +6,16 @@
   "description": "JARVIS for Perspective Engine: framework-free core, tests, and (later) the local Mac agent.",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "jarvis": "tsx agent/src/main.ts",
+    "agent:test": "vitest run agent"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.6",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "playwright-core": "1.56.1"
   }
 }

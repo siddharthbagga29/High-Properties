@@ -1,0 +1,41 @@
+[
+ {
+  "id": "AF-brand-1",
+  "agent": "brand",
+  "task": "V13",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "brand/landing/index.html:140 \"A short browser-based practice module, co-designed with paid ADHD advisors\"; :8 (meta description), :224 \"Co-designed with paid ADHD advisors who can say no.\", :166 \"co-designed with ADHD adults\"",
+  "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled.",
+  "status": "open"
+ },
+ {
+  "id": "AF-brand-2",
+  "agent": "brand",
+  "task": "V13",
+  "severity": "major",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl 2026-10-06T12:57:36Z done V13 \"Landing page: no 'simulate' claims, inert pilot form, honest 'where this stands' box\"",
+  "evidence": "PROMPT.md:39 requires a separate verifier who logs check --verifier. graph/activity/V13.jsonl has only the builder's self-checks (12:57:06-12:57:22) and closes 5 s after handoff. The self-check missed the hero/disclosure contradiction (AF-brand-1). tools/audit.py score_process already scores missing verifier rows.",
+  "status": "open"
+ },
+ {
+  "id": "AF-brand-3",
+  "agent": "brand",
+  "task": "V13",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "brand/landing/index.html:191 \"The pilot's main outcome is behavior at 30 days.\" and :198-199 \"We count ... Whether meeting structure is agreed with the person. Whether managers avoid diagnosing or labeling colleagues.\"",
+  "evidence": "science/preregistration.md:104 fixes the primary as AAI-verified over 10 listed practices. Neither 'meeting structure agreed' nor 'avoid diagnosing/labeling' is on the list, and the second cannot be verified by its log/3-report rule. So 2 of the 4 behaviours offered to buyers are not what the pilot measures. The page does hedge at :213. Cause: V13 inputs omitted V02/V03.",
+  "status": "open"
+ },
+ {
+  "id": "AF-brand-checked",
+  "agent": "brand",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "Acceptance 1 met: no 'simulat' string anywhere in index.html; the module is called an analogue. Acceptance 2 met: CTA at :142 links to the form at :274. Headless Chromium run (playwright-core): submitting the filled form shows the thanks panel, 0 network requests, empty localStorage; the only external request is Google Fonts, as the header says. No names, quotes, statistics or prices, as claimed.",
+  "status": "accepted"
+ }
+]

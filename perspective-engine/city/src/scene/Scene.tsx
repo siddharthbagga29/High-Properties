@@ -5,10 +5,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { agentStats, clock, fmtK, lastSignal, runState, STATUS_LABEL, type AgentStats } from '../data/model'
 import type { GraphState } from '../data/types'
+import { bodyAt, partName, type BodyView } from '../jarvis/body'
 import { useStore } from '../store'
 import { Arcs } from './Arcs'
 import { Background, Motes } from './Atmosphere'
 import { Brain } from './Brain'
+import { buildBust } from './bust'
+import { bodyLive, Bust, useBodyHover } from './Bust'
 import { Ground, LegendRing, Plates, Shockwave, Spokes, type PlateStat } from './Ground'
 import { labelLayer } from './portal'
 import { Records } from './Records'
@@ -20,10 +23,12 @@ import { agentLabel, BRAIN_C, BRAIN_S, buildBrain, DEPT, towers as layTowers, ty
 
 const phone = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 760px), (pointer: coarse)').matches
 const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency ?? 4 : 4
-/** Brain particle budget: 140k desktop, 80k on modest machines, 36k on phones. */
-export const PARTICLES = phone ? 36_000 : cores <= 4 ? 80_000 : 140_000
+/** Brain particle budget: 105k desktop, 60k on modest machines, 27k on phones (the brain is smaller inside the bust). */
+export const PARTICLES = phone ? 27_000 : cores <= 4 ? 60_000 : 105_000
+/** The bust around it: a lighter cloud, the wireframe carries the unbuilt parts. */
+export const BUST_PARTICLES = phone ? 10_000 : cores <= 4 ? 20_000 : 30_000
 
-if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore }
+if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore, body: bodyLive }
 
 const layoutNodes = (d: GraphState): LayoutNode[] => d.nodes.map(n => ({ id: n.id, agent: n.agent, budget_k: n.budget_k, used_k: n.run?.used_k ?? 0, phase: n.phase }))
 
@@ -54,8 +59,9 @@ function useBrain(data: GraphState | null) {
   return buf
 }
 
-function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentStats[]; run: Map<string, 'working' | 'stalled'>; at: number }) {
+function HoverLabel({ towers, stats, run, at, body }: { towers: Tower[]; stats: AgentStats[]; run: Map<string, 'working' | 'stalled'>; at: number; body: BodyView | null }) {
   const hover = useStore(s => s.hover)
+  const bodyPart = useBodyHover(s => s.part)
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
   const group = useRef<THREE.Group>(null!)
@@ -64,10 +70,11 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
     if (!hover || !group.current || !data) return
     if (hover.kind === 'task') { const t = towers[data.nodes.findIndex(n => n.id === hover.id)]; if (t) v.set(t.x, t.h + 1, t.z) }
     else if (hover.kind === 'worker' || hover.kind === 'agent') { const w = workerPos[hover.id]; if (w) v.copy(w).add(new THREE.Vector3(0, 2.2, 0)) }
-    else v.set(BRAIN_C[0], BRAIN_C[1] + 4.5, BRAIN_C[2])
+    else v.set(BRAIN_C[0], BRAIN_C[1] + BRAIN_S * 1.2, BRAIN_C[2])
     group.current.position.lerp(v, 0.35)
   })
-  if (!hover || !data) return null
+  // A body part speaks for itself (scene/Bust.tsx), even though it lights its agent's district.
+  if (!hover || !data || bodyPart !== null) return null
   let title = '', lines: string[] = []
   if (hover.kind === 'task') {
     const n = data.nodes.find(x => x.id === hover.id)
@@ -82,8 +89,10 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
   } else if (hover.kind === 'brain') {
     const done = data.nodes.filter(n => st.get(n.id) === 'done').length
     const working = [...run.values()].filter(x => x === 'working').length, stalled = run.size - working
+    const mind = body?.parts.find(p => p.id === 'mind')
     title = 'The brain · the plan and the orchestrator'
     lines = [`${done}/${data.nodes.length} tasks built`, `${working || 'nobody'} working${stalled ? ` · ${stalled} stalled` : ''}`, 'click to open']
+    if (mind) lines.splice(1, 0, `${partName(mind)}: ${mind.done} of ${mind.total} verified`)
   } else {
     const a = stats.find(x => x.key === hover.id)
     if (!a) return null
@@ -99,8 +108,8 @@ function HoverLabel({ towers, stats, run, at }: { towers: Tower[]; stats: AgentS
   )
 }
 
-/** Under the brain in the world view: it is the plan, run by the Mayor, and how much of it is built. */
-function BrainLabel() {
+/** At the foot of the bust in the world view: the plan, run by the Mayor, and how much of the body is built. */
+function BrainLabel({ body }: { body: BodyView | null }) {
   const focus = useStore(s => s.focus)
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
@@ -109,9 +118,9 @@ function BrainLabel() {
   const dir = useMemo(() => new THREE.Vector3(), [])
   useFrame(({ camera }) => {
     if (!group.current) return
-    // On the camera's side of the brain, just under its lower edge, above the district tags of the near ring.
-    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 0.99)
-    group.current.position.set(BRAIN_C[0] + dir.x, 4.5, BRAIN_C[2] + dir.z)
+    // On the camera's side of the bust, on the plaza just in front of its base, inside the near ring of districts.
+    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 1.15)
+    group.current.position.set(BRAIN_C[0] + dir.x, 0.3, BRAIN_C[2] + dir.z)
     if (el.current) el.current.style.opacity = live.assemble > 0.9 ? '1' : '0'
   })
   if (!data || focus.kind !== 'world') return null
@@ -121,6 +130,9 @@ function BrainLabel() {
       <Html portal={labelLayer} zIndexRange={[18, 0]} style={{ transform: 'translate3d(-50%,0,0)', pointerEvents: 'none' }}>
         <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: '3px 9px', whiteSpace: 'nowrap', font: '600 12px var(--mono)', letterSpacing: '0.08em', color: '#8fe6ff' }}>
           THE PLAN · {(data.agents.orchestrator?.name ?? 'Mayor').toUpperCase()} · {done}/{data.nodes.length} BUILT
+          {body && <div style={{ font: '500 10.5px var(--mono)', letterSpacing: '0.06em', color: '#bda6ff', textAlign: 'center', marginTop: 1 }}>
+            BODY {Math.round(body.overall * 100)}% BUILT · FACE {body.face.stage ? `${body.face.stage}/3 FORMED` : 'AWAITS REVENUE'}
+          </div>}
         </div>
       </Html>
     </group>
@@ -136,6 +148,9 @@ export default function Scene() {
   // Liveness is judged at the replay moment, or now: "running" alone is not proof that anyone is working.
   const at = time ?? now
   const buf = useBrain(data)
+  const bust = useMemo(() => buildBust({ count: BUST_PARTICLES, seed: 20261009 }), [])
+  // The body as of the replay moment (or live): which parts are built comes only from verified work.
+  const body = useMemo(() => (data ? bodyAt(data, st, time) : null), [data, st, time])
   const [dpr, setDpr] = useState<number>(phone ? 1.25 : Math.min(2, window.devicePixelRatio || 1))
   const [hidden, setHidden] = useState(false)
   // Rebuild towers and arcs only when the graph's shape changes, not on every new step in the record.
@@ -182,8 +197,9 @@ export default function Scene() {
           <Workers towers={towers} stats={stats} at={at} />
           <Packets towers={towers} />
           <Records towers={towers} />
-          <BrainLabel />
-          <HoverLabel towers={towers} stats={stats} run={run} at={at} />
+          <BrainLabel body={body} />
+          <HoverLabel towers={towers} stats={stats} run={run} at={at} body={body} />
+          <Bust buf={bust} body={body} towers={towers} />
           <Rig towers={towers} links={links} run={run} />
         </>
       )}

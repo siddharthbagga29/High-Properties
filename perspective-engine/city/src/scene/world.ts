@@ -18,8 +18,12 @@ export const DEPT: Record<string, string> = {
 }
 export const agentLabel = (key: string, name: string) => `${DEPT[key] ?? key} · ${name}`
 
-export const BRAIN_C: V3 = [0, 12.5, 0]
-export const BRAIN_S = 9.6
+/** One brain unit: the brain's half-width, and the unit the bust around it is drawn in (scene/bust.ts). */
+export const BRAIN_S = 8
+/** Local height of the bust's base, in brain units below the brain centre. */
+export const BUST_BASE = -3.15
+/** The brain sits in the bust's head; the bust's base rests just above the plaza. */
+export const BRAIN_C: V3 = [0, -BUST_BASE * BRAIN_S + 0.4, 0]
 export const R_DISTRICT = 27
 export const R_PLAZA = 13.5
 export const LOT = 3.5

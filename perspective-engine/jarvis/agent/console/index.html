@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Jarvis Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style nonce="__NONCE__">
+:root {
+  --ink: #0a0524;
+  --ink2: rgba(14, 8, 40, 0.88);
+  --ink3: #120a30;
+  --edge: rgba(143, 230, 255, 0.18);
+  --edge2: rgba(255, 255, 255, 0.1);
+  --bone: #efeee8;
+  --dim: #a9a6c8;
+  --cyan: #2bf0ff;
+  --violet: #7a3cff;
+  --violet-t: #c2adff;
+  --amber: #ffb547;
+  --rose: #ff7a9c;
+  --mote: #8fe6ff;
+  --ok: #6dffb0;
+  --disp: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--ink); color: var(--bone); }
+body {
+  font: 400 15px/1.5 var(--disp);
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(122, 60, 255, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 100% 100%, rgba(43, 240, 255, 0.08), transparent 60%),
+    var(--ink);
+  background-attachment: fixed;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--bone); outline-offset: 2px; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mono { font-family: var(--mono); }
+.dim { color: var(--dim); }
+.small { font-size: 12px; }
+[hidden] { display: none !important; }
+
+/* ---------- top bar ---------- */
+header.top {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 24px; border-bottom: 1px solid var(--edge);
+  background: rgba(10, 5, 36, 0.86); backdrop-filter: blur(10px);
+}
+.mark { font: 800 22px/1 var(--disp); letter-spacing: 0.32em; color: var(--bone); }
+.mark b { color: var(--cyan); font-weight: 800; }
+.sub { font: 400 11px/1.3 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.spacer { flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--edge); font: 500 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim);
+}
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.chip.on .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.chip.off .dot { background: var(--rose); }
+.ghost { background: transparent; border: 1px solid var(--edge2); border-radius: 6px; padding: 6px 10px; color: var(--dim); font: 500 12px var(--mono); }
+.ghost:hover { color: var(--bone); border-color: var(--edge); }
+
+/* ---------- layout ---------- */
+main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; padding: 20px 24px 40px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 960px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } header.top { padding: 12px 16px; } }
+.col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.card { background: var(--ink2); border: 1px solid var(--edge); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.card h2 { margin: 0 0 12px; font: 600 11px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); display: flex; align-items: center; gap: 10px; }
+.card h2 .count { color: var(--dim); }
+
+/* ---------- briefing ---------- */
+.brief { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px 14px; margin: 0; }
+.brief dt { font: 500 11px/1.6 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.brief dd { margin: 0; }
+.brief dd.needs { color: var(--amber); }
+.brief .sentence { grid-column: 1 / -1; font: 600 17px/1.4 var(--disp); color: var(--bone); padding-bottom: 6px; border-bottom: 1px solid var(--edge2); }
+@media (max-width: 520px) { .brief { grid-template-columns: minmax(0, 1fr); gap: 2px; } .brief dd { margin-bottom: 10px; } }
+
+/* ---------- conversation ---------- */
+.talk { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; margin-bottom: 14px; }
+.orb {
+  width: 84px; height: 84px; border-radius: 50%; border: 1px solid var(--edge);
+  background: radial-gradient(circle at 50% 40%, rgba(43, 240, 255, 0.35), rgba(122, 60, 255, 0.25) 55%, rgba(10, 5, 36, 0.9) 75%);
+  display: grid; place-items: center; position: relative; color: var(--bone);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.orb svg { width: 30px; height: 30px; }
+.orb:hover { transform: scale(1.03); }
+.orb:disabled { opacity: 0.45; cursor: not-allowed; }
+.orb::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid transparent; }
+.orb.listening { box-shadow: 0 0 0 4px rgba(43, 240, 255, 0.25), 0 0 32px rgba(43, 240, 255, 0.55); }
+.orb.listening::after { border-color: var(--cyan); animation: pulse 1.2s ease-out infinite; }
+.orb.speaking { box-shadow: 0 0 0 4px rgba(122, 60, 255, 0.3), 0 0 32px rgba(122, 60, 255, 0.6); }
+.orb.speaking::after { border-color: var(--violet); animation: pulse 0.9s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.18); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .orb::after { animation: none !important; } }
+.state { font: 500 12px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+.state.listening { color: var(--cyan); }
+.state.speaking { color: var(--violet-t); }
+.toggles { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--dim); }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.toggles input { accent-color: var(--cyan); }
+.transcript { list-style: none; margin: 0 0 12px; padding: 0; max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.transcript li { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--edge2); background: rgba(255, 255, 255, 0.02); overflow-wrap: anywhere; }
+.transcript li.you { border-color: rgba(43, 240, 255, 0.25); align-self: flex-end; max-width: 85%; }
+.transcript li.jarvis { border-color: rgba(122, 60, 255, 0.35); max-width: 95%; }
+.transcript .who { display: block; font: 500 10px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+.transcript .meta { display: block; font: 400 11px/1.3 var(--mono); color: var(--dim); margin-top: 6px; }
+.ask { display: flex; gap: 8px; }
+.ask input, .field {
+  flex: 1; min-width: 0; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--edge); background: var(--ink3); color: var(--bone);
+}
+.ask input::placeholder, .field::placeholder { color: rgba(169, 166, 200, 0.7); }
+.primary { border: 0; border-radius: 8px; padding: 10px 16px; background: var(--cyan); color: var(--ink); font: 600 14px var(--disp); }
+.primary:hover { filter: brightness(1.08); }
+.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- lists ---------- */
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.list li { padding: 10px 12px; border: 1px solid var(--edge2); border-radius: 8px; background: rgba(255, 255, 255, 0.02); overflow-wrap: anywhere; }
+.list .row { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.list .title { font-weight: 500; }
+.list .detail { color: var(--dim); font-size: 13px; margin-top: 4px; }
+.status { font: 500 10px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; border: 1px solid var(--edge2); color: var(--dim); white-space: nowrap; }
+.status.completed, .status.delivered, .status.ok { color: var(--ok); border-color: rgba(109, 255, 176, 0.35); }
+.status.running, .status.planning, .status.queued, .status.pending { color: var(--cyan); border-color: rgba(43, 240, 255, 0.35); }
+.status.waiting_for_user, .status.due { color: var(--amber); border-color: rgba(255, 181, 71, 0.45); }
+.status.failed, .status.denied, .status.no { color: var(--rose); border-color: rgba(255, 122, 156, 0.4); }
+.status.cancelled, .status.dismissed { color: var(--dim); }
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+.confirm { border: 1px solid var(--amber); background: rgba(255, 181, 71, 0.12); color: var(--amber); border-radius: 6px; padding: 6px 12px; font: 600 13px var(--disp); }
+.cancel { border: 1px solid var(--edge2); background: transparent; color: var(--dim); border-radius: 6px; padding: 6px 12px; font: 500 13px var(--disp); }
+.empty { color: var(--dim); font-size: 13px; }
+.scroll { max-height: 420px; overflow-y: auto; }
+.audit li { font: 400 12px/1.45 var(--mono); }
+.audit .tool { color: var(--mote); }
+form.inline { display: flex; gap: 8px; margin-bottom: 12px; }
+.note { margin-top: 10px; font-size: 12px; color: var(--dim); }
+
+/* ---------- token gate ---------- */
+.gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(10, 5, 36, 0.94); }
+.gate .panel { width: min(460px, 100%); background: var(--ink2); border: 1px solid var(--edge); border-radius: 12px; padding: 24px; }
+.gate h1 { margin: 0 0 6px; font: 800 24px/1.1 var(--disp); letter-spacing: 0.24em; }
+.gate p { color: var(--dim); margin: 8px 0 16px; font-size: 14px; }
+.gate code { font-family: var(--mono); color: var(--mote); font-size: 13px; }
+.gate form { display: flex; flex-direction: column; gap: 10px; }
+.err { color: var(--rose); font-size: 13px; min-height: 1.2em; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 40; max-width: min(420px, calc(100% - 32px)); background: var(--ink3); border: 1px solid var(--amber); color: var(--bone); border-radius: 10px; padding: 12px 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+    <h1 id="gate-title">JARVIS</h1>
+    <p>Paste the agent token once. It is kept only in this tab (sessionStorage) and forgotten when the tab closes.</p>
+    <p>Copy it on this Mac with <code>npm run jarvis -- token | pbcopy</code> in <code>perspective-engine/jarvis</code>.</p>
+    <form id="gate-form" autocomplete="off">
+      <label class="sr-only" for="gate-token">Agent token</label>
+      <input class="field" id="gate-token" type="password" placeholder="Agent token" spellcheck="false" required>
+      <button class="primary" type="submit">Unlock</button>
+      <div class="err" id="gate-err" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<header class="top">
+  <div>
+    <div class="mark">J<b>A</b>RVIS</div>
+    <div class="sub">Perspective Engine · local console</div>
+  </div>
+  <span class="chip" id="online-chip"><span class="dot" aria-hidden="true"></span><span id="online-text">Connecting</span></span>
+  <span class="spacer"></span>
+  <span class="sub" id="models-text"></span>
+  <button class="ghost" id="lock" type="button" title="Forget the token in this tab">Lock</button>
+</header>
+
+<main>
+  <div class="col">
+    <section class="card" aria-labelledby="brief-h">
+      <h2 id="brief-h">Briefing</h2>
+      <dl class="brief" id="brief">
+        <div class="sentence" id="b-sentence">Loading the project record…</div>
+        <dt>Online</dt><dd id="b-online">…</dd>
+        <dt>Currently</dt><dd id="b-currently">…</dd>
+        <dt>Completed</dt><dd id="b-completed">…</dd>
+        <dt>Needs you</dt><dd id="b-needs" class="needs">…</dd>
+        <dt>Next</dt><dd id="b-next">…</dd>
+      </dl>
+      <div class="note" id="b-source"></div>
+    </section>
+
+    <section class="card" aria-labelledby="talk-h">
+      <h2 id="talk-h">Conversation</h2>
+      <div class="talk">
+        <button class="orb" id="mic" type="button" aria-label="Talk to Jarvis" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <div>
+          <div class="state" id="voice-state" aria-live="polite">Ready</div>
+          <div class="toggles">
+            <label><input type="checkbox" id="speak-toggle" checked> Speak replies</label>
+            <label><input type="checkbox" id="handsfree-toggle"> Hands-free</label>
+          </div>
+          <div class="note" id="voice-note"></div>
+        </div>
+      </div>
+      <ol class="transcript" id="transcript" aria-live="polite"></ol>
+      <form class="ask" id="ask-form" autocomplete="off">
+        <label class="sr-only" for="ask-input">Ask Jarvis</label>
+        <input id="ask-input" placeholder="Ask: where are we? what do you need from me? remind me in 20 minutes to stretch">
+        <button class="primary" type="submit" id="ask-send">Send</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card" aria-labelledby="tasks-h">
+      <h2 id="tasks-h">Tasks <span class="count" id="tasks-count"></span></h2>
+      <ul class="list scroll" id="tasks"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="rem-h">
+      <h2 id="rem-h">Reminders <span class="count" id="rem-count"></span></h2>
+      <form class="inline" id="rem-form" autocomplete="off">
+        <label class="sr-only" for="rem-input">New reminder</label>
+        <input class="field" id="rem-input" placeholder="in 20 minutes stretch · tomorrow at 9 review batch one">
+        <button class="primary" type="submit">Add</button>
+      </form>
+      <div class="err" id="rem-err" role="alert"></div>
+      <ul class="list" id="reminders"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="audit-h">
+      <h2 id="audit-h">Audit <span class="count">newest first</span></h2>
+      <ul class="list scroll audit" id="audit"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="mem-h">
+      <h2 id="mem-h">Memory</h2>
+      <form class="inline" id="mem-form" autocomplete="off">
+        <label class="sr-only" for="mem-input">Search memory</label>
+        <input class="field" id="mem-input" placeholder="Search decisions, preferences, episodes">
+        <button class="primary" type="submit">Search</button>
+      </form>
+      <ul class="list" id="memory"></ul>
+    </section>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script nonce="__NONCE__">
+'use strict'
+;(() => {
+  const TOKEN_KEY = 'jarvis.token'
+  const $ = id => document.getElementById(id)
+  const store = {
+    get() { try { return sessionStorage.getItem(TOKEN_KEY) } catch { return null } },
+    set(v) { try { sessionStorage.setItem(TOKEN_KEY, v) } catch { /* private mode: keep it in memory only */ } memoryToken = v },
+    clear() { try { sessionStorage.removeItem(TOKEN_KEY) } catch { /* ignore */ } memoryToken = null },
+  }
+  let memoryToken = null
+  const token = () => store.get() || memoryToken
+
+  // ---------- small DOM helpers (text only: nothing from the server is ever parsed as HTML) ----------
+  function el(tag, cls, text) {
+    const e = document.createElement(tag)
+    if (cls) e.className = cls
+    if (text !== undefined && text !== null) e.textContent = String(text)
+    return e
+  }
+  const fmtTime = iso => {
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    const sameDay = d.toDateString() === new Date().toDateString()
+    return sameDay ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  }
+
+  // ---------- API ----------
+  class Unauthorized extends Error {}
+  async function api(path, opts = {}) {
+    const t = token()
+    if (!t) throw new Unauthorized('no token')
+    const res = await fetch(path, {
+      method: opts.method || 'GET',
+      headers: { authorization: `Bearer ${t}`, ...(opts.body !== undefined ? { 'content-type': 'application/json' } : {}) },
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      cache: 'no-store',
+      credentials: 'omit',
+    })
+    if (res.status === 401) { store.clear(); showGate('The token was not accepted. Paste it again.'); throw new Unauthorized('unauthorized') }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`)
+    return data
+  }
+
+  // ---------- token gate ----------
+  function showGate(message) {
+    $('gate').hidden = false
+    $('gate-err').textContent = message || ''
+    setTimeout(() => $('gate-token').focus(), 0)
+  }
+  $('gate-form').addEventListener('submit', async e => {
+    e.preventDefault()
+    const v = $('gate-token').value.trim()
+    if (!v) return
+    store.set(v)
+    $('gate-token').value = ''
+    try {
+      await api('/api/status')
+      $('gate').hidden = true
+      refresh(true)
+    } catch (err) {
+      if (!(err instanceof Unauthorized)) $('gate-err').textContent = `Could not reach the agent: ${err.message}`
+    }
+  })
+  $('lock').addEventListener('click', () => { store.clear(); stopSpeaking(); stopListening(); showGate('Locked. Paste the token to continue.') })
+
+  // ---------- speech output ----------
+  const synth = 'speechSynthesis' in window ? window.speechSynthesis : null
+  let speaking = false
+  let currentUtterance = ''
+  function pickVoice() {
+    if (!synth) return null
+    const voices = synth.getVoices()
+    const lang = (navigator.language || 'en-GB').toLowerCase()
+    return voices.find(v => v.lang.toLowerCase() === lang && /premium|enhanced|natural/i.test(v.name))
+      || voices.find(v => v.lang.toLowerCase() === lang)
+      || voices.find(v => v.lang.toLowerCase().startsWith('en'))
+      || null
+  }
+  function speak(text) {
+    if (!synth || !$('speak-toggle').checked || !text) return
+    synth.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    const v = pickVoice()
+    if (v) u.voice = v
+    u.rate = 1.02
+    currentUtterance = text.toLowerCase()
+    u.onstart = () => { speaking = true; renderVoice() }
+    u.onend = u.onerror = () => { speaking = false; currentUtterance = ''; renderVoice() }
+    synth.speak(u)
+  }
+  /** Barge-in: anything you say or type stops Jarvis talking at once. */
+  function stopSpeaking() {
+    if (synth && (synth.speaking || synth.pending)) synth.cancel()
+    speaking = false
+    currentUtterance = ''
+    renderVoice()
+  }
+
+  // ---------- speech input ----------
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  let rec = null
+  let listening = false
+  let wantListening = false
+  if (!Recognition) {
+    $('mic').disabled = true
+    $('voice-note').textContent = 'Speech input is not available in this browser. Use Chrome or Safari on this Mac, or type.'
+  }
+  function startListening() {
+    if (!Recognition || listening) return
+    stopSpeaking()
+    rec = new Recognition()
+    rec.lang = navigator.language || 'en-GB'
+    rec.interimResults = true
+    rec.continuous = $('handsfree-toggle').checked
+    rec.maxAlternatives = 1
+    rec.onstart = () => { listening = true; $('voice-note').textContent = ''; renderVoice() }
+    rec.onspeechstart = () => stopSpeaking()
+    rec.onresult = ev => {
+      let interim = ''
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const r = ev.results[i]
+        const text = r[0].transcript.trim()
+        if (!text) continue
+        // In hands-free mode the microphone can hear Jarvis; ignore text that is just the reply being spoken.
+        if (speaking && currentUtterance && currentUtterance.includes(text.toLowerCase())) continue
+        stopSpeaking()
+        if (r.isFinal) { $('ask-input').value = ''; send(text) }
+        else interim += text
+      }
+      if (interim) $('ask-input').value = interim
+    }
+    rec.onerror = ev => {
+      const why = {
+        'not-allowed': 'Microphone blocked. Allow it for 127.0.0.1 in the browser (address bar, site settings) and for the browser in System Settings → Privacy & Security → Microphone.',
+        'service-not-allowed': 'Speech recognition is not allowed in this browser. Type instead.',
+        network: "This browser's speech recognition needs the network (Chrome sends audio to Google). Type instead, or see JARVIS_SETUP.md for offline speech.",
+        'audio-capture': 'No microphone was found.',
+      }[ev.error]
+      if (why) { $('voice-note').textContent = why; wantListening = false }
+    }
+    rec.onend = () => {
+      listening = false
+      renderVoice()
+      // Hands-free keeps listening until you turn it off or press the button again.
+      if (wantListening && $('handsfree-toggle').checked) setTimeout(() => { if (wantListening) startListening() }, 250)
+      else wantListening = false
+    }
+    wantListening = true
+    try { rec.start() } catch { /* already started */ }
+  }
+  function stopListening() {
+    wantListening = false
+    if (rec) try { rec.stop() } catch { /* not started */ }
+  }
+  $('mic').addEventListener('click', () => {
+    if (listening || wantListening) stopListening()
+    else startListening()
+  })
+  $('handsfree-toggle').addEventListener('change', () => { if (!$('handsfree-toggle').checked) stopListening() })
+  $('speak-toggle').addEventListener('change', () => { if (!$('speak-toggle').checked) stopSpeaking() })
+  // Typing interrupts speech too.
+  $('ask-input').addEventListener('input', () => stopSpeaking())
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { stopSpeaking(); stopListening() } })
+
+  function renderVoice() {
+    const orb = $('mic')
+    orb.classList.toggle('listening', listening)
+    orb.classList.toggle('speaking', speaking && !listening)
+    orb.setAttribute('aria-pressed', String(listening))
+    orb.setAttribute('aria-label', listening ? 'Stop listening' : 'Talk to Jarvis')
+    const state = $('voice-state')
+    state.className = `state ${listening ? 'listening' : speaking ? 'speaking' : ''}`
+    state.textContent = listening ? (speaking ? 'Listening · speaking (talk to interrupt)' : 'Listening…') : speaking ? 'Speaking · talk or type to interrupt' : 'Ready'
+  }
+
+  // ---------- conversation ----------
+  function say(who, text, meta) {
+    const li = el('li', who === 'You' ? 'you' : 'jarvis')
+    li.append(el('span', 'who', who), el('span', '', text))
+    if (meta) li.append(el('span', 'meta', meta))
+    $('transcript').append(li)
+    li.scrollIntoView({ block: 'nearest' })
+  }
+  let busy = false
+  async function send(text) {
+    text = String(text || '').trim()
+    if (!text || busy) return
+    busy = true
+    $('ask-send').disabled = true
+    say('You', text)
+    try {
+      const r = await api('/api/ask', { method: 'POST', body: { text } })
+      if (r.stop) { stopSpeaking(); say('Jarvis', r.answer || 'Stopped.'); return }
+      const meta = [r.intent && r.intent !== 'chat' ? r.intent.replace('_', ' ') : '', r.provider ? `answered by ${r.provider}` : '', r.taskId ? `task ${r.taskId}` : ''].filter(Boolean).join(' · ')
+      say('Jarvis', r.answer, meta)
+      speak(r.spoken)
+      refresh()
+    } catch (err) {
+      if (!(err instanceof Unauthorized)) say('Jarvis', `The agent did not answer: ${err.message}`)
+    } finally {
+      busy = false
+      $('ask-send').disabled = false
+    }
+  }
+  $('ask-form').addEventListener('submit', e => {
+    e.preventDefault()
+    const v = $('ask-input').value
+    $('ask-input').value = ''
+    send(v)
+  })
+
+  // ---------- rendering ----------
+  function renderBriefing(s) {
+    const b = s.briefing
+    $('online-chip').className = 'chip on'
+    $('online-text').textContent = 'Online'
+    $('b-sentence').textContent = b.sentence
+    $('b-online').textContent = b.online
+    $('b-currently').textContent = b.currently.text
+    $('b-completed').textContent = b.completed.text
+    $('b-needs').textContent = b.needsYou.text
+    $('b-needs').classList.toggle('needs', b.needsYou.count > 0)
+    $('b-next').textContent = b.next.text
+    $('b-source').textContent = b.source.ok
+      ? `Source: ${b.source.path}${b.source.generated ? ` · exported ${fmtTime(b.source.generated)}` : ''}`
+      : `Project record unavailable: ${b.source.error}`
+    const m = s.models
+    $('models-text').textContent = m ? `models: ${m.order.join(' → ')}` : ''
+    if (s.capabilityGaps && s.capabilityGaps.length) $('b-source').textContent += ` · ${s.capabilityGaps.join(' ')}`
+  }
+
+  function renderTasks(tasks) {
+    const ul = $('tasks')
+    ul.replaceChildren()
+    const open = tasks.filter(t => t.status === 'waiting_for_user').length
+    $('tasks-count').textContent = `${tasks.length}${open ? ` · ${open} waiting for you` : ''}`
+    if (!tasks.length) { ul.append(el('li', 'empty', 'No tasks yet. Ask something, set a reminder or run a tool.')); return }
+    for (const t of tasks.slice(0, 60)) {
+      const li = el('li')
+      const row = el('div', 'row')
+      row.append(el('span', 'title', t.title), el('span', `status ${t.status}`, t.status.replace(/_/g, ' ')))
+      li.append(row)
+      const detail = t.status === 'waiting_for_user' ? t.requiredUserInput : t.status === 'failed' ? t.error : t.verifiedBy ? `verified: ${t.verifiedBy}` : ''
+      li.append(el('div', 'detail', [fmtTime(t.createdAt), detail].filter(Boolean).join(' · ')))
+      if (t.status === 'waiting_for_user' && t.pending) {
+        const actions = el('div', 'actions')
+        const yes = el('button', 'confirm', 'Confirm')
+        yes.type = 'button'
+        yes.addEventListener('click', async () => {
+          yes.disabled = true
+          try {
+            const r = await api(`/api/tasks/${encodeURIComponent(t.id)}/confirm`, { method: 'POST', body: {} })
+            say('Jarvis', `${t.title}: ${r.summary}`, r.ok ? 'confirmed and run' : 'confirmed; it failed')
+            speak(r.ok ? 'Done.' : 'That did not work.')
+          } catch (err) { if (!(err instanceof Unauthorized)) say('Jarvis', `Confirm failed: ${err.message}`) }
+          refresh()
+        })
+        const no = el('button', 'cancel', 'Cancel')
+        no.type = 'button'
+        no.addEventListener('click', async () => {
+          no.disabled = true
+          try { await api(`/api/tasks/${encodeURIComponent(t.id)}/cancel`, { method: 'POST', body: {} }) } catch (err) { if (!(err instanceof Unauthorized)) say('Jarvis', `Cancel failed: ${err.message}`) }
+          refresh()
+        })
+        actions.append(yes, no)
+        li.append(actions)
+      }
+      ul.append(li)
+    }
+  }
+
+  const announced = new Set()
+  let firstReminderLoad = true
+  function renderReminders(reminders) {
+    const ul = $('reminders')
+    ul.replaceChildren()
+    const now = Date.now()
+    const live = reminders.filter(r => r.status !== 'dismissed')
+    $('rem-count').textContent = String(live.filter(r => r.status === 'pending' || r.status === 'scheduled').length)
+    if (!live.length) ul.append(el('li', 'empty', 'No reminders.'))
+    for (const r of live.slice(-40)) {
+      const isDue = (r.status === 'pending' || r.status === 'scheduled') && Date.parse(r.dueAt) <= now
+      const li = el('li')
+      const row = el('div', 'row')
+      row.append(el('span', 'title', r.text), el('span', `status ${isDue ? 'due' : r.status}`, isDue ? 'due' : r.status))
+      li.append(row)
+      li.append(el('div', 'detail', [fmtTime(r.dueAt), r.deliveredAt ? `delivered ${fmtTime(r.deliveredAt)}` : '', r.lastError ? `not delivered: ${r.lastError}` : ''].filter(Boolean).join(' · ')))
+      if (r.status !== 'delivered') {
+        const actions = el('div', 'actions')
+        const d = el('button', 'cancel', isDue ? 'Done' : 'Dismiss')
+        d.type = 'button'
+        d.addEventListener('click', async () => { try { await api(`/api/reminders/${encodeURIComponent(r.id)}/dismiss`, { method: 'POST', body: {} }) } catch { /* shown on next refresh */ } refresh() })
+        actions.append(d)
+        li.append(actions)
+      }
+      ul.append(li)
+      // The page channel: a reminder that falls due (or is delivered) while the console is open is shown and spoken once.
+      if ((isDue || r.status === 'delivered') && !announced.has(r.id)) {
+        announced.add(r.id)
+        if (!firstReminderLoad && (isDue || (r.deliveredAt && now - Date.parse(r.deliveredAt) < 120000))) {
+          toast(`Reminder: ${r.text}`)
+          speak(`Reminder: ${r.text}`)
+        }
+      }
+    }
+    firstReminderLoad = false
+  }
+
+  function renderAudit(entries) {
+    const ul = $('audit')
+    ul.replaceChildren()
+    if (!entries.length) { ul.append(el('li', 'empty', 'Nothing audited yet.')); return }
+    for (const a of entries.slice(0, 40)) {
+      const li = el('li')
+      const row = el('div', 'row')
+      const left = el('span')
+      left.append(el('span', 'dim', `${fmtTime(a.at)} `), el('span', 'tool', a.tool))
+      row.append(left, el('span', `status ${a.ok ? 'ok' : a.decision === 'needs_confirmation' ? 'waiting_for_user' : 'no'}`, `${a.decision}${a.ok ? '' : ' ×'}`))
+      li.append(row, el('div', 'detail', a.resultSummary))
+      ul.append(li)
+    }
+  }
+
+  let toastTimer = 0
+  function toast(text) {
+    const t = $('toast')
+    t.textContent = text
+    t.hidden = false
+    clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => { t.hidden = true }, 12000)
+  }
+
+  // ---------- reminders and memory forms ----------
+  $('rem-form').addEventListener('submit', async e => {
+    e.preventDefault()
+    const text = $('rem-input').value.trim()
+    if (!text) return
+    $('rem-err').textContent = ''
+    try {
+      const r = await api('/api/reminders', { method: 'POST', body: { text } })
+      $('rem-input').value = ''
+      say('Jarvis', `Reminder set for ${fmtTime(r.reminder.dueAt)}: ${r.reminder.text}`)
+      refresh()
+    } catch (err) { if (!(err instanceof Unauthorized)) $('rem-err').textContent = err.message }
+  })
+  $('mem-form').addEventListener('submit', async e => {
+    e.preventDefault()
+    const q = $('mem-input').value.trim()
+    const ul = $('memory')
+    ul.replaceChildren()
+    try {
+      const r = await api(`/api/memory?q=${encodeURIComponent(q)}&k=10`)
+      if (!r.items.length) ul.append(el('li', 'empty', 'Nothing in memory matches.'))
+      for (const m of r.items) {
+        const li = el('li')
+        const row = el('div', 'row')
+        row.append(el('span', 'title', m.text), el('span', 'status', m.kind))
+        li.append(row, el('div', 'detail', [fmtTime(m.at), m.reason ? `because ${m.reason}` : ''].filter(Boolean).join(' · ')))
+        ul.append(li)
+      }
+    } catch (err) { if (!(err instanceof Unauthorized)) ul.append(el('li', 'empty', err.message)) }
+  })
+
+  // ---------- refresh loop ----------
+  let greeted = false
+  async function refresh(first) {
+    if (!token()) return
+    try {
+      const [status, tasks, reminders, audit] = await Promise.all([api('/api/status'), api('/api/tasks'), api('/api/reminders'), api('/api/audit?limit=40')])
+      renderBriefing(status)
+      renderTasks(tasks.tasks)
+      renderReminders(reminders.reminders)
+      renderAudit(audit.entries)
+      if (first && !greeted) {
+        greeted = true
+        say('Jarvis', status.briefing.spoken)
+      }
+    } catch (err) {
+      if (err instanceof Unauthorized) return
+      $('online-chip').className = 'chip off'
+      $('online-text').textContent = 'Offline'
+    }
+  }
+  setInterval(() => { if (!document.hidden) refresh() }, 10000)
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh() })
+  if (synth && 'onvoiceschanged' in synth) synth.onvoiceschanged = () => undefined
+
+  if (token()) refresh(true)
+  else showGate()
+})()
+</script>
+</body>
+</html>

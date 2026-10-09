@@ -1,0 +1,140 @@
+[
+ {
+  "id": "AF-gtm-1",
+  "agent": "gtm",
+  "task": "V08",
+  "severity": "major",
+  "kind": "process",
+  "claim": "gtm/outreach.md:36,49,80,93,124,137 \"being co-designed with paid ADHD advisors\"; outreach.md:4 says co-design is \"stated only as an intention\"",
+  "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-2",
+  "agent": "gtm",
+  "task": "V06",
+  "severity": "major",
+  "kind": "process",
+  "claim": "gtm/loi-template.md:13 \"The module is an educational practice tool co-designed with ADHD adults.\"",
+  "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-3",
+  "agent": "gtm",
+  "task": "V06",
+  "severity": "major",
+  "kind": "error",
+  "claim": "gtm/loi-template.md:16 Primary: \"difference between the intervention arm and a control arm (equivalent-content video) in the share of managers with at least one verified accommodation action at day 30\"",
+  "evidence": "science/preregistration.md:47,104,132: primary is mean AAI-verified (share of applicable practices of 10 enacted and verified, 0-1), linear mixed model, vs an equal-length information module (:4,33), not a binary \"at least one action\" vs a video. The metric 'agreed upfront' is a different estimand from the registered one. Cause: V06 inputs omitted V02/V03 (graph brief).",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-4",
+  "agent": "gtm",
+  "task": "V06",
+  "severity": "major",
+  "kind": "incomplete",
+  "claim": "Acceptance \"price anchor\": loi-template.md:21 \"Anchor of [PRICE_ANCHOR] per cohort\" and :44 \"[PRICE_ANCHOR] per cohort\"; ledger 2026-10-06T12:59:17Z \"price anchor left as hypothesis blank\" (node closed done)",
+  "evidence": "No anchor is given, only a placeholder, so the criterion is unmet while V06 is done. CLAUDE.md allows a figure labelled \"assumption\"; finance/model.md:75 already has pilot_price 4,000/12,000/30,000 USD (labelled assumption) and docs/execution-plan.md:62 says pilots are priced per cohort. Disclosed honestly, but not done.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-5",
+  "agent": "gtm",
+  "severity": "major",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl \"done\" for V05 (12:39:58Z), V07 (12:45:44Z), V06 (12:59:17Z), V08 (13:01:18Z) on 2026-10-06",
+  "evidence": "PROMPT.md:39: done only after a separate verifier checks every criterion and logs check --verifier. graph/activity/V05-V08.jsonl have no check or verifier row; each closed 6-8 s after the agent's handoff. AF-gtm-3 and AF-gtm-4 show unmet criteria that a verifier would have caught. tools/audit.py score_process already scores missing verifier rows.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-6",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "gtm/targets.csv:10 Google \"Google Cloud Autism Career Program (announced April 2021)\", confidence high",
+  "evidence": "WebSearch, summary level: the program was announced in a Google Cloud blog post by Rob Enslin dated 2021-07-26 (https://cloud.google.com/blog/topics/inside-google-cloud/google-cloud-launches-a-career-program-for-people-with-autism); Google's 'Cloud Covered' July 2021 roundup and G3ict (2021-08-09) agree. No April 2021 date found.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-7",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "targets.csv:23 Ubisoft \"Neurodiversity ERG formed in 2020; Roundtable member\"; :26 Hearst \"Roundtable member\"; :15 Travelers \"Roundtable member since 2018\"; :6 Ford \"FordWorks autism hiring initiative\"",
+  "evidence": "WebSearch summaries: Ubisoft's own ERG spotlight (news.ubisoft.com) says the founder started it on 2021-02-14; Ubisoft and Hearst are on no Roundtable roster found (AskEARN, Disability:IN). Travelers' membership is confirmed (sustainability.travelers.com) but not the 2018 year. Ford's program is FordInclusiveWorks (2016 pilot, HR Dive, The Drum).",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-8",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "gtm/targets.csv:38 Brown University: \"Public posting for a Leave and Accommodation Manager who is lead resource for managers, HRBPs and employees\", source_url https://www.indeed.com/q-ada-accommodation-manager-jobs.html",
+  "evidence": "The source URL is a generic Indeed search-results page, not a Brown posting, so it supports nothing row-specific. The posting does exist (RecruitMilitary job 44506334, recruiting start 2025-02-18; Brown policy at hr.brown.edu names UHR Leaves and Accommodations), but the 'lead resource for managers, HRBPs' wording was not found. A stable URL is needed.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-9",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "targets.csv confidence = high on 23 rows; ledger 2026-10-06T12:45:44Z \"23 high-confidence\"",
+  "evidence": "graph/activity/V07.jsonl: every WebFetch was blocked (askearn.org, iu.pressbooks.pub, disabilityin.org) and the rest are WebSearch summaries, so no source page was read. The CSV never defines the scale, and only askearn rows say 'not fetched'. outreach-log.md:37 later admits the Dell high-row source was not retrieved, and the Google high row is wrong (AF-gtm-6). 'High' overstates the verification.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-10",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "incomplete",
+  "claim": "gtm/targets.csv segment 1 (26 rows) vs gtm/icp.md:37 \"reference cases to study, not first targets ... Prefer mid-size employers ... (test 1,000-10,000 staff)\"",
+  "evidence": "Of the 26 segment-1 rows, only Uplight (targets.csv:22) is noted as fitting the ICP size band. The rest are Fortune-500 or global firms, including all 5 reference cases the ICP says not to lead with (Microsoft, SAP, JPMorgan, EY, Ford). The list meets the column criteria but supplies almost no first-target accounts for the top-ranked segment.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-11",
+  "agent": "gtm",
+  "task": "V05",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "gtm/icp.md:12 \"Context (single-survey figures ...): 19% of companies cut DEI funding in 2025; 78% of C-suite leaders said they rebrand under 'belonging' or 'culture'; about 62% of Fortune 500 'rollbacks' were renames.\"",
+  "evidence": "WebSearch, summary level. These are not one survey: 19% is Paradigm (Fast Company 2025), 78% is Catalyst/NYU Meltzer 2025 and means leaders plan to rebrand, not that they have. The 62% Fortune 500 figure was not found; the nearest is HR Brew 2026-01-06, about 63 of the Fortune 100. Copied from research/evidence-dossier.md:47 (F03).",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-12",
+  "agent": "gtm",
+  "task": "V05",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "gtm/icp.md:22 Core line: \"... built with neurodivergent co-designers.\" (also icp.md:18 'Use' column: \"co-designed with neurodivergent advisors\")",
+  "evidence": "The recommended core positioning states co-design as fact while no advisor has been recruited (V04 is only a plan; V14 awaiting_human; landing page :234). This line is the likely source of the present-tense co-design claims in the LOI, outreach and landing page (AF-gtm-1, AF-gtm-2, AF-brand-1). It should be framed as an intention until advisors exist.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-13",
+  "agent": "gtm",
+  "task": "V09",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "gtm/outreach-log.md:24 and :464 \"I noticed the Center for Teaching and Learning series on neurodiversity and neuroinclusive pedagogy at University of Pittsburgh.\"",
+  "evidence": "WebSearch summaries: this is a joint Pitt-CMU Neuroinclusive Teaching Series from several units (Pitt University Center for Teaching & Learning, DRS and Autism Center; CMU Eberly Center and others). The dates found (1/29, 3/14) have no year, and CMU later renamed it the Neurodiversity & Higher Education Seminar Series. The V09 verifier flagged it (19:19:27Z); the send-ready text was not fixed.",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-checked",
+  "agent": "gtm",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "python3 recount: outreach.md 9 emails, worst case 104/102/72/102/104/68/99/95/68 (<120); B1 30 emails, max 104, no present-tense co-design left. icp.md: Song 2021 2.58%/6.76%, 5,000x = 129-338 ok; Meta Quest sales end 2026-02-20, Embodied $3.2M Jan 2020, Akili $1.7M / $0.434 a share ok. CSV: 50 rows, 26/12/12, no emails; Roundtable founders; Specialisterne AU shut 2025-11-30; Freddie Mac 21/9.",
+  "status": "accepted"
+ }
+]

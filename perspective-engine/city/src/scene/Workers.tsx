@@ -130,7 +130,7 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
           <torusGeometry args={[0.7, 0.014, 6, 48]} />
           <meshBasicMaterial ref={ringMat} color={PALETTE.active} transparent opacity={0.75} toneMapped={false} />
         </mesh>
-        <mesh onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
+        <mesh onPointerOver={onOver} onPointerOut={onOut} onClick={onClick} userData={{ solid: true }}>
           <sphereGeometry args={[1.2, 8, 8]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
         </mesh>
