@@ -63,12 +63,12 @@ Types live in `types.ts`. Each module exports exactly what is listed here (more 
 
 ## body.ts
 - `partState(spec: BodyPartSpec, statusOf: (taskId: string) => string | undefined): BodyPartState` (done counts 'done'; prepared counts 'awaiting_human'; fill = (done + 0.6·prepared) / total)
-- `faceState(entries: RevenueEntry[]): FaceState` (only entries with recordedBy 'founder', amountUsd > 0 and non-empty evidence count; stage = min(3, distinct payers); label explains what remains, e.g. "No verified revenue yet: the face stays unformed.")
+- `faceState(entries: RevenueEntry[], opts?: { requireSigned?: boolean }): FaceState` (only entries with recordedBy 'founder', amountUsd > 0 and non-empty evidence count; with `requireSigned` only entries whose `auth` is 'signed'; stage = min(3, distinct payers); `unsigned` counts the counted entries not signed with the founder's key and the label says so; label explains what remains, e.g. "No verified revenue yet: the face stays unformed.")
 
 ## adapters/perspective-engine.ts
 - `PE_BODY: BodyPartSpec[]` (the map in docs/JARVIS_ARCHITECTURE.md §9)
 - Minimal `PEState` type (subset of the city's GraphState: generated, project, north_star, agents, nodes{id,title,agent,phase,status,view,gate,accept,outputs}, ledger{t,event,node,note}, activity?, audit?, revenue?)
 - `peProjectState(s: PEState, now: Date): ProjectState`
 - `peContext(s: PEState, viewer: Viewer, extras?: Partial<JarvisContext>): JarvisContext`
-- `peBody(s: PEState): { parts: BodyPartState[]; face: FaceState; overall: number }`
+- `peBody(s: PEState): { parts: BodyPartState[]; face: FaceState; overall: number }` (requires signed revenue once `s.audit.founderAuth.keyRegistered` is true)
 - `peEvents(s: PEState): Array<{ t: string; title: string; kind: string }>` (ledger events in plain words, for briefings)

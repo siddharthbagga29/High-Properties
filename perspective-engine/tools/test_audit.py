@@ -248,7 +248,8 @@ class FixtureScores(Tmp):
         # (3 + 5*0.7) / (4 + 5) = 72.2; open major unsupported_claim finding F-1 -> -6.
         self.assertEqual(d["evidence"], 66.2)
         # One verifier row naming a false statement -> -5; alpha is covered by an LLM audit, so no 85 cap.
-        self.assertEqual(d["integrity"], 95.0)
+        # Fixed minor hallucination F-4 keeps a quarter of its 2 points -> -0.5.
+        self.assertEqual(d["integrity"], 94.5)
         self.assertEqual(d["process"], 100.0)
         self.assertEqual(d["gates"], 100.0)
         # A1 60k within 10+70; A2 135k vs 20+70 = 1.5x -> 50; mean 75.
@@ -256,8 +257,8 @@ class FixtureScores(Tmp):
         # One usage-limit interruption -> -8.
         self.assertEqual(d["reliability"], 92.0)
         c = self.cards["alpha"]
-        # (20*50 + 15*67 + 15*66.2 + 20*95 + 15*100 + 5*100 + 5*75 + 5*92) / 100 = 77.33
-        self.assertEqual(c["score"], 77.3)
+        # (20*50 + 15*67 + 15*66.2 + 20*94.5 + 15*100 + 5*100 + 5*75 + 5*92) / 100 = 77.23
+        self.assertEqual(c["score"], 77.2)  # integrity 94.5 (fixed finding at a quarter weight)
         self.assertEqual(c["grade"], "C")
         self.assertFalse(c["meetsInstitutionalBar"])
         self.assertEqual([f["id"] for f in c["findings"]], ["F-1", "F-4"])  # F-3 has no evidence: skipped
@@ -397,6 +398,19 @@ class FindingAccounting(Tmp):
         p.write_text(json.dumps([{"id": "F-9", "agent": "delta", "task": "D1", "severity": "major", "kind": "process",
                                   "claim": "D1 says co-designed", "evidence": "no advisor exists", "status": "open"}]))
         self.assertLess(card(audit.compute(self.pe, NOW))["score"], card(before)["score"])
+
+
+class AuditReworkIsNotFirstPass(Tmp):
+    def test_a_fix_after_an_audit_finding_fails_first_pass_yield(self):
+        pe = build_fixture(self.root)
+        fpy = lambda: next(d for d in next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "delta")["dimensions"]
+                           if d["id"] == "first_pass_yield")
+        self.assertEqual(fpy()["score"], 100.0)
+        with (pe / "graph" / "activity" / "D1.jsonl").open("a") as f:
+            f.write(jl([act("2026-10-08T10:00:00Z", "edit", "Rework (F-2): removed the pilot fee claim", node="D1")]))
+        after = fpy()
+        self.assertEqual(after["score"], 0.0)
+        self.assertIn("1 fixes after an audit finding", after["basis"])
 
 
 class LateVerification(Tmp):

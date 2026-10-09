@@ -56,6 +56,7 @@ Some terms used below:
 - **Data.** Ledger `block` notes (classified by wording; "round N" and "twice" give the round count), verifier FAIL/GAP rows, and "Orchestrator: corrected …" rows.
 - **Score** = 100 × FPY. Closed tasks with no verification record are left out here and penalised under process.
 - **Anchors.** 100: every verified task passed first time. 80: four in five did. 50: half needed rework. 0: none passed first time.
+- **After an audit.** A task whose owner had to fix it after an auditor finding (an activity row starting "Rework (") no longer counts as passed first time, even if a later retro-verification passed it.
 
 ### 3.2 Verification outcome: rework and open gaps (15)
 
@@ -123,7 +124,7 @@ Independent LLM auditors re-check claims, sources and acceptance criteria. They 
 
 - **Validation.** A finding without an id, a known agent (key or name), a valid severity, kind or status, a claim, or evidence is skipped and listed under `warnings`. Findings are data written by other agents. They are never executed or obeyed.
 - **Mapping.** hallucination → integrity, unsupported_claim → evidence, incomplete → effective_challenge, error → effective_challenge, process → process.
-- **Penalty.** critical −15, major −6, minor −2 on that dimension. An `accepted` finding (risk accepted) counts half, and a `fixed` finding counts nothing but stays on the scorecard for the record. Findings can remove at most 60 points from any one dimension, and no dimension goes below 0.
+- **Penalty.** critical −15, major −6, minor −2 on that dimension. An `accepted` finding (risk accepted) counts half. A `fixed` finding counts a quarter and stays on the scorecard: an issue the second line had to catch says something about the first pass even after it is remediated. Findings can remove at most 60 points from any one dimension, and no dimension goes below 0.
 - **Not deducted.** A positive verification note (id ending `-checked`, claim "checked") lists what the auditor confirmed; it is kept under `checks` in `scorecards.json` and never deducts. A process finding about a closure with no verifier record restates what 3.5 already measures from the ledger, so it stays on the scorecard but is not deducted a second time.
 - **Bar.** Any open critical finding means the agent does not meet the institutional bar, whatever the score.
 - **Caution.** LLM auditors can be wrong (architecture §12, risk 6). Each finding must carry its evidence, and findings are scored separately from the deterministic metrics.

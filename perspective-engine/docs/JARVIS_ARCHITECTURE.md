@@ -167,7 +167,7 @@ The brain stays the mind at the centre: the plan and the orchestrator. Around it
 | Left arm and hand | Rams (brand) | V13 S05 |
 | **Face** | **Revenue only** | Featureless mask until verified revenue exists. Eyes form at the first verified payment, brow and nose at the second paying customer, the mouth at the third. The face completes only with a real flow of revenue. |
 
-Revenue comes only from `graph/revenue.jsonl`, written by the founder with evidence. Once the founder's signing key is registered, no agent, routine or Jarvis itself can add a revenue entry that passes the auditor. Before that, an entry is only attested, and the briefing says so.
+Revenue comes only from `graph/revenue.jsonl`, written by the founder with evidence. Once the founder's signing key is registered, no agent, routine or Jarvis itself can add a revenue entry that passes the auditor. Before that, an entry is only attested: it still counts, and the face's label says it was recorded on trust (`faceState` counts `unsigned` entries). Once a key is registered, `peBody` counts only signed entries.
 
 ## 10. The auditor (Jarvis as second line)
 

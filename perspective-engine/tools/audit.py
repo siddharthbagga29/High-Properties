@@ -61,7 +61,9 @@ DIMENSIONS = [
 DIM_IDS = [d[0] for d in DIMENSIONS]
 
 SEVERITY_POINTS = {"critical": 15, "major": 6, "minor": 2}
-STATUS_FACTOR = {"open": 1.0, "accepted": 0.5, "fixed": 0.0}
+# A finding fixed after the second line caught it still says something about the first pass, so it keeps a
+# quarter of its weight (issues found by the second line count against the first line even once remediated).
+STATUS_FACTOR = {"open": 1.0, "accepted": 0.5, "fixed": 0.25}
 FINDING_CAP = 60  # most points LLM findings can remove from one dimension
 KIND_DIMENSION = {
     "hallucination": "integrity",
@@ -88,6 +90,8 @@ FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdic
 MINOR_TEXT = re.compile(r"non-blocking|\bminor\b", re.I)
 MINOR_LEAD = re.compile(r"^\s*(?:minor,\s*)?non-blocking\b", re.I)
 FALSE_TEXT = re.compile(r"\bfalse\b|fabricat|\binvent(?:ed|s)?\b|misquot|misattribut|does not (?:say|exist|report)|not in the source", re.I)
+# The owner's own fix of an auditor finding after the task closed ("Rework (AF-...): ...").
+AUDIT_REWORK_TEXT = re.compile(r"^\s*rework\s*\(", re.I)
 CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:\s*(?:also\s+)?correct", re.I)
 ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:", re.I)
 FOUNDER_STOP = re.compile(r"stopped by the founder|founder (?:stopped|paused|halted)", re.I)
@@ -347,6 +351,7 @@ def check_founder_auth(pe, ledger):
                      if r and str(r.get("t")) >= key_at and r.get("auth") != "signed"]
     flags += [f"{u}: founder action without a founder signature after the key was registered" for u in unsigned]
     attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
+    attested += sum(1 for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl") if r and r.get("auth") != "signed")
     return {"keyRegistered": signers.exists(), "keyRegisteredAt": key_at, "signatures": len(rows), "verified": ok,
             "unsignedFounderActions": attested}, flags
 
@@ -416,6 +421,7 @@ def node_facts(n, ledger_rows, act_rows, now):
     false_rows = [r for r in fail_rows if FALSE_TEXT.search(str(r.get("text", "")))]
 
     corrections = sorted({str(r["t"])[:10] for r in rows if r.get("src") != "ledger" and CORRECTION_TEXT.match(str(r.get("text", "")))})
+    audit_rework = [r for r in builder_rows if r.get("kind") in ("edit", "write") and AUDIT_REWORK_TEXT.match(str(r.get("text", "")))]
     orch_edits = [r for r in rows if r.get("src") != "ledger" and r.get("kind") in ("edit", "write")
                   and ORCH_EDIT_TEXT.match(str(r.get("text", "")))]
 
@@ -448,7 +454,8 @@ def node_facts(n, ledger_rows, act_rows, now):
         "rework": rework,
         "quality_blocks": len(quality_blocks),
         "attempted": closed or rework > 0 or bool(quality_blocks),
-        "first_pass": closed and rework == 0 and not quality_blocks and not corrections,
+        "first_pass": closed and rework == 0 and not quality_blocks and not corrections and not audit_rework,
+        "audit_rework": len(audit_rework),
         "open_fail": len(open_fail),
         "open_minor": len(open_minor),
         "false_rows": len(false_rows),
@@ -575,7 +582,8 @@ def score_fpy(facts):
     basis = f"{len(passed)}/{len(pool)} verified tasks passed first time ({ids(passed)})"
     if failed:
         basis += "; needed rework, a block or a later correction: " + ", ".join(
-            f"{f['id']} ({f['rework']} failed rounds, {f['quality_blocks']} blocks, {len(f['corrections'])} orchestrator corrections)" for f in failed)
+            f"{f['id']} ({f['rework']} failed rounds, {f['quality_blocks']} blocks, {len(f['corrections'])} orchestrator corrections, "
+            f"{f['audit_rework']} fixes after an audit finding)" for f in failed)
     if unverified:
         basis += f"; not counted, no verification record: {ids(unverified)}"
     return s, basis + "."
@@ -743,7 +751,7 @@ def grade(score):
 
 
 def apply_findings(dims, findings):
-    """critical -15, major -6, minor -2 on the finding's dimension; accepted counts half, fixed nothing; capped."""
+    """critical -15, major -6, minor -2 on the finding's dimension; accepted counts half, fixed a quarter; capped."""
     taken = {d: 0.0 for d in DIM_IDS}
     dup = {d: 0 for d in DIM_IDS}
     for f, dim in findings:
@@ -755,8 +763,9 @@ def apply_findings(dims, findings):
         cut = min(FINDING_CAP, taken[d["id"]])
         if cut:
             n = len([1 for f, dim in findings if dim == d["id"] and f["status"] != "fixed" and not measured(f, dim)])
+            nf = len([1 for f, dim in findings if dim == d["id"] and f["status"] == "fixed" and not measured(f, dim)])
             d["score"] = round(clamp(d["score"] - cut), 1)
-            d["basis"] += f" Findings: -{cut:g} from {n} open or accepted finding(s)."
+            d["basis"] += f" Findings: -{cut:g} from {n} open or accepted finding(s)" + (f" and {nf} fixed after the audit (a quarter weight each)" if nf else "") + "."
         if dup[d["id"]]:
             d["basis"] += (f" {dup[d['id']]} auditor finding(s) about missing verifier records are already counted "
                            f"above and not deducted twice.")

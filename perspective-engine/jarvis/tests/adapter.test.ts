@@ -175,6 +175,14 @@ describe('peContext, peEvents and peBody on the real state.json', () => {
     if (!real.revenue?.length) expect(body.face.label).toBe('No verified revenue yet: the face stays unformed.')
   })
 
+  it('needs signed revenue for the face once the founder key is registered', () => {
+    const pay = (payer: string, auth: 'signed' | 'attested') => ({ t: '2026-10-09T10:00:00Z', amountUsd: 500, payer, evidence: 'INV', recordedBy: 'founder' as const, auth })
+    const revenue = [pay('Acme', 'attested'), pay('Beta', 'signed')]
+    expect(peBody({ ...real, revenue }).face.stage).toBe(2)
+    const keyed = { ...real, revenue, audit: { founderAuth: { keyRegistered: true } } }
+    expect(peBody(keyed).face).toMatchObject({ stage: 1, payers: 1, unsigned: 0 })
+  })
+
   it('feeds a briefing whose counts match the file', () => {
     const ctx = peContext(real, 'owner')
     const since = sinceLast(peEvents(real), null, asOf)

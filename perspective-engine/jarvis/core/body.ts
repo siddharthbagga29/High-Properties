@@ -34,10 +34,18 @@ export function isVerifiedRevenue(e: RevenueEntry): boolean {
   )
 }
 
-export function faceState(entries: RevenueEntry[]): FaceState {
-  const verified = (entries ?? []).filter(isVerifiedRevenue)
+/**
+ * requireSigned: once the founder has registered a signing key, only entries signed with it count, so an
+ * agent recording revenue "on trust" cannot form the face. Before that, attested entries count but the label says so.
+ */
+export function faceState(entries: RevenueEntry[], opts: { requireSigned?: boolean } = {}): FaceState {
+  const verified = (entries ?? []).filter(isVerifiedRevenue).filter(e => !opts.requireSigned || e.auth === 'signed')
   const payers = new Set(verified.map(e => e.payer.trim().toLowerCase())).size
   const stage = Math.min(3, payers) as FaceState['stage']
   const totalUsd = Math.round(verified.reduce((sum, e) => sum + e.amountUsd, 0) * 100) / 100
-  return { stage, payers, totalUsd, label: FACE_LABELS[stage], verifiedEntries: verified.length }
+  const unsigned = verified.filter(e => e.auth !== 'signed').length
+  const note = unsigned
+    ? ` ${unsigned === 1 ? 'One entry was' : `${unsigned} entries were`} recorded on trust, not signed with the founder's key.`
+    : ''
+  return { stage, payers, totalUsd, label: FACE_LABELS[stage] + note, verifiedEntries: verified.length, unsigned }
 }

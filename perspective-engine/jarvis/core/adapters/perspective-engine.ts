@@ -149,7 +149,9 @@ export function peBody(s: PEState): { parts: BodyPartState[]; face: FaceState; o
   const total = parts.reduce((sum, p) => sum + p.total, 0)
   const built = parts.reduce((sum, p) => sum + p.done + PREPARED_WEIGHT * p.prepared, 0)
   const overall = total ? Math.round((built / total) * 1000) / 1000 : 0
-  return { parts, face: faceState(s.revenue ?? []), overall }
+  // Once the founder's signing key is registered (the auditor reports it), only signed revenue forms the face.
+  const keyRegistered = Boolean((s.audit as { founderAuth?: { keyRegistered?: boolean } } | undefined)?.founderAuth?.keyRegistered)
+  return { parts, face: faceState(s.revenue ?? [], { requireSigned: keyRegistered }), overall }
 }
 
 // ---------- ledger events in plain words ----------

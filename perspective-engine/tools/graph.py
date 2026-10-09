@@ -64,6 +64,7 @@ FOUNDER_AUTH = PE / "graph" / "founder-auth.jsonl"
 NAMESPACE = "pe-founder"
 STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
 LOG_KINDS = {"plan", "read", "search", "fetch", "write", "edit", "run", "check", "note", "blocked", "handoff"}
+LOG_TEXT_MAX = 2000  # one activity row; longer text is cut with a warning, never silently
 MAX_STATE_BYTES = 230_000  # the live dashboard stores state in one 256 KiB document
 
 
@@ -185,6 +186,32 @@ def founder_auth(action, fields, sig_path):
     return "signed"
 
 
+VERDICT_FAIL = re.compile(r"\bFAILS?\b|\bGAP\b")  # the verifier's verdict words (case-sensitive)
+
+
+def verifier_cleared(node_id):
+    """(ok, reason). done needs an independent verifier row (graph.py log --verifier) recorded after the builder's
+    last write or edit, and that row must not report FAIL or GAP."""
+    path = ACTIVITY / f"{node_id}.jsonl"
+    rows = []
+    if path.exists():
+        with path.open() as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    last_change = max((str(r.get("t")) for r in rows if r.get("actor") != "verifier" and r.get("src") != "ledger"
+                       and r.get("kind") in ("write", "edit")), default="")
+    checks = [r for r in rows if r.get("actor") == "verifier" and str(r.get("t")) >= last_change]
+    if not checks:
+        return False, ("no independent verifier check is recorded since the last change; the verifier runs "
+                       f'graph.py log {node_id} check --verifier "<criteria and verdicts>" first')
+    if VERDICT_FAIL.search(str(checks[-1].get("text", ""))):
+        return False, "the latest verifier check reports FAIL or GAP; fix the gaps and have the verifier check again"
+    return True, ""
+
+
 def founder_key_cmd(args):
     args, sig_path = pop_sig(args)
     key = " ".join(args).strip()
@@ -225,7 +252,9 @@ def authorize_cmd(args, g):
 
 def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None):
     ACTIVITY.mkdir(parents=True, exist_ok=True)
-    rec = {"t": t or now(), "node": node_id, "agent": agent, "kind": kind, "text": text[:300], "src": src}
+    if len(text) > LOG_TEXT_MAX:
+        print(f"warning: activity text is {len(text)} characters; stored the first {LOG_TEXT_MAX}. Log the rest as a second row.")
+    rec = {"t": t or now(), "node": node_id, "agent": agent, "kind": kind, "text": text[:LOG_TEXT_MAX], "src": src}
     if actor:
         rec["actor"] = actor
     with (ACTIVITY / f"{node_id}.jsonl").open("a") as f:
@@ -555,13 +584,23 @@ def run(cmd, args):
         if missing:
             print("refused: missing or empty outputs: " + ", ".join(missing))
             return 1
+        ok, why = verifier_cleared(n["id"])
+        if not ok:
+            print(f"refused: {why}")
+            return 1
         gate = n.get("gate")
         n["status"] = "awaiting_human" if gate and not gate.get("cleared") else "done"
         if n["status"] == "awaiting_human":
             print(f"prepared; waiting on founder: {gate['reason']}")
     elif cmd == "block":
+        if n["status"] not in ("pending", "running"):
+            print(f"refused: {n['id']} is {n['status']}; only pending or running tasks can be blocked")
+            return 1
         n["status"] = "blocked"
     elif cmd == "unblock":
+        if n["status"] != "blocked":
+            print(f"refused: {n['id']} is {n['status']}, not blocked")
+            return 1
         auth = founder_auth("unblock", [("node", n["id"]), ("note", note)], sig_path)
         if auth is None:
             return 1

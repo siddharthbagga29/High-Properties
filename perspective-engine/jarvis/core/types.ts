@@ -248,8 +248,10 @@ export interface InterventionConfig { threshold: number; cooldownSeconds: number
 
 export interface BodyPartSpec { id: string; label: string; builtBy: string; tasks: string[] }
 export interface BodyPartState extends BodyPartSpec { done: number; prepared: number; total: number; fill: number }
-export interface RevenueEntry { t: string; amountUsd: number; payer: string; evidence: string; recordedBy: 'founder' }
-export interface FaceState { stage: 0 | 1 | 2 | 3; payers: number; totalUsd: number; label: string; verifiedEntries: number }
+/** auth: 'signed' when the founder's SSH key signed the entry (tools/graph.py founder-key), 'attested' when it was recorded on trust. */
+export interface RevenueEntry { t: string; amountUsd: number; payer: string; evidence: string; recordedBy: 'founder'; auth?: 'signed' | 'attested' }
+/** unsigned: counted entries recorded on trust rather than signed with the founder's key (shown in the label). */
+export interface FaceState { stage: 0 | 1 | 2 | 3; payers: number; totalUsd: number; label: string; verifiedEntries: number; unsigned?: number }
 
 // ---------- audit scorecards (Jarvis as second line) ----------
 
