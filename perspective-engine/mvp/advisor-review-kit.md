@@ -1,4 +1,4 @@
-# Advisor review kit for MVP v0.1.0-F04 (node V14, prepared 2026-10-07)
+# Advisor review kit for MVP v0.1.1-F04 (node V14, prepared 2026-10-07; baseline updated 2026-10-09)
 
 ## Summary
 
@@ -9,7 +9,7 @@ This kit lets the founder run paid feedback sessions with neurodivergent advisor
 - Nothing has been sent, signed, paid or booked. No advisor or organisation has been contacted. Pay terms below are proposals from `ethics/advisory-board.md` until the founder approves them (`docs/founder-decisions.md` items 2 and 4 are still open).
 - Sources read for this kit: `mvp/index.html`, `mvp/README.md`, `ethics/advisory-board.md`, `science/mechanism-spec.md`, `docs/founder-decisions.md`. The co-design charter file was not in this node's input list and was not read. The veto rule and charter section numbers (s2, s3, s4, s5, s6, s7) are quoted second-hand from `advisory-board.md` and `mvp/README.md`. Check them against `ethics/codesign-charter.md` before the first session.
 - Session timings, the 15 to 18 minute run time and the 3 minute debrief time are design estimates; no user has timed them (README). Any number here without a source is marked unverified.
-- Baseline under review: `perspective-engine/mvp/index.html`, `VERSION='0.1.0-F04'`, 119,994 bytes, modified 2026-10-07 19:12 UTC, sha256 `83f500ed9a837d56df88a2911bcfc364b14d4d60ec8251c50f34afa16f74e118`. `node --check` on its extracted script passes (run for this kit). README records the in-app self-test at 59 of 59 (not re-run for this kit). The founder confirms the hash before each session (`sha256sum index.html`); a different hash means a different build and the CHANGELOG must explain it.
+- Baseline under review (updated 2026-10-09): `perspective-engine/mvp/index.html`, `VERSION='0.1.1-F04'`, 120,373 bytes, sha256 `259502d413c58bd045d26f136b4c435f005dd8926211252ebc58a7874dc709c6`. It replaces 0.1.0-F04 (119,994 bytes, sha256 `83f500ed9a837d56df88a2911bcfc364b14d4d60ec8251c50f34afa16f74e118`), which this kit was first prepared against. The difference is an audit wording correction, not an advisor change (`CHANGELOG.md`, Baseline corrections): intro controls line, Ease off wording, round 2 brief, debrief card 2, one `NOT_ADMIN` label, and the `VERSION` and consent `text_version` strings. `node --check` on the extracted script passes and the in-app self-test is 59 of 59 at 390 and 1280 px (both re-run 2026-10-09, README Revision check 4). The founder confirms the hash before each session (`sha256sum index.html`); a different hash means a different build and the CHANGELOG must explain it.
 - Line numbers below are for this baseline and will move after edits; use the constant or function name when they do.
 
 ## 1. What advisors see
@@ -71,7 +71,7 @@ Other fixed facts advisors may ask about: interaction rules are only M1 to M2 co
 | # | Title | Gist |
 |---|---|---|
 | 1 | What you just did is an analogue | Built from a few reported experiences; not what ADHD is; settings chosen for visibility, not measured from anyone. |
-| 2 | Strengths and adaptation | People build workable ways of working; short simulations understate capability; workplace changes shown are a design idea, not proof. |
+| 2 | Strengths and adaptation | Explicit placeholder: the strengths statement is reserved for advisors (`ethics/irb-packet.md` 4.5) and none is written yet; a short exercise tends to understate what people can do; workplace changes shown are a design idea, not proof. |
 | 3 | People differ widely | Findings describe groups; ask rather than assume. |
 | 4 | Accommodations and practice | Concrete options to agree together; effect for any one person not established. |
 | 5 | Mismatches go both ways | Two-way communication mismatch (double empathy), from autism research, applied to ADHD cautiously as an extrapolation. |
@@ -157,7 +157,7 @@ Debrief flow: required; the continue button unlocks at the end of the page; a pa
 | AN-STP-02 | (core) Stop acts immediately with no confirmation: silences sound, clears all cues, then offers debrief, export or erase. Right? Should it ask first? | | | |
 | AN-STP-03 | (core) Stopped screen: "Everything has stopped. Nothing else will play or move." "You have not done anything wrong." Does anything pressure you to continue? | | | |
 | AN-STP-04 | Pause (Esc or button), dialog wording, auto-pause when the tab is hidden. | | | |
-| AN-STP-05 | Ease off: sets M1 to M4 to 0.2 and M5 off for the rest of the session; visible in round 2 only. Is 0.2 right? Is the label and place clear? Should it exist in round 1? | | | |
+| AN-STP-05 | Ease off: lowers each of M1 to M4 that is above 0.2 to 0.2 (lower settings stay as they are, and a condition that is off stays off) and turns M5 off; visible in round 2 only; the facilitator panel can raise settings again afterwards. Is 0.2 right? Is the label and place clear? Should it exist in round 1? | | | |
 | AN-STP-06 | Skip this step / question: enough control? Any consequence you would fear for skipping? | | | |
 | AN-STP-07 | After Stop the Done screen says the session "is not recorded as complete". Does that read as a penalty? | | | |
 | AN-STP-08 | Distress is asked only at T0 and T1 (0 to 10). Should there be a check mid-session? | | | |
@@ -251,7 +251,7 @@ For each section: `-01` accuracy and tone (does it read as accurate and respectf
 | AN-DB1-01 | (core) 1 "What you just did is an analogue": accuracy and tone. | | | |
 | AN-DB1-02 | Anything a participant must know before leaving that is missing? | | | |
 | AN-DB2-01 | (core) 2 "Strengths and adaptation": accuracy and tone. | | | |
-| AN-DB2-02 | Fair on strengths without "superpower" or silver lining? "ADHD is not only a deficit and not only a gift; it varies." Keep? | | | |
+| AN-DB2-02 | Card 2 holds no strengths statement until advisors write one or record a decision not to use one (`ethics/irb-packet.md` 4.5). Will you write it, in what form, and how should it avoid "superpower" or silver-lining framing? | | | |
 | AN-DB3-01 | 3 "People differ widely": accuracy and tone. | | | |
 | AN-DB3-02 | "Ask rather than assume": is that safe advice, or can it pressure disclosure? | | | |
 | AN-DB4-01 | 4 "Accommodations and practice": accuracy and tone. | | | |

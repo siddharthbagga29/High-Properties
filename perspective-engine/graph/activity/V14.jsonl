@@ -43,3 +43,4 @@
 {"t": "2026-10-07T19:32:17Z", "node": "V14", "agent": "product", "kind": "write", "text": "Wrote perspective-engine/mvp/CHANGELOG.md (635 words)", "src": "transcript"}
 {"t": "2026-10-07T19:32:23Z", "node": "V14", "agent": "product", "kind": "run", "text": "Fix bullet, recount summaries, confirm index.html unchanged", "src": "transcript"}
 {"t": "2026-10-07T19:32:30Z", "node": "V14", "agent": "product", "kind": "run", "text": "Log CHANGELOG write and blocked gate", "src": "transcript"}
+{"t": "2026-10-09T18:57:43Z", "node": "V14", "agent": "product", "kind": "edit", "text": "Rework (AF-product-4): mvp/CHANGELOG.md records that advisor-review-kit.md was written outside V14's write list and that the acceptance criterion is met only vacuously (0 sessions, 0 notes); adds a Baseline corrections section for the audit build 0.1.1-F04, kept separate from advisor-driven changes", "src": "self"}

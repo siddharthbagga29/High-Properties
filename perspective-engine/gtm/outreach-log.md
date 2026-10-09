@@ -4,7 +4,7 @@
 > Nothing in this file has been sent, scheduled or queued. Sending is the human-gated node V09 (gate: account, founder's Gmail). Every row below has status = prepared.
 
 ## Summary (150 words max)
-Batch B1 is prepared, not sent. It holds 10 US rows from targets.csv, all `confidence = high`: People/Talent (Uplight, Dell Technologies, Salesforce, Johnson & Johnson), Accommodations/ER (Principal Financial Group, Acxiom, Mercy) and Higher-ed (Western Washington University, California State University Fullerton, University of Pittsburgh). Each account has a 3-touch sequence (day 0, 5, 11) rendered from the outreach.md templates. Only `{{first_name}}`, `{{email}}`, `{{sender_name}}` and `{{postal_address}}` are left as placeholders. Each signal was re-checked by web search on 2026-10-06. Direct page fetches were blocked by the network proxy, so confirmation comes from search-result summaries and the founder must click through before sending. Principal, Acxiom and Mercy have newer 2026 recognition; the 2025 signals are older but still true. The send checklist and an empty send/reply log are below.
+Batch B1 is prepared, not sent. It holds 10 US rows from targets.csv, all rated `confidence = high` when chosen (now medium: on 2026-10-09 every row was downgraded because no source page had been read; scale in icp.md section 6): People/Talent (Uplight, Dell Technologies, Salesforce, Johnson & Johnson), Accommodations/ER (Principal Financial Group, Acxiom, Mercy) and Higher-ed (Western Washington University, California State University Fullerton, University of Pittsburgh). Each account has a 3-touch sequence (day 0, 5, 11) rendered from the outreach.md templates. Only `{{first_name}}`, `{{email}}`, `{{sender_name}}` and `{{postal_address}}` are left as placeholders. Each signal was re-checked by web search on 2026-10-06. Direct page fetches were blocked by the network proxy, so confirmation comes from search-result summaries and the founder must click through before sending. Principal, Acxiom and Mercy have newer 2026 recognition; the 2025 signals are older but still true. The send checklist and an empty send/reply log are below.
 
 ---
 
@@ -21,7 +21,7 @@ Batch B1 is prepared, not sent. It holds 10 US rows from targets.csv, all `confi
 | 7 | Mercy | 2 Accommodations/ER | a top score on the 2025 Disability Equality Index | https://www.mercy.net/newsroom/2025-07-29/mercy-named-a-best-place-to-work-for-disability-inclusion/ | prepared |
 | 8 | Western Washington University | 3 Higher-ed | a Disability Access Center workshop for faculty and staff on teaching neurodivergent students | https://thecenters.wwu.edu/workshop-faculty-and-staff-meeting-diverse-minds-practical-approaches-teaching-neurodivergent-0 | prepared |
 | 9 | California State University Fullerton | 3 Higher-ed | the Faculty Development Center's Supporting Neurodivergent Students certificate, with ADHD and autism training | https://fdc.fullerton.edu/workshops/certificates-and-badges/supporting-neurodivergent-students.html | prepared |
-| 10 | University of Pittsburgh | 3 Higher-ed | the Center for Teaching and Learning series on neurodiversity and neuroinclusive pedagogy | https://www.utimes.pitt.edu/news/collaborative-series | prepared |
+| 10 | University of Pittsburgh | 3 Higher-ed | the Neuroinclusive Teaching Series run with Carnegie Mellon (T1 reworded: "...that University of Pittsburgh has run with Carnegie Mellon") | https://www.utimes.pitt.edu/news/collaborative-series | prepared |
 
 Each signal is 15 words or fewer and reads after "I noticed". Company names are the clean `company` values from targets.csv. The `notes` column is not used anywhere. Salesforce uses the Autism@Work part of its CSV signal because it fits the People/Talent pitch. Its Disability Index score was also confirmed.
 
@@ -42,7 +42,7 @@ Method: one WebSearch per account on the signal's key terms. A direct WebFetch o
 | Mercy | Top score on the 2025 Disability Equality Index, Best Place to Work for Disability Inclusion (release dated 2025-07-29) | Newer: 2026-07-27 release, "World's Top Disability Inclusive Businesses". Avoid clinical wording (CSV note) |
 | Western Washington University | Disability Access Center staff run the "Meeting Diverse Minds" workshop for faculty and staff on teaching neurodivergent students | Dates seen are October 2023. Related, more recent workshops are listed but undated. Confirm it is still offered |
 | California State University Fullerton | Faculty Development Center "Supporting Neurodivergent Students" certificate; NeuroPREP covers autism and ADHD; four self-paced modules | Page not read directly. Do not mention the module count or the facilitator |
-| University of Pittsburgh | Neuroinclusive Teaching Series run with Carnegie Mellon, including the University Center for Teaching and Learning; foundational and advanced sessions | Series date unverified (also noted in the CSV). Confirm it is current |
+| University of Pittsburgh | Neuroinclusive Teaching Series run with Carnegie Mellon, including the University Center for Teaching and Learning; foundational and advanced sessions | Corrected 2026-10-09 (V09 verifier flag; audit AF-gtm-13): the earlier T1 credited the series to Pitt's teaching centre alone. It is a joint Pitt-CMU series from several units (Pitt University Center for Teaching & Learning, Disability Resources and Services, Autism Center; CMU Eberly Center and others), per search summaries of https://calendar.pitt.edu/event/copy-of-introduction-to-neurodiversity-and-neuroinclusive-learning-foundational-session and https://www.cmu.edu/teaching/facultyprograms/ (pages not read). Session dates seen (1/29, 3/14) carry no year, and CMU may now list it as the Neurodiversity & Higher Education Seminar Series (unverified). T1 says "has run" so it stays true if the series has ended; confirm on the send day |
 
 Positioning check: the offer is framed as manager effectiveness, retention and accessibility. "Disability (Equality) Index" appears only as the public name of a third-party benchmark. It is not our framing.
 
@@ -461,7 +461,7 @@ Subject: Faculty practice conversations: a research question
 
 Hi {{first_name}},
 
-I noticed the Center for Teaching and Learning series on neurodiversity and neuroinclusive pedagogy at University of Pittsburgh.
+I noticed the Neuroinclusive Teaching Series that University of Pittsburgh has run with Carnegie Mellon.
 
 I'm developing a short browser-based practice module for accommodation and working-style conversations, which I plan to co-design with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
 
@@ -495,7 +495,7 @@ Thank you,
 {{sender_name}}, Perspective Engine, {{postal_address}}. Reply "stop" to opt out.
 ```
 
-Grammar note for the founder: the Pittsburgh T1 reads "at University of Pittsburgh". If you prefer, change it to "at the University of Pittsburgh" when you review.
+Grammar note for the founder: the Pittsburgh T1 reads "that University of Pittsburgh has run". If you prefer, change it to "that the University of Pittsburgh has run" when you review.
 
 ---
 

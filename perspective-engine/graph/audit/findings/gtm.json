@@ -6,7 +6,7 @@
   "severity": "major",
   "kind": "process",
   "claim": "gtm/outreach.md:36,49,80,93,124,137 \"being co-designed with paid ADHD advisors\"; outreach.md:4 says co-design is \"stated only as an intention\"",
-  "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims. || FIXED 2026-10-09 by the orchestrator: all six outreach.md emails now say \"which I plan to co-design with paid ADHD advisors\" or \"I plan to co-design it...\"; summary and truth-check rule updated; Part C word counts recounted (worst case 107, under 120). Pending re-check.",
+  "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims. || FIXED 2026-10-09 by the orchestrator: all six outreach.md emails now say \"which I plan to co-design with paid ADHD advisors\" or \"I plan to co-design it...\"; summary and truth-check rule updated; Part C word counts recounted (worst case 107, under 120). Pending re-check. || VERIFIER 2026-10-09: Re-read gtm/outreach.md. All six lines (:36,:49,:80,:93,:124,:137) now say 'which I plan to co-design with paid ADHD advisors' or 'I plan to co-design it/the module with paid ADHD advisors'; grep finds no 'being co-designed' or other present-tense co-design claim in outreach.md, outreach-log.md (30 rendered emails) or loi-template.md. Summary :4 and rule :185 keep the plan wording until advisors are engaged and paid. V14 is still awaiting_human, so the plan wording is correct. Independent python recount of the 9 fenced emails: as written 79/92/61/80/94/57/77/85/57, worst case 107/103/72/105/105/68/102/96/68, identical to Part C, max 107 < 120. Fix confirmed.",
   "status": "fixed"
  },
  {
@@ -16,7 +16,7 @@
   "severity": "major",
   "kind": "process",
   "claim": "gtm/loi-template.md:13 \"The module is an educational practice tool co-designed with ADHD adults.\"",
-  "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off. || FIXED 2026-10-09 by the orchestrator: loi-template.md:13 now states co-design as a plan with a confirm-at-signing placeholder. Pending re-check.",
+  "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off. || FIXED 2026-10-09 by the orchestrator: loi-template.md:13 now states co-design as a plan with a confirm-at-signing placeholder. Pending re-check. || VERIFIER 2026-10-09: Re-read gtm/loi-template.md:13: 'an educational practice tool that Perspective Engine plans to co-design with paid ADHD advisors before the pilot starts ([CONFIRM AT SIGNING: advisors engaged and content approved; if not, keep this sentence as a plan])'. :41 says 'perspective accounts from paid ADHD advisors once engaged'. No present-tense co-design claim remains. Consistent with ethics/codesign-charter.md:134 and V14 awaiting_human. Fix confirmed.",
   "status": "fixed"
  },
  {
@@ -26,8 +26,8 @@
   "severity": "major",
   "kind": "error",
   "claim": "gtm/loi-template.md:16 Primary: \"difference between the intervention arm and a control arm (equivalent-content video) in the share of managers with at least one verified accommodation action at day 30\"",
-  "evidence": "science/preregistration.md:47,104,132: primary is mean AAI-verified (share of applicable practices of 10 enacted and verified, 0-1), linear mixed model, vs an equal-length information module (:4,33), not a binary \"at least one action\" vs a video. The metric 'agreed upfront' is a different estimand from the registered one. Cause: V06 inputs omitted V02/V03 (graph brief).",
-  "status": "open"
+  "evidence": "science/preregistration.md:47,104,132: primary is mean AAI-verified (share of applicable practices of 10 enacted and verified, 0-1), linear mixed model, vs an equal-length information module (:4,33), not a binary \"at least one action\" vs a video. The metric 'agreed upfront' is a different estimand from the registered one. Cause: V06 inputs omitted V02/V03 (graph brief). || VERIFIER 2026-10-09: Re-read loi-template.md:4,:16,:18,:41,:43 against science/preregistration.md. Primary (:16) = ITT intervention-minus-control difference in mean AAI-verified at day 30 (window 25-35), share of applicable practices from the fixed 10-item list, verified by shared system/calendar log or a majority of at least 3 direct reports: matches H1 (:47), the AAI definition (:104), Indices (:124) and the T2 window (:65). Control = equal-length information module with the same commitment-planning step: matches :64. Linear mixed model with team random intercept, ITT: matches :131-132 (the LOI omits the covariates, acceptable for a buyer letter). Harm check (:18) lists the H2 indicators (QPS, AQ-27 pity and fear, distress, self-efficacy): matches :48. Design row (:41) is team-randomized 1:1: matches :68. The binary 'at least one action' and the video control are gone. Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-4",
@@ -36,8 +36,8 @@
   "severity": "major",
   "kind": "incomplete",
   "claim": "Acceptance \"price anchor\": loi-template.md:21 \"Anchor of [PRICE_ANCHOR] per cohort\" and :44 \"[PRICE_ANCHOR] per cohort\"; ledger 2026-10-06T12:59:17Z \"price anchor left as hypothesis blank\" (node closed done)",
-  "evidence": "No anchor is given, only a placeholder, so the criterion is unmet while V06 is done. CLAUDE.md allows a figure labelled \"assumption\"; finance/model.md:75 already has pilot_price 4,000/12,000/30,000 USD (labelled assumption) and docs/execution-plan.md:62 says pilots are priced per cohort. Disclosed honestly, but not done.",
-  "status": "open"
+  "evidence": "No anchor is given, only a placeholder, so the criterion is unmet while V06 is done. CLAUDE.md allows a figure labelled \"assumption\"; finance/model.md:75 already has pilot_price 4,000/12,000/30,000 USD (labelled assumption) and docs/execution-plan.md:62 says pilots are priced per cohort. Disclosed honestly, but not done. || VERIFIER 2026-10-09: Re-read loi-template.md:21 ('Anchor of USD 12,000 per cohort (assumption, unsourced; see Part B), final figure [PRICE_ANCHOR]'), :44 (anchor USD 12,000, 'ASSUMPTION, unsourced', mode of finance/model.md pilot_price, 3-point test 4k/12k/30k) and :60 (checklist). finance/model.md:77 is `pilot_price | 4000 | 12000 | 30000 | USD per paid pilot | assumption`, so the row is at :77 as the owner says, and pilot_seats (:79) confirms one pilot = one cohort. A labelled-assumption figure satisfies CLAUDE.md. Summary :4 recounted at 136 words (< 150). Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-5",
@@ -45,8 +45,8 @@
   "severity": "major",
   "kind": "process",
   "claim": "graph/ledger.jsonl \"done\" for V05 (12:39:58Z), V07 (12:45:44Z), V06 (12:59:17Z), V08 (13:01:18Z) on 2026-10-06",
-  "evidence": "PROMPT.md:39: done only after a separate verifier checks every criterion and logs check --verifier. graph/activity/V05-V08.jsonl have no check or verifier row; each closed 6-8 s after the agent's handoff. AF-gtm-3 and AF-gtm-4 show unmet criteria that a verifier would have caught. tools/audit.py score_process already scores missing verifier rows.",
-  "status": "open"
+  "evidence": "PROMPT.md:39: done only after a separate verifier checks every criterion and logs check --verifier. graph/activity/V05-V08.jsonl have no check or verifier row; each closed 6-8 s after the agent's handoff. AF-gtm-3 and AF-gtm-4 show unmet criteria that a verifier would have caught. tools/audit.py score_process already scores missing verifier rows. || VERIFIER 2026-10-09: Ran the retro-verification this finding asked for. graph/activity/V05.jsonl, V06.jsonl, V07.jsonl and V08.jsonl had no row with actor 'verifier'; each now holds one 'check' row with actor 'verifier' (graph.py log <ID> check --verifier, 2026-10-09) listing every acceptance criterion: V05 3/3 PASS, V06 3/3 PASS, V07 5/5 PASS (with notes pointing to AF-gtm-7, AF-gtm-10 and AF-gtm-14), V08 2/2 PASS. The original breach (closing before a separate verifier) cannot be undone; the missing records now exist.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-6",
@@ -55,8 +55,8 @@
   "severity": "minor",
   "kind": "error",
   "claim": "gtm/targets.csv:10 Google \"Google Cloud Autism Career Program (announced April 2021)\", confidence high",
-  "evidence": "WebSearch, summary level: the program was announced in a Google Cloud blog post by Rob Enslin dated 2021-07-26 (https://cloud.google.com/blog/topics/inside-google-cloud/google-cloud-launches-a-career-program-for-people-with-autism); Google's 'Cloud Covered' July 2021 roundup and G3ict (2021-08-09) agree. No April 2021 date found.",
-  "status": "open"
+  "evidence": "WebSearch, summary level: the program was announced in a Google Cloud blog post by Rob Enslin dated 2021-07-26 (https://cloud.google.com/blog/topics/inside-google-cloud/google-cloud-launches-a-career-program-for-people-with-autism); Google's 'Cloud Covered' July 2021 roundup and G3ict (2021-08-09) agree. No April 2021 date found. || VERIFIER 2026-10-09: targets.csv:10 now reads 'Google Cloud Autism Career Program (announced July 2021); Roundtable member (unverified)', source_url https://cloud.google.com/blog/topics/inside-google-cloud/google-cloud-launches-a-career-program-for-people-with-autism, confidence medium. WebSearch (summary level, page not read) confirms the post by Rob Enslin dated 2021-07-26. A search summary also lists Google among the Roundtable's IT members, so 'unverified' is conservative, not wrong. Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-7",
@@ -65,7 +65,7 @@
   "severity": "minor",
   "kind": "error",
   "claim": "targets.csv:23 Ubisoft \"Neurodiversity ERG formed in 2020; Roundtable member\"; :26 Hearst \"Roundtable member\"; :15 Travelers \"Roundtable member since 2018\"; :6 Ford \"FordWorks autism hiring initiative\"",
-  "evidence": "WebSearch summaries: Ubisoft's own ERG spotlight (news.ubisoft.com) says the founder started it on 2021-02-14; Ubisoft and Hearst are on no Roundtable roster found (AskEARN, Disability:IN). Travelers' membership is confirmed (sustainability.travelers.com) but not the 2018 year. Ford's program is FordInclusiveWorks (2016 pilot, HR Dive, The Drum).",
+  "evidence": "WebSearch summaries: Ubisoft's own ERG spotlight (news.ubisoft.com) says the founder started it on 2021-02-14; Ubisoft and Hearst are on no Roundtable roster found (AskEARN, Disability:IN). Travelers' membership is confirmed (sustainability.travelers.com) but not the 2018 year. Ford's program is FordInclusiveWorks (2016 pilot, HR Dive, The Drum). || VERIFIER 2026-10-09: Checked all four rows by WebSearch (summary level; WebFetch to investor.travelers.com and institute.travelers.com failed ENOTFOUND). Ubisoft:23 FIXED: Ubisoft's ERG spotlight gives the founding as 2021-02-14; Roundtable claim removed. Hearst:26 FIXED: Roundtable claim removed; Neurodiversity@Hearst (2023, 15-week internship) is supported by an Everway blog summary, rated low with a note to find a Hearst source. Ford:6 FIXED: FordInclusiveWorks, pilot started 2016-06-01 with the Autism Alliance of Michigan (Ford Authority, HR Dive, The Drum summaries). Travelers:15 DISPUTE ACCEPTED ON THE FACT, SOURCE NOT FIXED: two search summaries say Travelers' own 2023-07-11 press release ('Travelers Earns Top Score on Disability Equality Index', investor.travelers.com/newsroom/press-releases/news-details/2023/Travelers-Earns-Top-Score-on-Disability-Equality-Index/default.aspx; also Business Wire 20230711022049) states membership since 2018, so the auditor was wrong to doubt the year. But the row's new source_url, the Travelers Institute webinar page, is described by a search summary as a 2023-06-28 webinar page that does not mention the Roundtable, and the owner's own second search did not find the wording either. Remaining action: change targets.csv:15 source_url to the 2023 Travelers press release (search summary level). Kept open only for this URL swap.",
   "status": "open"
  },
  {
@@ -75,8 +75,8 @@
   "severity": "minor",
   "kind": "unsupported_claim",
   "claim": "gtm/targets.csv:38 Brown University: \"Public posting for a Leave and Accommodation Manager who is lead resource for managers, HRBPs and employees\", source_url https://www.indeed.com/q-ada-accommodation-manager-jobs.html",
-  "evidence": "The source URL is a generic Indeed search-results page, not a Brown posting, so it supports nothing row-specific. The posting does exist (RecruitMilitary job 44506334, recruiting start 2025-02-18; Brown policy at hr.brown.edu names UHR Leaves and Accommodations), but the 'lead resource for managers, HRBPs' wording was not found. A stable URL is needed.",
-  "status": "open"
+  "evidence": "The source URL is a generic Indeed search-results page, not a Brown posting, so it supports nothing row-specific. The posting does exist (RecruitMilitary job 44506334, recruiting start 2025-02-18; Brown policy at hr.brown.edu names UHR Leaves and Accommodations), but the 'lead resource for managers, HRBPs' wording was not found. A stable URL is needed. || VERIFIER 2026-10-09: targets.csv:38 now cites https://policy.brown.edu/policy/employment-accommodations-persons-disabilities-policy; the signal says UHR Leaves and Accommodations runs the interactive process with HR business partners and supervisors. WebSearch summary of Brown policy 08.15.05 confirms the wording: accommodations are approved after an interactive process with the employee, UHR Leaves and Accommodations, HR Business Partners and the supervisor. The RecruitMilitary posting 44506334 exists (search summary); the generic Indeed URL is gone. Note: a search summary of a re-posted Brown Workday ad now describes the role as 'the lead resource for managers and HR business partners', so the removed wording may have had a source, but removing it is the conservative choice. Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-9",
@@ -85,8 +85,8 @@
   "severity": "minor",
   "kind": "process",
   "claim": "targets.csv confidence = high on 23 rows; ledger 2026-10-06T12:45:44Z \"23 high-confidence\"",
-  "evidence": "graph/activity/V07.jsonl: every WebFetch was blocked (askearn.org, iu.pressbooks.pub, disabilityin.org) and the rest are WebSearch summaries, so no source page was read. The CSV never defines the scale, and only askearn rows say 'not fetched'. outreach-log.md:37 later admits the Dell high-row source was not retrieved, and the Google high row is wrong (AF-gtm-6). 'High' overstates the verification.",
-  "status": "open"
+  "evidence": "graph/activity/V07.jsonl: every WebFetch was blocked (askearn.org, iu.pressbooks.pub, disabilityin.org) and the rest are WebSearch summaries, so no source page was read. The CSV never defines the scale, and only askearn rows say 'not fetched'. outreach-log.md:37 later admits the Dell high-row source was not retrieved, and the Google high row is wrong (AF-gtm-6). 'High' overstates the verification. || VERIFIER 2026-10-09: targets.csv: 0 high, 48 medium, 2 low (Goldman Sachs, Hearst) by python count. icp.md:82 defines the scale (high = page read; medium = search summary of the cited source; low = secondary/vendor source or unconfirmed) and says no row is high because no page was read; outreach.md:13 and outreach-log.md:7 repeat it. The overstated 'high' ratings are gone. Applying the new scale is not fully consistent: 4 medium rows rest on trade-press sources and Pitt:41's cited URL was never seen. That is logged as new finding AF-gtm-14, not as a reason to keep this one open.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-10",
@@ -95,7 +95,7 @@
   "severity": "minor",
   "kind": "incomplete",
   "claim": "gtm/targets.csv segment 1 (26 rows) vs gtm/icp.md:37 \"reference cases to study, not first targets ... Prefer mid-size employers ... (test 1,000-10,000 staff)\"",
-  "evidence": "Of the 26 segment-1 rows, only Uplight (targets.csv:22) is noted as fitting the ICP size band. The rest are Fortune-500 or global firms, including all 5 reference cases the ICP says not to lead with (Microsoft, SAP, JPMorgan, EY, Ford). The list meets the column criteria but supplies almost no first-target accounts for the top-ranked segment.",
+  "evidence": "Of the 26 segment-1 rows, only Uplight (targets.csv:22) is noted as fitting the ICP size band. The rest are Fortune-500 or global firms, including all 5 reference cases the ICP says not to lead with (Microsoft, SAP, JPMorgan, EY, Ford). The list meets the column criteria but supplies almost no first-target accounts for the top-ranked segment. || VERIFIER 2026-10-09: Every one of the 26 segment-1 rows now ends with an 'ICP fit' tag (python check): 23 reference cases, 3 first-target candidates (Biogen, Freddie Mac, Uplight). Biogen's ~7,605 employees at 2024-12-31 is confirmed by a search summary of the FY2024 10-K. icp.md:83 records CAPABILITY GAP / IMPLEMENTATION REQUIRED honestly. But the problem the finding names is unchanged: the top-ranked segment still has only 3 first-target accounts, one with size unverified (Freddie Mac) and one unconfirmed (Uplight). Batch B1 (outreach-log.md:16-18) also still targets Dell, Salesforce and Johnson & Johnson, which targets.csv now tags 'reference case ... study, not a first target'. The disclosure is fixed; the list is not. Kept open until the sourcing pass in icp.md:83 adds verified mid-size accounts, or B1 is re-scoped.",
   "status": "open"
  },
  {
@@ -105,8 +105,8 @@
   "severity": "minor",
   "kind": "unsupported_claim",
   "claim": "gtm/icp.md:12 \"Context (single-survey figures ...): 19% of companies cut DEI funding in 2025; 78% of C-suite leaders said they rebrand under 'belonging' or 'culture'; about 62% of Fortune 500 'rollbacks' were renames.\"",
-  "evidence": "WebSearch, summary level. These are not one survey: 19% is Paradigm (Fast Company 2025), 78% is Catalyst/NYU Meltzer 2025 and means leaders plan to rebrand, not that they have. The 62% Fortune 500 figure was not found; the nearest is HR Brew 2026-01-06, about 63 of the Fortune 100. Copied from research/evidence-dossier.md:47 (F03).",
-  "status": "open"
+  "evidence": "WebSearch, summary level. These are not one survey: 19% is Paradigm (Fast Company 2025), 78% is Catalyst/NYU Meltzer 2025 and means leaders plan to rebrand, not that they have. The 62% Fortune 500 figure was not found; the nearest is HR Brew 2026-01-06, about 63 of the Fortune 100. Copied from research/evidence-dossier.md:47 (F03). || VERIFIER 2026-10-09: Re-read icp.md:12. It now names 3 separate sources and drops the unfound 62% Fortune 500 figure. WebSearch summaries: Paradigm 2025 study, 443 organisations surveyed March 2025, 19% reduced and 23% increased DEI budgets; 58% 'no change' was not stated directly, but a summary gives 81% 'same or increase', so 81-23 = 58 is consistent. HR Brew 2026-01-06: about 63 Fortune 100 companies rebranded or removed website DEI messaging since summer 2024, confirmed. Catalyst/NYU Meltzer 'Risks of retreat' (June 2025): one summary gives 78% of C-suite leaders 'are rebranding' DEI under terms like culture or belonging, another did not find 78%, so the file's 'unverified' label and 'are rebranding or plan to' wording are honest. (The NYU write-up's '62 percent of those same leaders' is probably where the old 62% came from.) Out of scope and still unaligned: research/evidence-dossier.md:47 keeps the 19/78/62 sentence, and finance/model.md:86 cites 19% to an HR Brew 2025-12-04 URL. Their owners should fix those. Fix confirmed for icp.md.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-12",
@@ -115,8 +115,8 @@
   "severity": "minor",
   "kind": "process",
   "claim": "gtm/icp.md:22 Core line: \"... built with neurodivergent co-designers.\" (also icp.md:18 'Use' column: \"co-designed with neurodivergent advisors\")",
-  "evidence": "The recommended core positioning states co-design as fact while no advisor has been recruited (V04 is only a plan; V14 awaiting_human; landing page :234). This line is the likely source of the present-tense co-design claims in the LOI, outreach and landing page (AF-gtm-1, AF-gtm-2, AF-brand-1). It should be framed as an intention until advisors exist.",
-  "status": "open"
+  "evidence": "The recommended core positioning states co-design as fact while no advisor has been recruited (V04 is only a plan; V14 awaiting_human; landing page :234). This line is the likely source of the present-tense co-design claims in the LOI, outreach and landing page (AF-gtm-1, AF-gtm-2, AF-brand-1). It should be framed as an intention until advisors exist. || VERIFIER 2026-10-09: icp.md:18 'to be co-designed with paid neurodivergent advisors (a plan: no advisor is engaged yet, V14)'; :22 core line 'to be co-designed ...', with 'built with' allowed only after advisors are engaged and approve the content; :42 'planned co-design ... (none engaged yet)'. No present-tense co-design claim remains in icp.md (grep). Consistent with ethics/codesign-charter.md:134 and brand/landing/index.html:235. Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-13",
@@ -125,8 +125,8 @@
   "severity": "minor",
   "kind": "unsupported_claim",
   "claim": "gtm/outreach-log.md:24 and :464 \"I noticed the Center for Teaching and Learning series on neurodiversity and neuroinclusive pedagogy at University of Pittsburgh.\"",
-  "evidence": "WebSearch summaries: this is a joint Pitt-CMU Neuroinclusive Teaching Series from several units (Pitt University Center for Teaching & Learning, DRS and Autism Center; CMU Eberly Center and others). The dates found (1/29, 3/14) have no year, and CMU later renamed it the Neurodiversity & Higher Education Seminar Series. The V09 verifier flagged it (19:19:27Z); the send-ready text was not fixed.",
-  "status": "open"
+  "evidence": "WebSearch summaries: this is a joint Pitt-CMU Neuroinclusive Teaching Series from several units (Pitt University Center for Teaching & Learning, DRS and Autism Center; CMU Eberly Center and others). The dates found (1/29, 3/14) have no year, and CMU later renamed it the Neurodiversity & Higher Education Seminar Series. The V09 verifier flagged it (19:19:27Z); the send-ready text was not fixed. || VERIFIER 2026-10-09: outreach-log.md:464 (Pitt S3-T1) now reads 'I noticed the Neuroinclusive Teaching Series that University of Pittsburgh has run with Carnegie Mellon.' grep finds the old 'Center for Teaching and Learning series on ... neuroinclusive pedagogy' nowhere in gtm/. The batch table (:24), re-check row (:45) and targets.csv:41 describe a joint Pitt-CMU series from several units. WebSearch summaries of calendar.pitt.edu and cmu.edu/teaching/facultyprograms confirm the joint series, its partner units, undated sessions and the alternative name 'Neurodiversity & Higher Education Seminar Series'. 'has run' is appropriately hedged. Python recount: Pitt T1 is 87 words as written; the 30 B1 emails max out at 96 as written (104 with sender 2 and address 8 words), all < 120. Fix confirmed. Residual: targets.csv:41 and outreach-log.md:24 still cite https://www.utimes.pitt.edu/news/collaborative-series, which was blocked in V09 and did not surface in two searches. This is tracked in AF-gtm-14.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-checked",
@@ -136,5 +136,25 @@
   "claim": "checked",
   "evidence": "python3 recount: outreach.md 9 emails, worst case 104/102/72/102/104/68/99/95/68 (<120); B1 30 emails, max 104, no present-tense co-design left. icp.md: Song 2021 2.58%/6.76%, 5,000x = 129-338 ok; Meta Quest sales end 2026-02-20, Embodied $3.2M Jan 2020, Akili $1.7M / $0.434 a share ok. CSV: 50 rows, 26/12/12, no emails; Roundtable founders; Specialisterne AU shut 2025-11-30; Freddie Mac 21/9.",
   "status": "accepted"
+ },
+ {
+  "id": "AF-gtm-14",
+  "agent": "gtm",
+  "task": "V07",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "targets.csv rows rated confidence 'medium' that the new scale (icp.md:82: medium = signal confirmed by a web-search summary of the cited source; low = secondary or vendor source, or not confirmed) would rate low: Microsoft:2, Dell Technologies:8 and Wells Fargo:13 cite hcamag.com trade-press articles, Telstra:20 cites itnews.com.au; University of Pittsburgh:41 cites https://www.utimes.pitt.edu/news/collaborative-series as source_url",
+  "evidence": "VERIFIER 2026-10-09 (new): python listing of source_url domains against confidence. Goldman Sachs:17 is rated low for a 'secondary university-careers blog', so trade-press sources should be low by the same rule, or re-sourced to a primary page (for example the AskEARN/Disability:IN roster or the company careers page; outreach-log.md:37 already names jobs.dell.com/en/neurodiversity for Dell). Pitt:41: the utimes URL was blocked in V09 (graph/activity/V09.jsonl:42-43) and did not surface in two WebSearches. The signal itself is confirmed only via calendar.pitt.edu and cmu.edu/teaching/facultyprograms, which sit in the notes, so 'medium' (confirmed from the cited source) is not met for the cited URL. Fix: re-rate these rows low, or swap in primary sources that a search confirms (for Pitt, the calendar.pitt.edu event URL).",
+  "status": "open"
+ },
+ {
+  "id": "AF-gtm-15",
+  "agent": "gtm",
+  "task": "V05",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "gtm/icp.md:20 'Use' column: \"Outcome language: fewer manager-employee friction cases, smoother accommodation conversations (as pilot hypotheses, not claims)\"",
+  "evidence": "VERIFIER 2026-10-09 (new): science/preregistration.md:47 (H1) and :104 fix the primary outcome as AAI-verified (share of 10 listed practices used and verified at day 30). No hypothesis or measure (H1-H5, :47-51; measured variables :104-121) covers friction cases or conversation quality. The brand rework (AF-brand-3) removed 'fewer friction cases' from the landing page for exactly this reason, but the ICP, the upstream messaging source for LOI, outreach and landing page, still recommends it as a pilot hypothesis. Fix: replace with the pre-registered outcome (practice use at 30 days), or label it 'not measured in the pilot'.",
+  "status": "open"
  }
 ]

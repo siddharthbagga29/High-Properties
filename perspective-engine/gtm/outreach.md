@@ -10,7 +10,7 @@ Nine cold-email drafts: a 3-touch sequence (day 0, day 5, day 11) for each ICP s
 | Field | Source | Rule |
 |---|---|---|
 | `{{company}}` | targets.csv `company` | Use the clean organisation name. Drop parentheticals such as "(HR / staff accommodations)" |
-| `{{public_signal}}` | targets.csv `public_signal` | Rewrite to one noun phrase of 15 words or fewer that reads after "I noticed". Re-check it against `source_url` first; rows marked "verify on click-through" or `confidence` low must be verified before any send |
+| `{{public_signal}}` | targets.csv `public_signal` | Rewrite to one noun phrase of 15 words or fewer that reads after "I noticed". Re-check it against `source_url` first. No row is `confidence` high yet (no source page has been read; scale defined in icp.md section 6), so every row must be opened and confirmed before any send; low rows need a primary source first |
 | `{{first_name}}` | Founder, by hand | Not a targets.csv column. Only from a public company page or the role title; if none, use "Hello" |
 | `{{sender_name}}` | Founder | Real name; sending is from the founder's own account |
 | `{{postal_address}}` | Founder | Valid physical postal address; blank until the legal entity exists (M04) |

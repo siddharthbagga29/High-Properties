@@ -9,17 +9,17 @@ Sell browser-first (WebXR optional) manager-and-team training as accessibility, 
 - Product constraints that shape the ICP (dossier): browser-first, no dependence on enterprise headset fleets (Meta ended commercial Quest sales 2026-02-20); educational claims only, no diagnosis, treatment or symptom claims (confirm with counsel); avoid reimbursement-dependent models; two-way scenarios with lived-experience voices; measure behaviour and interaction attitudes, not just empathy.
 
 ## 2. Post-DEI-cut framing
-Context (single-survey figures, treat as indicative): 19% of companies cut DEI funding in 2025; 78% of C-suite leaders said they rebrand under "belonging" or "culture"; about 62% of Fortune 500 "rollbacks" were renames. Implication: the need persists but the label and budget line moved.
+Context (three separate sources, not one survey; checked 2026-10-09 at web-search-summary level only, pages not read; treat as indicative): 19% of organisations said they were decreasing DEI funding in 2025, against 58% no change and 23% increasing (Paradigm 2025 DEI Benchmarking Study, 443 organisations surveyed March 2025: https://info.paradigmiq.com/hubfs/2025%20DEI%20Benchmarking%20Study.pdf); a Catalyst / NYU Meltzer Center 2025 survey reportedly found 78% of C-suite leaders rebranding DEI under terms such as culture, fairness or belonging (unverified: summaries differ on whether leaders have rebranded or plan to, so say "are rebranding or plan to", never "have rebranded"; https://www.law.nyu.edu/news/groundbreaking-report-meltzer-center-offers-new-insight-dei-efforts); roughly 63 of the Fortune 100 rebranded or removed DEI messaging on their websites since mid-2024 (HR Brew analysis, 2026-01-06: https://www.hr-brew.com/stories/2026/01/06/more-than-half-of-the-fortune-100-has-changed-public-facing-dei-language-since-the-2024-election). The earlier "about 62% of Fortune 500 rollbacks were renames" was not found in any source and is removed. Implication: the need persists but the label and budget line moved.
 
 | Use | Avoid |
 |---|---|
 | Manager effectiveness; retention; productivity of mixed-style teams | DEI, "equity", "bias training", "diversity" in headline copy |
 | Accessibility and accommodations; ADA readiness (counsel to confirm any legal wording) | "Walk a mile in my shoes", "feel what ADHD is like" (Nario-Redmond critique: raises pity and discomfort) |
-| Working-style mismatch is two-way; strengths and adaptation; co-designed with neurodivergent advisors | One-way "simulation" of a deficit; "cure", "treat", "reduce symptoms" (device territory) |
+| Working-style mismatch is two-way; strengths and adaptation; to be co-designed with paid neurodivergent advisors (a plan: no advisor is engaged yet, V14) | One-way "simulation" of a deficit; "cure", "treat", "reduce symptoms" (device territory) |
 | Mirror the buyer's own word: "belonging", "inclusion", "talent", "culture" if that is their label | Quantum, "18 dB SNR", 72% success, $14.8B TAM, CPT claims (all unsupported) |
 | Outcome language: fewer manager-employee friction cases, smoother accommodation conversations (as pilot hypotheses, not claims) | Efficacy numbers such as "92% more productive" (vendor marketing in the dossier) |
 
-Core line: "A short browser-based practice module that helps managers have better working-style and accommodation conversations, built with neurodivergent co-designers." Position the pilot as evidence generation: pre-registered, 4-8 week follow-up, behaviour measures.
+Core line: "A short browser-based practice module that helps managers have better working-style and accommodation conversations, to be co-designed with paid neurodivergent advisors." Co-design is a plan until advisors are engaged and have approved the content (V14; ethics/codesign-charter.md); only then may the line say "built with". Position the pilot as evidence generation: pre-registered, 4-8 week follow-up, behaviour measures.
 
 Illustrative hook, not a claim: Song et al. 2021 puts persistent adult ADHD at 2.58% and symptomatic at 6.76%. In a 5,000-person firm that is roughly 130-340 people on paper, most undiagnosed or undisclosed. Use only as context.
 
@@ -39,7 +39,7 @@ Rating key (judgment, not data): H/M/L on budget clarity, urgency, evidence fit,
 - Budget owner (hypothesis): Head of People / VP Talent or Head of L&D (retention and manager-effectiveness budget). Not the DEI team, whose budget is the exposed one.
 - Champion: neurodiversity program lead or ERG sponsor. Users: people managers and HR business partners. Blockers: Legal (disability-claim sensitivity), IT/security review (SSO, data handling), Procurement.
 - Trigger events: a hiring cohort reaching 6-12 months, manager complaints, ERG request, program expansion.
-- Entry offer: free or low-cost 4-8 week pilot with one cohort of managers, pre-registered measures, ND advisor co-design. Paid license price: hypothesis only ($25k-60k/yr from memo is unverified); test in interviews.
+- Entry offer: free or low-cost 4-8 week pilot with one cohort of managers, pre-registered measures, planned co-design with paid ND advisors (none engaged yet). Paid license price: hypothesis only ($25k-60k/yr from memo is unverified); test in interviews.
 - Proof the buyer will ask for: lived-experience voices, behaviour outcomes, no pity framing, privacy.
 
 ### Segment 2 (rank 2): Accommodation and ADA-compliance owners
@@ -79,6 +79,8 @@ Rating key (judgment, not data): H/M/L on budget clarity, urgency, evidence fit,
 - Sources: company careers pages, sustainability or ESG and annual reports mentioning neurodiversity programs, public job postings for accommodation or accessibility roles, public university disability-services pages.
 - Do not scrape or store personal emails. Do not name individuals in target lists; use role titles and company or institution names only.
 - Nothing is sent from this node. Outreach is a human-gated node.
+- `confidence` scale in targets.csv (defined 2026-10-09): **high** = the source page itself was opened and shows the signal; **medium** = the signal is confirmed only by a web-search summary of the cited source (page not read, usually because the proxy blocked it); **low** = secondary or vendor source, or the signal is not confirmed. No row is high yet, because no source page has been read (graph/activity/V07.jsonl: every fetch was blocked). Open the page before upgrading a row.
+- Segment-1 coverage (2026-10-09): of the 26 segment-1 rows, 23 are reference cases likely above the 1,000-10,000-staff test band (headcount not checked) and 3 are first-target candidates: Biogen (about 7,605 staff per its FY2024 10-K, search summary), Freddie Mac (size from third-party estimates only, unverified) and Uplight (size unconfirmed). Each segment-1 row's `notes` ends with an "ICP fit" tag. CAPABILITY GAP: the list does not yet supply enough mid-size first targets for the top-ranked segment. IMPLEMENTATION REQUIRED: a sourcing pass for at least 10 US employers of 1,000-10,000 staff with a public neurodiversity program or ERG, each with the page read and a headcount source, before segment-1 outbound grows beyond batch B1.
 
 ## 7. Validation plan (before ranking is final)
 - 10-20 buyer interviews split across the three segments, by role titles above (the dossier recommends this for price and TAM validation). Ask: who owns the budget today, what label does it sit under, what they pay for comparable manager training, who can say no.

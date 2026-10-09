@@ -6,7 +6,7 @@
   "severity": "critical",
   "kind": "process",
   "claim": "brand/landing/index.html:140 \"A short browser-based practice module, co-designed with paid ADHD advisors\"; :8 (meta description), :224 \"Co-designed with paid ADHD advisors who can say no.\", :166 \"co-designed with ADHD adults\"",
-  "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled. || FIXED 2026-10-09 by the orchestrator: brand/landing/index.html lines 8, 17, 140, 166 and 224 now say \"to be co-designed\"; no present-tense advisor claim remains (grep \"co-designed with\" shows only future wording). Pending re-check by the next independent audit.",
+  "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled. || FIXED 2026-10-09 by the orchestrator: brand/landing/index.html lines 8, 17, 140, 166 and 224 now say \"to be co-designed\"; no present-tense advisor claim remains (grep \"co-designed with\" shows only future wording). Pending re-check by the next independent audit. || VERIFIER 2026-10-09: Re-read brand/landing/index.html. :8 meta, :17 summary comment, :140 lede, :166 step 1 and :225 heading all say 'to be co-designed'. grep for 'co-designed with' finds only future wording, and :235 still discloses 'We have not yet recruited advisors'. The hero and the disclosure no longer contradict each other. V14 is still awaiting_human. Residual, not reopened: step 2 (:171) describes 'ADHD advisors describe, in their own words...' in the present tense as part of the session design. The page frames itself as 'Pilot in design' (:138), so this reads as design, not a claim of existing content. Fix confirmed.",
   "status": "fixed"
  },
  {
@@ -16,8 +16,8 @@
   "severity": "major",
   "kind": "process",
   "claim": "graph/ledger.jsonl 2026-10-06T12:57:36Z done V13 \"Landing page: no 'simulate' claims, inert pilot form, honest 'where this stands' box\"",
-  "evidence": "PROMPT.md:39 requires a separate verifier who logs check --verifier. graph/activity/V13.jsonl has only the builder's self-checks (12:57:06-12:57:22) and closes 5 s after handoff. The self-check missed the hero/disclosure contradiction (AF-brand-1). tools/audit.py score_process already scores missing verifier rows.",
-  "status": "open"
+  "evidence": "PROMPT.md:39 requires a separate verifier who logs check --verifier. graph/activity/V13.jsonl has only the builder's self-checks (12:57:06-12:57:22) and closes 5 s after handoff. The self-check missed the hero/disclosure contradiction (AF-brand-1). tools/audit.py score_process already scores missing verifier rows. || VERIFIER 2026-10-09: Ran the retro-verification this finding asked for. graph/activity/V13.jsonl had no row with actor 'verifier'; it now holds one 'check' row with actor 'verifier' (graph.py log V13 check --verifier, 2026-10-09). No 'simulate ADHD' claim: PASS (grep -ci simulat = 0; analogue wording :166; never-claim list :245). Pilot sign-up CTA: PASS (:142 links to #pilot :255, form :275, script keeps entries in memory only, no fetch/XHR/storage/action by grep, tags balance). The note points to new minor finding AF-brand-4. The original breach cannot be undone; the missing record now exists.",
+  "status": "fixed"
  },
  {
   "id": "AF-brand-3",
@@ -26,8 +26,8 @@
   "severity": "minor",
   "kind": "error",
   "claim": "brand/landing/index.html:191 \"The pilot's main outcome is behavior at 30 days.\" and :198-199 \"We count ... Whether meeting structure is agreed with the person. Whether managers avoid diagnosing or labeling colleagues.\"",
-  "evidence": "science/preregistration.md:104 fixes the primary as AAI-verified over 10 listed practices. Neither 'meeting structure agreed' nor 'avoid diagnosing/labeling' is on the list, and the second cannot be verified by its log/3-report rule. So 2 of the 4 behaviours offered to buyers are not what the pilot measures. The page does hedge at :213. Cause: V13 inputs omitted V02/V03.",
-  "status": "open"
+  "evidence": "science/preregistration.md:104 fixes the primary as AAI-verified over 10 listed practices. Neither 'meeting structure agreed' nor 'avoid diagnosing/labeling' is on the list, and the second cannot be verified by its log/3-report rule. So 2 of the 4 behaviours offered to buyers are not what the pilot measures. The page does hedge at :213. Cause: V13 inputs omitted V02/V03. || VERIFIER 2026-10-09: Re-read index.html:191 ('main outcome is behavior at 30 days: the share of ten listed everyday management practices that a manager actually used, counted only when confirmed') and the 'We count' list :196-201 against science/preregistration.md:104. Items map to pre-registered items 6 (ask what helps without requiring disclosure), 2 (written follow-up), 1+3 (agenda 24 h ahead; priorities and deadlines in writing) and 8 (written response to an accommodation request within a stated time). The verification rule (shared log, or a majority of at least 3 direct reports, anonymous) matches. The harm line 'Stigma, pity and distress, before and after' matches H2 (:48). 'Meeting structure agreed' and 'avoid diagnosing or labeling' are no longer counted (they remain only as session-rehearsal steps, :152, :176, which is not a measurement claim). :148 now frames the People/Talent hypothesis as practice use 30 days later. :214 says these are examples from the draft list. grep -ci simulat = 0; HTMLParser reports balanced tags. Fix confirmed.",
+  "status": "fixed"
  },
  {
   "id": "AF-brand-checked",
@@ -37,5 +37,15 @@
   "claim": "checked",
   "evidence": "Acceptance 1 met: no 'simulat' string anywhere in index.html; the module is called an analogue. Acceptance 2 met: CTA at :142 links to the form at :274. Headless Chromium run (playwright-core): submitting the filled form shows the thanks panel, 0 network requests, empty localStorage; the only external request is Google Fonts, as the header says. No names, quotes, statistics or prices, as claimed.",
   "status": "accepted"
+ },
+ {
+  "id": "AF-brand-4",
+  "agent": "brand",
+  "task": "V13",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "brand/landing/index.html:217 \"We write down the measures and the stop thresholds before anyone takes part. If discomfort or attitudes get worse beyond the threshold, we pause.\"",
+  "evidence": "VERIFIER 2026-10-09 (new): science/preregistration.md:96 (Stopping rule) pre-registers a single pause trigger: T-arm enrolment pauses only if the T minus C increase in the QPS Reliability and Social Functioning subscale (an attitude/stigma measure) exceeds a threshold still to be set with advisors. Distress, pity and self-efficacy are examined by the safety reviewer but have no threshold. So the buyer-facing promise to pause when 'discomfort' worsens beyond a threshold describes a stop rule the pre-registration does not contain. Fix: say 'if stigma-related attitudes worsen beyond a pre-set threshold, we pause' (and that distress is reviewed), or have the science owner add a distress threshold to the pre-registration.",
+  "status": "open"
  }
 ]

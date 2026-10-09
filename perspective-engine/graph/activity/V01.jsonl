@@ -13,3 +13,4 @@
 {"t": "2026-10-06T12:40:54Z", "node": "V01", "agent": "science", "kind": "handoff", "text": "Handed the result back to the orchestrator", "src": "transcript"}
 {"t": "2026-10-06T12:38:19Z", "node": "V01", "agent": "science", "kind": "plan", "text": "Task started", "src": "ledger"}
 {"t": "2026-10-06T12:40:58Z", "node": "V01", "agent": "science", "kind": "handoff", "text": "Task finished: 5 mechanisms graded S1-S3; design-parameter ranges; 15-item not-modeled list; M4/M5 sources snippet-level", "src": "ledger"}
+{"t": "2026-10-09T19:04:01Z", "node": "V01", "agent": "science", "kind": "check", "text": "Retro-verification 2026-10-09: each mechanism cites evidence PASS - M1 PubMed 17445893 (Sonuga-Barke and Castellanos 2007, confirmed by search) plus S0006899309004612; M2 Kofler 2013 doi:10.1016/j.cpr.2013.06.001 (319 studies, g 0.76 / 0.46 confirmed), Kebir 2009 PMC2647566 and Fassbender 2009 PubMe", "src": "self", "actor": "verifier"}

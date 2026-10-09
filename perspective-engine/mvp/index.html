@@ -160,7 +160,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
   <div class="ctl">
     <button id="stopBtn" class="btn stop" type="button" aria-label="Stop everything now">&#9632; Stop</button>
     <button id="pauseBtn" class="btn" type="button" hidden>Pause</button>
-    <button id="easeBtn" class="btn" type="button" hidden title="Lower every added condition to 0.2 for the rest of the session">Ease off</button>
+    <button id="easeBtn" class="btn" type="button" hidden title="Turn any added condition above 0.2 down to 0.2 and switch off the hyperfocus block">Ease off</button>
     <button id="soundBtn" class="btn" type="button" aria-pressed="false">Sound: off</button>
     <button id="facBtn" class="btn" type="button" aria-expanded="false" aria-controls="fac">Facilitator panel</button>
   </div>
@@ -184,7 +184,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
   </div>
   <div class="card"><h2>Your data and your control</h2><ul>
     <li>Everything stays on this device. No account, camera, microphone or name. Nothing is sent anywhere. At the end you may download a file that holds no personal identifiers; sharing it is your choice.</li>
-    <li><strong>Stop</strong> is visible at every moment. Pause, Ease off and Skip are always available. You can leave at any point without consequence. Everything works from the keyboard; Esc pauses, and the pause dialog has its own Stop button.</li>
+    <li><strong>Stop</strong> is visible at every moment. During both task rounds you can Pause (or press Esc) and Skip a step; in round 2 you can also Ease off, which turns any added condition above 0.2 down to 0.2. You can leave at any point without consequence. Everything works from the keyboard, and the pause dialog has its own Stop button.</li>
     <li>Content note: interruptions, a wait, notifications from outside the task and, only if you switch sound on, quiet sounds. Nothing flashes. If you have ADHD yourself this may feel inaccurate or upsetting, and you are free to skip it.</li></ul></div>
   <div class="card"><h2>Sensory settings (reduced by default)</h2>
     <label class="chk"><input type="checkbox" id="optSound"><span>Allow quiet sounds (off by default). Needed for the optional inner-voice murmur and notification pings.</span></label>
@@ -232,7 +232,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
 (function(){
 'use strict';
 /* ===== constants (all numeric ranges are DESIGN parameters from perspective-engine/science/mechanism-spec.md, not empirical ADHD estimates) ===== */
-const VERSION='0.1.0-F04';
+const VERSION='0.1.1-F04';
 const CEIL=0.8, DEF_I=0.5;            // session ceiling and default intensity (spec section 1)
 const MIN_VIS_GAP=2.5;                // s between visual cue events: keeps every change well under 3 Hz
 const BASE_DELAY=1.0, BASE_CV=0.25;   // scenario baseline response-registration delay (design)
@@ -408,7 +408,7 @@ const NOT_ADMIN=[
  {instrument:'QPS (Fuermaier 2012), 37 items; 2 subscales at T1',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'IRI Perspective-Taking (Davis 1983), 7 items',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'RIBS (Evans-Lacko 2011), 8 items; intended 4 at T1',why:'item texts not in the instruments spec; ADHD wording would be an unvalidated adaptation'},
- {instrument:'OMS-WA (Lindsay 2024), 22 items, T0',why:'item texts not in the instruments spec; licensing unverified'},
+ {instrument:'OMS-WA (Lindsay 2024), 22 to 23 items (count unverified in the instruments spec), T0',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'AQ-27 Pity and Fear subscales (Corrigan 2003)',why:'item texts not in the instruments spec; ADHD vignette would be an unvalidated adaptation'},
  {instrument:'Marlowe-Crowne short form C, 13 items, T0',why:'item texts not in the instruments spec'},
  {instrument:'Self-efficacy items 2 and 3',why:'instruments spec gives 3 items but names only one'},
@@ -429,7 +429,7 @@ const TOOLKIT={
 };
 const DEBRIEF=[
  ['What you just did is an analogue',['You did a small task twice. In round 2, four patterns that research reports for some people with ADHD at group level were added in a made-up, adjustable way. It is an analogue built from a few reported experiences. It is not what ADHD is, and it is not what any person’s day is like. A few minutes cannot convey living with a condition, and the settings were chosen for visibility, not measured from anyone.']],
- ['Strengths and adaptation',['People with ADHD build workable ways of working and bring real skills and expertise. Short simulations ignore that long-term coping and so tend to understate capability. In round 2 you could try workplace changes (written follow-up, fewer notifications, a structured deadline). If you tried them, they eased the added conditions in this illustration. That shows a design idea, not proof that a change works for any person. ADHD is not only a deficit and not only a gift; it varies.']],
+ ['Strengths and adaptation',['This section is for neurodivergent advisors to write. Under the project’s ethics rules only paid advisors write the strengths statement here, or they decide not to use one. None has been written yet, so this prototype adds no strengths wording of its own. Keep in mind that a short exercise like this leaves out the ways of working people build over years, so it tends to understate what people can do.','In round 2 you could try workplace changes (written follow-up, fewer notifications, a structured deadline). If you tried them, they eased the added conditions in this illustration. That shows a design idea, not proof that a change works for any person.']],
  ['People differ widely',['People with ADHD differ widely in which patterns they notice, how strongly, and when. Findings such as variable reaction times describe groups, not any one person. This session cannot tell you how a colleague experiences anything, so ask rather than assume.']],
  ['Accommodations and practice',['Concrete steps you can take: ask what helps, without requiring anyone to disclose anything; send agendas ahead of time; follow meetings with a short written summary and written deadlines; split large tasks with checkpoints; offer focus time and fewer notifications; answer requests in writing; check in on workload regularly.','These are options to agree together, drawn from general workplace-accommodation guidance. How well each works for any one person is not established here.']],
  ['Mismatches go both ways',['Communication mismatches run in both directions, and teams can adjust too. The research on this two-way view (the double empathy problem) comes mainly from autism. It is applied to ADHD here cautiously; that is an extrapolation, not an established account of ADHD.']],
@@ -815,7 +815,7 @@ function doStop(){
 }
 function easeOff(){
   ['M1','M2','M3','M4'].forEach(m=>{if(S.mech[m].I>0.2)setI(m,0.2);});S.mech.M5.enabled=false;S.easeOff++;
-  logEv('ease_off',{to:0.2});syncFac();say('Eased off: all added conditions set to 0.2 for the rest of the session.');
+  logEv('ease_off',{to:0.2});syncFac();say('Eased off: any added condition above 0.2 is now at 0.2, and the hyperfocus block is off.');
   const s=$('#stat');if(s)s.dataset.eased='1';
 }
 function startRun(cond){
@@ -899,7 +899,7 @@ function buildBrief2(){
   const root=$('#s-brief2');
   const kids=[h('h1',{id:'h-brief2',tabindex:'-1'},'Round 2: the same kind of task, with added conditions'),
    h('div',{class:'card warn'},h('p',null,h('strong',null,'Content note. '),'Round 2 adds interruptions, a more variable response delay, a wait with a visual pull, and notifications'+(S.set.sound?' (with quiet sounds, which you allowed)':'')+'. Nothing flashes. It is an analogue, not what ADHD is, and the settings are design values, not measurements of anyone.'),
-     h('p',{class:'small'},'You can use Stop, Pause, Ease off or Skip at any moment. Tick or untick a condition below to leave it out.')),
+     h('p',{class:'small'},'During round 2 you can use Stop, Pause, Ease off or Skip at any moment. Tick or untick a condition below to leave it out.')),
    h('div',{class:'card'},['M1','M2','M3','M4'].map(m=>h('label',{class:'chk'},h('input',{type:'checkbox',id:'b2-'+m,checked:S.mech[m].enabled,onchange:ev=>{S.mech[m].enabled=ev.target.checked;logEv('setting',{mech:m,enabled:ev.target.checked});syncFac();}}),
       h('span',null,h('strong',null,MECH[m].name),' ('+MECH[m].grade+', intensity '+r2(S.mech[m].I)+(S.mech[m].custom?', custom':'')+'). '+PLAIN[m])))),
    S.mech.M5.enabled?h('p',{class:'card warn'},'Advanced block enabled: M5 hyperfocus adds a milestone-board block of about '+Math.round((S.mech.M5.v.onset+S.mech.M5.v.dur+10)/60*10)/10+' minutes. Evidence for M5 is self-report only.'):null,
@@ -1295,7 +1295,7 @@ function init(){
   $('#vol').addEventListener('input',ev=>{S.set.vol=+ev.target.value;Aud.vol(S.set.vol);});
   $('#testSound').addEventListener('click',()=>{if(!S.set.sound)setSound(true);Aud.ping();say('Test sound played');});
   $('#consent').addEventListener('change',ev=>{$('#beginBtn').disabled=!ev.target.checked;});
-  $('#beginBtn').addEventListener('click',()=>{if(!$('#consent').checked)return;S.consent={given:true,at_s:r2(sessT()),text_version:'v0-draft-2026-10-06'};logEv('consent');go(S.set.measures?'t0':'brief1');syncFacSession();});
+  $('#beginBtn').addEventListener('click',()=>{if(!$('#consent').checked)return;S.consent={given:true,at_s:r2(sessT()),text_version:'v0-draft-2026-10-09'};logEv('consent');go(S.set.measures?'t0':'brief1');syncFacSession();});
   $('#startR1').addEventListener('click',()=>startRun('baseline'));
   document.addEventListener('keydown',ev=>{
     if(ev.key!=='Escape')return;
