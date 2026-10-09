@@ -1,5 +1,5 @@
 {
- "computedAt": "2026-10-09T07:01:22Z",
+ "computedAt": "2026-10-09T18:49:56Z",
  "rubricVersion": "1.0",
  "scorecards": [
   {
@@ -208,12 +208,12 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "science",
    "name": "Curie",
-   "score": 74.4,
+   "score": 74.7,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -235,8 +235,8 @@
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 88.4,
-     "basis": "185/199 numeric claims (93%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 36/42, V01 mechanism-spec.md 37/37, V03 preregistration.md 100/107, V15 partners.md 12/13; untraced examples: F03: d+ = 0.51; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4 from 2 open or accepted finding(s)."
+     "score": 90.8,
+     "basis": "208/218 numeric claims (95%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 51/53, V01 mechanism-spec.md 41/41, V03 preregistration.md 101/108, V15 partners.md 15/16; untraced examples: F03: 4-8 weeks; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4 from 2 open or accepted finding(s)."
     },
     {
      "id": "integrity",
@@ -250,7 +250,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 25.0,
-     "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+     "basis": "4 closed tasks in the ledger: step records on 4 (4 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -326,7 +326,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "ethics",
@@ -424,7 +424,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "product",
@@ -532,7 +532,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "data",
@@ -559,8 +559,8 @@
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 89.4,
-     "basis": "26/28 numeric claims (93%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V02 instruments.md 26/28; untraced examples: V02: 7 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 89.7,
+     "basis": "27/29 numeric claims (93%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V02 instruments.md 27/29; untraced examples: V02: 7 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
     },
     {
      "id": "integrity",
@@ -574,7 +574,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 25.0,
-     "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+     "basis": "1 closed tasks in the ledger: step records on 1 (1 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -620,7 +620,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "gtm",
@@ -817,12 +817,12 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "finance",
    "name": "Pacioli",
-   "score": 85.9,
+   "score": 86.4,
    "grade": "B",
    "meetsInstitutionalBar": true,
    "dimensions": [
@@ -837,15 +837,15 @@
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 79.0,
-     "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (M05 1). Findings: -18 from 5 open or accepted finding(s)."
+     "score": 82.0,
+     "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -18 from 5 open or accepted finding(s)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 93.7,
-     "basis": "455/474 numeric claims (96%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V10 model.md 78/79, V11 grants.md 81/81, M05 sbir-draft.md 296/314; untraced examples: V10: 12 months; M05: 1.25 pages. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -2 from 1 open or accepted finding(s)."
+     "score": 94.5,
+     "basis": "486/502 numeric claims (97%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V10 model.md 82/83, V11 grants.md 90/90, M05 sbir-draft.md 314/329; untraced examples: V10: 12 months; M05: 1.25 pages. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -2 from 1 open or accepted finding(s)."
     },
     {
      "id": "integrity",
@@ -859,7 +859,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 50.0,
-     "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+     "basis": "3 closed tasks in the ledger: step records on 3 (47 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -955,7 +955,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "legal",
@@ -982,8 +982,8 @@
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 97.5,
-     "basis": "56/56 numeric claims (100%) in 2 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V12 privacy.md 3/3, M04 entity-checklist.md 53/53. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 97.7,
+     "basis": "60/60 numeric claims (100%) in 2 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V12 privacy.md 3/3, M04 entity-checklist.md 57/57. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
     },
     {
      "id": "integrity",
@@ -997,7 +997,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 100.0,
-     "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
+     "basis": "2 closed tasks in the ledger: step records on 2 (22 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
     },
     {
      "id": "gates",
@@ -1043,7 +1043,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   },
   {
    "agent": "brand",
@@ -1141,7 +1141,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-09T07:01:22Z"
+   "computedAt": "2026-10-09T18:49:56Z"
   }
  ],
  "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -1149,7 +1149,7 @@
  "inputs": {
   "nodes": 34,
   "ledgerEvents": 61,
-  "activityRows": 1148,
+  "activityRows": 1163,
   "llmFindings": 53,
   "llmAuditedAgents": [
    "brand",
