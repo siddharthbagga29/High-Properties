@@ -7,6 +7,7 @@ import { freshEvents, type AgentStats } from '../data/model'
 import { useStore } from '../store'
 import { labelLayer } from './portal'
 import { agentState, live, PALETTE, verifying } from './shared'
+import { bustOccludes } from './bust'
 import { agentLabel, ALL_AGENTS, CENTER_AGENT, BRAIN_C, districtCenter, R_PLAZA, ringAngle, ringIndex, type Tower } from './world'
 
 export const workerPos: Record<string, THREE.Vector3> = Object.fromEntries(ALL_AGENTS.map(a => [a, new THREE.Vector3(0, 4, 0)]))
@@ -55,7 +56,7 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
     return new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }))
   }, [])
 
-  useFrame((_, dt) => {
+  useFrame(({ camera }, dt) => {
     const { data, hover, focus } = useStore.getState()
     if (!data) return
     const t = live.time * (live.motion || 0.2)
@@ -110,7 +111,9 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
       if (span && span.textContent !== label) span.textContent = label
       // The brain label speaks for the Mayor in the world view, so its tag never sits on the brain.
       const hide = agent === CENTER_AGENT && focus.kind === 'world'
-      tag.current.style.opacity = live.assemble > 0.9 && !hide ? (stalled ? '0.8' : '1') : '0'
+      // A tag standing behind the bust steps back, so it never covers the figure (it stays readable).
+      const gp = group.current.position, behind = bustOccludes([camera.position.x, camera.position.y, camera.position.z], [gp.x, gp.y + 1.2, gp.z])
+      tag.current.style.opacity = live.assemble > 0.9 && !hide ? (behind ? '0.3' : stalled ? '0.8' : '1') : '0'
     }
   })
 
@@ -135,7 +138,7 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
           <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
         </mesh>
         <Html portal={labelLayer} center position={[0, 1.2, 0]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-          <div ref={tag} className="worker-tag" style={{ opacity: 0 }}><b>{agentLabel(agent, name)}</b><span>idle</span></div>
+          <div ref={tag} className="worker-tag" style={{ opacity: 0, transition: 'opacity 0.4s' }}><b>{agentLabel(agent, name)}</b><span>idle</span></div>
         </Html>
       </group>
       <primitive object={beam} />

@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createRegistry, looksLikeInstruction } from '../../core/index'
 import { createApp } from '../src/app'
 import { isBlockedAddress, type Resolver, type SafeResponse } from '../src/net'
-import { createBrowserTools, safeFileName, type PlaywrightLike } from '../src/tools/browser'
+import { BROWSER_ARGS, createBrowserTools, safeFileName, type PlaywrightLike } from '../src/tools/browser'
 import { checkOpenUrl, cleanText, macTools, notifyArgs, sayArgs } from '../src/tools/mac'
 import { decodeEntities, parseDuckDuckGo, researchTool, unwrapDuckLink } from '../src/tools/research'
 import { cleanup, fakeRunner, offlineFetch, tempDir, testConfig } from './helpers'
@@ -244,7 +244,8 @@ describe('browser tools', () => {
     const reg = registryWith(...b.tools)
     const r = await reg.run('browser.open', { url: 'https://example.com/' }, { viewer: 'owner' })
     expect(r.ok, r.summary).toBe(true)
-    expect(calls.launchOpts).toEqual({ headless: true })
+    // Launched behind the guard proxy (loopback, random port) with WebRTC and DNS prefetch kept on it.
+    expect(calls.launchOpts).toMatchObject({ headless: true, proxy: { server: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+$/) }, args: BROWSER_ARGS })
     expect(calls.contextOpts).toMatchObject({ acceptDownloads: false, serviceWorkers: 'block' })
     const data = r.data as { trust: string; snapshot: string; title: string }
     expect(data.trust).toBe('external')

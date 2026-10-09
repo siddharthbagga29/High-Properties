@@ -7,7 +7,7 @@ import { PE_BODY, peBody, type PEState } from '@jarvis/adapters/perspective-engi
 import { describe, expect, it } from 'vitest'
 import type { GraphState, Status } from '../data/types'
 import { bodyArrivals, bodyAt, faceTooltip, partDetail, partName, partOfTask, partTooltip, revenueOf } from '../jarvis/body'
-import { ARMS, BUST_PARTS, buildBust, FACE, handOf, KIND, N_PARTS, toWorld } from './bust'
+import { ARMS, BUST_PARTS, buildBust, bustOccludes, FACE, handOf, KIND, N_PARTS, toLocal, toWorld } from './bust'
 import { BRAIN_C, BRAIN_S, BUST_BASE, districtCenter } from './world'
 
 const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
@@ -173,5 +173,14 @@ describe('bust geometry', () => {
       expect(y).toBeGreaterThan(0)
       expect(y).toBeLessThan(BRAIN_C[1] + BRAIN_S * 1.2)
     }
+  })
+
+  it('knows when a label stands behind the bust', () => {
+    const cam: [number, number, number] = [0, 75, 100]
+    expect(bustOccludes(cam, [0, 4.4, -25.5])).toBe(true)
+    expect(bustOccludes(cam, [27, 4.4, 0])).toBe(false)
+    expect(bustOccludes(cam, [0, 2, 27])).toBe(false)
+    expect(bustOccludes(cam, [0, BRAIN_C[1] + 30, -25])).toBe(false)
+    expect(toLocal(toWorld([0.5, -1, 0.25]))).toEqual([0.5, -1, 0.25])
   })
 })

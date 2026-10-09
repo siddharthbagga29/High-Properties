@@ -74,6 +74,34 @@ export function frontZ(x: number, y: number): { z: number; n: V3 } | null {
 export const maskR = (x: number, y: number) => Math.hypot(x / SHAPE.mask.mx, (y - SHAPE.mask.my) / SHAPE.mask.ry)
 const inFace = (p: V3, n: V3) => n[2] > 0.25 && p[2] > 0.2 && maskR(p[0], p[1]) < 1
 
+/** World → bust-local units. */
+export const toLocal = (p: V3): V3 => [(p[0] - BRAIN_C[0]) / BRAIN_S, (p[1] - BRAIN_C[1]) / BRAIN_S, (p[2] - BRAIN_C[2]) / BRAIN_S]
+
+/** The solid-looking volumes of the bust (head, neck, shoulders, chest) for occlusion checks. */
+const OCCLUDERS: Ell[] = [
+  SHAPE.cranium, SHAPE.jaw, SHAPE.trap, SHAPE.deltR, SHAPE.deltL, SHAPE.chest,
+  { c: [0, -1.52, SHAPE.neck.cz], r: [SHAPE.neck.rx * 1.1, 0.5, SHAPE.neck.rz * 1.1] },
+]
+
+/**
+ * Does the straight segment from a to b (world units) pass through the bust? Used to dim a label that sits behind
+ * the bust, so the figure is never covered by the tag of a district standing behind it.
+ */
+export function bustOccludes(a: V3, b: V3): boolean {
+  const A = toLocal(a), B = toLocal(b)
+  for (const e of OCCLUDERS) {
+    const p = [0, 1, 2].map(i => (A[i] - e.c[i]) / e.r[i]), d = [0, 1, 2].map(i => (B[i] - A[i]) / e.r[i])
+    const qa = d[0] * d[0] + d[1] * d[1] + d[2] * d[2]
+    const qb = 2 * (p[0] * d[0] + p[1] * d[1] + p[2] * d[2])
+    const qc = p[0] * p[0] + p[1] * p[1] + p[2] * p[2] - 1
+    const disc = qb * qb - 4 * qa * qc
+    if (qa === 0 || disc < 0) continue
+    const s = Math.sqrt(disc), t0 = (-qb - s) / (2 * qa), t1 = (-qb + s) / (2 * qa)
+    if (t1 > 0 && t0 < 1) return true
+  }
+  return false
+}
+
 // ---------- arms: each reaches toward its own district ----------
 
 export interface Arm { J: V3; E: V3; W: V3; d: V3; side: 1 | -1; reach: number }

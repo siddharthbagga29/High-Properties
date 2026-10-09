@@ -25,8 +25,8 @@ const phone = typeof matchMedia !== 'undefined' && matchMedia('(max-width: 760px
 const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency ?? 4 : 4
 /** Brain particle budget: 105k desktop, 60k on modest machines, 27k on phones (the brain is smaller inside the bust). */
 export const PARTICLES = phone ? 27_000 : cores <= 4 ? 60_000 : 105_000
-/** The bust around it: a lighter cloud, the wireframe carries the unbuilt parts. */
-export const BUST_PARTICLES = phone ? 10_000 : cores <= 4 ? 20_000 : 30_000
+/** The bust around it: built tissue is particles, the faint wireframe carries the unbuilt parts. */
+export const BUST_PARTICLES = phone ? 12_000 : cores <= 4 ? 24_000 : 40_000
 
 if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore, body: bodyLive }
 

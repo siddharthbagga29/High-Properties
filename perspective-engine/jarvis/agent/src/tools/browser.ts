@@ -1,6 +1,8 @@
 /**
  * Browser tools (Phase 4) on playwright-core, loaded only when used. One clean browser (no profile, no saved
- * logins), one tab. Every navigation and every sub-request passes the SSRF guard. Page text comes back as an
+ * logins), one tab. All browser traffic goes through the guard proxy (proxy.ts), which checks the address of every
+ * connection, so redirects, sub-requests and DNS rebinding cannot reach private, loopback, link-local or metadata
+ * addresses; request interception adds an early check with a clearer message. Page text comes back as an
  * accessibility snapshot labelled external and wrapped as data. Clicking and typing can submit things, so they are
  * medium risk (level 2: confirmation unless you pre-approve them). Downloads land in ~/Downloads/jarvis.
  */
@@ -8,6 +10,7 @@ import { closeSync, constants, mkdirSync, openSync, writeSync } from 'node:fs'
 import { basename, extname, join } from 'node:path'
 import { label, wrapUntrusted, type JarvisTool, type ToolResult } from '../../../core/index'
 import { checkUrl, safeFetch, type GuardOptions, type GuardResult } from '../net'
+import { BLOCK_HEADER, startGuardProxy, type GuardProxy } from '../proxy'
 
 // Minimal structural types for what we use from playwright-core, so the agent compiles without it installed.
 interface PWLocator {
@@ -20,7 +23,7 @@ interface PWLocator {
 }
 interface PWRoute { request(): { url(): string }; continue(): Promise<void>; abort(code?: string): Promise<void> }
 interface PWPage {
-  goto(url: string, o?: { waitUntil?: string; timeout?: number }): Promise<{ status(): number } | null>
+  goto(url: string, o?: { waitUntil?: string; timeout?: number }): Promise<{ status(): number; headers?(): Record<string, string> } | null>
   title(): Promise<string>
   url(): string
   locator(sel: string): PWLocator
@@ -34,7 +37,8 @@ interface PWPage {
 }
 interface PWContext { newPage(): Promise<PWPage>; route(pattern: string, handler: (route: PWRoute) => Promise<void>): Promise<void>; close(): Promise<void> }
 interface PWBrowser { newContext(o?: Record<string, unknown>): Promise<PWContext>; close(): Promise<void> }
-export interface PlaywrightLike { chromium: { launch(o?: { headless?: boolean; channel?: string }): Promise<PWBrowser> } }
+export interface LaunchOptions { headless?: boolean; channel?: string; proxy?: { server: string; bypass?: string }; args?: string[] }
+export interface PlaywrightLike { chromium: { launch(o?: LaunchOptions): Promise<PWBrowser> } }
 
 export interface BrowserDeps {
   load?: () => Promise<PlaywrightLike | null>
@@ -42,7 +46,12 @@ export interface BrowserDeps {
   headless?: () => boolean
   channel?: () => string | undefined
   downloadDir: () => string
+  /** Starts the guard proxy the browser is launched behind (tests may inject one). */
+  startProxy?: (guard: GuardOptions, onBlocked: (target: string) => void) => Promise<GuardProxy>
 }
+
+/** Chromium switches that keep traffic on the proxy: no WebRTC UDP around it, no DNS prefetching outside it. */
+export const BROWSER_ARGS = ['--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--dns-prefetch-disable']
 
 export const SNAPSHOT_MAX = 20_000
 const ACTION_TIMEOUT = 10_000
@@ -82,8 +91,16 @@ function decodeURIComponentSafe(s: string): string {
 
 export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; close(): Promise<void> } {
   const load = deps.load ?? defaultLoad
-  let session: Promise<{ browser: PWBrowser; context: PWContext; page: PWPage }> | null = null
+  const startProxy = deps.startProxy ?? startGuardProxy
+  let session: Promise<{ browser: PWBrowser; context: PWContext; page: PWPage; proxy: GuardProxy }> | null = null
   const verdicts = new Map<string, { at: number; ok: boolean }>()
+  /** Every request refused by either layer (request interception or the proxy), most recent last. */
+  let blockedTotal = 0
+  let lastBlocked: string | undefined
+  const onBlocked = (target: string) => {
+    blockedTotal++
+    lastBlocked = target
+  }
 
   async function guardUrl(url: string): Promise<GuardResult> {
     return checkUrl(url, deps.guard ?? {})
@@ -105,27 +122,45 @@ export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; cl
     return ok
   }
 
-  async function open(): Promise<{ browser: PWBrowser; context: PWContext; page: PWPage }> {
+  async function open(): Promise<{ browser: PWBrowser; context: PWContext; page: PWPage; proxy: GuardProxy }> {
     if (!session) {
       session = (async () => {
         const pw = await load()
         if (!pw) throw new Error(INSTALL_HINT)
-        const launchOpts: { headless?: boolean; channel?: string } = { headless: deps.headless?.() ?? true }
-        const channel = deps.channel?.()
-        if (channel) launchOpts.channel = channel
-        const browser = await pw.chromium.launch(launchOpts)
-        const context = await browser.newContext({ acceptDownloads: false, javaScriptEnabled: true, serviceWorkers: 'block', bypassCSP: false })
-        await context.route('**/*', async route => {
-          if (await allowSubrequest(route.request().url())) await route.continue()
-          else await route.abort('blockedbyclient')
-        })
-        const page = await context.newPage()
-        return { browser, context, page }
+        const proxy = await startProxy(deps.guard ?? {}, onBlocked)
+        try {
+          // Playwright also sends loopback through the proxy (it adds <-loopback> to the bypass list itself).
+          const launchOpts: LaunchOptions = { headless: deps.headless?.() ?? true, proxy: { server: proxy.url }, args: BROWSER_ARGS }
+          const channel = deps.channel?.()
+          if (channel) launchOpts.channel = channel
+          const browser = await pw.chromium.launch(launchOpts)
+          const context = await browser.newContext({ acceptDownloads: false, javaScriptEnabled: true, serviceWorkers: 'block', bypassCSP: false })
+          await context.route('**/*', async route => {
+            const url = route.request().url()
+            if (await allowSubrequest(url)) await route.continue()
+            else {
+              onBlocked(url)
+              await route.abort('blockedbyclient')
+            }
+          })
+          const page = await context.newPage()
+          return { browser, context, page, proxy }
+        } catch (e) {
+          await proxy.close()
+          throw e
+        }
       })()
       session.catch(() => (session = null))
     }
     return session
   }
+
+  /** How many requests were refused since `mark` (a value of blockedTotal), and the latest one. */
+  function blockedSince(mark: number): { count: number; last?: string } {
+    const count = Math.max(0, blockedTotal - mark)
+    return { count, last: count ? lastBlocked : undefined }
+  }
+  const blockNote = (b: { count: number }) => (b.count ? ` (${b.count} request${b.count === 1 ? '' : 's'} blocked by the network guard)` : '')
 
   async function snapshot(page: PWPage): Promise<{ title: string; url: string; text: string; truncated: boolean }> {
     let text: string
@@ -191,12 +226,26 @@ export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; cl
     async execute(input) {
       const verdict = await guardUrl(String(input.url))
       if (!verdict.ok) return { ok: false, summary: `Refused: ${verdict.reason}`, error: 'ssrf_blocked' }
+      let s: Awaited<ReturnType<typeof open>> | null = null
+      let mark = 0
       try {
-        const s = await open()
+        s = await open()
+        mark = blockedTotal
         const res = await s.page.goto(verdict.url.toString(), { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT })
+        if (res?.headers?.()[BLOCK_HEADER]) {
+          // The page itself, or a redirect from it, leads somewhere private: report that, never the content.
+          const b = blockedSince(mark)
+          await s.page.goto('about:blank').catch(() => undefined)
+          return { ok: false, summary: `Refused: ${String(input.url)} leads to a blocked address${b.last ? ` (${b.last})` : ''}`, error: 'ssrf_blocked' }
+        }
         const snap = await snapshot(s.page)
-        return pageResult(`opened ${snap.url}${res ? ` (HTTP ${res.status()})` : ''}: ${snap.title || 'untitled'}`, snap)
+        return pageResult(`opened ${snap.url}${res ? ` (HTTP ${res.status()})` : ''}: ${snap.title || 'untitled'}${blockNote(blockedSince(mark))}`, snap)
       } catch (e) {
+        // An HTTPS tunnel the proxy refused surfaces as a tunnel error; only then is the failure a block.
+        const b = s ? blockedSince(mark) : { count: 0 }
+        if (b.count && /ERR_TUNNEL_CONNECTION_FAILED|ERR_BLOCKED_BY_CLIENT|blockedbyclient/i.test(String((e as Error)?.message ?? e))) {
+          return { ok: false, summary: `Refused: ${String(input.url)} leads to a blocked address (${b.last})`, error: 'ssrf_blocked' }
+        }
         return failed(e, 'opening the page')
       }
     },
@@ -238,9 +287,10 @@ export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; cl
         const target = locate(s.page, input)
         if (!target) return { ok: false, summary: 'say what to click: role and name, label, text or selector', error: 'invalid_input' }
         if ((await target.count()) === 0) return { ok: false, summary: 'nothing on the page matches that description', error: 'not_found' }
+        const mark = blockedTotal
         await target.click({ timeout: ACTION_TIMEOUT })
         await s.page.waitForLoadState('domcontentloaded', { timeout: NAV_TIMEOUT }).catch(() => undefined)
-        return pageResult(`clicked; now on ${s.page.url()}`, await snapshot(s.page))
+        return pageResult(`clicked; now on ${s.page.url()}${blockNote(blockedSince(mark))}`, await snapshot(s.page))
       } catch (e) {
         return failed(e, 'clicking')
       }
@@ -263,12 +313,13 @@ export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; cl
         const target = locate(s.page, input)
         if (!target) return { ok: false, summary: 'say which field: label, placeholder, role and name, or selector', error: 'invalid_input' }
         if ((await target.count()) === 0) return { ok: false, summary: 'no field on the page matches that description', error: 'not_found' }
+        const mark = blockedTotal
         await target.fill(String(input.value), { timeout: ACTION_TIMEOUT })
         if (input.submit === true) {
           await target.press('Enter', { timeout: ACTION_TIMEOUT })
           await s.page.waitForLoadState('domcontentloaded', { timeout: NAV_TIMEOUT }).catch(() => undefined)
         }
-        return pageResult(`typed ${String(input.value).length} characters${input.submit === true ? ' and pressed Enter' : ''}`, await snapshot(s.page))
+        return pageResult(`typed ${String(input.value).length} characters${input.submit === true ? ' and pressed Enter' : ''}${blockNote(blockedSince(mark))}`, await snapshot(s.page))
       } catch (e) {
         return failed(e, 'typing')
       }
@@ -379,8 +430,9 @@ export function createBrowserTools(deps: BrowserDeps): { tools: JarvisTool[]; cl
     verdicts.clear()
     if (!s) return
     try {
-      const { browser } = await s
-      await browser.close()
+      const { browser, proxy } = await s
+      await browser.close().catch(() => undefined)
+      await proxy.close()
     } catch {
       // a session that never started has nothing to close
     }

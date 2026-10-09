@@ -118,7 +118,7 @@ export function Brain({ buf }: { buf: BrainOutput }) {
       <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} renderOrder={1} />
       {/* Hit target: the brain is one clickable object. */}
       {/* Solid: the hologram around it (scene/Bust.tsx) yields to the brain. */}
-      <mesh position={BRAIN_C} scale={[BRAIN_S * 0.95, BRAIN_S * 0.62, BRAIN_S * 1.05]} userData={{ solid: true }}
+      <mesh position={BRAIN_C} scale={[BRAIN_S * 0.95, BRAIN_S * 0.62, BRAIN_S * 1.05]} userData={{ solid: true, mind: true }}
         onPointerOver={(e: ThreeEvent<PointerEvent>) => { e.stopPropagation(); if (s().hover?.kind !== 'brain') sfx.hover(); s().set({ hover: { kind: 'brain', id: 'brain' } }); document.body.style.cursor = 'pointer' }}
         onPointerOut={() => { if (s().hover?.kind === 'brain') s().set({ hover: null }); document.body.style.cursor = '' }}
         onClick={(e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); if (e.delta > 25) return; sfx.dive(); s().select({ kind: 'brain' }) }}>

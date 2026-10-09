@@ -338,23 +338,19 @@ describe('SSRF guard', () => {
     let port: number
     const hits: string[] = []
     beforeAll(async () => {
+      const redirects: Record<string, [number, string]> = {
+        '/to-private': [302, 'http://internal.test:PORT/secret'],
+        '/to-metadata': [302, 'http://169.254.169.254/latest/meta-data/'],
+        '/to-file': [302, 'file:///etc/passwd'],
+        '/hop': [301, '/ok'],
+      }
       server = createServer((req, res) => {
         hits.push(req.url ?? '')
-        if (req.url === '/to-private') {
-          res.writeHead(302, { location: `http://internal.test:${port}/secret` })
-          return res.end()
-        }
-        if (req.url === '/to-metadata') {
-          res.writeHead(302, { location: 'http://169.254.169.254/latest/meta-data/' })
-          return res.end()
-        }
-        if (req.url === '/to-file') {
-          res.writeHead(302, { location: 'file:///etc/passwd' })
-          return res.end()
-        }
-        if (req.url === '/hop') {
-          res.writeHead(301, { location: '/ok' })
-          return res.end()
+        const redirect = redirects[req.url ?? '']
+        if (redirect) {
+          res.writeHead(redirect[0], { location: redirect[1].replace('PORT', String(port)) })
+          res.end()
+          return
         }
         res.writeHead(200, { 'content-type': 'text/plain' })
         res.end(req.url === '/big' ? 'y'.repeat(10_000) : 'public content')

@@ -8,7 +8,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "jarvis": "tsx agent/src/main.ts",
-    "agent:test": "vitest run agent"
+    "agent:test": "vitest run agent",
+    "jarvis:env": "tsx --env-file=.env agent/src/main.ts"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",

@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { create } from 'zustand'
 import { sfx } from '../audio/sound'
-import { bodyArrivals, faceTooltip, partDetail, partName, type BodyView } from '../jarvis/body'
+import { bodyArrivals, faceTooltip, partDetail, type BodyView } from '../jarvis/body'
 import { useStore } from '../store'
 import { labelLayer } from './portal'
 import { live, PALETTE } from './shared'
@@ -56,8 +56,8 @@ void main() {
   vec3 p = position;
   if (kind < 0.5) {
     // Built (verified): cyan. Prepared, waiting on the founder: violet. Not built: almost nothing, the wireframe shows it.
-    if (rank < done)      { col = mix(cActive, vec3(1.0), 0.12); alpha = 0.95; size = 1.2; }
-    else if (rank < fill) { col = mix(cViolet, cActive, 0.1) * 1.3; alpha = 0.8; size = 1.1; }
+    if (rank < done)      { col = mix(cActive, vec3(1.0), 0.2); alpha = 1.0; size = 1.5; }
+    else if (rank < fill) { col = mix(cViolet, cActive, 0.1) * 1.35; alpha = 0.9; size = 1.35; }
     else                  { col = mix(cIdle, cViolet, 0.6); alpha = 0.05; size = 0.75; }
     float front = (1.0 - smoothstep(0.0, 0.02, abs(rank - fill))) * step(0.001, fill) * step(fill, 0.995);
     col = mix(col, vec3(1.0), front * 0.5); alpha += front * 0.4; size += front * 0.5;
@@ -65,7 +65,7 @@ void main() {
     p = organMotion(pi, p);
   } else if (kind < 1.5) {
     // The face mask: featureless and translucent until verified revenue forms it.
-    col = mix(cViolet, cActive, 0.25 + 0.15 * uFace); alpha = 0.16 * (1.0 - smoothstep(0.72, 1.0, rank)); size = 0.85;
+    col = mix(cViolet, cActive, 0.25 + 0.15 * uFace); alpha = 0.3 * (1.0 - smoothstep(0.72, 1.0, rank)); size = 0.9;
   } else if (kind < 4.5) {
     // Eyes need stage 1, brow and nose stage 2, the mouth stage 3. Each stroke draws itself in as its stage arrives.
     float show = clamp(uFace - (kind - 2.0), 0.0, 1.0);
@@ -111,9 +111,9 @@ void main() {
   int pi = int(aInfo.x + 0.5);
   float rank = aInfo.y;
   vec3 col; float alpha;
-  if (rank < uDone[pi])      { col = cActive; alpha = 0.4; }
-  else if (rank < uFill[pi]) { col = cViolet * 1.4; alpha = 0.34; }
-  else                       { col = mix(cViolet, cActive, 0.4); alpha = 0.09; }
+  if (rank < uDone[pi])      { col = cActive; alpha = 0.26; }
+  else if (rank < uFill[pi]) { col = cViolet * 1.4; alpha = 0.26; }
+  else                       { col = mix(cViolet, cActive, 0.4); alpha = 0.085; }
   alpha = alpha * (1.0 + uHover[pi] * 1.6) + uFlash[pi] * 0.25;
   vColor = col;
   vAlpha = alpha * smoothstep(0.55, 1.0, uAssemble);
@@ -259,10 +259,10 @@ const glassFragment = /* glsl */ `
 uniform vec3 uEllC[${NE}], uEllR[${NE}], uCapA[${NC}], uCapB[${NC}];
 uniform vec2 uCapR[${NC}];
 uniform vec4 uNeck; // rx, rz, cz, y0
-uniform float uNeckTop, uAssemble;
+uniform float uNeckTop, uAssemble, uFace;
 uniform float uFill[${N_PARTS}], uHover[${N_PARTS}];
 uniform float uPart[${NECK + 1}];
-uniform vec3 cActive, cGround;
+uniform vec3 cActive, cGround, cViolet;
 varying vec3 vLocal; varying vec3 vN; varying vec3 vW; varying float vShape;
 bool inside(vec3 p, int i) {
   if (i < ${NE}) { vec3 q = (p - uEllC[i]) / uEllR[i]; return dot(q, q) < 0.985; }
@@ -280,10 +280,23 @@ void main() {
   vec3 V = normalize(cameraPosition - vW);
   float facing = abs(dot(normalize(vN), V));
   int pi = int(uPart[self] + 0.5);
-  float a = mix(0.22, 0.62, pow(facing, 0.7)) * (0.7 + 0.3 * uFill[pi]) * smoothstep(0.45, 1.0, uAssemble);
+  float a = mix(0.3, 0.74, pow(facing, 0.7)) * (0.75 + 0.25 * uFill[pi]);
+  // Lighter over the cranium: the mind inside it is the brightest thing in the scene.
+  if (self == 0) a *= 0.6;
   // A faint cyan edge, as if the glass caught the light of the particles.
-  vec3 col = mix(cGround * 0.55, cActive * (0.25 + 0.25 * uHover[pi]), pow(1.0 - facing, 5.0));
-  gl_FragColor = vec4(col, a);
+  vec3 col = mix(cGround * 0.5, cActive * (0.25 + 0.25 * uHover[pi]), pow(1.0 - facing, 5.0));
+  // The face: a smooth, featureless violet mask with a lit rim. Revenue (uFace, 0..3) warms it toward cyan.
+  vec3 n = normalize(vN);
+  float m = length(vec2(vLocal.x / ${SHAPE.mask.mx.toFixed(3)}, (vLocal.y - (${SHAPE.mask.my.toFixed(3)})) / ${SHAPE.mask.ry.toFixed(3)}));
+  if (vLocal.z > 0.2 && n.z > 0.25 && m < 1.0) {
+    float f = clamp(uFace / 3.0, 0.0, 1.0);
+    // Translucent and dark, lit at its rim: the mind behind it (drawn after, additive) shows through.
+    float lower = 1.0 - 0.6 * smoothstep(-0.3, 0.15, vLocal.y);
+    col = mix(cViolet * 0.14, cActive * 0.12, f) * (0.7 + 0.5 * facing) * lower * (1.0 + 1.2 * uHover[${FACE}]);
+    col += mix(cViolet, cActive, 0.5 + 0.5 * f) * smoothstep(0.86, 1.0, m) * 0.4;
+    a = mix(a, 0.45, 0.5);
+  }
+  gl_FragColor = vec4(col, a * smoothstep(0.45, 1.0, uAssemble));
 }`
 
 function glassGeometry() {
@@ -318,8 +331,8 @@ function Glass({ uniforms }: { uniforms: Record<string, THREE.IUniform> }) {
         uCapR: { value: GLASS_CAPS.map(x => new THREE.Vector2(x.r0, x.r1)) },
         uNeck: { value: new THREE.Vector4(SHAPE.neck.rx, SHAPE.neck.rz, SHAPE.neck.cz, SHAPE.neck.y0) }, uNeckTop: { value: SHAPE.neck.y1 + 0.3 },
         uPart: { value: [...GLASS_ELLS.map(x => x.part), ...GLASS_CAPS.map(x => x.part), 1] },
-        uAssemble: uniforms.uAssemble, uFill: uniforms.uFill, uHover: uniforms.uHover,
-        cActive: { value: PALETTE.active }, cGround: { value: PALETTE.ground },
+        uAssemble: uniforms.uAssemble, uFill: uniforms.uFill, uHover: uniforms.uHover, uFace: uniforms.uFace,
+        cActive: { value: PALETTE.active }, cGround: { value: PALETTE.ground }, cViolet: { value: PALETTE.violet },
       },
     })
   }, [uniforms])
@@ -403,7 +416,7 @@ function Streams({ buf, towers }: { buf: BustOutput; towers: Tower[] }) {
 
 // ---------- hover and click: one invisible hit shape per part ----------
 
-/** Inner organs win over the shells around them; towers, drones and the brain (marked solid) win over the hologram. */
+/** Inner organs win over the shells around them; the brain, and towers or drones in front of the bust, win over the hologram. */
 const PRIO: Record<string, number> = { heart: 9, lungs: 8, face: 7, arm_right: 6, arm_left: 6, neck: 5, shoulders: 4, ribcage: 3, crown: 2 }
 const unitSphere = new THREE.SphereGeometry(1, 20, 14)
 const unitCyl = new THREE.CylinderGeometry(1, 1, 1, 14, 1)
@@ -443,7 +456,8 @@ function pick(e: ThreeEvent<PointerEvent | MouseEvent>): { part: number; point: 
   let best: THREE.Intersection | null = null
   for (const h of e.intersections) {
     const ud = h.object.userData
-    if (ud.solid) return null
+    // The brain inside the head always wins; any other solid object wins only when it stands in front of the bust.
+    if (ud.mind || (ud.solid && !best)) return null
     if (ud.part === undefined) continue
     // The face is only the front of the lower head.
     if (ud.front && toLocal(h.point).z < 0.3) continue
@@ -515,8 +529,9 @@ function PartLabel({ body }: { body: BodyView | null }) {
   } else {
     const p = body.parts.find(x => x.id === BUST_PARTS[part])
     if (!p) return null
-    title = `${partName(p)} · built by ${p.agentName}`
-    lines = [`${p.done} of ${p.total} task${p.total === 1 ? '' : 's'} verified${p.verified.length ? ` (${p.verified.join(', ')})` : ''}`, partDetail(p), `click to open ${p.agentName}`]
+    // "Heart · built by Ada · 1 of 3 tasks verified (F04)", then what is prepared and what is left.
+    title = p.tooltip
+    lines = [partDetail(p), `click to open ${p.agentName}`]
   }
   return (
     <group ref={group} position={useBodyHover.getState().at ?? undefined}>
