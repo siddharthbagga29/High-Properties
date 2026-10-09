@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-09T07:00:40Z",
+ "generated": "2026-10-09T12:52:47Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -1102,13 +1102,13 @@ window.PE_STATE = {
  ],
  "revenue": [],
  "audit": {
-  "computedAt": "2026-10-09T06:59:51Z",
+  "computedAt": "2026-10-09T07:01:22Z",
   "rubricVersion": "1.0",
   "scorecards": [
    {
     "agent": "orchestrator",
     "name": "Mayor",
-    "score": 61.3,
+    "score": 60.9,
     "grade": "D",
     "meetsInstitutionalBar": false,
     "dimensions": [
@@ -1144,8 +1144,8 @@ window.PE_STATE = {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 2.8,
-      "basis": "3 closed tasks in the ledger: step records on 1 (2 self-logged rows, 0 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F05 F07 D01; graph-wide closure discipline (half of this score): 7/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V09 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -6 from 3 open or accepted finding(s). 2 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+      "score": 0.0,
+      "basis": "3 closed tasks in the ledger: step records on 1 (2 self-logged rows, 0 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F05 F07 D01; graph-wide closure discipline (half of this score): 7/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -6 from 3 open or accepted finding(s). 2 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
      },
      {
       "id": "gates",
@@ -1311,7 +1311,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "science",
@@ -1429,7 +1429,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "ethics",
@@ -1527,7 +1527,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "product",
@@ -1635,7 +1635,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "data",
@@ -1723,7 +1723,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "gtm",
@@ -1765,7 +1765,7 @@ window.PE_STATE = {
       "label": "Process discipline and separation of duties",
       "weight": 15,
       "score": 31.0,
-      "basis": "5 closed tasks in the ledger: step records on 5 (8 self-logged rows, 103 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V05 V06 V07 V08; verifier rows not flagged --verifier: V09. Findings: -4 from 2 open or accepted finding(s). 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+      "basis": "5 closed tasks in the ledger: step records on 5 (10 self-logged rows, 103 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V05 V06 V07 V08; verifier rows not flagged --verifier: V09. Findings: -4 from 2 open or accepted finding(s). 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
      },
      {
       "id": "gates",
@@ -1920,7 +1920,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "finance",
@@ -2058,7 +2058,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "legal",
@@ -2146,7 +2146,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    },
    {
     "agent": "brand",
@@ -2188,7 +2188,7 @@ window.PE_STATE = {
       "label": "Process discipline and separation of duties",
       "weight": 15,
       "score": 25.0,
-      "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 11 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V13. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+      "basis": "1 closed tasks in the ledger: step records on 1 (1 self-logged rows, 11 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V13. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
      },
      {
       "id": "gates",
@@ -2244,7 +2244,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-09T06:59:51Z"
+    "computedAt": "2026-10-09T07:01:22Z"
    }
   ],
   "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -2252,7 +2252,7 @@ window.PE_STATE = {
   "inputs": {
    "nodes": 34,
    "ledgerEvents": 61,
-   "activityRows": 1145,
+   "activityRows": 1148,
    "llmFindings": 53,
    "llmAuditedAgents": [
     "brand",
