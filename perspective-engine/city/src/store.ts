@@ -45,6 +45,8 @@ interface S {
   pendingAsk: string | null
   askOut: AskOut | null
   replayOpen: boolean
+  /** The Jarvis console. The presence, the bottom bar and the scene (brain or bust click) open it. */
+  jarvisOpen: boolean
   hintsUsed: string[]
   statusFilter: Status[]
   setData: (d: GraphState, source: Source) => void
@@ -76,6 +78,7 @@ export const useStore = create<S>((set, get) => ({
   pendingAsk: null,
   askOut: null,
   replayOpen: false,
+  jarvisOpen: false,
   hintsUsed: [],
   statusFilter: [],
   setData: (d, source) => set(s => ({ data: d, source, syncedAt: Date.now(), st: statusesAt(d, s.time) })),

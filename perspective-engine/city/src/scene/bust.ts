@@ -114,7 +114,7 @@ function reach(agent: string, J: V3, E: V3, maxR: number): Arm {
   const [dx, dz] = districtCenter(agent)
   const T: V3 = [dx / BRAIN_S, BUST_BASE + 0.2, dz / BRAIN_S]
   const d = nrm(sub(T, E))
-  let L = 1.35
+  let L = 1.5
   for (let k = 0; k < 40; k++) {
     const F = add(E, mul(d, L))
     if (Math.hypot(F[0], F[2]) <= maxR || L < 0.9) break
@@ -125,8 +125,9 @@ function reach(agent: string, J: V3, E: V3, maxR: number): Arm {
 }
 
 export const ARMS: Record<'arm_right' | 'arm_left', Arm> = {
-  arm_right: reach('gtm', [1.5, -2.14, -0.06], [1.84, -2.7, 0.4], 2.45),
-  arm_left: reach('brand', [-1.5, -2.14, -0.06], [-1.84, -2.7, 0.4], 2.6),
+  // Elbows forward of the chest, not out to the side, so each forearm visibly points along the plaza at its district.
+  arm_right: reach('gtm', [1.5, -2.14, -0.06], [1.66, -2.74, 0.62], 2.45),
+  arm_left: reach('brand', [-1.5, -2.14, -0.06], [-1.72, -2.74, 0.55], 2.6),
 }
 
 interface Hand { palm: { c: V3; f: V3; s: V3; u: V3 }; fingers: V3[][] }
@@ -291,6 +292,14 @@ function armTube(a: Arm, t: number, phi: number) {
 }
 const armLength = (a: Arm) => len(sub(a.E, a.J)) + len(sub(a.W, a.E)) + 0.5
 
+/**
+ * The opening fly-in: each particle leaves its scatter position once the scene's assemble clock (0..1, it stops at 1)
+ * passes start + spread * rnd, and lands dur later. Every particle must have landed by assemble = 1. The shader in
+ * Bust.tsx is written from these numbers; flyIn mirrors it for the tests.
+ */
+export const FLY = { start: 0.3, spread: 0.4, dur: 0.28 } as const
+export const flyIn = (assemble: number, rnd: number) => Math.min(1, Math.max(0, (assemble - FLY.start - rnd * FLY.spread) / FLY.dur))
+
 export interface BustInput { count: number; seed: number }
 export interface BustOutput {
   count: number
@@ -350,27 +359,28 @@ export function buildBust({ count, seed }: BustInput): BustOutput {
   const onFace = (x: number, y: number, lift = 0.014): V3 => { const f = frontZ(x, y); return [x, y, (f?.z ?? 1) + lift] }
   const eyeCurves: V3[][] = [], browNose: V3[][] = [], mouth: V3[][] = []
   for (const s of [1, -1]) {
-    const cx = s * 0.34, cy = -0.4
+    const cx = s * 0.34, cy = -0.5
     eyeCurves.push(curve(28, t => onFace(cx + 0.18 * Math.cos(Math.PI * t), cy + 0.075 * Math.sin(Math.PI * t))))
     eyeCurves.push(curve(28, t => onFace(cx + 0.18 * Math.cos(Math.PI * t), cy - 0.05 * Math.sin(Math.PI * t))))
     eyeCurves.push(curve(20, t => onFace(cx + 0.05 * Math.cos(2 * Math.PI * t), cy + 0.05 * Math.sin(2 * Math.PI * t), 0.02)))
-    browNose.push(curve(24, t => { const x = s * (0.14 + 0.44 * t); return onFace(x, -0.2 + 0.055 * Math.sin(Math.PI * Math.min(1, t * 1.15)) - 0.03 * t, 0.03) }))
-    browNose.push(curve(14, t => { const a = Math.PI * (0.5 + 1.15 * t); return onFace(s * (0.075 + 0.05 * Math.cos(a) * s), -0.78 + 0.045 * Math.sin(a), 0.07) }))
+    browNose.push(curve(24, t => { const x = s * (0.14 + 0.44 * t); return onFace(x, -0.3 + 0.055 * Math.sin(Math.PI * Math.min(1, t * 1.15)) - 0.03 * t, 0.03) }))
+    browNose.push(curve(14, t => { const a = Math.PI * (0.5 + 1.15 * t); return onFace(s * (0.075 + 0.05 * Math.cos(a) * s), -0.88 + 0.045 * Math.sin(a), 0.07) }))
   }
-  browNose.push(curve(24, t => { const y = -0.3 - 0.46 * t; const p = onFace(0, y); return [0, y, p[2] + 0.13 * t * t + 0.01] }))
-  mouth.push(curve(30, t => { const x = -0.3 + 0.6 * t; return onFace(x, -0.98 + 0.022 * (1 - (x / 0.3) ** 2) - 0.014 * Math.exp(-((x / 0.05) ** 2)), 0.02) }))
-  mouth.push(curve(30, t => { const x = -0.3 + 0.6 * t; return onFace(x, -1.0 - 0.012 * (1 - (x / 0.3) ** 2), 0.02) }))
-  mouth.push(curve(30, t => { const x = -0.26 + 0.52 * t; return onFace(x, -1.02 - 0.065 * (1 - (x / 0.26) ** 2), 0.02) }))
+  browNose.push(curve(24, t => { const y = -0.4 - 0.46 * t; const p = onFace(0, y); return [0, y, p[2] + 0.13 * t * t + 0.01] }))
+  mouth.push(curve(30, t => { const x = -0.3 + 0.6 * t; return onFace(x, -1.08 + 0.022 * (1 - (x / 0.3) ** 2) - 0.014 * Math.exp(-((x / 0.05) ** 2)), 0.02) }))
+  mouth.push(curve(30, t => { const x = -0.3 + 0.6 * t; return onFace(x, -1.1 - 0.012 * (1 - (x / 0.3) ** 2), 0.02) }))
+  mouth.push(curve(30, t => { const x = -0.26 + 0.52 * t; return onFace(x, -1.12 - 0.065 * (1 - (x / 0.26) ** 2), 0.02) }))
   const strokes = (list: V3[][], n: number, kind: number, pupil = false) => {
     for (let i = 0; i < n; i++) {
       const c = list[i % list.length], t = r()
       push(FACE, jitter(r, along(c, t), 0.006), ZERO, t, kind)
     }
-    if (pupil) for (const s of [1, -1]) for (let i = 0; i < Math.max(6, n / 10); i++) push(FACE, jitter(r, onFace(s * 0.34, -0.4, 0.025), 0.012), ZERO, 0.5, kind)
+    if (pupil) for (const s of [1, -1]) for (let i = 0; i < Math.max(6, n / 10); i++) push(FACE, jitter(r, onFace(s * 0.34, -0.5, 0.025), 0.012), ZERO, 0.5, kind)
   }
-  strokes(eyeCurves, want(SHARE.eyes), KIND.eyes, true)
-  strokes(browNose, want(SHARE.browNose), KIND.browNose)
-  strokes(mouth, want(SHARE.mouth), KIND.mouth)
+  // The face is the smallest, most important detail: a floor keeps its strokes legible on a phone's small budget.
+  strokes(eyeCurves, Math.max(360, want(SHARE.eyes)), KIND.eyes, true)
+  strokes(browNose, Math.max(300, want(SHARE.browNose)), KIND.browNose)
+  strokes(mouth, Math.max(260, want(SHARE.mouth)), KIND.mouth)
 
   // neck: a column from the shoulders up under the skull
   fill(want(SHARE.neck), () => {

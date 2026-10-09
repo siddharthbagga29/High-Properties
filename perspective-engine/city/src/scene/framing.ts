@@ -11,6 +11,8 @@ export interface PanelSizes { railW: number; inspW: number; sheetH: number }
 
 /** Default world view: looking down 33°, low enough that the bust reads as a figure, high enough to see the ring. */
 export const WORLD_EL = THREE.MathUtils.degToRad(33)
+/** On a phone the ring is narrow: a steeper look spreads it in depth, so the district tags stop stacking on each other. */
+export const PORTRAIT_EL = THREE.MathUtils.degToRad(45)
 /** Aim point of the world view: on the bust's chest, so the bust and the ring around it share the frame. */
 export const WORLD_T = new THREE.Vector3(0, 10.5, 3)
 const AGENT_EL = THREE.MathUtils.degToRad(40)
@@ -43,8 +45,8 @@ export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], port
   const k = portrait ? 1.3 : 1
   if (f.kind === 'brain') {
     // A three-quarter portrait of the whole bust: the brain in its head, the face, the organs, both hands.
-    const t = new THREE.Vector3(BRAIN_C[0] - 2.5, BRAIN_C[1] - BRAIN_S * 1.32 + (portrait ? 3.7 : 2.1), BRAIN_C[2])
-    const d = portrait ? 126 : 74
+    const t = new THREE.Vector3(BRAIN_C[0] - 2.5, BRAIN_C[1] - BRAIN_S * 1.32 + (portrait ? 8 : 2.1), BRAIN_C[2])
+    const d = portrait ? 148 : 74
     const az = THREE.MathUtils.degToRad(portrait ? 14 : 22), el = THREE.MathUtils.degToRad(portrait ? 12 : 10)
     return [t.clone().add(new THREE.Vector3(Math.sin(az) * Math.cos(el) * d, Math.sin(el) * d, Math.cos(az) * Math.cos(el) * d)), t]
   }
@@ -68,8 +70,10 @@ export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], port
       return [c.clone().addScaledVector(u, 6 * k).addScaledVector(v, 12 * k).add(new THREE.Vector3(0, t.h * 0.5 + 9, 0)), c]
     }
   }
-  const T = portrait ? WORLD_T.clone().add(new THREE.Vector3(0, 2, -2)) : WORLD_T.clone()
-  return [T.clone().add(new THREE.Vector3(0, Math.sin(WORLD_EL) * worldD, Math.cos(WORLD_EL) * worldD)), T]
+  // Phone: aim higher, so the plan label over the crown clears the Jarvis status pill under the top bar.
+  const T = portrait ? WORLD_T.clone().add(new THREE.Vector3(0, 11, -2)) : WORLD_T.clone()
+  const el = portrait ? PORTRAIT_EL : WORLD_EL
+  return [T.clone().add(new THREE.Vector3(0, Math.sin(el) * worldD, Math.cos(el) * worldD)), T]
 }
 
 /** Project world points through a camera placed as the Rig places it; returns pixel positions (x right, y down). */

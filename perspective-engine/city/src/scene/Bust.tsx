@@ -9,7 +9,7 @@ import { bodyArrivals, faceTooltip, partDetail, type BodyView } from '../jarvis/
 import { useStore } from '../store'
 import { labelLayer } from './portal'
 import { live, PALETTE } from './shared'
-import { ARMS, BUST_PARTS, FACE, handOf, N_PARTS, SHAPE, type BustOutput } from './bust'
+import { ARMS, BUST_PARTS, FACE, FLY, handOf, N_PARTS, SHAPE, type BustOutput } from './bust'
 import { BRAIN_C, BRAIN_S, districtCenter, type Tower } from './world'
 
 /**
@@ -70,7 +70,7 @@ void main() {
     // Eyes need stage 1, brow and nose stage 2, the mouth stage 3. Each stroke draws itself in as its stage arrives.
     float show = clamp(uFace - (kind - 2.0), 0.0, 1.0);
     show *= step(rank, show * 1.02);
-    col = mix(cActive, vec3(1.0), 0.45); alpha = 0.95 * show; size = 1.25; rimK = 0.0;
+    col = mix(cActive, vec3(1.0), 0.45); alpha = 0.95 * show; size = 1.6; rimK = 0.0;
   } else {
     col = cMote; alpha = 0.035 + 0.03 * rnd; size = 0.7 + rnd * 0.5; rimK = 0.0;
   }
@@ -84,7 +84,8 @@ void main() {
   // A slow scan line climbs the bust (motion only).
   float scan = exp(-pow((p.y - uScanY) / 0.9, 2.0)) * uMotion;
   alpha *= 1.0 + scan * 0.8;
-  float a = clamp(uAssemble * 1.6 - 0.5 - rnd * 0.45, 0.0, 1.0);
+  // Staggered fly-in that completes for every particle by uAssemble = 1 (assemble stops at 1).
+  float a = clamp((uAssemble - ${FLY.start.toFixed(3)} - rnd * ${FLY.spread.toFixed(3)}) / ${FLY.dur.toFixed(3)}, 0.0, 1.0);
   a = a * a * (3.0 - 2.0 * a);
   vec3 pos = mix(aScatter, p, a);
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -294,7 +295,8 @@ void main() {
     float lower = 1.0 - 0.6 * smoothstep(-0.3, 0.15, vLocal.y);
     col = mix(cViolet * 0.14, cActive * 0.12, f) * (0.7 + 0.5 * facing) * lower * (1.0 + 1.2 * uHover[${FACE}]);
     col += mix(cViolet, cActive, 0.5 + 0.5 * f) * smoothstep(0.86, 1.0, m) * 0.4;
-    a = mix(a, 0.45, 0.5);
+    // Dense enough that the districts behind the head never show through the face; the mind (additive) still does.
+    a = max(a, 0.62);
   }
   gl_FragColor = vec4(col, a * smoothstep(0.45, 1.0, uAssemble));
 }`

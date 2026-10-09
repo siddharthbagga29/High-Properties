@@ -10,9 +10,21 @@ import { focusKey, parseFocus, persist, useStore } from './store'
 import { AskBar, Gate, HintChip, MiniMap, Replay, Toasts, TopBar } from './ui/Chrome'
 import { Drawer } from './ui/Drawer'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { JarvisBubble, JarvisPresence, TalkBar } from './ui/Jarvis'
 import { Help, Index, IndexMirror, IndexPage, Pilot, Search } from './ui/Panels'
+import { bootJarvis } from './jarvis/client'
+import { useJarvis } from './jarvis/state'
 
 const Scene = lazy(() => import('./scene/Scene'))
+/** The Jarvis console is its own chunk: nothing about it is on the first-paint path. */
+const JarvisConsole = lazy(() => import('./jarvis/Console'))
+
+/** After first paint, when the browser is idle. */
+function whenIdle(f: () => void, timeout = 900) {
+  const w = window as unknown as { requestIdleCallback?: (f: () => void, o: object) => void }
+  const go = () => (w.requestIdleCallback ? w.requestIdleCallback(f, { timeout }) : setTimeout(f, 300))
+  document.readyState === 'complete' ? go() : addEventListener('load', go, { once: true })
+}
 
 function hasWebGL() {
   try { return !!document.createElement('canvas').getContext('webgl2') } catch { return false }
@@ -65,6 +77,7 @@ function useKeys() {
       if (e.key === 'Escape') {
         if (s.panel !== 'none') return s.set({ panel: 'none' })
         if (typing) return (el as HTMLElement).blur()
+        if (s.jarvisOpen) { s.set({ jarvisOpen: false }); return }
         sfx.dive(); s.back(); return
       }
       if (e.metaKey || e.ctrlKey || e.altKey || s.panel !== 'none' || el?.closest(OWN_KEYS)) return
@@ -124,7 +137,9 @@ export default function App() {
   const introDone = useStore(s => s.introDone)
   const panel = useStore(s => s.panel)
   const focus = useStore(s => s.focus)
+  const jarvisOpen = useStore(s => s.jarvisOpen)
   const [showScene, setShowScene] = useState(false)
+  const jdock = useRef<HTMLDivElement>(null)
   const [mapOpen, setMapOpen] = useState(false)
   const [rail, setRail] = useState<HTMLElement | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -133,6 +148,8 @@ export default function App() {
   const gate = webgl && !introDone
 
   useEffect(() => startLive(), [])
+  // Jarvis starts after first paint and never blocks it; if it fails, the city carries on without it.
+  useEffect(() => whenIdle(bootJarvis, 1500), [])
   useEffect(() => {
     const ok = hasWebGL()
     useStore.getState().set({ webgl: ok })
@@ -162,13 +179,15 @@ export default function App() {
       const r = el.getBoundingClientRect()
       const wide = innerWidth > 900
       live.ui.inspW = wide ? r.width + 24 : 0
-      live.ui.railW = wide && rail ? rail.getBoundingClientRect().right + 8 : 0
+      const dock = useStore.getState().jarvisOpen ? jdock.current : null
+      live.ui.railW = wide ? Math.max(rail ? rail.getBoundingClientRect().right + 8 : 0, dock ? dock.getBoundingClientRect().right + 8 : 0) : 0
       live.ui.sheetH = wide ? 0 : r.height
     })
     ro.observe(el)
     if (rail) ro.observe(rail)
+    if (jdock.current) ro.observe(jdock.current)
     return () => ro.disconnect()
-  }, [webgl, rail])
+  }, [webgl, rail, jarvisOpen])
 
   // One bad focus (a broken record, an odd deep link) must never blank the page: go back to the whole city and say so.
   const recover = (part: string) => () => {
@@ -181,7 +200,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={`app${webgl ? '' : ' nogl'}${mapOpen ? ' map-open' : ''}`}>
+      <div className={`app${webgl ? '' : ' nogl'}${mapOpen ? ' map-open' : ''}${jarvisOpen ? ' jarvis-open' : ''}`}>
         {/* While the entrance or a panel is open, everything behind it is out of reach for keyboard, pointer and screen reader. */}
         <div className="shell" inert={gate || panel !== 'none'}>
           {webgl && <button className="skip" onClick={() => useStore.getState().set({ panel: 'index' })}>Skip to text version of the city</button>}
@@ -201,7 +220,22 @@ export default function App() {
           </div>
           {webgl && <MiniMap ref={setRail} open={mapOpen} onOpen={setMapOpen} />}
           {webgl && <HintChip />}
-          <div className="bottom"><Replay /><AskBar /></div>
+          <ErrorBoundary name="jarvis-presence" fallback={null}>
+            <JarvisPresence />
+            <JarvisBubble />
+          </ErrorBoundary>
+          {jarvisOpen && (
+            <div ref={jdock} className="jconsole-wrap">
+              <ErrorBoundary name="jarvis-console" onError={() => useJarvis.getState().set({ status: 'failed' })}
+                fallback={<aside className="drawer"><p className="muted">Jarvis could not be shown here. The city, the inspector and its Ask tab still work.</p></aside>}>
+                <Suspense fallback={<aside className="drawer"><p className="muted">Starting Jarvis…</p></aside>}><JarvisConsole /></Suspense>
+              </ErrorBoundary>
+            </div>
+          )}
+          <div className="bottom"><Replay />
+            {/* If Jarvis breaks, the bar falls back to the plain Ask bar, which answers in the inspector. */}
+            <ErrorBoundary name="jarvis-bar" fallback={<AskBar />} onError={() => useJarvis.getState().set({ status: 'failed' })}><TalkBar /></ErrorBoundary>
+          </div>
           <Toasts />
           {notice && <p className="notice" role="status">{notice}<button className="linkish" onClick={() => setNotice(null)}>Dismiss</button></p>}
           {webgl && <IndexMirror />}

@@ -7,7 +7,7 @@ import { PE_BODY, peBody, type PEState } from '@jarvis/adapters/perspective-engi
 import { describe, expect, it } from 'vitest'
 import type { GraphState, Status } from '../data/types'
 import { bodyArrivals, bodyAt, faceTooltip, partDetail, partName, partOfTask, partTooltip, revenueOf } from '../jarvis/body'
-import { ARMS, BUST_PARTS, buildBust, bustOccludes, FACE, handOf, KIND, N_PARTS, toLocal, toWorld } from './bust'
+import { ARMS, BUST_PARTS, buildBust, bustOccludes, FACE, flyIn, handOf, KIND, N_PARTS, toLocal, toWorld } from './bust'
 import { BRAIN_C, BRAIN_S, BUST_BASE, districtCenter } from './world'
 
 const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
@@ -113,6 +113,25 @@ describe('bust geometry', () => {
     expect(b.info.length).toBe(N * 4)
     for (const v of b.pos) expect(Number.isFinite(v)).toBe(true)
     for (const v of b.lines) expect(Number.isFinite(v)).toBe(true)
+  })
+
+  it('lands every particle by the end of the opening (the assemble clock stops at 1)', () => {
+    for (let i = 0; i < N; i++) expect(flyIn(1, b.info[i * 4 + 3])).toBe(1)
+    expect(flyIn(1, 1)).toBe(1)
+    expect(flyIn(0, 0)).toBe(0)
+    // Still mid-flight part way through, so the body visibly assembles.
+    expect(flyIn(0.6, 0.9)).toBe(0)
+  })
+
+  it('sets the eyes below the brain, so the mind never hides the face', () => {
+    // The brain's lowest cortex sits about 0.44 (local) below its centre; every eye particle is under that line.
+    let eyes = 0
+    for (let i = 0; i < N; i++) {
+      if (b.info[i * 4 + 2] !== KIND.eyes) continue
+      eyes++
+      expect(toLocal([b.pos[i * 3], b.pos[i * 3 + 1], b.pos[i * 3 + 2]])[1]).toBeLessThan(-0.4)
+    }
+    expect(eyes).toBeGreaterThan(50)
   })
 
   it('gives every organ particles and a wireframe ghost', () => {

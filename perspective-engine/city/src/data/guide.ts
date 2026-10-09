@@ -40,6 +40,38 @@ export function narrate(state: GraphState, st: Map<string, Status>, focus: Focus
   return `${n.id}, ${n.title}. Status: ${STATUS_LABEL[s]}. Owned by ${state.agents[n.agent].name}.${run}`
 }
 
+const SIMPLE_STATUS: Record<Status, string> = {
+  pending: 'not started yet: it waits for earlier work',
+  ready: 'ready to start: everything it needs is done',
+  running: 'being worked on',
+  done: 'finished, and an independent checker confirmed it',
+  awaiting_human: 'prepared by the agent; the last step needs the founder',
+  blocked: 'stuck: something it needs went wrong',
+}
+
+/**
+ * A plain-language explanation for a first-time visitor: what the thing is, who does it and where it stands,
+ * without jargon. Same facts as narrate(), from the same record.
+ */
+export function explainSimply(state: GraphState, st: Map<string, Status>, focus: Focus): string {
+  const v = ventureStats(state, st, null)
+  if (focus.kind === 'world') return `This is a company being built by AI agents, drawn as a city. The glowing brain in the middle is the plan; each district around it is one agent with a speciality; each tower is one piece of work. So far ${v.done} of ${v.total} pieces are finished and checked, and ${v.waiting} wait for the founder.`
+  if (focus.kind === 'brain') return `The brain is the plan: ${state.nodes.length} pieces of work and the order they must happen in. ${state.agents.orchestrator?.name ?? 'Mayor'}, the coordinator, hands each piece to the right agent when everything it needs is ready, and a separate checker verifies the result.`
+  if (focus.kind === 'agent') {
+    const a = state.agents[focus.id]
+    if (!a) return 'That agent is not in the record.'
+    const mine = state.nodes.filter(n => n.agent === focus.id)
+    const done = mine.filter(n => st.get(n.id) === 'done').length
+    return `${a.name} is the ${a.district} agent. Its job: ${a.role} It owns ${mine.length} pieces of work; ${done} are finished and checked.`
+  }
+  const n = state.nodes.find(x => x.id === focus.id)
+  if (!n) return 'That task is not in the record.'
+  const s = st.get(n.id) ?? 'pending'
+  const who = state.agents[n.agent]?.name ?? n.agent
+  const done = n.accept[0] ? ` It counts as done when: ${n.accept[0].replace(/\.$/, '')}.` : ''
+  return `${n.id} is one piece of work: “${n.title}”. ${who} does it, and it is ${SIMPLE_STATUS[s]}.${done}${n.gate && s !== 'done' ? ` The founder has to do the final step: ${n.gate.reason}` : ''}`
+}
+
 /** Whole-word match, so "new" does not fire on "renewal" and "who" does not fire on "whole". */
 const has = (q: string, ...words: string[]) => words.some(w => new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i').test(q))
 

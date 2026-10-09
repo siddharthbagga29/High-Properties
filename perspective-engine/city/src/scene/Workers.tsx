@@ -113,7 +113,10 @@ function Worker({ agent, index, towers, stat, at }: { agent: string; index: numb
       const hide = agent === CENTER_AGENT && focus.kind === 'world'
       // A tag standing behind the bust steps back, so it never covers the figure (it stays readable).
       const gp = group.current.position, behind = bustOccludes([camera.position.x, camera.position.y, camera.position.z], [gp.x, gp.y + 1.2, gp.z])
-      tag.current.style.opacity = live.assemble > 0.9 && !hide ? (behind ? '0.3' : stalled ? '0.8' : '1') : '0'
+      tag.current.style.opacity = live.assemble > 0.9 && !hide ? (behind ? '0.32' : stalled ? '0.8' : '1') : '0'
+      // Behind the bust only the words remain: no panel, so the tag never darkens the face it crosses.
+      const panel = behind ? 'transparent' : ''
+      if (tag.current.style.background !== panel) { tag.current.style.background = panel; tag.current.style.borderColor = panel; tag.current.style.boxShadow = behind ? 'none' : '' }
     }
   })
 

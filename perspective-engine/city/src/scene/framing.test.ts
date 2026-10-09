@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { GraphState } from '../data/types'
 import { buildBust } from './bust'
 import { project, viewFor, viewShift, worldDistance, type PanelSizes } from './framing'
-import { districtCenter, PLATE_R, RING, ringAngle, ringIndex, towers as layTowers } from './world'
+import { BRAIN_C, BRAIN_S, districtCenter, PLATE_R, RING, ringAngle, ringIndex, towers as layTowers } from './world'
 
 const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
 const towers = layTowers(state.nodes.map(n => ({ id: n.id, agent: n.agent, budget_k: n.budget_k, used_k: n.run?.used_k ?? 0, phase: n.phase })))
@@ -14,7 +14,8 @@ const bust = buildBust({ count: 6000, seed: 3 })
 const SIZES: Array<{ w: number; h: number; ui: PanelSizes; free: [number, number, number, number] }> = [
   { w: 1440, h: 900, ui: { railW: 252, inspW: 424, sheetH: 0 }, free: [252, 78, 1016, 836] },
   { w: 1280, h: 800, ui: { railW: 252, inspW: 424, sheetH: 0 }, free: [252, 78, 856, 736] },
-  { w: 390, h: 844, ui: { railW: 0, inspW: 0, sheetH: 304 }, free: [0, 112, 390, 484] },
+  // Phone: below the Jarvis status pill (bottom edge measured at 172 px), above the ask bar on the sheet.
+  { w: 390, h: 844, ui: { railW: 0, inspW: 0, sheetH: 304 }, free: [0, 176, 390, 484] },
 ]
 
 function subject() {
@@ -34,7 +35,9 @@ function subject() {
     const a = ringAngle(ringIndex(agent)), [hx, hz] = districtCenter(agent)
     return new THREE.Vector3(hx - Math.cos(a) * 1.5, 4.4, hz - Math.sin(a) * 1.5)
   })
-  return { ring, body, tags }
+  // The plan label above the crown (Scene.tsx BrainLabel): about 300 x 40 px, hanging above its anchor.
+  const plan = new THREE.Vector3(BRAIN_C[0], BRAIN_C[1] + BRAIN_S * 1.12, BRAIN_C[2])
+  return { ring, body, tags, plan }
 }
 
 function box(pts: { x: number; y: number }[]) {
@@ -42,7 +45,7 @@ function box(pts: { x: number; y: number }[]) {
 }
 
 describe('camera framing', () => {
-  const { ring, body, tags } = subject()
+  const { ring, body, tags, plan } = subject()
   for (const { w, h, ui, free } of SIZES) {
     it(`frames the whole bust and the district ring at ${w}x${h}`, () => {
       const portrait = w / h < 0.8
@@ -52,10 +55,12 @@ describe('camera framing', () => {
       const rb = box(project(ring, pos, tgt, w, h, shift))
       const bb = box(project(body, pos, tgt, w, h, shift))
       const tb = box(project(tags, pos, tgt, w, h, shift).flatMap(p => [{ x: p.x - 65, y: p.y - 17 }, { x: p.x + 65, y: p.y + 17 }]))
-      const all = [Math.min(rb[0], bb[0], tb[0]), Math.min(rb[1], bb[1], tb[1]), Math.max(rb[2], bb[2], tb[2]), Math.max(rb[3], bb[3], tb[3])]
+      const [pp] = project([plan], pos, tgt, w, h, shift)
+      const pb = [pp.x - 150, pp.y - 40, pp.x + 150, pp.y]
+      const all = [Math.min(rb[0], bb[0], tb[0], pb[0]), Math.min(rb[1], bb[1], tb[1], pb[1]), Math.max(rb[2], bb[2], tb[2], pb[2]), Math.max(rb[3], bb[3], tb[3], pb[3])]
       // The bust is the subject: it takes a real share of the free height, not a speck in the middle.
       const bustShare = (bb[3] - bb[1]) / (free[3] - free[1])
-      if (process.env.FRAMING_DEBUG) console.log(JSON.stringify({ w, h, d: +d.toFixed(1), ring: rb.map(Math.round), bust: bb.map(Math.round), tags: tb.map(Math.round), bustShare: +bustShare.toFixed(2) }))
+      if (process.env.FRAMING_DEBUG) console.log(JSON.stringify({ w, h, d: +d.toFixed(1), ring: rb.map(Math.round), bust: bb.map(Math.round), tags: tb.map(Math.round), plan: pb.map(Math.round), bustShare: +bustShare.toFixed(2) }))
       expect(all[0]).toBeGreaterThanOrEqual(free[0])
       expect(all[1]).toBeGreaterThanOrEqual(free[1])
       expect(all[2]).toBeLessThanOrEqual(free[2])

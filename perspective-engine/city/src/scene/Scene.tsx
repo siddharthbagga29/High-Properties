@@ -1,5 +1,5 @@
 import { Html, PerformanceMonitor } from '@react-three/drei'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -15,7 +15,7 @@ import { bodyLive, Bust, useBodyHover } from './Bust'
 import { Ground, LegendRing, Plates, Shockwave, Spokes, type PlateStat } from './Ground'
 import { labelLayer } from './portal'
 import { Records } from './Records'
-import { Rig } from './Rig'
+import { controlsRef, Rig } from './Rig'
 import { agentState, live, verifying } from './shared'
 import { TowerTags, Towers } from './Towers'
 import { Packets, Workers, workerPos } from './Workers'
@@ -28,7 +28,7 @@ export const PARTICLES = phone ? 27_000 : cores <= 4 ? 60_000 : 105_000
 /** The bust around it: built tissue is particles, the faint wireframe carries the unbuilt parts. */
 export const BUST_PARTICLES = phone ? 12_000 : cores <= 4 ? 24_000 : 40_000
 
-if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore, body: bodyLive }
+if (typeof window !== 'undefined') (window as unknown as { __pe: unknown }).__pe = { live, store: useStore, body: bodyLive, controls: controlsRef }
 
 const layoutNodes = (d: GraphState): LayoutNode[] => d.nodes.map(n => ({ id: n.id, agent: n.agent, budget_k: n.budget_k, used_k: n.run?.used_k ?? 0, phase: n.phase }))
 
@@ -108,29 +108,29 @@ function HoverLabel({ towers, stats, run, at, body }: { towers: Tower[]; stats: 
   )
 }
 
-/** At the foot of the bust in the world view: the plan, run by the Mayor, and how much of the body is built. */
+/** Above the head in the world view (the plan is the mind inside it): run by the Mayor, and how much of the body is built. */
 function BrainLabel({ body }: { body: BodyView | null }) {
   const focus = useStore(s => s.focus)
   const data = useStore(s => s.data)
   const st = useStore(s => s.st)
   const group = useRef<THREE.Group>(null!)
   const el = useRef<HTMLDivElement>(null)
-  const dir = useMemo(() => new THREE.Vector3(), [])
-  useFrame(({ camera }) => {
+  // On a phone it sits between the top bar's buttons: a tighter type size keeps it clear of them.
+  const narrow = useThree(s => s.size.width) < 520
+  useFrame(() => {
     if (!group.current) return
-    // On the camera's side of the bust, on the plaza just in front of its base, inside the near ring of districts.
-    dir.set(camera.position.x - BRAIN_C[0], 0, camera.position.z - BRAIN_C[2]).normalize().multiplyScalar(BRAIN_S * 1.15)
-    group.current.position.set(BRAIN_C[0] + dir.x, 0.3, BRAIN_C[2] + dir.z)
+    // Just above the crown, in open sky: the ring of district tags below never reaches it.
+    group.current.position.set(BRAIN_C[0], BRAIN_C[1] + BRAIN_S * 1.12, BRAIN_C[2])
     if (el.current) el.current.style.opacity = live.assemble > 0.9 ? '1' : '0'
   })
   if (!data || focus.kind !== 'world') return null
   const done = data.nodes.filter(n => st.get(n.id) === 'done').length
   return (
     <group ref={group}>
-      <Html portal={labelLayer} zIndexRange={[18, 0]} style={{ transform: 'translate3d(-50%,0,0)', pointerEvents: 'none' }}>
-        <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: '3px 9px', whiteSpace: 'nowrap', font: '600 12px var(--mono)', letterSpacing: '0.08em', color: '#8fe6ff' }}>
+      <Html portal={labelLayer} zIndexRange={[18, 0]} style={{ transform: 'translate3d(-50%,-100%,0)', pointerEvents: 'none' }}>
+        <div ref={el} className="brain-tag" style={{ opacity: 0, transition: 'opacity 0.6s', background: 'rgba(10,5,36,0.8)', border: '1px solid rgba(143,230,255,0.45)', borderRadius: 3, padding: narrow ? '2px 6px' : '3px 9px', whiteSpace: 'nowrap', font: `600 ${narrow ? 10 : 12}px var(--mono)`, letterSpacing: narrow ? '0.04em' : '0.08em', color: '#8fe6ff' }}>
           THE PLAN · {(data.agents.orchestrator?.name ?? 'Mayor').toUpperCase()} · {done}/{data.nodes.length} BUILT
-          {body && <div style={{ font: '500 10.5px var(--mono)', letterSpacing: '0.06em', color: '#bda6ff', textAlign: 'center', marginTop: 1 }}>
+          {body && <div style={{ font: `500 ${narrow ? 9 : 10.5}px var(--mono)`, letterSpacing: narrow ? '0.03em' : '0.06em', color: '#bda6ff', textAlign: 'center', marginTop: 1 }}>
             BODY {Math.round(body.overall * 100)}% BUILT · FACE {body.face.stage ? `${body.face.stage}/3 FORMED` : 'AWAITS REVENUE'}
           </div>}
         </div>

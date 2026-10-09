@@ -17,6 +17,7 @@
   --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --ser: "Spectral", Georgia, "Times New Roman", serif;
   --drawer-w: 400px;
+  --jconsole-w: 384px;
   /* Set from the measured top bar by App; these are only first-paint guesses. */
   --topbar-h: 64px;
   --sheet-h: 36vh;
@@ -193,6 +194,62 @@ blockquote { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var
 .aq { font: 600 12px var(--mono); color: var(--cyan); margin: 0 0 6px; }
 .at { font: italic 400 16px/1.55 var(--ser); color: #e8e6f6; margin: 0 0 8px; white-space: pre-wrap; }
 
+/* Jarvis: the "Talk to Jarvis" bar, the presence under the brand, its bubble, and the console's dock.
+   Same palette, type and surfaces as the rest of the city; the console itself is a .drawer (console.css, lazy). */
+.talkbar { gap: 6px; padding-left: 6px; }
+.tb-open { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; padding: 0; }
+.tb-open:hover { background: rgba(43, 240, 255, 0.08); }
+.tb-orb { position: relative; display: grid; place-items: center; width: 22px; height: 22px; }
+.tb-orb.thinking .ask-orb { animation: breathe 0.9s ease-in-out infinite; }
+.tb-orb .wave { display: flex; align-items: center; gap: 2px; height: 18px; }
+.tb-orb .wave i { width: 3px; height: 6px; border-radius: 2px; background: var(--cyan); box-shadow: 0 0 6px rgba(43, 240, 255, 0.7); animation: wave 0.9s ease-in-out infinite; }
+.tb-orb .wave i:nth-child(2) { animation-delay: -0.7s; }
+.tb-orb .wave i:nth-child(3) { animation-delay: -0.45s; background: #fff; }
+.tb-orb .wave i:nth-child(4) { animation-delay: -0.25s; }
+.tb-orb .wave i:nth-child(5) { animation-delay: -0.1s; background: var(--violet-t); }
+@keyframes wave { 0%, 100% { height: 4px; } 50% { height: 18px; } }
+.tb-btn { position: relative; flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--edge); background: transparent; color: var(--dim); padding: 0; }
+.tb-btn .ico { width: 17px; height: 17px; }
+.tb-btn:hover { color: var(--bone); border-color: rgba(143, 230, 255, 0.6); }
+.tb-speak.on { color: var(--cyan); }
+.tb-mic.on { color: var(--ink); background: var(--cyan); border-color: var(--cyan); }
+.tb-mic .ring { position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--cyan); animation: ring 1.3s ease-out infinite; pointer-events: none; }
+@keyframes ring { from { transform: scale(0.85); opacity: 0.9; } to { transform: scale(1.45); opacity: 0; } }
+.talkbar.s-listening { border-color: var(--cyan); box-shadow: 0 0 0 1px rgba(43, 240, 255, 0.35), 0 10px 30px rgba(0, 0, 0, 0.35); }
+.talkbar.s-speaking { border-color: rgba(194, 173, 255, 0.6); }
+.talkbar .tb-stop { background: var(--bone); }
+.tb-note { margin: 0; width: min(640px, 100%); background: var(--ink3); border: 1px solid rgba(255, 181, 71, 0.5); border-left: 3px solid var(--amber); border-radius: 4px; padding: 8px 12px; font-size: 13px; }
+
+.jpresence { position: fixed; z-index: 16; left: 16px; top: calc(var(--topbar-h) + 8px); display: grid; gap: 5px; max-width: min(360px, calc(100vw - 32px)); text-align: left; background: var(--ink2); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--edge); border-radius: 6px; padding: 8px 12px 9px; color: var(--bone); }
+.jpresence:hover, .jpresence.open { border-color: rgba(43, 240, 255, 0.6); }
+.jp-head { display: flex; align-items: center; gap: 7px; font: 500 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+.jp-head b { font: 900 13px var(--disp); letter-spacing: 0.08em; color: var(--bone); }
+.jp-head em { font-style: normal; margin-left: auto; color: var(--violet-t); border: 1px solid rgba(194, 173, 255, 0.45); border-radius: 3px; padding: 0 5px; font-size: 9.5px; }
+.jp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex: none; }
+.jp-dot.online { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: pulse 2.4s ease-in-out infinite; }
+.jp-dot.offline { background: var(--rose); }
+.jp-row { display: flex; flex-wrap: wrap; gap: 2px 14px; font: 600 12.5px var(--mono); font-variant-numeric: tabular-nums; }
+.jp-row > span { display: grid; gap: 0; min-width: 0; }
+.jp-row small { font: 500 9px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.jp-row .jp-cur { max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jp-row .hot { color: var(--violet-t); }
+.jbubble-wrap { position: fixed; z-index: 17; left: 16px; top: calc(var(--topbar-h) + 92px); width: min(340px, calc(100vw - 32px)); pointer-events: none; }
+.jbubble { pointer-events: auto; background: var(--ink3); border: 1px solid var(--edge); border-left: 3px solid var(--violet); border-radius: 6px; padding: 10px 12px; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45); }
+.jbubble.briefing { border-left-color: var(--cyan); }
+.jbubble.reminder { border-left-color: var(--amber); }
+.jbubble.request { border-left-color: #9cf7c6; }
+.jbubble p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; }
+.jbubble p b { display: block; font: 600 10px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--cyan); margin-bottom: 3px; }
+.jb-actions { display: flex; align-items: center; gap: 12px; }
+.jb-actions .cta, .jb-actions .ghost { padding: 7px 11px; font-size: 11px; }
+.jb-actions .linkish { font: 500 11px var(--mono); }
+.jconsole-wrap { position: fixed; z-index: 18; left: 16px; top: calc(var(--topbar-h) + 6px); bottom: 16px; width: var(--jconsole-w); display: flex; }
+.jarvis-open .bottom { left: calc(var(--jconsole-w) + 32px); }
+.jarvis-open .hintchip, .jarvis-open .jbubble-wrap { display: none; }
+.app:has(.jbubble) .hintchip { visibility: hidden; }
+/* The console docks where the mini-map sits; the agents are one tab away in the console and the inspector. */
+.jarvis-open .minimap { display: none; }
+
 /* Bottom: Ask bar + replay, between the mini-map and the drawer */
 .bottom { position: fixed; z-index: 16; left: 260px; right: calc(var(--drawer-w) + 32px); bottom: 16px; display: grid; gap: 8px; justify-items: center; }
 .askbar { display: flex; align-items: center; gap: 8px; width: min(640px, 100%); background: var(--ink2); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--edge); border-radius: 999px; padding: 6px 6px 6px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }
@@ -249,7 +306,7 @@ blockquote { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var
 .mm-legend .waiting::before { border-color: var(--violet-t); }
 
 /* Hints */
-.hintchip { position: fixed; z-index: 16; left: 16px; top: calc(var(--topbar-h) + 10px); display: flex; flex-wrap: wrap; gap: 4px; max-width: 360px; font: 500 11px var(--mono); transition: opacity 0.6s; }
+.hintchip { position: fixed; z-index: 16; left: 16px; top: calc(var(--topbar-h) + 88px); display: flex; flex-wrap: wrap; gap: 4px; max-width: 360px; font: 500 11px var(--mono); transition: opacity 0.6s; }
 .hintchip span { background: rgba(10, 5, 36, 0.7); border: 1px solid var(--edge); border-radius: 999px; padding: 4px 9px; color: var(--bone); }
 .hintchip span.used { color: var(--dim); text-decoration: line-through; border-color: var(--edge2); }
 .hintchip .keys { color: var(--dim); border-style: dashed; }
@@ -365,6 +422,10 @@ form.pilot input:focus { border-color: var(--cyan); outline: none; }
   .hintchip { display: none; }
   .minimap { width: 190px; }
   .bottom { left: 222px; }
+  /* Mid widths: the console stops above the bar, and the bar keeps its full width beneath it. */
+  :root { --jconsole-w: 340px; }
+  .jarvis-open .bottom { left: 16px; }
+  .jarvis-open .jconsole-wrap { bottom: 84px; }
 }
 /* Phones and narrow tablets: the drawer is a bottom sheet, the mini-map an overlay behind an "Agents" chip,
    and Replay, Index, Help and sound sit in the "⋯" menu. Nothing is placed by a guessed top bar height. */
@@ -393,6 +454,19 @@ form.pilot input:focus { border-color: var(--cyan); outline: none; }
   .mm-chip[aria-expanded="true"] { border-color: var(--cyan); }
   .mm-chip em { font-style: normal; color: var(--amber); }
   .bottom { left: 10px; right: 10px; bottom: calc(var(--sheet-h) + 8px); }
+  /* Jarvis on a phone: a one-line presence under the top bar, the console as a full sheet, the bar floating over it. */
+  .jpresence { left: 10px; top: calc(var(--topbar-h) + 8px); max-width: calc(100vw - 120px); padding: 6px 10px; min-height: 36px; }
+  .jp-row > span:not(.hot) { display: none; }
+  .jpresence { grid-template-columns: auto auto; align-items: center; gap: 10px; }
+  .jp-row .hot { display: block; white-space: nowrap; }
+  .jp-row small { display: none; }
+  .jp-row .hot::before { content: attr(data-short) " "; font: 500 10px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .jp-head em { display: none; }
+  .jbubble-wrap { left: 10px; top: calc(var(--topbar-h) + 52px); width: calc(100vw - 20px); }
+  .jconsole-wrap, .jarvis-open .jconsole-wrap { left: 0; right: 0; width: auto; top: calc(var(--topbar-h) + 2px); bottom: 0; }
+  .jarvis-open .bottom { left: 10px; right: 10px; bottom: 10px; z-index: 19; }
+  .jarvis-open .toasts, .jarvis-open .mm-chip, .jarvis-open .jpresence { display: none; }
+  .tb-btn { width: 34px; height: 34px; }
   /* Toasts sit under the Agents chip, one at a time, and never over the open mini-map. */
   .toasts { top: calc(var(--topbar-h) + 52px); left: 10px; right: 10px; width: auto; transform: none; }
   .toasts .toast:not(:last-child) { display: none; }

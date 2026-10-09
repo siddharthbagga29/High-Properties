@@ -116,11 +116,14 @@ export function Help() {
         <tr><th>Drag</th><td>Orbit around the city</td></tr>
         <tr><th>Scroll or pinch</th><td>Zoom toward the cursor</td></tr>
         <tr><th>Click, Enter or Space</th><td>Fly to anything and open its record</td></tr>
-        <tr><th>Esc</th><td>Back one level, then to the whole city</td></tr>
+        <tr><th>Esc</th><td>Close the Jarvis console, then back one level, then to the whole city</td></tr>
         <tr><th>Home</th><td>Straight back to the whole city</td></tr>
         <tr><th>← →</th><td>Previous or next agent</td></tr>
-        <tr><th>/ or ⌘K</th><td>Ask, or find anything</td></tr>
+        <tr><th>/ or ⌘K</th><td>Talk to Jarvis, or find anything</td></tr>
       </tbody></table>
+      <h3>Jarvis</h3>
+      <p className="note">Talk to Jarvis in the bar at the bottom, by typing or with the mic where your browser allows it. It answers from the project record, says when something isn’t in it, and speaks replies when the speaker button is on. The panel at the top left opens its briefing, the agents’ scorecards and the conversation.</p>
+      <p className="note"><b>Privacy:</b> to offer help, Jarvis notices only, in this tab’s memory, how long you stay on one thing and repeated clicks or back-and-forth; nothing is stored or sent, and it is gone when you close the tab.</p>
       <h3>What is real</h3>
       <p className="note">{BRIEF.data}</p>
       <p className="note">{data ? sourceText(source, data) : 'The project record has not loaded yet.'} Agents only work while a session runs them, started by the founder or on a schedule. Between runs, nothing is shown as working.</p>
