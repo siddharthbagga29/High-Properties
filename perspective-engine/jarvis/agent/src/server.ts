@@ -96,7 +96,11 @@ function consolePage(html: string): { body: string; csp: string } {
   return { body: html.replaceAll('__NONCE__', nonce), csp }
 }
 
-export function startServer(opts: ServerOptions): Promise<RunningServer> {
+/**
+ * Starts the server. Always asynchronous: a refused host (anything but 127.0.0.1), an unreadable console file or a
+ * port in use all surface as a rejected promise, never as a synchronous throw.
+ */
+export async function startServer(opts: ServerOptions): Promise<RunningServer> {
   const host = opts.host ?? LOOPBACK
   assertLoopback(host)
   const { app, token } = opts

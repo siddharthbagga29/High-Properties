@@ -6,6 +6,7 @@
 import { appendFileSync, chmodSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, writeSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { createTask, recall, type MemoryItem, type MemoryKind, type MemoryStore, type JarvisTask, type Reminder } from '../../core/index'
+import { redactDeep } from './redaction'
 
 const FILE_MODE = 0o600
 
@@ -83,6 +84,18 @@ const FINAL: JarvisTask['status'][] = ['completed', 'failed', 'cancelled']
 export interface PendingCall { tool: string; input: Record<string, unknown>; requestedAt: string }
 export type AgentTask = JarvisTask & { pending?: PendingCall }
 
+/**
+ * Every string in a stored task is redacted, except the parked call's input: that must run exactly as the owner
+ * asked when they press Confirm, and it is deleted from the task as soon as the call runs or is cancelled.
+ */
+const KEEP_PENDING_INPUT = new Set(['input'])
+function redactTask(task: AgentTask): AgentTask {
+  const { pending, ...rest } = task
+  const clean = redactDeep(rest) as AgentTask
+  if (pending) clean.pending = redactDeep(pending, KEEP_PENDING_INPUT)
+  return clean
+}
+
 export interface TaskStore {
   list(): AgentTask[]
   get(id: string): AgentTask | undefined
@@ -108,7 +121,8 @@ export function fileTaskStore(file: string): TaskStore {
       const t = tasks.find(x => x.id === id)
       return t ? { ...t } : undefined
     },
-    put(task) {
+    put(input) {
+      const task = redactTask(input)
       const i = tasks.findIndex(x => x.id === task.id)
       if (i === -1) tasks.push(task)
       else tasks[i] = task
@@ -116,7 +130,7 @@ export function fileTaskStore(file: string): TaskStore {
       return { ...task }
     },
     create(p, now) {
-      const task = createTask(p, now)
+      const task = redactTask(createTask(p, now))
       tasks.push(task)
       save()
       return { ...task }
@@ -143,7 +157,8 @@ export function fileReminderStore(file: string): ReminderStore {
       const r = items.find(x => x.id === id)
       return r ? { ...r } : undefined
     },
-    put(r) {
+    put(input) {
+      const r = redactDeep(input)
       const i = items.findIndex(x => x.id === r.id)
       if (i === -1) items.push(r)
       else items[i] = r
@@ -165,7 +180,9 @@ export function fileMemoryStore(file: string): MemoryStore & { search(q: string,
     }
   }
   const store: MemoryStore & { search(q: string, k?: number, kinds?: MemoryKind[]): Promise<MemoryItem[]> } = {
-    async add(item) {
+    async add(input) {
+      // core remember() already redacts and refuses credential-like text; this covers items added any other way.
+      const item = redactDeep(input)
       items.set(item.id, { ...item })
       appendJsonl(file, item, Number.POSITIVE_INFINITY)
     },

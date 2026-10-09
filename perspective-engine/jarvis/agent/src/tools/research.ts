@@ -100,7 +100,15 @@ export function researchTool(deps: ResearchDeps = {}): JarvisTool {
       if (!query || query.length > 300) return { ok: false, summary: 'query must be 1-300 characters', error: 'invalid_query' }
       const max = Math.max(1, Math.min(20, Math.floor(Number(input.max ?? 8)) || 8))
       const url = `${DDG_HTML}?q=${encodeURIComponent(query)}`
-      const res = await fetchPage(url, { ...deps.guard, signal: ctx.signal, timeoutMs: 15_000, maxBytes: 2 * 1024 * 1024, headers: { accept: 'text/html' } })
+      let res: SafeResponse
+      try {
+        res = await fetchPage(url, { ...deps.guard, signal: ctx.signal, timeoutMs: 15_000, maxBytes: 2 * 1024 * 1024, headers: { accept: 'text/html' } })
+      } catch (e) {
+        // Rethrown (so the registry can retry a transient failure) without the query, which may hold anything the
+        // owner typed: error text ends up in the audit log and the task record.
+        const message = (e instanceof Error ? e.message : String(e)).split(url).join(`${DDG_HTML}?q=[query]`)
+        throw new Error(`the search request failed: ${message}`)
+      }
       const html = res.body.toString('utf8')
       if (res.status !== 200) {
         return { ok: false, summary: `DuckDuckGo answered HTTP ${res.status}${res.status === 202 || /anomaly/i.test(html) ? ' (it is asking for a bot check, so no results could be read)' : ''}`, error: 'upstream_error' }

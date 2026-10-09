@@ -26,6 +26,7 @@ import { ensureHome, PE_REPO_DIR, paths, type AgentConfig, type Paths } from './
 import type { Runner } from './exec'
 import { buildProviders, type ModelReport } from './models'
 import type { GuardOptions } from './net'
+import { redactEntry } from './redaction'
 import { createScheduler, type ChannelResult, type Deliver, type Scheduler } from './scheduler'
 import { appendJsonl, fileMemoryStore, fileReminderStore, fileTaskStore, readJsonl, sessionStore, type AgentReminder, type AgentTask } from './store'
 import { createBrowserTools, type PlaywrightLike } from './tools/browser'
@@ -112,7 +113,8 @@ export function createApp(deps: AppDeps): App {
   const reminderStore = fileReminderStore(p.reminders)
   const memoryStore = fileMemoryStore(p.memory)
   const session = sessionStore(p.session)
-  const audit = createAuditLog(e => appendJsonl(p.audit, e))
+  // Core redact() runs inside createAuditLog; redactEntry repeats it on the percent-decoded text before the line hits disk.
+  const audit = createAuditLog(e => appendJsonl(p.audit, redactEntry(e)))
 
   const policy: Policy = { ...DEFAULT_POLICY, preApproved: cfg.policy.preApproved, denied: cfg.policy.denied }
   const registry = createRegistry({ policy, audit, now, actor: 'owner' })

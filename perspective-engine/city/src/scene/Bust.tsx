@@ -2,6 +2,7 @@ import { Html } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { create } from 'zustand'
 import { sfx } from '../audio/sound'
 import { bodyArrivals, faceTooltip, partDetail, partName, type BodyView } from '../jarvis/body'
@@ -55,9 +56,9 @@ void main() {
   vec3 p = position;
   if (kind < 0.5) {
     // Built (verified): cyan. Prepared, waiting on the founder: violet. Not built: almost nothing, the wireframe shows it.
-    if (rank < done)      { col = mix(cActive, vec3(1.0), 0.1); alpha = 0.5; }
-    else if (rank < fill) { col = mix(cViolet, cActive, 0.12) * 1.15; alpha = 0.4; size = 0.95; }
-    else                  { col = mix(cIdle, cViolet, 0.6); alpha = 0.03; size = 0.7; }
+    if (rank < done)      { col = mix(cActive, vec3(1.0), 0.12); alpha = 0.95; size = 1.2; }
+    else if (rank < fill) { col = mix(cViolet, cActive, 0.1) * 1.3; alpha = 0.8; size = 1.1; }
+    else                  { col = mix(cIdle, cViolet, 0.6); alpha = 0.05; size = 0.75; }
     float front = (1.0 - smoothstep(0.0, 0.02, abs(rank - fill))) * step(0.001, fill) * step(fill, 0.995);
     col = mix(col, vec3(1.0), front * 0.5); alpha += front * 0.4; size += front * 0.5;
     alpha += flash * (rank < fill ? 0.55 : 0.08);
@@ -79,7 +80,7 @@ void main() {
   float hasN = step(0.25, dot(aNrm, aNrm)) * rimK;
   vec3 V = normalize(cameraPosition - p);
   float rim = 1.0 - abs(dot(aNrm, V));
-  alpha *= mix(1.0, 0.2 + 1.15 * rim * rim, hasN);
+  alpha *= mix(1.0, 0.45 + 1.0 * rim * rim, hasN);
   // A slow scan line climbs the bust (motion only).
   float scan = exp(-pow((p.y - uScanY) / 0.9, 2.0)) * uMotion;
   alpha *= 1.0 + scan * 0.8;
@@ -110,9 +111,9 @@ void main() {
   int pi = int(aInfo.x + 0.5);
   float rank = aInfo.y;
   vec3 col; float alpha;
-  if (rank < uDone[pi])      { col = cActive; alpha = 0.2; }
-  else if (rank < uFill[pi]) { col = cViolet * 1.3; alpha = 0.2; }
-  else                       { col = mix(cViolet, cActive, 0.4); alpha = 0.075; }
+  if (rank < uDone[pi])      { col = cActive; alpha = 0.4; }
+  else if (rank < uFill[pi]) { col = cViolet * 1.4; alpha = 0.34; }
+  else                       { col = mix(cViolet, cActive, 0.4); alpha = 0.09; }
   alpha = alpha * (1.0 + uHover[pi] * 1.6) + uFlash[pi] * 0.25;
   vColor = col;
   vAlpha = alpha * smoothstep(0.55, 1.0, uAssemble);
@@ -158,7 +159,7 @@ export function Bust({ buf, body, towers }: { buf: BustOutput; body: BodyView | 
     uDone: { value: bodyLive.done }, uFill: { value: bodyLive.fill }, uFlash: { value: bodyLive.flash }, uHover: { value: bodyLive.hover },
     uHeartC: { value: local(SHAPE.heart.c) }, uLungR: { value: local(SHAPE.lungR.c) }, uLungL: { value: local(SHAPE.lungL.c) },
     cIdle: { value: PALETTE.idle }, cActive: { value: PALETTE.active }, cViolet: { value: PALETTE.violet }, cMote: { value: PALETTE.mote },
-    uSize: { value: 1.7 }, uPR: { value: 1 }, uFace: { value: 0 }, uScanY: { value: -100 },
+    uSize: { value: 2.7 }, uPR: { value: 1 }, uFace: { value: 0 }, uScanY: { value: -100 },
   }), [])
   const material = useMemo(() => new THREE.ShaderMaterial({
     vertexShader: vertex, fragmentShader: fragment, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms,
@@ -213,13 +214,117 @@ export function Bust({ buf, body, towers }: { buf: BustOutput; body: BodyView | 
 
   return (
     <>
-      <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} />
-      <lineSegments geometry={lineGeometry} material={lineMaterial} frustumCulled={false} raycast={() => null} />
+      <Glass uniforms={uniforms} />
+      {/* Drawn after the glass (renderOrder 1), so the dark body never dims its own light. */}
+      <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} renderOrder={1} />
+      <lineSegments geometry={lineGeometry} material={lineMaterial} frustumCulled={false} raycast={() => null} renderOrder={1} />
       <Streams buf={buf} towers={towers} />
       <HitTargets body={body} />
       <PartLabel body={body} />
     </>
   )
+}
+
+// ---------- the glass: a dark translucent body, so the figure reads against the lit city behind it ----------
+
+/**
+ * One shell per body volume, merged into a single draw. Each fragment is dropped when it lies inside another volume,
+ * so only the outer surface of the union is drawn and overlaps never darken twice. Normal blending (not additive),
+ * drawn before the particles: it dims the ground, towers and arcs behind the bust, never the bust's own light.
+ */
+const GLASS_ELLS: Array<{ e: { c: readonly number[]; r: readonly number[] }; part: number }> = [
+  { e: SHAPE.cranium, part: 0 }, { e: SHAPE.jaw, part: 0 }, { e: SHAPE.trap, part: 5 }, { e: SHAPE.deltR, part: 5 },
+  { e: SHAPE.deltL, part: 5 }, { e: SHAPE.chest, part: 4 },
+  // Elbows: a ball where the upper arm and the forearm meet.
+  ...(['arm_right', 'arm_left'] as const).map(name => ({ e: { c: ARMS[name].E, r: [0.21, 0.21, 0.21] }, part: BUST_PARTS.indexOf(name) })),
+]
+const GLASS_CAPS = (['arm_right', 'arm_left'] as const).flatMap(name => {
+  const a = ARMS[name], part = BUST_PARTS.indexOf(name)
+  return [{ A: a.J, B: a.E, r0: 0.27, r1: 0.21, part }, { A: a.E, B: a.W, r0: 0.2, r1: 0.13, part }]
+})
+const NE = GLASS_ELLS.length, NC = GLASS_CAPS.length
+const NECK = NE + NC
+
+const glassVertex = /* glsl */ `
+attribute float aShape;
+varying vec3 vLocal; varying vec3 vN; varying vec3 vW; varying float vShape;
+void main() {
+  vLocal = position; vShape = aShape;
+  vec4 w = modelMatrix * vec4(position, 1.0);
+  vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal);
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`
+
+const glassFragment = /* glsl */ `
+uniform vec3 uEllC[${NE}], uEllR[${NE}], uCapA[${NC}], uCapB[${NC}];
+uniform vec2 uCapR[${NC}];
+uniform vec4 uNeck; // rx, rz, cz, y0
+uniform float uNeckTop, uAssemble;
+uniform float uFill[${N_PARTS}], uHover[${N_PARTS}];
+uniform float uPart[${NECK + 1}];
+uniform vec3 cActive, cGround;
+varying vec3 vLocal; varying vec3 vN; varying vec3 vW; varying float vShape;
+bool inside(vec3 p, int i) {
+  if (i < ${NE}) { vec3 q = (p - uEllC[i]) / uEllR[i]; return dot(q, q) < 0.985; }
+  if (i < ${NECK}) {
+    int k = i - ${NE};
+    vec3 ab = uCapB[k] - uCapA[k];
+    float t = clamp(dot(p - uCapA[k], ab) / dot(ab, ab), 0.0, 1.0);
+    return length(p - uCapA[k] - ab * t) < mix(uCapR[k].x, uCapR[k].y, t) * 0.985;
+  }
+  return p.y > uNeck.w && p.y < uNeckTop && length(vec2(p.x / uNeck.x, (p.z - uNeck.z) / uNeck.y)) < 0.985;
+}
+void main() {
+  int self = int(vShape + 0.5);
+  for (int i = 0; i <= ${NECK}; i++) if (i != self && inside(vLocal, i)) discard;
+  vec3 V = normalize(cameraPosition - vW);
+  float facing = abs(dot(normalize(vN), V));
+  int pi = int(uPart[self] + 0.5);
+  float a = mix(0.22, 0.62, pow(facing, 0.7)) * (0.7 + 0.3 * uFill[pi]) * smoothstep(0.45, 1.0, uAssemble);
+  // A faint cyan edge, as if the glass caught the light of the particles.
+  vec3 col = mix(cGround * 0.55, cActive * (0.25 + 0.25 * uHover[pi]), pow(1.0 - facing, 5.0));
+  gl_FragColor = vec4(col, a);
+}`
+
+function glassGeometry() {
+  const parts: THREE.BufferGeometry[] = []
+  const tag = (g: THREE.BufferGeometry, i: number) => {
+    g.setAttribute('aShape', new THREE.Float32BufferAttribute(new Array(g.attributes.position.count).fill(i), 1))
+    parts.push(g)
+  }
+  GLASS_ELLS.forEach(({ e }, i) => tag(new THREE.SphereGeometry(1, 40, 28).scale(e.r[0], e.r[1], e.r[2]).translate(e.c[0], e.c[1], e.c[2]), i))
+  GLASS_CAPS.forEach(({ A, B, r0, r1 }, k) => {
+    const a = new THREE.Vector3(...A), b = new THREE.Vector3(...B), d = b.clone().sub(a)
+    // Cylinder runs along +y: the bottom (r0) at A, the top (r1) at B.
+    const g = new THREE.CylinderGeometry(r1, r0, d.length(), 20, 1, true)
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()))
+    g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
+    tag(g, NE + k)
+  })
+  const nk = SHAPE.neck, top = nk.y1 + 0.3
+  tag(new THREE.CylinderGeometry(1, 1, top - nk.y0, 24, 1, true).scale(nk.rx, 1, nk.rz).translate(0, (top + nk.y0) / 2, nk.cz), NECK)
+  return mergeGeometries(parts, false)!
+}
+
+function Glass({ uniforms }: { uniforms: Record<string, THREE.IUniform> }) {
+  const geometry = useMemo(glassGeometry, [])
+  const material = useMemo(() => {
+    const v = (a: readonly number[]) => new THREE.Vector3(a[0], a[1], a[2])
+    return new THREE.ShaderMaterial({
+      vertexShader: glassVertex, fragmentShader: glassFragment, transparent: true, depthWrite: false, side: THREE.FrontSide,
+      uniforms: {
+        uEllC: { value: GLASS_ELLS.map(x => v(x.e.c)) }, uEllR: { value: GLASS_ELLS.map(x => v(x.e.r)) },
+        uCapA: { value: GLASS_CAPS.map(x => v(x.A)) }, uCapB: { value: GLASS_CAPS.map(x => v(x.B)) },
+        uCapR: { value: GLASS_CAPS.map(x => new THREE.Vector2(x.r0, x.r1)) },
+        uNeck: { value: new THREE.Vector4(SHAPE.neck.rx, SHAPE.neck.rz, SHAPE.neck.cz, SHAPE.neck.y0) }, uNeckTop: { value: SHAPE.neck.y1 + 0.3 },
+        uPart: { value: [...GLASS_ELLS.map(x => x.part), ...GLASS_CAPS.map(x => x.part), 1] },
+        uAssemble: uniforms.uAssemble, uFill: uniforms.uFill, uHover: uniforms.uHover,
+        cActive: { value: PALETTE.active }, cGround: { value: PALETTE.ground },
+      },
+    })
+  }, [uniforms])
+  useEffect(() => () => { geometry.dispose(); material.dispose() }, [geometry, material])
+  return <mesh geometry={geometry} material={material} position={BRAIN_C} scale={BRAIN_S} raycast={() => null} frustumCulled={false} />
 }
 
 // ---------- arrivals: a stream of particles from the district to its organ ----------
@@ -256,7 +361,10 @@ function Streams({ buf, towers }: { buf: BustOutput; towers: Tower[] }) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(PER * MAX_STREAMS * 3).fill(-999), 3))
     g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(PER * MAX_STREAMS * 3), 3))
-    return new THREE.Points(g, new THREE.PointsMaterial({ size: 0.75, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }))
+    const p = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.75, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }))
+    p.renderOrder = 1
+    p.frustumCulled = false
+    return p
   }, [])
   useEffect(() => () => { pts.geometry.dispose(); (pts.material as THREE.Material).dispose() }, [pts])
   const v = useMemo(() => new THREE.Vector3(), [])

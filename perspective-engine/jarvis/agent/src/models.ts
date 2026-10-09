@@ -4,11 +4,18 @@
  * provider, which always answers from the record. route() from the core picks among whatever is actually present.
  */
 import { totalmem } from 'node:os'
-import { anthropicProvider, claudeCodeProvider, ollamaProvider, ruleProvider, type CommandRunner, type LLMProvider } from '../../core/index'
+import { anthropicProvider, claudeCodeProvider, DEFAULT_ROUTES, ollamaProvider, ruleProvider, type CommandRunner, type LLMProvider, type RouteTable } from '../../core/index'
 import type { AgentConfig } from './config'
 import { runProcess, whichSync, type Runner } from './exec'
 
 const GB = 1024 ** 3
+
+/**
+ * The agent's route table: the core defaults, except that a conversation on the Mac can also go to the `claude`
+ * CLI (the page-only `sample` provider does not exist here). Local Ollama stays first; 'sensitive' stays local-only
+ * (core route() enforces that whatever the table says).
+ */
+export const AGENT_ROUTES: RouteTable = { ...DEFAULT_ROUTES, conversation: ['ollama', 'anthropic', 'claude-code', 'rules'] }
 
 export interface ModelRecommendation { sizeClass: '7-8B' | '14B' | '32B'; memoryGb: number; suggestions: string[]; reason: string }
 

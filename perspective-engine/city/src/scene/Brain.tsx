@@ -114,7 +114,8 @@ export function Brain({ buf }: { buf: BrainOutput }) {
   const s = useStore.getState
   return (
     <>
-      <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} />
+      {/* renderOrder 1: after the bust's dark glass (scene/Bust.tsx), so the mind inside the head stays bright. */}
+      <points geometry={geometry} material={material} frustumCulled={false} raycast={() => null} renderOrder={1} />
       {/* Hit target: the brain is one clickable object. */}
       {/* Solid: the hologram around it (scene/Bust.tsx) yields to the brain. */}
       <mesh position={BRAIN_C} scale={[BRAIN_S * 0.95, BRAIN_S * 0.62, BRAIN_S * 1.05]} userData={{ solid: true }}

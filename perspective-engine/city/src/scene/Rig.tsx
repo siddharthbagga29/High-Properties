@@ -6,57 +6,19 @@ import * as THREE from 'three'
 import { sfx } from '../audio/sound'
 import { STATUS_CODE } from '../data/model'
 import type { Status } from '../data/types'
-import { focusKey, useStore, type Focus } from '../store'
+import { focusKey, useStore } from '../store'
 import { edgeHi, edgeOn } from './Arcs'
+import { viewFor, viewShift, worldDistance as frameDistance } from './framing'
 import { live, STALLED } from './shared'
-import { ALL_AGENTS, BRAIN_C, CENTER_AGENT, districtCenter, MAX_TASKS, R_PLAZA, ringAngle, ringIndex, type Tower } from './world'
+import { ALL_AGENTS, BRAIN_C, MAX_TASKS, type Tower } from './world'
 
 const NO_RUN = new Map<string, 'working' | 'stalled'>()
 export const controlsRef: { current: CameraControlsImpl | null } = { current: null }
 const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** Default world view: looking down 52°, so the far district sits above the brain instead of behind it. */
-const WORLD_EL = THREE.MathUtils.degToRad(52)
-const WORLD_T = new THREE.Vector3(0, 4, -2)
-const AGENT_EL = THREE.MathUtils.degToRad(40)
-
-/**
- * Distance at which the whole ring, signposts and plate rims included, fits in the space the panels leave free
- * (between the mini-map and the drawer, above the ask bar). Checked by projection at 1180x820 to 2560x1440:
- * the ring needs about 1.18 viewport heights of free width, or 1.06 of free height, with a margin all round.
- */
-export function worldDistance(w: number, h: number, portrait: boolean) {
-  if (portrait) return 87 * 1.3
-  const fw = (w - live.ui.railW - live.ui.inspW) / h, fh = (h - 136 - live.ui.sheetH) / h
-  return THREE.MathUtils.clamp(100 * Math.max(1.18 / Math.max(fw, 0.3), 1.06 / Math.max(fh, 0.3)), 96, 190)
-}
-
-/** Where the camera stands for each focus: always looking inward, so the brain stays in the frame. */
-export function viewFor(f: Focus, towers: Tower[], nodes: { id: string }[], portrait: boolean, worldD = 100): [THREE.Vector3, THREE.Vector3] {
-  const k = portrait ? 1.3 : 1
-  if (f.kind === 'brain') return [new THREE.Vector3(BRAIN_C[0] + 16 * k, BRAIN_C[1] + 7 * k, BRAIN_C[2] + 30 * k), new THREE.Vector3(BRAIN_C[0], BRAIN_C[1] - 1, BRAIN_C[2])]
-  if (f.kind === 'agent') {
-    if (f.id === CENTER_AGENT) return [new THREE.Vector3(0, 22 * k, 34 * k), new THREE.Vector3(0, 6, -R_PLAZA * 0.5)]
-    // Face the district from outside, looking in: its towers spread into rows and columns so every tower's tag reads,
-    // and the brain sits behind them. (Its own signpost fades out in this view; it would stand in front.)
-    const a = ringAngle(ringIndex(f.id)), u = new THREE.Vector3(Math.cos(a), 0, Math.sin(a))
-    const [cx, cz] = districtCenter(f.id)
-    // Far enough that the tallest tower (about 9 units) and its tag fit below the top bar.
-    const t = new THREE.Vector3(cx, 4, cz).addScaledVector(u, -2)
-    const d = 38 * k
-    return [t.clone().addScaledVector(u, d * Math.cos(AGENT_EL)).add(new THREE.Vector3(0, d * Math.sin(AGENT_EL), 0)), t]
-  }
-  if (f.kind === 'task') {
-    const i = nodes.findIndex(n => n.id === f.id)
-    const t = towers[i]
-    if (t) {
-      const u = new THREE.Vector3(Math.cos(t.angle), 0, Math.sin(t.angle)), v = new THREE.Vector3(-u.z, 0, u.x)
-      const c = new THREE.Vector3(t.x, t.h * 0.5, t.z)
-      return [c.clone().addScaledVector(u, 6 * k).addScaledVector(v, 12 * k).add(new THREE.Vector3(0, t.h * 0.5 + 9, 0)), c]
-    }
-  }
-  return [WORLD_T.clone().add(new THREE.Vector3(0, Math.sin(WORLD_EL) * worldD, Math.cos(WORLD_EL) * worldD)), WORLD_T.clone()]
-}
+/** Camera views and framing live in framing.ts (pure maths, checked by projection in framing.test.ts). */
+export { viewFor } from './framing'
+const worldDistance = (w: number, h: number, portrait: boolean) => frameDistance(w, h, portrait, live.ui)
 
 /** The one per-frame controller: camera flights, status → shader uniforms, cursor field, framing between panels. */
 export function Rig({ towers, links, run = NO_RUN }: { towers: Tower[]; links: [number, number][]; run?: Map<string, 'working' | 'stalled'> }) {
@@ -173,16 +135,14 @@ export function Rig({ towers, links, run = NO_RUN }: { towers: Tower[]; links: [
     }
 
     // Keep the subject centred in the space between the side panels, lifted clear of the ask bar.
-    const wide = size.width > 900
-    const tx = wide ? (live.ui.railW - live.ui.inspW) / 2 : 0
-    const ty = wide ? -36 : -live.ui.sheetH / 2
+    const { x: tx, y: ty } = viewShift(size.width, live.ui)
     shift.current.x += (tx - shift.current.x) * (1 - Math.exp(-dt * 4))
     shift.current.y += (ty - shift.current.y) * (1 - Math.exp(-dt * 4))
     ;(camera as THREE.PerspectiveCamera).setViewOffset(size.width, size.height, -shift.current.x, -shift.current.y, size.width, size.height)
   })
 
   return (
-    <CameraControls ref={ref} makeDefault minDistance={4} maxDistance={200} maxPolarAngle={Math.PI * 0.47} minPolarAngle={0.12}
+    <CameraControls ref={ref} makeDefault minDistance={4} maxDistance={340} maxPolarAngle={Math.PI * 0.47} minPolarAngle={0.12}
       dollyToCursor smoothTime={reduce ? 0 : 0.55} draggingSmoothTime={0.12}
       onStart={() => { live.idle = 0 }} />
   )

@@ -24,6 +24,7 @@ import {
   type StatusItem,
 } from '../../core/index'
 import type { PEStateInfo, StatusBriefing } from './briefing'
+import { AGENT_ROUTES } from './models'
 import type { AgentReminder, AgentTask, ReminderStore, TaskStore } from './store'
 import type { MemoryStore } from '../../core/index'
 
@@ -275,7 +276,7 @@ async function chat(text: string, kind: AskKind, deps: AskDeps, brief: StatusBri
   ]
   const title = `Answer: ${text.slice(0, 80)}`
   try {
-    const provider = route(routeKind, providers)
+    const provider = route(routeKind, providers, AGENT_ROUTES)
     const r = (await provider.chat(assemble(parts), { maxTokens: 800 })) as { text: string; provider?: string }
     const answeredBy = r.provider ?? provider.id
     const task = deps.completeTask(title, `answer returned by ${answeredBy}`, { provider: answeredBy })

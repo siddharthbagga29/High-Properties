@@ -70,7 +70,8 @@ export function bodyAt(state: GraphState, st?: Map<string, Status>, time: number
       const agentName = state.agents?.[p.builtBy]?.name ?? p.builtBy
       const verified = p.tasks.filter(id => status.get(id) === 'done')
       const waiting = p.tasks.filter(id => status.get(id) === 'awaiting_human')
-      const view = { ...p, agentName, verified, waiting, built: p.total ? p.done / p.total : 0, tooltip: '' }
+      // Rounded like the core rounds fill, so built never exceeds fill (verified work is a subset of built work).
+      const view = { ...p, agentName, verified, waiting, built: p.total ? Math.round((p.done / p.total) * 1000) / 1000 : 0, tooltip: '' }
       view.tooltip = partTooltip(view)
       return view
     }),
