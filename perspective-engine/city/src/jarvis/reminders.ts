@@ -1,6 +1,6 @@
 /**
  * Reminders in the page: parse with the core, confirm honestly, and announce the ones that fall due while the
- * page is open. The push to the founder's phone is the hourly reminder routine's job, never claimed here as done.
+ * page is open. The push and email to the founder are the hourly reminder routine's job (it delivers each reminder within an hour after it is due), never claimed here as done.
  */
 import { createReminder, due, parseReminder } from '@jarvis/reminders'
 import type { Reminder } from '@jarvis/types'
@@ -43,8 +43,8 @@ export function confirmation(r: Reminder, now: Date, tzOffsetMinutes: number): {
   const when = whenLabel(r.dueAt, now, tzOffsetMinutes)
   const soon = Date.parse(r.dueAt) - now.getTime() < HOUR_MS
   const phone = soon
-    ? "It's due before the next hourly check, so your phone may get it late; I'll show and say it here if this page is open."
-    : "I'll show it here when it's due; your phone gets it after the hourly check schedules it."
+    ? "It's due within the hour, so your phone and email get it at the next hourly check, up to an hour late; I'll show and say it here if this page is open."
+    : "I'll show it here when it's due, and the hourly check sends it to your phone and email within an hour of that time."
   return {
     text: `Reminder set for ${when}: ${r.text}. ${phone}`,
     spoken: `Reminder set for ${when}. ${soon ? 'Your phone may get it late; I will say it here if the page is open.' : "I'll show it here when it's due."}`,

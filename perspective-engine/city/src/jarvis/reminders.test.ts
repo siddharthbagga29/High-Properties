@@ -16,7 +16,7 @@ describe('reminder flow (fake database)', () => {
     const t = makeEnv({ viewer: 'owner', now: NOW, state })
     const r = await respond('remind me tomorrow at 9 to review batch one', t.env)
     expect(r.ok).toBe(true)
-    expect(r.text).toBe("Reminder set for Thu 9:00: review batch one. I'll show it here when it's due; your phone gets it after the hourly check schedules it.")
+    expect(r.text).toBe("Reminder set for Thu 9:00: review batch one. I'll show it here when it's due, and the hourly check sends it to your phone and email within an hour of that time.")
     expect(r.spoken).toBe("Reminder set for Thu 9:00. I'll show it here when it's due.")
     const [rem] = rowsFrom(t.db).reminders
     expect(rem).toMatchObject({ text: 'review batch one', dueAt: '2026-10-08T09:00:00.000Z', status: 'pending', channels: ['page', 'speech', 'push'] })
@@ -39,7 +39,7 @@ describe('reminder flow (fake database)', () => {
   it('warns that the phone may be late when it is due before the next hourly check', async () => {
     const t = makeEnv({ viewer: 'owner', now: NOW, state })
     const r = await respond('remind me in 20 minutes to stretch', t.env)
-    expect(r.text).toBe("Reminder set for today 10:20: stretch. It's due before the next hourly check, so your phone may get it late; I'll show and say it here if this page is open.")
+    expect(r.text).toBe("Reminder set for today 10:20: stretch. It's due within the hour, so your phone and email get it at the next hourly check, up to an hour late; I'll show and say it here if this page is open.")
   })
 
   it('asks for a time instead of guessing, and writes nothing', async () => {

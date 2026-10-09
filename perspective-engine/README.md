@@ -13,6 +13,11 @@ A venture build run by a graph of AI agents. It is kept separate from the High P
 | `PROMPT.md` | Graph-engineering prompt that continues the build |
 | `dashboard/index.html` | The agent city. Open it in a browser; it reads `dashboard/state.js` |
 | `mvp/` | Browser MVP of the attention-load experience |
+| `city/` | The 3D city (Vite, React, three.js), published at https://claude.ai/artifact/D4mz6TQGSr2Lcm6hCo2tTg, with Jarvis and the evolving body |
+| `jarvis/core/` | Jarvis's framework-free core: tasks, policy, tools, memory, intents, reminders, briefings, model routing, body model |
+| `jarvis/agent/` | The private local Jarvis agent for the founder's Mac (localhost only, token, allowlisted tools, voice console) |
+| `tools/audit.py` | Jarvis as second line: scores every agent against `docs/JARVIS_AUDIT_RUBRIC.md` |
+| `docs/JARVIS_*.md` | Architecture, progress, security, setup, operations and the audit rubric |
 
 ## Run
 
@@ -23,4 +28,11 @@ python3 perspective-engine/tools/graph.py human    # what needs the founder
 python3 -m http.server -d perspective-engine 8000  # then open /dashboard/ and /mvp/
 ```
 
-To continue the build, open Claude Code on this repo and paste `PROMPT.md`.
+```bash
+cd perspective-engine/jarvis && npm install && npm test   # Jarvis core and Mac agent tests
+cd perspective-engine/city && npm install && npm test     # city and Jarvis UI tests
+python3 -m unittest discover -s perspective-engine/tools -p 'test_*.py'   # graph, auditor, founder signatures
+python3 perspective-engine/tools/audit.py                 # recompute the agent scorecards
+```
+
+To continue the build, open Claude Code on this repo and paste `PROMPT.md`. To run Jarvis on your Mac, follow `docs/JARVIS_SETUP.md`.

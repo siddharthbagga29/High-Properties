@@ -160,7 +160,7 @@ function BriefTab({ data }: { data: GraphState }) {
                 <li key={r.id} className={r.status === 'dismissed' || r.status === 'delivered' ? 'past' : ''}>
                   <span className="jc-when">{whenLabel(r.dueAt, new Date(now), tz)}</span>
                   <span className="jc-text">{r.text}</span>
-                  <span className={`jc-st st-${r.status}`}>{r.status === 'pending' ? 'Waiting for the hourly check' : r.status === 'scheduled' ? 'Push scheduled' : r.status === 'delivered' ? 'Delivered' : 'Dismissed'}</span>
+                  <span className={`jc-st st-${r.status}`}>{r.status === 'pending' || r.status === 'scheduled' ? 'Sent at the first hourly check after it is due' : r.status === 'delivered' ? 'Delivered' : 'Dismissed'}</span>
                   {(r.status === 'pending' || r.status === 'scheduled') && <button className="linkish" onClick={() => dismissReminder(r.id)}>Dismiss</button>}
                 </li>
               ))}
@@ -194,7 +194,7 @@ function BriefTab({ data }: { data: GraphState }) {
       <p className="note small jc-foot">
         Voice: {speak ? 'replies are spoken' : 'muted'}{owner && prefs ? ` · quiet hours ${quietLabel(prefs.quietHours)} local` : ''}.
         {' '}{caps.sample ? 'Open questions are answered by Claude from the project record.' : 'Claude is not available in this view; answers come from the project files.'}
-        {owner ? ' Reminders reach your phone after the hourly check schedules them; build work runs on the orchestrator’s scheduled run, every six hours.' : ''}
+        {owner ? ' Reminders reach your phone and email at the first hourly check after they are due; build work runs on the orchestrator’s scheduled run, every six hours.' : ''}
       </p>
     </>
   )
