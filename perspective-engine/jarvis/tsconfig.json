@@ -1,0 +1,22 @@
+{
+  // One typecheck for the whole package. The core is also compiled by the city (DOM lib, no Node types);
+  // tests/purity.test.ts re-checks the core under exactly those conditions.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["core", "tests", "agent", "vitest.config.ts"]
+}

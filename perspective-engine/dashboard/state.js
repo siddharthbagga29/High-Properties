@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-08T12:50:56Z",
+ "generated": "2026-10-08T19:16:52Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -1099,5 +1099,631 @@ window.PE_STATE = {
    "node": "M04",
    "note": "Entity checklist: DE C-corp/LLC/India-UK compared, SBIR >50% rule, 22-step gated checklist, founder IP assignment + no-equity clause"
   }
- ]
+ ],
+ "revenue": [],
+ "audit": {
+  "computedAt": "2026-10-08T19:16:52Z",
+  "rubricVersion": "1.0",
+  "scorecards": [
+   {
+    "agent": "orchestrator",
+    "name": "Mayor",
+    "score": 64.6,
+    "grade": "D",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record; closed without a verification record: F05 F07 D01. Scored neutral (70)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 75.5,
+      "basis": "32/42 numeric claims (76%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 25/29, F07 PLAN.md 1/6, D01 founder-decisions.md 6/6; untraced examples: F02: 0%; F05: d\u22480.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 70.0,
+      "basis": "Over 3 tasks in the ledger: 0 orchestrator corrections of a false claim; 3 self-verified completions (F05 F07 D01: closed by their builder with no verifier row); 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 8.8,
+      "basis": "3 closed tasks in the ledger: step records on 1 (2 self-logged rows, 0 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F05 F07 D01; graph-wide closure discipline (half of this score): 7/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V09 (-10 each); not scored, closed before the ledger began: F01 F02."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (D01); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 70.0,
+      "basis": "No data: no task with both a token budget and a measured run. Scored neutral (70)."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 3 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "science",
+    "name": "Curie",
+    "score": 73.5,
+    "grade": "C",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record; closed without a verification record: F03 V01 V03 V15. Scored neutral (70)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 92.4,
+      "basis": "185/199 numeric claims (93%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 36/42, V01 mechanism-spec.md 37/37, V03 preregistration.md 100/107, V15 partners.md 12/13; untraced examples: F03: d+ = 0.51; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 4 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 25.0,
+      "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (V03); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 87.4,
+      "basis": "4 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: F03, V01; over: V03 103.1k vs 20k, V15 122.2k vs 20k. Raw used/budget total 402.6k/125k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 4 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "ethics",
+    "name": "Milton",
+    "score": 57.5,
+    "grade": "F",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 0.0,
+      "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: M03 (2 failed rounds, 1 blocks, 0 orchestrator corrections); not counted, no verification record: F06 V04."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 37.0,
+      "basis": "2 failed verification rounds over 1 verified tasks (2.00 per task); rework: M03 x2; 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (M03 1)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 91.6,
+      "basis": "67/72 numeric claims (93%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F06 codesign-charter.md 14/14, V04 advisory-board.md 27/28, M03 irb-packet.md 26/30; untraced examples: V04: 10 minutes; M03: 10 people. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 3 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 1 verifier FAIL/GAP rows naming a false statement (M03 1). No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 41.7,
+      "basis": "3 closed tasks in the ledger: step records on 3 (18 self-logged rows, 111 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F06 V04; verifier rows not flagged --verifier: M03."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (M03); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "2 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: F06, V04; over: none. Raw used/budget total 155.9k/27k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 3 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "product",
+    "name": "Ada",
+    "score": 76.1,
+    "grade": "C",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 50.0,
+      "basis": "1/2 verified tasks passed first time (V14); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 49.0,
+      "basis": "3 failed verification rounds over 2 verified tasks (1.50 per task); rework: F04 x3; 0 open FAIL/GAP rows after the last revision; 2 non-blocking notes left open (V14 2)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 96.1,
+      "basis": "132/136 numeric claims (97%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F04 index.html 3/3, F04 README.md 127/131, V14 CHANGELOG.md 2/2; untraced examples: F04: 30 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 1 verifier FAIL/GAP rows naming a false statement (F04 1). No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 100.0,
+      "basis": "2 closed tasks in the ledger: step records on 2 (77 self-logged rows, 260 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (V14); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 70.0,
+      "basis": "No data: no task with both a token budget and a measured run. Scored neutral (70)."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 76.0,
+      "basis": "3 recorded interruptions (usage/session limits, failed pushes) over 2 tasks (F04 3); 0 running tasks with no step in 15 min; 1 founder stops recorded, not scored."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "data",
+    "name": "Tukey",
+    "score": 70.7,
+    "grade": "C",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record; closed without a verification record: V02. Scored neutral (70)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 89.4,
+      "basis": "26/28 numeric claims (93%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V02 instruments.md 26/28; untraced examples: V02: 7 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 1 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 25.0,
+      "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 70.0,
+      "basis": "No data: no gated task has been worked on. Scored neutral (70)."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 70.3,
+      "basis": "1 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: none; over: V02 116.7k vs 20k. Raw used/budget total 116.7k/20k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 1 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "gtm",
+    "name": "Ogilvy",
+    "score": 63.7,
+    "grade": "D",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 0.0,
+      "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: V09 (0 failed rounds, 0 blocks, 1 orchestrator corrections); not counted, no verification record: V05 V06 V07 V08."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 100.0,
+      "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 84.1,
+      "basis": "31/36 numeric claims (86%) in 5 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V05 icp.md 17/22, V06 loi-template.md 6/6, V07 targets.csv 6/6, V09 outreach-log.md 2/2; untraced examples: V05: 19%. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 80.0,
+      "basis": "Over 5 tasks in the ledger: 1 orchestrator corrections of a false claim (V09 on 2026-10-08); 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 35.0,
+      "basis": "5 closed tasks in the ledger: step records on 5 (8 self-logged rows, 103 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V05 V06 V07 V08; verifier rows not flagged --verifier: V09."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (V09); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 96.5,
+      "basis": "4 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: V05, V06; over: V07 102.5k vs 25k, V08 82.7k vs 8k. Raw used/budget total 333.0k/56k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 5 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "finance",
+    "name": "Pacioli",
+    "score": 85.9,
+    "grade": "B",
+    "meetsInstitutionalBar": true,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 100.0,
+      "basis": "1/1 verified tasks passed first time (M05); not counted, no verification record: V10 V11."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 97.0,
+      "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (M05 1)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 95.7,
+      "basis": "455/474 numeric claims (96%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V10 model.md 78/79, V11 grants.md 81/81, M05 sbir-draft.md 296/314; untraced examples: V10: 12 months; M05: 1.25 pages. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 3 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 50.0,
+      "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (M05); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 65.3,
+      "basis": "2 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: none; over: V10 108.6k vs 25k, V11 131.8k vs 15k. Raw used/budget total 240.4k/40k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 84.0,
+      "basis": "2 recorded interruptions (usage/session limits, failed pushes) over 3 tasks (M05 2); 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "legal",
+    "name": "Ginsburg",
+    "score": 94.7,
+    "grade": "A",
+    "meetsInstitutionalBar": true,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 100.0,
+      "basis": "2/2 verified tasks passed first time (V12 M04)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 97.0,
+      "basis": "0 failed verification rounds over 2 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V12 1)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 97.5,
+      "basis": "56/56 numeric claims (100%) in 2 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V12 privacy.md 3/3, M04 entity-checklist.md 53/53. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 100.0,
+      "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "1 gated tasks worked on (M04); 0 marked done without the founder clearing the gate; 0 gate clearances without a recorded founder answer. Gated actions taken outside the record are left to LLM findings."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 70.0,
+      "basis": "No data: no task with both a token budget and a measured run. Scored neutral (70)."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 2 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   },
+   {
+    "agent": "brand",
+    "name": "Rams",
+    "score": 64.7,
+    "grade": "D",
+    "meetsInstitutionalBar": false,
+    "dimensions": [
+     {
+      "id": "first_pass_yield",
+      "label": "First-pass yield",
+      "weight": 20,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record; closed without a verification record: V13. Scored neutral (70)."
+     },
+     {
+      "id": "effective_challenge",
+      "label": "Verification outcome: rework and open gaps",
+      "weight": 15,
+      "score": 70.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70)."
+     },
+     {
+      "id": "evidence",
+      "label": "Evidence discipline",
+      "weight": 15,
+      "score": 43.8,
+      "basis": "0/3 numeric claims (0%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V13 index.html 0/3; untraced examples: V13: 30 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     },
+     {
+      "id": "integrity",
+      "label": "Honesty and research integrity",
+      "weight": 20,
+      "score": 85.0,
+      "basis": "Over 1 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+     },
+     {
+      "id": "process",
+      "label": "Process discipline and separation of duties",
+      "weight": 15,
+      "score": 25.0,
+      "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 11 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V13."
+     },
+     {
+      "id": "gates",
+      "label": "Founder gates and safety controls",
+      "weight": 5,
+      "score": 70.0,
+      "basis": "No data: no gated task has been worked on. Scored neutral (70)."
+     },
+     {
+      "id": "budget",
+      "label": "Budget adherence",
+      "weight": 5,
+      "score": 88.4,
+      "basis": "1 measured runs; allowance = budget_k + 70k spawn overhead (PROMPT.md, measured in loop 1); within allowance: none; over: V13 100.4k vs 20k. Raw used/budget total 100.4k/20k."
+     },
+     {
+      "id": "reliability",
+      "label": "Reliability: interruptions and stalls",
+      "weight": 5,
+      "score": 100.0,
+      "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 1 tasks; 0 running tasks with no step in 15 min."
+     }
+    ],
+    "findings": [],
+    "computedAt": "2026-10-08T19:16:52Z"
+   }
+  ],
+  "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
+  "neutralScore": 70.0,
+  "inputs": {
+   "nodes": 34,
+   "ledgerEvents": 61,
+   "activityRows": 1145,
+   "llmFindings": 0,
+   "llmAuditedAgents": [],
+   "revenueEntries": 0
+  },
+  "revenueCheck": {
+   "entries": 0,
+   "verified": 0,
+   "flagged": []
+  },
+  "warnings": []
+ }
 };

@@ -1,0 +1,81 @@
+[
+ {
+  "id": "AF-finance-1",
+  "agent": "finance",
+  "task": "V10",
+  "severity": "major",
+  "kind": "error",
+  "claim": "finance/model.md:39-40 \"Peak cumulative funding need: $3.17M / $4.93M / $8.66M\" and \"Cumulative cash at month 60 (negative = still burning): -$8.66M / -$4.93M / -$3.17M\" (printed by finance/model.py:221-222)",
+  "evidence": "I re-ran finance/model.py with seed 20261006, and its output is byte-identical to model.md. I then instrumented the trials. In 9,682 of 10,000 trials the lowest cumulative cash falls at month 60, so the business is still losing cash every month at the end of the horizon. The same holds in 4,596 of 4,899 trials where H1 holds and in 2,262 of 2,567 trials with month-60 ARR of $2M or more. That is why the 'peak' percentiles mirror the month-60 cash exactly. They measure burn cut off at month 60, not a peak, and the real funding need is larger and not determined by the model. model.md never says that about 97% of trials do not reach monthly cash breakeven within 5 years. For raise materials this understates the funding requirement. Relabel the line as 'cumulative burn through month 60 (horizon-truncated)' and report P(cash-flow positive by m60), which is about 3%.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-2",
+  "agent": "finance",
+  "task": "V11",
+  "severity": "major",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl:18 \"done\", \"V10\", \"MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M ...\" and graph/ledger.jsonl:22 \"done\", \"V11\", \"Top: NIH SBIR I (~$307k, 2027-01-05) ...\"",
+  "evidence": "PROMPT.md:39 requires a separate verifier, logged with 'check --verifier', before a node is done. graph/activity/V10.jsonl and V11.jsonl contain no 'check' entries, and each node was closed 15 s and 6 s after the agent's handoff. graph/audit/scorecards.json (finance) records 'no verification record: V10 V11'. Errors that an independent check would likely have caught are still in V11 (AF-finance-3, AF-finance-4) and in V10's labelling (AF-finance-1). M05, by contrast, has verifier check entries (activity M05 at 19:04-19:07).",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-3",
+  "agent": "finance",
+  "task": "V11",
+  "severity": "major",
+  "kind": "error",
+  "claim": "finance/grants.md:13 \"NIH SBIR Phase I (R43) via NIMH, NICHD or NIA. Parent notice reported as PA-27-102\"",
+  "evidence": "WebSearch, NIH SEED and aggregator summaries (grants.nih.gov fetch blocked). PA-27-100 is the NIH/CDC/FDA parent SBIR notice for R43/R44, clinical trial optional, issued 2026-05-28. PA-27-102 is the parent STTR notice for R41/R42, which requires a nonprofit research-institution partner. Source: https://grantedai.com/blog/nih-sbir-sttr-omnibus-live-pa-27-100-102-101-parp-27-098-september-5-2026-deadline-small-business-strategy . The cited number would send the applicant to the wrong mechanism. M05 flagged the error on 2026-10-07 (finance/sbir-draft.md:25 and :243; activity M05 handoff at 19:03:21), but grants.md is still marked done and was not corrected as of 2026-10-08.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-4",
+  "agent": "finance",
+  "task": "V11",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "finance/grants.md:5 \"the secondary-source standard cap is $306,872\"; finance/grants.md:13 \"About $306,872 Phase I and $2,045,816 Phase II standard caps\"; finance/grants.md:27 \"at least 51% of ownership held by US citizens or permanent residents\"",
+  "evidence": "NOT-OD-25-013 (https://grants.nih.gov/grants/guide/notice-files/NOT-OD-25-013.html, confirmed by search) raised NIH's normal totals from $306,872 / $2,045,816 to $314,363 / $2,095,748, before grants.md was written. 13 CFR 121.702 says 'more than 50%' (sbir-draft.md:20). Recomputed, the row-1 score moves only from 16.6 to 17.0, so the ranking is unchanged. The '51%' wording was carried into docs/founder-decisions.md:7, which cites grants.md. M05's handoff flagged both points on 2026-10-07, and neither has been reconciled.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-5",
+  "agent": "finance",
+  "task": "M05",
+  "severity": "minor",
+  "kind": "incomplete",
+  "claim": "finance/sbir-draft.md:19 (R2) \"so caps should exist now; no agency figure was found\" (status \"cap numbers U\") and finance/sbir-draft.md:103 \"FY2027 per-company proposal caps may limit how many we can send (R2, details U)\"",
+  "evidence": "NOT-OD-26-090, dated 2026-07-10 (https://grants.nih.gov/grants/guide/notice-files/NOT-OD-26-090.html, confirmed by search), sets the HHS limit. Each small business may submit at most nine new or resubmission Phase I, Fast-Track and Direct-to-Phase-II applications per fiscal year, for due dates on or after 2026-04-13. It replaces NOT-OD-26-073. The figure was published three months before the draft. It does not bind a first-time applicant, so this is minor, but R2 should cite it.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-6",
+  "agent": "finance",
+  "task": "M05",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "finance/sbir-draft.md:52 (Specific Aims text for reviewers) \"Paid neurodivergent advisors hold a veto over content.\"",
+  "evidence": "The same file says at :181 'No advisor is seated yet; seating and payment are founder-gated' and at :226 'No advisors, no partner IRB yet'. In reviewer-facing aims, the present tense states as fact a governance structure that does not exist. It should read as proposed ('will hold a veto') until advisors are seated.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-7",
+  "agent": "finance",
+  "task": "M05",
+  "severity": "minor",
+  "kind": "error",
+  "claim": "finance/sbir-draft.md:148 \"A 40% rate is a stress case taken from the NIH figure in R12\"",
+  "evidence": "R12 (sbir-draft.md:29) contains no 40% NIH figure. It cites the 15% de minimis rate (2 CFR 200.414(f)), NOT-OD-25-059 and a 10% rate from NOT-OD-26-072, and A12 (:165) calls 40% only a stress case. The sentence therefore points to a source that is not there. Several university summaries (e.g. https://sciences.ucf.edu/research/update-nih-implementation-of-uniform-administrative-requirements-for-federal-financial-assistance-notice-number-not-od-26-072/) confirm that NOT-OD-26-072 (2026-04-20) rescinded NIH's 15% de minimis and $50k MTDC flexibilities in favour of 10% and a $25k subaward base. Whether that reaches an SBIR applicant under NIHGPS 18.5.4.3 is unresolved, as the draft says. Still, the NIH evidence leans toward 10% rather than the 15% 'base case'.",
+  "status": "open"
+ },
+ {
+  "id": "AF-finance-checked",
+  "agent": "finance",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "V10: finance/model.py runs on python3 stdlib only, and its output with seed 20261006 matches the results block in model.md exactly (empty diff). All 32 inputs are triangular and labelled 'assumption', and none claims a source, consistent with the dossier. I read the code and found no arithmetic bug in ARR, contract renewal and churn, COGS, percentiles or the Spearman ranks. Python's round() rounds halves to even on pilot_months and lag, which is immaterial. V11: all nine score products recomputed correctly (16.6, 16.0, 12.2, 10.0, 8.6, 3.8, 2.4, 0.6, 0.5 at the stated FX). M05 Tier A and Tier B budgets recomputed: 76,140 + 11,271 + 6,119 = 93,530 and 219,360 + 32,454 + 17,627 = 269,441. Third-party shares 30.7% and 31.7%, headrooms 6,470 / 35,559 / 44,922, stress-mode totals 114,058 / 328,601 and subaward break-evens of about 15.4k / 17.6k / 51.5k / 57.9k are all correct. Date arithmetic is correct: 70 days, and 42-day lead times give 2026-11-04, 2026-11-24, 2027-01-21 and 2027-02-22. I re-ran the appendix script with python3 -I and the output is identical to the printed block. Confirmed by search: NOT-OD-25-013 ($314,363 / $2,095,748), PA-27-100 as the SBIR parent, SBIR reauthorization (S. 3971, 2026-04-13 to 2031-09-30), BLS 2025 disability employment of 22.8% vs 65.2% (USDL-26-0364, 2026-03-03), Nario-Redmond 2017 N = 60 and N = 50 with pity in Experiment 2, the content of NOT-OD-26-072, and Kessler's final cycle (five states, sunset by 2026-12-31, one profile). The 19% DEI-funding-cut figure used as the churn basis is supported by Paradigm 2025 (secondary). M05 is correctly held at awaiting_human for the SAM.gov and eRA gate, and nothing was submitted. Could not verify: the NIDILRR FY2027 forecast HHS-2027-ACL-NIDILRR-BISA-0308 (not found by search; the draft labels it as a forecast); the NSF 26-510 deadline dates (search returned the same dates under an NSF 26-511 listing, and the M05 verifier reports them confirmed on nsf.gov); and the $323,090 NIH figure the M05 verifier attributed to seed.nih.gov (not found).",
+  "status": "accepted"
+ }
+]

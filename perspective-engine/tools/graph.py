@@ -16,6 +16,11 @@ the state the dashboards read (dashboard/state.js, city/public/state.json).
   python3 perspective-engine/tools/graph.py block F05 "reason"
   python3 perspective-engine/tools/graph.py clear-gate V09 "founder approved batch 1"
   python3 perspective-engine/tools/graph.py export
+  python3 perspective-engine/tools/graph.py revenue add 1500 "Acme Corp" --evidence "invoice INV-001, bank ref 123" --founder
+  python3 perspective-engine/tools/graph.py revenue list
+
+Revenue is founder-only and needs an evidence reference: `revenue add` refuses
+without --founder, without --evidence, or with an amount that is not above zero.
 
 Every write takes an exclusive lock, so agents running in parallel cannot
 corrupt the graph.
@@ -36,6 +41,8 @@ ACTIVITY = PE / "graph" / "activity"
 LOCK = PE / "graph" / ".lock"
 STATE_JS = PE / "dashboard" / "state.js"
 CITY_JSON = PE / "city" / "public" / "state.json"
+REVENUE = PE / "graph" / "revenue.jsonl"
+AUDIT_JSON = PE / "graph" / "audit" / "scorecards.json"
 STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
 LOG_KINDS = {"plan", "read", "search", "fetch", "write", "edit", "run", "check", "note", "blocked", "handoff"}
 MAX_STATE_BYTES = 230_000  # the live dashboard stores state in one 256 KiB document
@@ -157,22 +164,124 @@ def ledger_all():
     return [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()]
 
 
+def revenue_all():
+    """Founder-recorded revenue entries (graph/revenue.jsonl). Unparseable lines are skipped, never repaired."""
+    if not REVENUE.exists():
+        return []
+    out = []
+    for line in REVENUE.read_text().splitlines():
+        if line.strip():
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return out
+
+
+def audit_state():
+    """The auditor's scorecards (tools/audit.py writes graph/audit/scorecards.json), or None."""
+    if not AUDIT_JSON.exists():
+        return None
+    try:
+        return json.loads(AUDIT_JSON.read_text())
+    except json.JSONDecodeError:
+        return None
+
+
+def size(doc):
+    return len(json.dumps(doc, separators=(",", ":")))
+
+
 def export(g):
     idx = index(g)
     ledger = ledger_all()
     nodes = [dict(n, view=derived(n, idx)) for n in g["nodes"]]
     state = {"generated": now(), "project": g["project"], "north_star": g["north_star"],
-             "agents": g["agents"], "nodes": nodes, "ledger": ledger[-40:]}
+             "agents": g["agents"], "nodes": nodes, "ledger": ledger[-40:],
+             "revenue": revenue_all(), "audit": audit_state()}
     STATE_JS.write_text("window.PE_STATE = " + json.dumps(state, indent=1) + ";\n")
     if CITY_JSON.parent.exists():
         act = activity_all()
         city = dict(state, ledger=ledger, excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]}, activity=act)
         # Keep the live document under its size cap: trim the oldest activity first.
+        # Revenue and audit are never trimmed.
         cap = 120
-        while len(json.dumps(city, separators=(",", ":"))) > MAX_STATE_BYTES and cap > 10:
+        while size(city) > MAX_STATE_BYTES and cap > 10:
             cap -= 10
             city["activity"] = {k: v[-cap:] for k, v in act.items()}
+        # Only if activity at its floor is still not enough: the dashboard's ledger window, then no activity,
+        # then shorter excerpts.
+        if size(city) > MAX_STATE_BYTES:
+            city["ledger"] = ledger[-40:]
+        if size(city) > MAX_STATE_BYTES:
+            city["activity"] = {}
+        if size(city) > MAX_STATE_BYTES:
+            city["excerpts"] = {k: (v[:160] + "…" if v and len(v) > 160 else v) for k, v in city["excerpts"].items()}
         CITY_JSON.write_text(json.dumps(city, separators=(",", ":")))
+
+
+def revenue_cmd(args, g):
+    """revenue add <amount_usd> <payer> --evidence <ref> --founder | revenue list"""
+    usage = 'usage: revenue add <amount_usd> <payer> --evidence <ref> --founder | revenue list'
+    if args[:1] == ["list"]:
+        rows = revenue_all()
+        if not rows:
+            print("no revenue recorded")
+            return 0
+        for r in rows:
+            amt = r.get("amountUsd")
+            amt = f"${amt:,.2f}" if isinstance(amt, (int, float)) else repr(amt)
+            print(f"{r.get('t')}  {amt}  {r.get('payer')}  evidence: {r.get('evidence')}  recorded by {r.get('recordedBy')}")
+        total = sum(r["amountUsd"] for r in rows if isinstance(r.get("amountUsd"), (int, float)))
+        print(f"{len(rows)} entries, ${total:,.2f} total, {len({r.get('payer') for r in rows})} payers")
+        return 0
+    if args[:1] != ["add"]:
+        print(usage)
+        return 1
+    founder, evidence, pos, rest, i = False, None, [], args[1:], 0
+    while i < len(rest):
+        a = rest[i]
+        if a == "--founder":
+            founder = True
+        elif a == "--evidence":
+            evidence = rest[i + 1] if i + 1 < len(rest) else ""
+            i += 1
+        elif a.startswith("--evidence="):
+            evidence = a.split("=", 1)[1]
+        elif a.startswith("--"):
+            print(f"refused: unknown option {a}")
+            return 1
+        else:
+            pos.append(a)
+        i += 1
+    if not founder:
+        print("refused: revenue is recorded only by the founder; pass --founder to attest that you are the founder")
+        return 1
+    if len(pos) != 2:
+        print(usage)
+        return 1
+    try:
+        amount = float(pos[0].replace(",", "").lstrip("$"))
+    except ValueError:
+        print(f"refused: amount {pos[0]!r} is not a number")
+        return 1
+    if amount != amount or amount in (float("inf"), float("-inf")) or amount <= 0:
+        print(f"refused: amount must be a positive number of US dollars, got {pos[0]}")
+        return 1
+    payer = pos[1].strip()
+    if not payer:
+        print("refused: payer is empty")
+        return 1
+    if not (evidence or "").strip():
+        print("refused: revenue needs --evidence <ref> (invoice, bank or payment-processor reference)")
+        return 1
+    entry = {"t": now(), "amountUsd": round(amount, 2), "payer": payer, "evidence": evidence.strip(), "recordedBy": "founder"}
+    REVENUE.parent.mkdir(parents=True, exist_ok=True)
+    with REVENUE.open("a") as f:
+        f.write(json.dumps(entry) + "\n")
+    export(g)
+    print(f"recorded ${entry['amountUsd']:,.2f} from {payer} (evidence: {entry['evidence']})")
+    return 0
 
 
 def excerpt(path, limit=520):
@@ -244,6 +353,8 @@ def run(cmd, args):
         export(g)
         print(f"wrote {STATE_JS.relative_to(ROOT)} and {CITY_JSON.relative_to(ROOT)}")
         return 0
+    if cmd == "revenue":
+        return revenue_cmd(args, g)
     if not args or args[0] not in idx:
         print(f"usage: {cmd} <NODE_ID> [note]")
         return 1

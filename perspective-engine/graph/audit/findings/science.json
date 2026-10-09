@@ -1,0 +1,61 @@
+[
+ {
+  "id": "AF-science-1",
+  "agent": "science",
+  "task": "F03",
+  "severity": "major",
+  "kind": "hallucination",
+  "claim": "research/evidence-dossier.md:26 \"Ventura et al. 2020 meta-analysis: overall VR effect on empathy SDM = 0.43 (CI 0.31-0.55). https://journals.sagepub.com/doi/abs/10.1089/cyber.2019.0681\" and research/evidence-dossier.md:28 \"Another reported meta-analysis found perspective-taking d+ = 0.51 (wide CI 0.15-0.88) and a non-significant empathy effect (d+ = 0.21).\"",
+  "evidence": "WebSearch, search summaries only (a direct fetch of tmb.apaopen.org was EGRESS_BLOCKED). SDM = 0.43 [CI 0.31, 0.55], z = 6.93, is the overall effect in Martingano, Herrera & Konrath 2021, Technology, Mind, and Behavior (k = 43, N = 5,644): https://tmb.apaopen.org/pub/vr-improves-emotional-empathy-only ; https://scholarworks.indianapolis.iu.edu/items/7d7127c0-6c5e-4455-adea-d93c54ea48cc . Ventura et al. 2020 (Cyberpsychol Behav Soc Netw 23(10):667-676, 7 articles, 9 samples) reports in its journal abstract empathy d+ = 0.21 (CI -0.37 to 0.79, not significant) and perspective-taking d+ = 0.51 (CI 0.15 to 0.88): https://producciocientifica.uv.es/documentos/5fb86fc729995207311cbd94 . A repository preprint gives empathy d+ = 0.44 instead. So line 26 puts Martingano's pooled effect under Ventura's DOI. Line 28 is Ventura's own result, given with no author and no URL, which also fails the F03 criterion 'each finding has a URL'. The dossier therefore says Ventura found a significant moderate empathy effect, while Ventura's published abstract reports a non-significant one. A grep found these two figures only in the dossier. Fix: attribute 0.43 to Martingano 2021, and attribute the 0.51 / 0.21 figures to Ventura 2020 with its DOI.",
+  "status": "open"
+ },
+ {
+  "id": "AF-science-2",
+  "agent": "science",
+  "task": "F03",
+  "severity": "major",
+  "kind": "process",
+  "claim": "graph/ledger.jsonl:1, :8, :16, :20 mark F03, V01, V03 and V15 complete (2026-10-06 at 12:35:38, 12:40:58, 12:49:21 and 12:53:55), e.g. \"done\", \"F03\", \"Dossier: Quest commercial sales ended 2026-02; quantum/18dB/CPT claims unsupported; sims need debrief\"",
+  "evidence": "PROMPT.md:39 says a node is marked done only by a separate verifier agent that checked every acceptance criterion and logged 'check --verifier'. graph/activity/F03.jsonl, V01.jsonl, V03.jsonl and V15.jsonl contain no 'check' entries. Each 'done' came 22 s, 4 s, 4 s and 5 s after the agent's own handoff, and no done note names a verifier. graph/audit/scorecards.json (science, first_pass_yield) records the same thing: 'closed without a verification record: F03 V01 V03 V15'. These outputs were closed unverified, and this audit found a citation error in F03 that no one had caught (AF-science-1). The orchestrator writes the done events, so responsibility is shared with Mayor.",
+  "status": "open"
+ },
+ {
+  "id": "AF-science-3",
+  "agent": "science",
+  "task": "V03",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "science/preregistration.md:38 (OSF paste-ready text) \"(Sonuga-Barke and Castellanos 2007, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3805479/)\"; the same link appears at research/evidence-dossier.md:37, science/mechanism-spec.md:16 and :28, and science/partners.md:56 (\"2007 hypothesis paper\")",
+  "evidence": "The 2007 paper is Sonuga-Barke & Castellanos, Neurosci Biobehav Rev 31(7):977-986, doi:10.1016/j.neubiorev.2007.02.005, PMID 17445893 (https://pubmed.ncbi.nlm.nih.gov/17445893/, found by search). Two WebSearch calls for PMC3805479 returned no record, and the NCBI and EuropePMC APIs are blocked by the proxy, so I could not confirm that the link resolves to this paper. A 2007 Elsevier review that predates the 2008 NIH public-access policy is unlikely to have a PMC copy. This is unverified, not shown wrong. Use the PMID or DOI before posting to OSF. PMID 24204553, cited for RT variability at mechanism-spec.md:28 and evidence-dossier.md:38, also could not be matched to a paper by search.",
+  "status": "open"
+ },
+ {
+  "id": "AF-science-4",
+  "agent": "science",
+  "task": "V15",
+  "severity": "minor",
+  "kind": "incomplete",
+  "claim": "science/partners.md:4 \"Ten research groups shortlisted\" and graph/ledger.jsonl:20 \"10 labs (7 non-US)\", against the acceptance criterion '10 labs with published relevant work and URLs'",
+  "evidence": "Entry 6 (partners.md:46-48) is an individual researcher ('lab name unverified; cited as paper author, not lab lead'), and the file itself says she is not a partner ('critical friend, not a partner', partners.md:4 and :19). Entry 4 (partners.md:39) cites only a news item, a lab page and a consortium page, and says 'Specific papers: unverified'. Entries 7 and 8 are both at King's College London. Strictly, 8 entries meet 'lab with cited published relevant work'. The reserves R1-R3 (partners.md:69-71) could fill the gap. The file states these limits openly, so this is minor.",
+  "status": "open"
+ },
+ {
+  "id": "AF-science-5",
+  "agent": "science",
+  "task": "V15",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "science/partners.md:27 \"2024 report with Neurodiversity in Business, 900+ neurodivergent employees and 127 employers\"",
+  "evidence": "WebSearch, search-summary level. The sample of 127 employers and 990 neurodivergent employees (1,117 respondents) matches the Birkbeck and Neurodiversity in Business survey reported on 2023-03-16 (https://www.hippocraticpost.com/tag/centre-for-neurodiversity-research-at-work/). That survey is also the source of the 'about two-thirds fear discrimination' figure. The 2024 report (MacDowall, Doyle, Srinivasan; https://eprints.bbk.ac.uk/id/eprint/54355) exists, but its sample size could not be confirmed. The entry probably merges the 2023 and 2024 reports. Check the 2024 PDF before any outreach cites it.",
+  "status": "open"
+ },
+ {
+  "id": "AF-science-checked",
+  "agent": "science",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "checked",
+  "evidence": "Verified correct by WebSearch (summary level) or by recomputation. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333: N = 60 and N = 50, pity and interaction discomfort in Experiment 2, empathy up but attitudes not improved. Martingano et al. 2021: emotional empathy d = 0.33, cognitive d = 0.08 (p = .23). Herrera et al. 2018 PLoS ONE: 8-week follow-up and VR petition effect. Song et al. 2021 JOGH: 2.58% and 6.76%. Meta: commercial Quest and HMS sales ended 2026-02-20, support continues to 2030-01-04, Workrooms ended 2026-02-16. SBIR/STTR: lapsed 2025-10-01, reauthorized 2026-04-13 through 2031-09-30, Strategic Breakthrough Award up to $30M. Akili: 2023 revenue $1.7M, $0.4340 per share, about $34M; the 2024 layoff was 46%, so 'about half' is acceptable. Embodied Labs: $3.2M seed, January 2020. Talespin to Cornerstone: March 2024. FDA General Wellness guidance reissued 2026-01-06. 0770T sunset in January 2028 matches the cited source. Hupfeld, Abagis & Shah 2019: n = 251 and 372. Broulidakis/Sonuga-Barke adolescent DMN paper titled 'but not mind wandering', so partners Flag A is correct. Silverman, Gwinn & Van Boven 2015, SPPS 6(4):464-471. The '19% cut DEI funding' figure is supported by a Paradigm 2025 survey of 443 organizations (secondary reports). V03 power arithmetic recomputed in python3: 109.01 / 226.05 / 627.91 gives 110 / 227 / 628 completers and 156 / 323 / 898 recruited, or 158 / 325 / 898 if rounded first. CI half-widths recomputed as 0.50 / 0.41 / 0.36 SD. Expected completers 56 / 84 / 105. The TOST and 90% CI rule is stated correctly. Partner country counts are correct (UK 5, Spain 1, Australia 1). V03 is correctly held at awaiting_human for the OSF gate. Could not verify: the 2026 Computers in Human Behavior caregiver study (S0747563226001469, not found by search), the PMC4670482 title, and the WebGazer error figures.",
+  "status": "accepted"
+ }
+]
