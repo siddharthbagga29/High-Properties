@@ -12,3 +12,4 @@
 {"t": "2026-10-06T12:50:40Z", "node": "V10", "agent": "finance", "kind": "handoff", "text": "Handed the result back to the orchestrator", "src": "transcript"}
 {"t": "2026-10-06T12:45:44Z", "node": "V10", "agent": "finance", "kind": "plan", "text": "Task started", "src": "ledger"}
 {"t": "2026-10-06T12:50:55Z", "node": "V10", "agent": "finance", "kind": "handoff", "text": "Task finished: MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M; P($5M by m48)=0.6%; H1 dominant driver", "src": "ledger"}
+{"t": "2026-10-09T13:51:19Z", "node": "V10", "agent": "finance", "kind": "edit", "text": "Rework (AF-finance-1): model.py now tracks the cumulative-cash trough month and month-60 net cash flow (no change to RNG draws; all other outputs identical with seed 20261006). Relabelled 'Peak cumulative funding need' as 'Cumulative burn through month 60 (horizon-truncated, not a peak)' $3.17M/$4.9", "src": "self"}

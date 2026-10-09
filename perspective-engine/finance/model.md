@@ -1,14 +1,14 @@
 # Perspective Engine: Bottom-up Financial Model (V10)
 
 ## Summary
-Bottom-up monthly Monte Carlo (10000 trials, seed 20261006, 2027-2031) of the browser-first manager-accommodation program: paid pilots, then annual per-manager seats; no hardware, no generative inference. Year-5 (Dec 2031) ARR P10/P50/P90: $53k / $633k / $4.31M. Year-5 gross margin P10/P50/P90: 54% / 68% / 77%. Median months to $1M ARR: not reached (>m60) (P(reach within 60 months) = 41%). P(ARR >= $5M by month 48) = 0.6%. P(H1 fails) is drawn per trial and caps growth after the study readout. None of the 32 inputs has a public numeric source (dossier found no pricing or buyer data); all are labeled assumptions to replace with interview data. Biggest drivers: h1_failed (realised), growth, seats.
+Bottom-up monthly Monte Carlo (10000 trials, seed 20261006, 2027-2031) of the browser-first manager-accommodation program: paid pilots, then annual per-manager seats; no hardware, no generative inference. Year-5 (Dec 2031) ARR P10/P50/P90: $53k / $633k / $4.31M. Year-5 gross margin P10/P50/P90: 54% / 68% / 77%. Median months to $1M ARR: not reached (>m60) (P(reach within 60 months) = 41%). P(ARR >= $5M by month 48) = 0.6%. P(H1 fails) is drawn per trial and caps growth after the study readout. Cumulative burn through month 60 before grants or financing P10/P50/P90: $3.17M / $4.93M / $8.66M. This is cut off at the horizon, not a peak: monthly net cash flow is still negative at month 60 in 97% of trials, so the full funding need is larger and this model does not determine it. None of the 32 inputs has a public numeric source (dossier found no pricing or buyer data); all are labeled assumptions to replace with interview data. Biggest drivers: h1_failed (realised), growth, seats.
 
 Regenerate (numbers below are printed by the script, never hand-typed): `python3 perspective-engine/finance/model.py --write-md perspective-engine/finance/model.md`
 
 ## Results (verbatim script output)
 ```
 Perspective Engine bottom-up Monte Carlo | trials=10000 seed=20261006 horizon=60 months (2027-01..2031-12)
-Model run time: 2.5 s | inputs: 32, sourced numerically: 0, assumptions: 32
+Model run time: 2.6 s | inputs: 32, sourced numerically: 0, assumptions: 32
 
 ARR (annual contracts only), P10 / P50 / P90
   month 12 (Dec 2027): $0k / $0k / $105k
@@ -36,8 +36,10 @@ Conditional on H1 outcome (ARR month 60 P10 / P50 / P90 ; P(ARR60 >= $1M) ; P($5
   H1 fails n=5101: $20k / $178k / $707k ; 4.8% ; 0.0%
 
 Cash (before any grants or financing), P10 / P50 / P90
-  Peak cumulative funding need: $3.17M / $4.93M / $8.66M
+  Cumulative burn through month 60 (deepest cumulative cash inside the horizon; horizon-truncated, not a peak): $3.17M / $4.93M / $8.66M
   Cumulative cash at month 60 (negative = still burning): -$8.66M / -$4.93M / -$3.17M
+  P(cash trough before month 60, i.e. cumulative cash already turning up) = 3.2% (H1 holds: 6.2%; ARR60 >= $2M: 11.9%)
+  P(month-60 net cash flow > 0) = 2.9%. In the other trials the business still burns cash at month 60, so the full funding need exceeds the burn line above and is not determined by this model
   Paid pilots signed in 2027 (year-1 milestone is 3): 1 / 4 / 7 ; P(>=3) = 68.0%
 
 Unit economics (closed form, H1 holds, no expansion, pilot fee ignored), P10 / P50 / P90
@@ -104,6 +106,7 @@ Top drivers of month-60 ARR (Spearman rank correlation)
 ## Limits and what to do next
 - No input is numerically sourced. The dossier states that no public pricing, buyer or conversion data were found (sections 7 and "Verdict" table), and the ICP says all cycle lengths and prices are hypotheses. The unverified $14.8B TAM, 72% success figure and CPT reimbursement are not used. Treat all output percentiles as a structured statement of uncertainty, not a forecast.
 - Replace inputs, starting with the drivers listed in the results, using data from the 10-20 buyer interviews and the three paid pilots: price per seat, seats per account, conversion, churn, then CAC and sales cycle. Re-run with the same seed to see the effect.
-- Not modelled: grants (SBIR/NIMH), reimbursement, equity financing, taxes, working capital, multi-year contracts, and channel partners (EAP and consultancy vendors, ICP section 4). Peak funding need is before any financing.
+- Not modelled: grants (SBIR/NIMH), reimbursement, equity financing, taxes, working capital, multi-year contracts, and channel partners (EAP and consultancy vendors, ICP section 4). The cash lines are before any grants or financing.
+- Funding need is horizon-truncated. In almost every trial cumulative cash is still falling at month 60 (see the trough and month-60 cash-flow lines in the results), so for those trials "cumulative burn through month 60" is a lower bound on the funding requirement, not a peak; it is the actual peak only in the few trials whose trough falls before month 60. Do not quote it as "peak funding need" in raise materials; extend the horizon or add a financing model first.
 - Inputs are independent. In reality price, seats and conversion are correlated (larger accounts negotiate discounts), so the tails are probably too wide in one direction and too narrow in another.
 - The H1 failure treatment is a regime switch, not a learning model; partial success (effect on behaviour but not attitudes) would sit between the two conditional rows.

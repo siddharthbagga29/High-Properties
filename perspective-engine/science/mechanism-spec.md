@@ -13,7 +13,7 @@ The simulation models five published-evidence mechanisms as separable, independe
 ## 2. Mechanisms
 
 ### M1. Default-mode interference (internal intrusions) | strength S2
-- Evidence (D): Default-mode interference hypothesis (periodic DMN intrusions into task-positive processing; reduced DMN deactivation linked to RT variability), Sonuga-Barke & Castellanos 2007. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3805479/ and https://sciencedirect.com/science/article/abs/pii/S0006899309004612
+- Evidence (D): Default-mode interference hypothesis (periodic DMN intrusions into task-positive processing; reduced DMN deactivation linked to RT variability), Sonuga-Barke & Castellanos 2007. https://pubmed.ncbi.nlm.nih.gov/17445893/ (doi:10.1016/j.neubiorev.2007.02.005) and https://sciencedirect.com/science/article/abs/pii/S0006899309004612
 - Caveat: a hypothesis with imaging support, not a diagnostic marker; group-level only. Exact intrusion frequency and duration in people: unverified (not in dossier), hence no empirical values below.
 - Simulation: irregular, self-generated off-task content (inner-voice text/audio fragments) intrudes on a running task stream, and part of the task information during the intrusion is missed (dimmed or skipped). The events are internal, with no external cause, and are kept separate from M4.
 
@@ -25,7 +25,7 @@ The simulation models five published-evidence mechanisms as separable, independe
 | Minimum gap between intrusions | s | fixed 5 | | 5 | design; timing irregular on purpose, no claim of periodicity (unverified) |
 
 ### M2. Reaction-time variability | strength S1
-- Evidence (D): Intra-individual RT variability is among the most consistent ADHD findings; weak/contested association with DAT1 genotype (not modeled). https://pubmed.ncbi.nlm.nih.gov/24204553 ; link to reduced DMN deactivation: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3805479/
+- Evidence (D): Intra-individual RT variability is among the most consistent ADHD findings; weak/contested association with DAT1 genotype (not modeled). Kofler et al. 2013 meta-analysis (319 studies; g = 0.76 children/adolescents, g = 0.46 adults) https://doi.org/10.1016/j.cpr.2013.06.001 ; DAT1 review (Kebir et al. 2009) https://pmc.ncbi.nlm.nih.gov/articles/PMC2647566 ; link to reduced DMN deactivation: Fassbender et al. 2009, Brain Research 1273:114-128 (n = 12 ADHD, 13 controls; greater RTV tied to failure to deactivate ventromedial PFC) https://pubmed.ncbi.nlm.nih.gov/19281801/ (search-summary level, re-check in full text)
 - Caveat: the finding is variability, not simply slowing, so the model keeps the mean response delay constant and changes the spread and tail. Distribution shape (slow tail) is a design assumption (unverified in dossier).
 - Simulation: the delay between a cue (for example a question addressed to the user's character) and the character's registered response is drawn from a right-skewed distribution, so most responses are normal and some are very late.
 

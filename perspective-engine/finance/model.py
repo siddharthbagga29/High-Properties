@@ -113,6 +113,7 @@ def trial(P):
                 start += 12
                 age += 1
     a = r = cash = low = 0.0
+    low_t, cf = 0, 0.0                 # month of the cumulative-cash trough; net cash flow of the latest month
     arr_t, yrev, ycogs = [0.0] * (H + 1), [0.0] * 5, [0.0] * 5
     for t in range(1, H + 1):
         a += arr[t]; r += crec[t]
@@ -123,11 +124,13 @@ def trial(P):
         kf = P["f_cost"] if failed and t >= tres + 3 else 1.0
         opex = P["opex0"] * (1 + P["opex_g"]) ** ((t - 1) // 12) * kf + P["opex_pct"] * rev
         sm = max(P["sm_floor"] * kf, P["cac"] * pil[t])
-        cash += rev - cogs - opex - sm
-        low = min(low, cash)
+        cf = rev - cogs - opex - sm
+        cash += cf
+        if cash < low:
+            low, low_t = cash, t
         y = (t - 1) // 12
         yrev[y] += rev; ycogs[y] += cogs
-    return failed, arr_t, yrev, ycogs, -low, cash, sum(pil[1:13])
+    return failed, arr_t, yrev, ycogs, -low, cash, sum(pil[1:13]), low_t, cf
 
 
 def q(xs, p):  # nearest-rank percentile; xs sorted
@@ -218,8 +221,13 @@ def report(S, R, secs, trials, seed):
         w("  %-8s n=%d: %s ; %.1f%% ; %.1f%%" % (lab, len(sub), trio([r[1][H] for r in sub] or [0.0], money), p1, p5))
     w("")
     w("Cash (before any grants or financing), P10 / P50 / P90")
-    w("  Peak cumulative funding need: %s" % trio([r[4] for r in R], money))
+    w("  Cumulative burn through month 60 (deepest cumulative cash inside the horizon; horizon-truncated, not a peak): %s" % trio([r[4] for r in R], money))
     w("  Cumulative cash at month 60 (negative = still burning): %s" % trio([r[5] for r in R], money))
+    hold = [r for r in R if not r[0]]; big = [r for r in R if r[1][H] >= 2e6]
+    def pt(sub): return 100 * sum(r[7] < H for r in sub) / max(1, len(sub))
+    w("  P(cash trough before month 60, i.e. cumulative cash already turning up) = %.1f%% (H1 holds: %.1f%%; ARR60 >= $2M: %.1f%%)" % (pt(R), pt(hold), pt(big)))
+    w("  P(month-60 net cash flow > 0) = %.1f%%. In the other trials the business still burns cash at month 60, so the full funding need exceeds the burn line above and is not determined by this model" % (
+        100 * sum(r[8] > 0 for r in R) / n))
     w("  Paid pilots signed in 2027 (year-1 milestone is 3): %s ; P(>=3) = %.1f%%" % (
         trio([r[6] for r in R], lambda x: "%d" % x), 100 * sum(r[6] >= 3 for r in R) / n))
     # unit economics, closed form from sampled inputs (H1 holds, no expansion, undiscounted)
@@ -249,18 +257,21 @@ def report(S, R, secs, trials, seed):
 
 
 def write_md(path, lines, S, R, secs, top3, m1, p5_any, trials, seed):
-    n = len(R); arr60 = sorted(r[1][H] for r in R)
+    n = len(R); arr60 = sorted(r[1][H] for r in R); burn = sorted(r[4] for r in R)
     gm5 = sorted((1 - r[3][4] / r[2][4]) if r[2][4] > 0 else 0.0 for r in R)
     p50m = q(m1, .5)
     summ = ("Bottom-up monthly Monte Carlo (%d trials, seed %d, 2027-2031) of the browser-first manager-accommodation program: "
             "paid pilots, then annual per-manager seats; no hardware, no generative inference. Year-5 (Dec 2031) ARR P10/P50/P90: %s / %s / %s. "
             "Year-5 gross margin P10/P50/P90: %.0f%% / %.0f%% / %.0f%%. Median months to $1M ARR: %s (P(reach within 60 months) = %.0f%%). "
             "P(ARR >= $5M by month 48) = %.1f%%. P(H1 fails) is drawn per trial and caps growth after the study readout. "
+            "Cumulative burn through month 60 before grants or financing P10/P50/P90: %s / %s / %s. This is cut off at the horizon, not a peak: "
+            "monthly net cash flow is still negative at month 60 in %.0f%% of trials, so the full funding need is larger and this model does not determine it. "
             "None of the %d inputs has a public numeric source (dossier found no pricing or buyer data); all are labeled assumptions to replace with interview data. "
             "Biggest drivers: %s.") % (
         trials, seed, money(q(arr60, .1)), money(q(arr60, .5)), money(q(arr60, .9)),
         100 * q(gm5, .1), 100 * q(gm5, .5), 100 * q(gm5, .9),
         ym(p50m) if p50m < math.inf else "not reached (>m60)", 100 * sum(x <= H for x in m1) / n, 100 * p5_any,
+        money(q(burn, .1)), money(q(burn, .5)), money(q(burn, .9)), 100 * sum(r[8] <= 0 for r in R) / n,
         len(PARAMS), ", ".join(top3))
     rows = "\n".join("| `%s` | %g | %g | %g | %s | %s | %s |" % (k, lo, mo, hi, u, lab, b) for k, lo, mo, hi, u, lab, b in PARAMS)
     md = """# Perspective Engine: Bottom-up Financial Model (V10)
@@ -292,7 +303,8 @@ Regenerate (numbers below are printed by the script, never hand-typed): `python3
 ## Limits and what to do next
 - No input is numerically sourced. The dossier states that no public pricing, buyer or conversion data were found (sections 7 and "Verdict" table), and the ICP says all cycle lengths and prices are hypotheses. The unverified $14.8B TAM, 72%% success figure and CPT reimbursement are not used. Treat all output percentiles as a structured statement of uncertainty, not a forecast.
 - Replace inputs, starting with the drivers listed in the results, using data from the 10-20 buyer interviews and the three paid pilots: price per seat, seats per account, conversion, churn, then CAC and sales cycle. Re-run with the same seed to see the effect.
-- Not modelled: grants (SBIR/NIMH), reimbursement, equity financing, taxes, working capital, multi-year contracts, and channel partners (EAP and consultancy vendors, ICP section 4). Peak funding need is before any financing.
+- Not modelled: grants (SBIR/NIMH), reimbursement, equity financing, taxes, working capital, multi-year contracts, and channel partners (EAP and consultancy vendors, ICP section 4). The cash lines are before any grants or financing.
+- Funding need is horizon-truncated. In almost every trial cumulative cash is still falling at month 60 (see the trough and month-60 cash-flow lines in the results), so for those trials "cumulative burn through month 60" is a lower bound on the funding requirement, not a peak; it is the actual peak only in the few trials whose trough falls before month 60. Do not quote it as "peak funding need" in raise materials; extend the horizon or add a financing model first.
 - Inputs are independent. In reality price, seats and conversion are correlated (larger accounts negotiate discounts), so the tails are probably too wide in one direction and too narrow in another.
 - The H1 failure treatment is a regime switch, not a learning model; partial success (effect on behaviour but not attitudes) would sit between the two conditional rows.
 """ % (summ, "\n".join(lines), rows)
