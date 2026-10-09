@@ -47,7 +47,7 @@ describe('request queue states', () => {
   })
 
   it('says "done" only with what verified it', () => {
-    expect(requestLine(req({}))).toBe("Queued for the orchestrator's next hourly run.")
+    expect(requestLine(req({}))).toBe("Queued for the orchestrator's next run, within six hours.")
     expect(requestLine(req({ status: 'running' }))).toBe('The orchestrator is working on it now.')
     expect(requestLine(req({ status: 'completed', result: 'page built', verifiedBy: 'verifier V13b' }))).toBe('Done: page built Verified by verifier V13b.')
     expect(requestLine(req({ status: 'completed', result: 'page built' }))).toContain("no verification was recorded, so I can't confirm it")

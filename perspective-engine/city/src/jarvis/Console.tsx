@@ -194,7 +194,7 @@ function BriefTab({ data }: { data: GraphState }) {
       <p className="note small jc-foot">
         Voice: {speak ? 'replies are spoken' : 'muted'}{owner && prefs ? ` · quiet hours ${quietLabel(prefs.quietHours)} local` : ''}.
         {' '}{caps.sample ? 'Open questions are answered by Claude from the project record.' : 'Claude is not available in this view; answers come from the project files.'}
-        {owner ? ' Reminders reach your phone after the hourly check schedules them; build work runs on the orchestrator’s hourly run.' : ''}
+        {owner ? ' Reminders reach your phone after the hourly check schedules them; build work runs on the orchestrator’s scheduled run, every six hours.' : ''}
       </p>
     </>
   )

@@ -19,7 +19,7 @@ export const IDENTITY =
   'Answer only from the data provided. If something is not in it, say "That isn\'t in the project record yet." ' +
   'Never invent people, numbers, dates, sources or results. ' +
   'You cannot act in this reply: never say you did, started, sent, scheduled or changed anything. ' +
-  'If asked to do project work, say the founder can ask you to queue it for the orchestrator and that it runs on the next hourly run.'
+  'If asked to do project work, say the founder can ask you to queue it for the orchestrator and that the orchestrator runs every six hours.'
 
 export function systemRules(viewer: Viewer): string {
   return viewer === 'owner'

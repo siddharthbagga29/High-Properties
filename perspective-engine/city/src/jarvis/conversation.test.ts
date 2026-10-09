@@ -76,7 +76,7 @@ describe('deterministic intents answer from the record', () => {
     expect(t.proposal()?.tool).toBe('jarvis.queue_request')
     const yes = await respond('yes, do it', t.env)
     expect(yes.ok).toBe(true)
-    expect(yes.text).toContain("next hourly run")
+    expect(yes.text).toContain("every six hours")
     const [req] = rowsFrom(t.db).requests
     expect(req).toMatchObject({ status: 'queued', kind: 'task', ref: 'M02' })
     expect(t.proposal()).toBeNull()
@@ -224,7 +224,7 @@ describe('founder decisions', () => {
     const t = makeEnv({ viewer: 'owner', now: NOW, state })
     const r = await respond('I decide the advisor rate is 50 dollars an hour', t.env)
     expect(r.ok).toBe(true)
-    expect(r.text).toBe("Recorded your decision: the advisor rate is 50 dollars an hour. I've queued a request for the orchestrator to apply it on its next hourly run; I'll show its status here.")
+    expect(r.text).toBe("Recorded your decision: the advisor rate is 50 dollars an hour. I've queued a request for the orchestrator to apply it on its next scheduled run (every six hours); I'll show its status here.")
     const rows = rowsFrom(t.db)
     expect(rows.decisions).toHaveLength(1)
     expect(rows.requests).toHaveLength(1)

@@ -89,8 +89,8 @@ async function decide(env: ConvEnv, intent: Intent): Promise<Reply> {
   const no = refused(r)
   if (no) return { text: no, via: 'action', ok: false }
   return {
-    text: `Recorded your decision: ${decision}. I've queued a request for the orchestrator to apply it on its next hourly run; I'll show its status here.`,
-    spoken: 'Decision recorded. The orchestrator applies it on its next hourly run.',
+    text: `Recorded your decision: ${decision}. I've queued a request for the orchestrator to apply it on its next scheduled run (every six hours); I'll show its status here.`,
+    spoken: 'Decision recorded. The orchestrator applies it on its next run, within six hours.',
     via: 'action',
     ok: true,
   }
@@ -101,8 +101,8 @@ async function queued(env: ConvEnv, input: Record<string, unknown>): Promise<Rep
   const no = refused(r)
   if (no) return { text: no, via: 'action', ok: false }
   return {
-    text: `Queued: ${clip(String(input.text), 140)}. The orchestrator picks it up on its next hourly run; I'll show its status here as it changes.`,
-    spoken: "Queued for the orchestrator's next hourly run.",
+    text: `Queued: ${clip(String(input.text), 140)}. The orchestrator picks it up on its next scheduled run (every six hours); I'll show its status here as it changes.`,
+    spoken: "Queued for the orchestrator's next run, within six hours.",
     via: 'action',
     ok: true,
   }
@@ -185,7 +185,7 @@ export async function respond(text: string, env: ConvEnv, io: TurnIO = {}): Prom
     const p: Proposal = { tool: 'jarvis.queue_request', input: { text: text.trim(), kind: 'build' }, say: 'queue it for the orchestrator', at: env.now().getTime() }
     env.proposal.set(p)
     return {
-      text: "That's build work, which the orchestrator runs through the task graph and its verifiers, not this page. Say “yes, do it” and I'll queue it for its next hourly run.",
+      text: "That's build work, which the orchestrator runs through the task graph and its verifiers, not this page. Say “yes, do it” and I'll queue it for its next scheduled run, within six hours.",
       spoken: 'That is build work. Say yes, do it, and I will queue it.',
       via: 'rules',
       proposal: p,

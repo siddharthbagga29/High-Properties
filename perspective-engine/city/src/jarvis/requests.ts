@@ -1,7 +1,7 @@
 /**
  * The owner's request queue (db collection jarvis-requests) and founder decisions (jarvis-decisions).
  * The page only ever creates a request as `queued` (or cancels one that is still queued); the orchestrator's
- * hourly run moves it to running and then completed / waiting_for_user / failed. Rows are read as data:
+ * scheduled run (every six hours) moves it to running and then completed / waiting_for_user / failed. Rows are read as data:
  * anything malformed is dropped, never trusted.
  */
 import { newId } from '@jarvis/ids'
@@ -106,7 +106,7 @@ export const STATUS_WORD: Record<RequestStatus, string> = {
 /** One honest line for a request's state. "Done" is said only with what verified it. */
 export function requestLine(r: OwnerRequest): string {
   switch (r.status) {
-    case 'queued': return "Queued for the orchestrator's next hourly run."
+    case 'queued': return "Queued for the orchestrator's next run, within six hours."
     case 'running': return 'The orchestrator is working on it now.'
     case 'completed': return r.verifiedBy
       ? `Done${r.result ? `: ${r.result}` : '.'} Verified by ${r.verifiedBy}.`
@@ -149,7 +149,7 @@ export function changeSentence(r: OwnerRequest): string {
     case 'waiting_for_user': return `${what} ${requestLine(r).replace(/^Needs you/, 'needs you')}`
     case 'failed': return `${what} failed${r.reason ? `: ${r.reason}` : '.'}`
     case 'cancelled': return `${what} was cancelled.`
-    case 'queued': return `${what} is queued again for the next hourly run.`
+    case 'queued': return `${what} is queued again for the orchestrator's next scheduled run.`
   }
 }
 

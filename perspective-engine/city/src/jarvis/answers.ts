@@ -93,7 +93,7 @@ export function answerNext(c: AnswerCtx): Reply {
   const spoken = `Next is ${first.id}, ${first.title}${ready ? '' : `; it ${forViewer(first.detail, c.viewer)}`}.`
   if (owner(c) && ready) {
     return {
-      text: `${text} Say “continue the next task” and I'll queue ${ready.id} for the orchestrator's next hourly run.`,
+      text: `${text} Say “continue the next task” and I'll queue ${ready.id} for the orchestrator's next scheduled run (every six hours).`,
       spoken,
       via: 'rules',
       dive: { kind: 'task', id: ready.id },

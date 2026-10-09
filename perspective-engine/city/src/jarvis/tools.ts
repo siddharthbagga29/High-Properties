@@ -107,7 +107,7 @@ export function cityTools(d: ToolDeps): JarvisTool[] {
   const queueRequest: JarvisTool = {
     id: 'jarvis.queue_request',
     name: 'Queue a request',
-    description: "Queue build work for the orchestrator's next hourly run. Nothing runs in the page.",
+    description: "Queue build work for the orchestrator's next scheduled run (every six hours). Nothing runs in the page.",
     schema: { type: 'object', properties: { text: { type: 'string' }, kind: { type: 'string', enum: ['build', 'task', 'decision'] }, ref: { type: 'string' } }, required: ['text'] },
     riskLevel: 'low',
     requiresConfirmation: false,

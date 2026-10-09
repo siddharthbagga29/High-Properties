@@ -4,7 +4,7 @@
  *
  *   data/users/<id>/jarvis-prefs                       document: last visit, voice, quiet hours
  *   data/users/<id>/jarvis/jarvis-reminders/<rid>      reminders (the orchestrator schedules the push)
- *   data/users/<id>/jarvis/jarvis-requests/<qid>       requests for the orchestrator's next hourly run
+ *   data/users/<id>/jarvis/jarvis-requests/<qid>       requests for the orchestrator's next scheduled run (every six hours)
  *   data/users/<id>/jarvis/jarvis-decisions/<did>      founder decisions
  *   data/users/<id>/jarvis/jarvis-tasks/<tid>          Jarvis's own actions, completed only when checked
  *   data/users/<id>/jarvis/jarvis-memory/<mid>         decision and preference memory

@@ -1,6 +1,6 @@
 /**
  * Reminders in the page: parse with the core, confirm honestly, and announce the ones that fall due while the
- * page is open. The push to the founder's phone is the orchestrator's job (hourly), never claimed here as done.
+ * page is open. The push to the founder's phone is the hourly reminder routine's job, never claimed here as done.
  */
 import { createReminder, due, parseReminder } from '@jarvis/reminders'
 import type { Reminder } from '@jarvis/types'
