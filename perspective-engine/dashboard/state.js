@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-08T19:16:52Z",
+ "generated": "2026-10-09T00:02:39Z",
  "project": "Perspective Engine",
  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -1102,7 +1102,7 @@ window.PE_STATE = {
  ],
  "revenue": [],
  "audit": {
-  "computedAt": "2026-10-08T19:16:52Z",
+  "computedAt": "2026-10-09T00:01:57Z",
   "rubricVersion": "1.0",
   "scorecards": [
    {
@@ -1170,12 +1170,12 @@ window.PE_STATE = {
      }
     ],
     "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "science",
     "name": "Curie",
-    "score": 73.5,
+    "score": 73.3,
     "grade": "C",
     "meetsInstitutionalBar": false,
     "dimensions": [
@@ -1190,29 +1190,29 @@ window.PE_STATE = {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 70.0,
-      "basis": "No data: no task with a verification record. Scored neutral (70)."
+      "score": 68.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70). Findings: -2 from 1 open or accepted finding(s)."
      },
      {
       "id": "evidence",
       "label": "Evidence discipline",
       "weight": 15,
-      "score": 92.4,
-      "basis": "185/199 numeric claims (93%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 36/42, V01 mechanism-spec.md 37/37, V03 preregistration.md 100/107, V15 partners.md 12/13; untraced examples: F03: d+ = 0.51; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+      "score": 88.4,
+      "basis": "185/199 numeric claims (93%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 36/42, V01 mechanism-spec.md 37/37, V03 preregistration.md 100/107, V15 partners.md 12/13; untraced examples: F03: d+ = 0.51; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4 from 2 open or accepted finding(s)."
      },
      {
       "id": "integrity",
       "label": "Honesty and research integrity",
       "weight": 20,
-      "score": 85.0,
-      "basis": "Over 4 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+      "score": 94.0,
+      "basis": "Over 4 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. Findings: -6 from 1 open or accepted finding(s)."
      },
      {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 25.0,
-      "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15."
+      "score": 18.0,
+      "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15. Findings: -7 from 2 open or accepted finding(s)."
      },
      {
       "id": "gates",
@@ -1236,8 +1236,68 @@ window.PE_STATE = {
       "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 4 tasks; 0 running tasks with no step in 15 min."
      }
     ],
-    "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "findings": [
+     {
+      "id": "AF-science-1",
+      "agent": "science",
+      "task": "F03",
+      "severity": "major",
+      "kind": "hallucination",
+      "claim": "research/evidence-dossier.md:26 \"Ventura et al. 2020 meta-analysis: overall VR effect on empathy SDM = 0.43 (CI 0.31-0.55). https://journals.sagepub.com/doi/abs/10.1089/cyber.2019.0681\" and research/evidence-dossier.md:28 \"Another reported meta-analysis found perspective-taking d+ = 0.51 (wide CI 0.15-0.88) and a non-significant empathy effect (d+ = 0.21).\"",
+      "evidence": "WebSearch, search summaries only (a direct fetch of tmb.apaopen.org was EGRESS_BLOCKED). SDM = 0.43 [CI 0.31, 0.55], z = 6.93, is the overall effect in Martingano, Herrera & Konrath 2021, Technology, Mind, and Behavior (k = 43, N = 5,644): https://tmb.apaopen.org/pub/vr-improves-emotional-empathy-only ; https://scholarworks.indianapolis.iu.edu/items/7d7127c0-6c5e-4455-adea-d93c54ea48cc . Ventura e",
+      "status": "open"
+     },
+     {
+      "id": "AF-science-2",
+      "agent": "science",
+      "task": "F03",
+      "severity": "major",
+      "kind": "process",
+      "claim": "graph/ledger.jsonl:1, :8, :16, :20 mark F03, V01, V03 and V15 complete (2026-10-06 at 12:35:38, 12:40:58, 12:49:21 and 12:53:55), e.g. \"done\", \"F03\", \"Dossier: Quest commercial sales ended 2026-02; quantum/18dB/CPT claims unsupported; sims need debrief\"",
+      "evidence": "PROMPT.md:39 says a node is marked done only by a separate verifier agent that checked every acceptance criterion and logged 'check --verifier'. graph/activity/F03.jsonl, V01.jsonl, V03.jsonl and V15.jsonl contain no 'check' entries. Each 'done' came 22 s, 4 s, 4 s and 5 s after the agent's own handoff, and no done note names a verifier. graph/audit/scorecards.json (science, first_pass_yield) reco",
+      "status": "open"
+     },
+     {
+      "id": "AF-science-3",
+      "agent": "science",
+      "task": "V03",
+      "severity": "minor",
+      "kind": "unsupported_claim",
+      "claim": "science/preregistration.md:38 (OSF paste-ready text) \"(Sonuga-Barke and Castellanos 2007, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3805479/)\"; the same link appears at research/evidence-dossier.md:37, science/mechanism-spec.md:16 and :28, and science/partners.md:56 (\"2007 hypothesis paper\")",
+      "evidence": "The 2007 paper is Sonuga-Barke & Castellanos, Neurosci Biobehav Rev 31(7):977-986, doi:10.1016/j.neubiorev.2007.02.005, PMID 17445893 (https://pubmed.ncbi.nlm.nih.gov/17445893/, found by search). Two WebSearch calls for PMC3805479 returned no record, and the NCBI and EuropePMC APIs are blocked by the proxy, so I could not confirm that the link resolves to this paper. A 2007 Elsevier review that pr",
+      "status": "open"
+     },
+     {
+      "id": "AF-science-4",
+      "agent": "science",
+      "task": "V15",
+      "severity": "minor",
+      "kind": "incomplete",
+      "claim": "science/partners.md:4 \"Ten research groups shortlisted\" and graph/ledger.jsonl:20 \"10 labs (7 non-US)\", against the acceptance criterion '10 labs with published relevant work and URLs'",
+      "evidence": "Entry 6 (partners.md:46-48) is an individual researcher ('lab name unverified; cited as paper author, not lab lead'), and the file itself says she is not a partner ('critical friend, not a partner', partners.md:4 and :19). Entry 4 (partners.md:39) cites only a news item, a lab page and a consortium page, and says 'Specific papers: unverified'. Entries 7 and 8 are both at King's College London. Str",
+      "status": "open"
+     },
+     {
+      "id": "AF-science-5",
+      "agent": "science",
+      "task": "V15",
+      "severity": "minor",
+      "kind": "unsupported_claim",
+      "claim": "science/partners.md:27 \"2024 report with Neurodiversity in Business, 900+ neurodivergent employees and 127 employers\"",
+      "evidence": "WebSearch, search-summary level. The sample of 127 employers and 990 neurodivergent employees (1,117 respondents) matches the Birkbeck and Neurodiversity in Business survey reported on 2023-03-16 (https://www.hippocraticpost.com/tag/centre-for-neurodiversity-research-at-work/). That survey is also the source of the 'about two-thirds fear discrimination' figure. The 2024 report (MacDowall, Doyle, S",
+      "status": "open"
+     },
+     {
+      "id": "AF-science-checked",
+      "agent": "science",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "checked",
+      "evidence": "Verified correct by WebSearch (summary level) or by recomputation. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333: N = 60 and N = 50, pity and interaction discomfort in Experiment 2, empathy up but attitudes not improved. Martingano et al. 2021: emotional empathy d = 0.33, cognitive d = 0.08 (p = .23). Herrera et al. 2018 PLoS ONE: 8-week follow-up and VR petition effect. Son",
+      "status": "accepted"
+     }
+    ],
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "ethics",
@@ -1304,7 +1364,7 @@ window.PE_STATE = {
      }
     ],
     "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "product",
@@ -1371,12 +1431,12 @@ window.PE_STATE = {
      }
     ],
     "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "data",
     "name": "Tukey",
-    "score": 70.7,
+    "score": 72.3,
     "grade": "C",
     "meetsInstitutionalBar": false,
     "dimensions": [
@@ -1391,8 +1451,8 @@ window.PE_STATE = {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 70.0,
-      "basis": "No data: no task with a verification record. Scored neutral (70)."
+      "score": 68.0,
+      "basis": "No data: no task with a verification record. Scored neutral (70). Findings: -2 from 1 open or accepted finding(s)."
      },
      {
       "id": "evidence",
@@ -1405,15 +1465,15 @@ window.PE_STATE = {
       "id": "integrity",
       "label": "Honesty and research integrity",
       "weight": 20,
-      "score": 85.0,
-      "basis": "Over 1 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+      "score": 100.0,
+      "basis": "Over 1 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement."
      },
      {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 25.0,
-      "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02."
+      "score": 18.0,
+      "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02. Findings: -7 from 2 open or accepted finding(s)."
      },
      {
       "id": "gates",
@@ -1437,8 +1497,38 @@ window.PE_STATE = {
       "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 1 tasks; 0 running tasks with no step in 15 min."
      }
     ],
-    "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "findings": [
+     {
+      "id": "AF-data-1",
+      "agent": "data",
+      "task": "V02",
+      "severity": "major",
+      "kind": "process",
+      "claim": "graph/ledger.jsonl:12 \"done\", \"V02\", \"Primary outcome: verified Accommodation Action Index at day 30; RCT vs info-only control; pilot of 80-150 estimates only\" (2026-10-06T12:45:17Z)",
+      "evidence": "PROMPT.md:39 says done is set only by a separate verifier that logs 'check --verifier'. graph/activity/V02.jsonl has no 'check' entry: the agent handed off at 12:44:40 and the node was closed 37 s later with no verifier named. graph/audit/scorecards.json (data, first_pass_yield) records 'closed without a verification record: V02'. On the merits the acceptance criteria are met (see AF-data-checked)",
+      "status": "open"
+     },
+     {
+      "id": "AF-data-2",
+      "agent": "data",
+      "task": "V02",
+      "severity": "minor",
+      "kind": "error",
+      "claim": "data/instruments.md:41 \"OMS-WA, Opening Minds Scale for Workplace Attitudes ... | 22 | T0, T2 | **[confirmed]**\" and data/instruments.md:64 \"OMS-WA (22)\"; copied to science/preregistration.md:111 \"(22 items; Lindsay et al. 2024 ...)\"",
+      "evidence": "WebSearch, search-summary level: https://link.springer.com/article/10.1007/s44202-024-00249-9 ; https://d-nb.info/1352252481/34 . The citation itself is right (Lindsay, Dobson, Krupa, Knaak, Szeto 2024, Discover Psychology 4:134), but the item count is not confirmed. The snippets describe a 27-item initial OMS-WA cut to 23 items over five factors in Study 1 (N = 207). The figure '22 items' refers ",
+      "status": "open"
+     },
+     {
+      "id": "AF-data-checked",
+      "agent": "data",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "checked",
+      "evidence": "Acceptance criteria are met in substance. Validated scales are named with citations: IRI-PT, QPS, RIBS, OMS-WA, IOS, Marlowe-Crowne C and AQ-27. Waves are T0 pre, T1 post and T2 day 30. The primary outcome is behaviour (AAI-verified), not mood, and the AAI is honestly labelled unvalidated. The section 5 sample-size table was recomputed in python3 as n = 2(z0.975 + z0.80)^2 / d^2 x 0.75 x 1.2, givi",
+      "status": "accepted"
+     }
+    ],
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "gtm",
@@ -1505,12 +1595,12 @@ window.PE_STATE = {
      }
     ],
     "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "finance",
     "name": "Pacioli",
-    "score": 85.9,
+    "score": 84.8,
     "grade": "B",
     "meetsInstitutionalBar": true,
     "dimensions": [
@@ -1525,29 +1615,29 @@ window.PE_STATE = {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 97.0,
-      "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (M05 1)."
+      "score": 79.0,
+      "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (M05 1). Findings: -18 from 5 open or accepted finding(s)."
      },
      {
       "id": "evidence",
       "label": "Evidence discipline",
       "weight": 15,
-      "score": 95.7,
-      "basis": "455/474 numeric claims (96%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V10 model.md 78/79, V11 grants.md 81/81, M05 sbir-draft.md 296/314; untraced examples: V10: 12 months; M05: 1.25 pages. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+      "score": 93.7,
+      "basis": "455/474 numeric claims (96%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V10 model.md 78/79, V11 grants.md 81/81, M05 sbir-draft.md 296/314; untraced examples: V10: 12 months; M05: 1.25 pages. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -2 from 1 open or accepted finding(s)."
      },
      {
       "id": "integrity",
       "label": "Honesty and research integrity",
       "weight": 20,
-      "score": 85.0,
-      "basis": "Over 3 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+      "score": 100.0,
+      "basis": "Over 3 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement."
      },
      {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 50.0,
-      "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11."
+      "score": 43.0,
+      "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11. Findings: -7 from 2 open or accepted finding(s)."
      },
      {
       "id": "gates",
@@ -1571,13 +1661,93 @@ window.PE_STATE = {
       "basis": "2 recorded interruptions (usage/session limits, failed pushes) over 3 tasks (M05 2); 0 running tasks with no step in 15 min."
      }
     ],
-    "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "findings": [
+     {
+      "id": "AF-finance-1",
+      "agent": "finance",
+      "task": "V10",
+      "severity": "major",
+      "kind": "error",
+      "claim": "finance/model.md:39-40 \"Peak cumulative funding need: $3.17M / $4.93M / $8.66M\" and \"Cumulative cash at month 60 (negative = still burning): -$8.66M / -$4.93M / -$3.17M\" (printed by finance/model.py:221-222)",
+      "evidence": "I re-ran finance/model.py with seed 20261006, and its output is byte-identical to model.md. I then instrumented the trials. In 9,682 of 10,000 trials the lowest cumulative cash falls at month 60, so the business is still losing cash every month at the end of the horizon. The same holds in 4,596 of 4,899 trials where H1 holds and in 2,262 of 2,567 trials with month-60 ARR of $2M or more. That is wh",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-2",
+      "agent": "finance",
+      "task": "V11",
+      "severity": "major",
+      "kind": "process",
+      "claim": "graph/ledger.jsonl:18 \"done\", \"V10\", \"MC: Y5 ARR P10/50/90 $53k/$633k/$4.31M ...\" and graph/ledger.jsonl:22 \"done\", \"V11\", \"Top: NIH SBIR I (~$307k, 2027-01-05) ...\"",
+      "evidence": "PROMPT.md:39 requires a separate verifier, logged with 'check --verifier', before a node is done. graph/activity/V10.jsonl and V11.jsonl contain no 'check' entries, and each node was closed 15 s and 6 s after the agent's handoff. graph/audit/scorecards.json (finance) records 'no verification record: V10 V11'. Errors that an independent check would likely have caught are still in V11 (AF-finance-3,",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-3",
+      "agent": "finance",
+      "task": "V11",
+      "severity": "major",
+      "kind": "error",
+      "claim": "finance/grants.md:13 \"NIH SBIR Phase I (R43) via NIMH, NICHD or NIA. Parent notice reported as PA-27-102\"",
+      "evidence": "WebSearch, NIH SEED and aggregator summaries (grants.nih.gov fetch blocked). PA-27-100 is the NIH/CDC/FDA parent SBIR notice for R43/R44, clinical trial optional, issued 2026-05-28. PA-27-102 is the parent STTR notice for R41/R42, which requires a nonprofit research-institution partner. Source: https://grantedai.com/blog/nih-sbir-sttr-omnibus-live-pa-27-100-102-101-parp-27-098-september-5-2026-dea",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-4",
+      "agent": "finance",
+      "task": "V11",
+      "severity": "minor",
+      "kind": "error",
+      "claim": "finance/grants.md:5 \"the secondary-source standard cap is $306,872\"; finance/grants.md:13 \"About $306,872 Phase I and $2,045,816 Phase II standard caps\"; finance/grants.md:27 \"at least 51% of ownership held by US citizens or permanent residents\"",
+      "evidence": "NOT-OD-25-013 (https://grants.nih.gov/grants/guide/notice-files/NOT-OD-25-013.html, confirmed by search) raised NIH's normal totals from $306,872 / $2,045,816 to $314,363 / $2,095,748, before grants.md was written. 13 CFR 121.702 says 'more than 50%' (sbir-draft.md:20). Recomputed, the row-1 score moves only from 16.6 to 17.0, so the ranking is unchanged. The '51%' wording was carried into docs/fo",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-5",
+      "agent": "finance",
+      "task": "M05",
+      "severity": "minor",
+      "kind": "incomplete",
+      "claim": "finance/sbir-draft.md:19 (R2) \"so caps should exist now; no agency figure was found\" (status \"cap numbers U\") and finance/sbir-draft.md:103 \"FY2027 per-company proposal caps may limit how many we can send (R2, details U)\"",
+      "evidence": "NOT-OD-26-090, dated 2026-07-10 (https://grants.nih.gov/grants/guide/notice-files/NOT-OD-26-090.html, confirmed by search), sets the HHS limit. Each small business may submit at most nine new or resubmission Phase I, Fast-Track and Direct-to-Phase-II applications per fiscal year, for due dates on or after 2026-04-13. It replaces NOT-OD-26-073. The figure was published three months before the draft",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-6",
+      "agent": "finance",
+      "task": "M05",
+      "severity": "minor",
+      "kind": "unsupported_claim",
+      "claim": "finance/sbir-draft.md:52 (Specific Aims text for reviewers) \"Paid neurodivergent advisors hold a veto over content.\"",
+      "evidence": "The same file says at :181 'No advisor is seated yet; seating and payment are founder-gated' and at :226 'No advisors, no partner IRB yet'. In reviewer-facing aims, the present tense states as fact a governance structure that does not exist. It should read as proposed ('will hold a veto') until advisors are seated.",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-7",
+      "agent": "finance",
+      "task": "M05",
+      "severity": "minor",
+      "kind": "error",
+      "claim": "finance/sbir-draft.md:148 \"A 40% rate is a stress case taken from the NIH figure in R12\"",
+      "evidence": "R12 (sbir-draft.md:29) contains no 40% NIH figure. It cites the 15% de minimis rate (2 CFR 200.414(f)), NOT-OD-25-059 and a 10% rate from NOT-OD-26-072, and A12 (:165) calls 40% only a stress case. The sentence therefore points to a source that is not there. Several university summaries (e.g. https://sciences.ucf.edu/research/update-nih-implementation-of-uniform-administrative-requirements-for-fed",
+      "status": "open"
+     },
+     {
+      "id": "AF-finance-checked",
+      "agent": "finance",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "checked",
+      "evidence": "V10: finance/model.py runs on python3 stdlib only, and its output with seed 20261006 matches the results block in model.md exactly (empty diff). All 32 inputs are triangular and labelled 'assumption', and none claims a source, consistent with the dossier. I read the code and found no arithmetic bug in ARR, contract renewal and churn, COGS, percentiles or the Spearman ranks. Python's round() rounds",
+      "status": "accepted"
+     }
+    ],
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "legal",
     "name": "Ginsburg",
-    "score": 94.7,
+    "score": 96.9,
     "grade": "A",
     "meetsInstitutionalBar": true,
     "dimensions": [
@@ -1592,8 +1762,8 @@ window.PE_STATE = {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 97.0,
-      "basis": "0 failed verification rounds over 2 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V12 1)."
+      "score": 93.0,
+      "basis": "0 failed verification rounds over 2 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V12 1). Findings: -4 from 2 open or accepted finding(s)."
      },
      {
       "id": "evidence",
@@ -1606,15 +1776,15 @@ window.PE_STATE = {
       "id": "integrity",
       "label": "Honesty and research integrity",
       "weight": 20,
-      "score": 85.0,
-      "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement. No independent LLM citation audit covers this agent yet, so this dimension is capped at 85 (fabricated citations cannot be ruled out offline)."
+      "score": 100.0,
+      "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement."
      },
      {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 100.0,
-      "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
+      "score": 99.0,
+      "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -1 from 1 open or accepted finding(s)."
      },
      {
       "id": "gates",
@@ -1638,8 +1808,38 @@ window.PE_STATE = {
       "basis": "0 recorded interruptions (usage/session limits, failed pushes) over 2 tasks; 0 running tasks with no step in 15 min."
      }
     ],
-    "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "findings": [
+     {
+      "id": "AF-legal-1",
+      "agent": "legal",
+      "task": "M04",
+      "severity": "minor",
+      "kind": "incomplete",
+      "claim": "\"Entity choice waits on founder decision D01 #1 (country, majority owners).\" (perspective-engine/legal/entity-checklist.md:6) and \"Open: D01 #1 country of residence and of the majority owners\" (entity-checklist.md:14)",
+      "evidence": "perspective-engine/docs/founder-decisions.md:7 now records \"Decided 2026-10-08: United States. Ownership structure still open\". The checklist (dated 2026-10-07) was correct when written, but it now presents country as open and still carries option C (India Pvt Ltd / UK Ltd) as a live choice. docs/ownership-and-budget-options.md (2026-10-08) already builds on it. Correctable: refresh sections 1-3 t",
+      "status": "open"
+     },
+     {
+      "id": "AF-legal-2",
+      "agent": "legal",
+      "task": "M04",
+      "severity": "minor",
+      "kind": "incomplete",
+      "claim": "\"No USPTO/WIPO search has been run in this draft (step 2).\" (perspective-engine/legal/entity-checklist.md:16) and step 2 \"OPEN (read-only; not run in this draft)\" (entity-checklist.md:47)",
+      "evidence": "The M04 input perspective-engine/docs/founder-decisions.md:12 tells the founder \"Keep it for now; legal agent runs a free USPTO/WIPO search in M04\". M04 did not run it, so the founder's D01 #6 option relies on work that was not done. M04 disclosed this honestly, and the name search is not in M04's acceptance criteria, so this is minor. The one record M04 did find is real: a WebSearch summary of tr",
+      "status": "open"
+     },
+     {
+      "id": "AF-legal-checked",
+      "agent": "legal",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "checked",
+      "evidence": "V12 privacy.md, checked against the code and by re-running it: export privacy flags are hard-coded literals at mvp/index.html:1116 (finding 2 is correct); the 'tab hidden' pause is at index.html:1305 (finding 4 is correct); CSP connect-src 'none' is at index.html:6; uid() uses 6 bytes from crypto.getRandomValues (index.html:271); consent text_version 'v0-draft-2026-10-06' is set (index.html:1298),",
+      "status": "accepted"
+     }
+    ],
+    "computedAt": "2026-10-09T00:01:57Z"
    },
    {
     "agent": "brand",
@@ -1706,7 +1906,7 @@ window.PE_STATE = {
      }
     ],
     "findings": [],
-    "computedAt": "2026-10-08T19:16:52Z"
+    "computedAt": "2026-10-09T00:01:57Z"
    }
   ],
   "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -1715,8 +1915,13 @@ window.PE_STATE = {
    "nodes": 34,
    "ledgerEvents": 61,
    "activityRows": 1145,
-   "llmFindings": 0,
-   "llmAuditedAgents": [],
+   "llmFindings": 20,
+   "llmAuditedAgents": [
+    "data",
+    "finance",
+    "legal",
+    "science"
+   ],
    "revenueEntries": 0
   },
   "revenueCheck": {
