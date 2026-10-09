@@ -1,12 +1,12 @@
 {
- "computedAt": "2026-10-09T06:52:41Z",
+ "computedAt": "2026-10-09T06:59:51Z",
  "rubricVersion": "1.0",
  "scorecards": [
   {
    "agent": "orchestrator",
    "name": "Mayor",
-   "score": 59.7,
-   "grade": "F",
+   "score": 61.3,
+   "grade": "D",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
@@ -20,15 +20,15 @@
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 50.0,
-     "basis": "No data: no task with a verification record. Scored neutral (70). Findings: -20 from 6 open or accepted finding(s)."
+     "score": 56.0,
+     "basis": "No data: no task with a verification record. Scored neutral (70). Findings: -14 from 5 open or accepted finding(s)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 71.5,
-     "basis": "32/42 numeric claims (76%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 25/29, F07 PLAN.md 1/6, D01 founder-decisions.md 6/6; untraced examples: F02: 0%; F05: d≈0.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4 from 2 open or accepted finding(s)."
+     "score": 73.0,
+     "basis": "35/45 numeric claims (78%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 25/29, F07 PLAN.md 1/6, D01 founder-decisions.md 9/9; untraced examples: F02: 0%; F05: d≈0.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4 from 2 open or accepted finding(s)."
     },
     {
      "id": "integrity",
@@ -41,8 +41,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 0.0,
-     "basis": "3 closed tasks in the ledger: step records on 1 (2 self-logged rows, 0 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F05 F07 D01; graph-wide closure discipline (half of this score): 7/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V09 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -21 from 7 open or accepted finding(s)."
+     "score": 2.8,
+     "basis": "3 closed tasks in the ledger: step records on 1 (2 self-logged rows, 0 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F05 F07 D01; graph-wide closure discipline (half of this score): 7/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V09 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -6 from 3 open or accepted finding(s). 2 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -85,7 +85,7 @@
      "kind": "process",
      "claim": "docs/JARVIS_ARCHITECTURE.md:113 \"Revenue entries (which complete the face) can be written only by the founder through `graph.py revenue add --founder`\"; :170 \"No agent, routine or Jarvis itself can complete the face.\"; docs/JARVIS_PROGRESS.md:22 \"graph.py revenue add/list (founder-only, evidence required)\"",
      "evidence": "The only founder check is a self-attested flag: tools/graph.py:257-258 refuses unless '--founder' is present, and the docstring says 'pass --founder to attest that you are the founder'. On a scratch copy (graph.py + graph.json + ledger copied to the scratchpad; the real graph was untouched), the command revenue add 1 \"Anyone\" --evidence \"x\" --founder from an agent shell wrote {\"amountUsd\": 1.0, \"p",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-orchestrator-4",
@@ -105,7 +105,7 @@
      "kind": "error",
      "claim": "docs/founder-decisions.md:8 item 2, options column 'recommendation first': \"Approve the $50/h floor for 5–7 advisors / set a different rate\"",
      "evidence": "This is the opposite of the source it cites. ethics/advisory-board.md:7 and :22 say the founder should set the final rate at or above the floor. The ethics agent 'recommends the founder set the final rate above the floor and record the reasoning', because the benchmarks are public-sector and 'probably understate what a for-profit company asking for a binding veto should pay'. docs/ownership-and-bu",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-orchestrator-10",
@@ -206,23 +206,14 @@
      "claim": "graph/activity/D01.jsonl 2026-10-08T12:07:24Z \"Mayor: tiered ownership options (4) and first-year budgets ... prepared and number-checked in docs/ownership-and-budget-options.md\"; that file, line 3: \"An independent checker re-opened every cited file, recomputed every total and made the corrections listed at the end.\"",
      "evidence": "D01's write list is docs/founder-decisions.md only. The 238-line ownership, tax and budget analysis is legal and finance domain work, which the orchestrator role card forbids outside F-series nodes ('You never do domain work yourself except F-series planning nodes'). D01 has no check entry and no actor 'verifier' entry, so the 'independent checker' claim is not supported by the record. On the meri",
      "status": "open"
-    },
-    {
-     "id": "AF-orchestrator-checked",
-     "agent": "orchestrator",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "F01: graph.py validate gives 'ok: 34 nodes, 9 agents, acyclic'; every node has an agent and outputs. A ledger replay matches every node status in graph.json and is in time order; the only gaps are F01/F02, which were seeded as done, and F03's done without a start. F02: dashboard/index.html renders from state.js over file:// with 0 page errors; its only network requests are optional Google Fonts. I",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "science",
    "name": "Curie",
-   "score": 73.3,
+   "score": 74.4,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -258,8 +249,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 18.0,
-     "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15. Findings: -7 from 2 open or accepted finding(s)."
+     "score": 25.0,
+     "basis": "4 closed tasks in the ledger: step records on 4 (0 self-logged rows, 73 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F03 V01 V03 V15. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -333,23 +324,14 @@
      "claim": "science/partners.md:27 \"2024 report with Neurodiversity in Business, 900+ neurodivergent employees and 127 employers\"",
      "evidence": "WebSearch, search-summary level. The sample of 127 employers and 990 neurodivergent employees (1,117 respondents) matches the Birkbeck and Neurodiversity in Business survey reported on 2023-03-16 (https://www.hippocraticpost.com/tag/centre-for-neurodiversity-research-at-work/). That survey is also the source of the 'about two-thirds fear discrimination' figure. The 2024 report (MacDowall, Doyle, S",
      "status": "open"
-    },
-    {
-     "id": "AF-science-checked",
-     "agent": "science",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "Verified correct by WebSearch (summary level) or by recomputation. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333: N = 60 and N = 50, pity and interaction discomfort in Experiment 2, empathy up but attitudes not improved. Martingano et al. 2021: emotional empathy d = 0.33, cognitive d = 0.08 (p = .23). Herrera et al. 2018 PLoS ONE: 8-week follow-up and VR petition effect. Son",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "ethics",
    "name": "Milton",
-   "score": 57.9,
+   "score": 58.3,
    "grade": "F",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -385,8 +367,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 38.7,
-     "basis": "3 closed tasks in the ledger: step records on 3 (18 self-logged rows, 111 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F06 V04; verifier rows not flagged --verifier: M03. Findings: -3 from 2 open or accepted finding(s)."
+     "score": 41.7,
+     "basis": "3 closed tasks in the ledger: step records on 3 (18 self-logged rows, 111 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: F06 V04; verifier rows not flagged --verifier: M03. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -440,23 +422,14 @@
      "claim": "graph/ledger.jsonl:6 \"done\", \"F06\" (2026-10-06T12:40:18Z) and :10 \"done\", \"V04\" (2026-10-06T12:42:32Z)",
      "evidence": "Neither node has a verifier check in graph/activity/F06.jsonl or V04.jsonl. Both were closed 12 s and 4 s after the agent's handoff (12:40:06 and 12:42:28 in the subagent transcripts agent-a57aca20c172a30c2 and agent-ac2dd770518b91f99), and no verifier subagent ran in between. This breaks CLAUDE.md:7 ('say what verified it') and PROMPT.md:39. The gap is the orchestrator's (see AF-orchestrator-1), ",
      "status": "open"
-    },
-    {
-     "id": "AF-ethics-checked",
-     "agent": "ethics",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "F06 codesign-charter.md meets its criteria: paid advisors with a binding veto (s2-s3), debrief and harm rules (s5-s6), and a never-claims register (s7). Every dossier citation in it matches research/evidence-dossier.md: Nario-Redmond s1; d = 0.08 cognitive / 0.33 emotional s2; double empathy is autism-specific s3; Song 2021 2.58% / 6.76% s5; 0770T is a therapy add-on s8; webcam error 2-4 degrees s",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "product",
    "name": "Ada",
-   "score": 76.7,
+   "score": 76.9,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -492,8 +465,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 97.0,
-     "basis": "2 closed tasks in the ledger: step records on 2 (77 self-logged rows, 260 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -3 from 2 open or accepted finding(s)."
+     "score": 98.0,
+     "basis": "2 closed tasks in the ledger: step records on 2 (77 self-logged rows, 260 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -2 from 1 open or accepted finding(s)."
     },
     {
      "id": "gates",
@@ -557,23 +530,14 @@
      "claim": "graph.py brief V14: \"WRITE ONLY THESE OUTPUTS: perspective-engine/mvp/CHANGELOG.md\"; acceptance \"every change traces to an advisor note\"",
      "evidence": "V14 also wrote mvp/advisor-review-kit.md (389 lines), outside its write list; the V14 verifier noted this at 2026-10-07T19:35:00Z and passed it as non-blocking. The acceptance criterion is met only vacuously: mvp/CHANGELOG.md:9 records 0 sessions, 0 notes and 0 changes, and index.html is unchanged (sha256 83f500ed...e118, 119,994 bytes, re-checked). The CHANGELOG itself is honest about this. How t",
      "status": "open"
-    },
-    {
-     "id": "AF-product-checked",
-     "agent": "product",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "Re-ran in this audit (headless Chromium 1194 via Playwright, file://): index.html#selftest gives 59 of 59 at 390x844 and at 1280x800, each with and without reduced-motion emulation, with 0 page errors, 0 console errors and 0 non-file requests. node --check passes on the extracted inline script (100,764 chars). index.html sha256 matches the hash in CHANGELOG.md:11 and advisor-review-kit.md:12. The ",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "data",
    "name": "Tukey",
-   "score": 72.3,
+   "score": 73.4,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -609,8 +573,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 18.0,
-     "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02. Findings: -7 from 2 open or accepted finding(s)."
+     "score": 25.0,
+     "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 29 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V02. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -654,23 +618,14 @@
      "claim": "data/instruments.md:41 \"OMS-WA, Opening Minds Scale for Workplace Attitudes ... | 22 | T0, T2 | **[confirmed]**\" and data/instruments.md:64 \"OMS-WA (22)\"; copied to science/preregistration.md:111 \"(22 items; Lindsay et al. 2024 ...)\"",
      "evidence": "WebSearch, search-summary level: https://link.springer.com/article/10.1007/s44202-024-00249-9 ; https://d-nb.info/1352252481/34 . The citation itself is right (Lindsay, Dobson, Krupa, Knaak, Szeto 2024, Discover Psychology 4:134), but the item count is not confirmed. The snippets describe a 27-item initial OMS-WA cut to 23 items over five factors in Study 1 (N = 207). The figure '22 items' refers ",
      "status": "open"
-    },
-    {
-     "id": "AF-data-checked",
-     "agent": "data",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "Acceptance criteria are met in substance. Validated scales are named with citations: IRI-PT, QPS, RIBS, OMS-WA, IOS, Marlowe-Crowne C and AQ-27. Waves are T0 pre, T1 post and T2 day 30. The primary outcome is behaviour (AAI-verified), not mood, and the AAI is honestly labelled unvalidated. The section 5 sample-size table was recomputed in python3 as n = 2(z0.975 + z0.80)^2 / d^2 x 0.75 x 1.2, givi",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "gtm",
    "name": "Ogilvy",
-   "score": 56.6,
+   "score": 59.5,
    "grade": "F",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -706,8 +661,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 12.0,
-     "basis": "5 closed tasks in the ledger: step records on 5 (8 self-logged rows, 103 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V05 V06 V07 V08; verifier rows not flagged --verifier: V09. Findings: -23 from 6 open or accepted finding(s)."
+     "score": 31.0,
+     "basis": "5 closed tasks in the ledger: step records on 5 (8 self-logged rows, 103 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V05 V06 V07 V08; verifier rows not flagged --verifier: V09. Findings: -4 from 2 open or accepted finding(s). 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -739,8 +694,8 @@
      "severity": "major",
      "kind": "process",
      "claim": "gtm/outreach.md:36,49,80,93,124,137 \"being co-designed with paid ADHD advisors\"; outreach.md:4 says co-design is \"stated only as an intention\"",
-     "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims.",
-     "status": "open"
+     "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims. || FIXED 2026-10-09 by the ",
+     "status": "fixed"
     },
     {
      "id": "AF-gtm-2",
@@ -749,8 +704,8 @@
      "severity": "major",
      "kind": "process",
      "claim": "gtm/loi-template.md:13 \"The module is an educational practice tool co-designed with ADHD adults.\"",
-     "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off.",
-     "status": "open"
+     "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off. || FIXED 202",
+     "status": "fixed"
     },
     {
      "id": "AF-gtm-3",
@@ -860,23 +815,14 @@
      "claim": "targets.csv confidence = high on 23 rows; ledger 2026-10-06T12:45:44Z \"23 high-confidence\"",
      "evidence": "graph/activity/V07.jsonl: every WebFetch was blocked (askearn.org, iu.pressbooks.pub, disabilityin.org) and the rest are WebSearch summaries, so no source page was read. The CSV never defines the scale, and only askearn rows say 'not fetched'. outreach-log.md:37 later admits the Dell high-row source was not retrieved, and the Google high row is wrong (AF-gtm-6). 'High' overstates the verification.",
      "status": "open"
-    },
-    {
-     "id": "AF-gtm-checked",
-     "agent": "gtm",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "python3 recount: outreach.md 9 emails, worst case 104/102/72/102/104/68/99/95/68 (<120); B1 30 emails, max 104, no present-tense co-design left. icp.md: Song 2021 2.58%/6.76%, 5,000x = 129-338 ok; Meta Quest sales end 2026-02-20, Embodied $3.2M Jan 2020, Akili $1.7M / $0.434 a share ok. CSV: 50 rows, 26/12/12, no emails; Roundtable founders; Specialisterne AU shut 2025-11-30; Freddie Mac 21/9.",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "finance",
    "name": "Pacioli",
-   "score": 84.8,
+   "score": 85.9,
    "grade": "B",
    "meetsInstitutionalBar": true,
    "dimensions": [
@@ -912,8 +858,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 43.0,
-     "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11. Findings: -7 from 2 open or accepted finding(s)."
+     "score": 50.0,
+     "basis": "3 closed tasks in the ledger: step records on 3 (40 self-logged rows, 152 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; closed with no verification record: V10 V11. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -1007,23 +953,14 @@
      "claim": "finance/sbir-draft.md:148 \"A 40% rate is a stress case taken from the NIH figure in R12\"",
      "evidence": "R12 (sbir-draft.md:29) contains no 40% NIH figure. It cites the 15% de minimis rate (2 CFR 200.414(f)), NOT-OD-25-059 and a 10% rate from NOT-OD-26-072, and A12 (:165) calls 40% only a stress case. The sentence therefore points to a source that is not there. Several university summaries (e.g. https://sciences.ucf.edu/research/update-nih-implementation-of-uniform-administrative-requirements-for-fed",
      "status": "open"
-    },
-    {
-     "id": "AF-finance-checked",
-     "agent": "finance",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "V10: finance/model.py runs on python3 stdlib only, and its output with seed 20261006 matches the results block in model.md exactly (empty diff). All 32 inputs are triangular and labelled 'assumption', and none claims a source, consistent with the dossier. I read the code and found no arithmetic bug in ARR, contract renewal and churn, COGS, percentiles or the Spearman ranks. Python's round() rounds",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "legal",
    "name": "Ginsburg",
-   "score": 96.9,
+   "score": 97.1,
    "grade": "A",
    "meetsInstitutionalBar": true,
    "dimensions": [
@@ -1059,8 +996,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 99.0,
-     "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -1 from 1 open or accepted finding(s)."
+     "score": 100.0,
+     "basis": "2 closed tasks in the ledger: step records on 2 (19 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
     },
     {
      "id": "gates",
@@ -1104,23 +1041,14 @@
      "claim": "\"No USPTO/WIPO search has been run in this draft (step 2).\" (perspective-engine/legal/entity-checklist.md:16) and step 2 \"OPEN (read-only; not run in this draft)\" (entity-checklist.md:47)",
      "evidence": "The M04 input perspective-engine/docs/founder-decisions.md:12 tells the founder \"Keep it for now; legal agent runs a free USPTO/WIPO search in M04\". M04 did not run it, so the founder's D01 #6 option relies on work that was not done. M04 disclosed this honestly, and the name search is not in M04's acceptance criteria, so this is minor. The one record M04 did find is real: a WebSearch summary of tr",
      "status": "open"
-    },
-    {
-     "id": "AF-legal-checked",
-     "agent": "legal",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "V12 privacy.md, checked against the code and by re-running it: export privacy flags are hard-coded literals at mvp/index.html:1116 (finding 2 is correct); the 'tab hidden' pause is at index.html:1305 (finding 4 is correct); CSP connect-src 'none' is at index.html:6; uid() uses 6 bytes from crypto.getRandomValues (index.html:271); consent text_version 'v0-draft-2026-10-06' is set (index.html:1298),",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   },
   {
    "agent": "brand",
    "name": "Rams",
-   "score": 64.1,
+   "score": 67.4,
    "grade": "D",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -1156,8 +1084,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 3.0,
-     "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 11 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V13. Findings: -22 from 3 open or accepted finding(s)."
+     "score": 25.0,
+     "basis": "1 closed tasks in the ledger: step records on 1 (0 self-logged rows, 11 transcript rows); verifier rows on 0; flagged --verifier (separate from builder rows) on 0; closed with no verification record: V13. 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -1189,8 +1117,8 @@
      "severity": "critical",
      "kind": "process",
      "claim": "brand/landing/index.html:140 \"A short browser-based practice module, co-designed with paid ADHD advisors\"; :8 (meta description), :224 \"Co-designed with paid ADHD advisors who can say no.\", :166 \"co-designed with ADHD adults\"",
-     "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled.",
-     "status": "open"
+     "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled. || FIXED 2026-10-",
+     "status": "fixed"
     },
     {
      "id": "AF-brand-2",
@@ -1211,18 +1139,9 @@
      "claim": "brand/landing/index.html:191 \"The pilot's main outcome is behavior at 30 days.\" and :198-199 \"We count ... Whether meeting structure is agreed with the person. Whether managers avoid diagnosing or labeling colleagues.\"",
      "evidence": "science/preregistration.md:104 fixes the primary as AAI-verified over 10 listed practices. Neither 'meeting structure agreed' nor 'avoid diagnosing/labeling' is on the list, and the second cannot be verified by its log/3-report rule. So 2 of the 4 behaviours offered to buyers are not what the pilot measures. The page does hedge at :213. Cause: V13 inputs omitted V02/V03.",
      "status": "open"
-    },
-    {
-     "id": "AF-brand-checked",
-     "agent": "brand",
-     "severity": "minor",
-     "kind": "process",
-     "claim": "checked",
-     "evidence": "Acceptance 1 met: no 'simulat' string anywhere in index.html; the module is called an analogue. Acceptance 2 met: CTA at :142 links to the form at :274. Headless Chromium run (playwright-core): submitting the filled form shows the thanks panel, 0 network requests, empty localStorage; the only external request is Google Fonts, as the header says. No names, quotes, statistics or prices, as claimed.",
-     "status": "accepted"
     }
    ],
-   "computedAt": "2026-10-09T06:52:41Z"
+   "computedAt": "2026-10-09T06:59:51Z"
   }
  ],
  "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -1231,7 +1150,7 @@
   "nodes": 34,
   "ledgerEvents": 61,
   "activityRows": 1145,
-  "llmFindings": 62,
+  "llmFindings": 53,
   "llmAuditedAgents": [
    "brand",
    "data",
@@ -1244,6 +1163,42 @@
    "science"
   ],
   "revenueEntries": 0
+ },
+ "checks": {
+  "brand": [
+   "Acceptance 1 met: no 'simulat' string anywhere in index.html; the module is called an analogue. Acceptance 2 met: CTA at :142 links to the form at :274. Headless Chromium run (playwright-core): submitting the filled form shows the thanks panel, 0 network requests, empty localStorage; the only external request is Google Fonts, as the header says. No names, quotes, statistics or prices, as claimed."
+  ],
+  "data": [
+   "Acceptance criteria are met in substance. Validated scales are named with citations: IRI-PT, QPS, RIBS, OMS-WA, IOS, Marlowe-Crowne C and AQ-27. Waves are T0 pre, T1 post and T2 day 30. The primary outcome is behaviour (AAI-verified), not mood, and the AAI is honestly labelled unvalidated. The section 5 sample-size table was recomputed in python3 as n = 2(z0.975 + z0.80)^2 / d^2 x 0.75 x 1.2, giving 109.01 / 226.05 / 627.91, so 110 / 227 / 628 completers, 156 / 323 / 898 recruited per arm and 312 / 646 / 1,796 in total. All are exact. The design effect 1 + (5-1) x 0.05 = 1.2 and the variance factor 1 - 0.5^2 = 0.75 are correct. Confirmed by search: Scroggins 2007, Employee Responsibilities and Rights Journal 19(4):279 (doi 10.1007/s10672-007-9056-9), and the existence and authorship of the OMS-WA paper. The cognitive-empathy benchmark d = 0.08 that V02 cites through the mechanism spec matches Martingano et al. 2021. There is no contradiction with V03: the prereg reproduces the V02 table and adds pilot CI half-widths that I recomputed as correct. Not re-checked by search (bibliographic details consistent with the auditor's knowledge): Davis 1983, Fuermaier 2012, Evans-Lacko 2011, Ar"
+  ],
+  "ethics": [
+   "F06 codesign-charter.md meets its criteria: paid advisors with a binding veto (s2-s3), debrief and harm rules (s5-s6), and a never-claims register (s7). Every dossier citation in it matches research/evidence-dossier.md: Nario-Redmond s1; d = 0.08 cognitive / 0.33 emotional s2; double empathy is autism-specific s3; Song 2021 2.58% / 6.76% s5; 0770T is a therapy add-on s8; webcam error 2-4 degrees s10; follow-up 4-8 weeks; the memo figures 72%, $14.8B, 84% and $25k-60k all marked unverified. V04 advisory-board.md meets its criteria: rate floor, 7 channels and a 90-minute script. Its budget arithmetic recomputes: 0.5+1.5+2+2+4.5+4+0.5 = 15 h; 6 x 15 + 6 x 0.5 = 93 h; 93 x 50 = 4,650 and 93 x 75 = 6,975. NIHR confirmed by search summaries (York and UCL pages): +10%, GBP 25 to 27.50, from 16 Dec 2025, range GBP 13.80-495. CSG Justice Center 2024 'Establishing a Lived Experience Advisory Panel' exists (May 2024 PDF). M03 irb-packet.md meets its criteria: consent 3.1-3.4, debrief 4.1-4.5, adverse events 5.1-5.5. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333, doi 10.1037/rep0000127 is confirmed by abstract-level search: Exp 1 N=60 and Exp 2 N=50; more confused, embar"
+  ],
+  "finance": [
+   "V10: finance/model.py runs on python3 stdlib only, and its output with seed 20261006 matches the results block in model.md exactly (empty diff). All 32 inputs are triangular and labelled 'assumption', and none claims a source, consistent with the dossier. I read the code and found no arithmetic bug in ARR, contract renewal and churn, COGS, percentiles or the Spearman ranks. Python's round() rounds halves to even on pilot_months and lag, which is immaterial. V11: all nine score products recomputed correctly (16.6, 16.0, 12.2, 10.0, 8.6, 3.8, 2.4, 0.6, 0.5 at the stated FX). M05 Tier A and Tier B budgets recomputed: 76,140 + 11,271 + 6,119 = 93,530 and 219,360 + 32,454 + 17,627 = 269,441. Third-party shares 30.7% and 31.7%, headrooms 6,470 / 35,559 / 44,922, stress-mode totals 114,058 / 328,601 and subaward break-evens of about 15.4k / 17.6k / 51.5k / 57.9k are all correct. Date arithmetic is correct: 70 days, and 42-day lead times give 2026-11-04, 2026-11-24, 2027-01-21 and 2027-02-22. I re-ran the appendix script with python3 -I and the output is identical to the printed block. Confirmed by search: NOT-OD-25-013 ($314,363 / $2,095,748), PA-27-100 as the SBIR parent, SBIR reauthoriz"
+  ],
+  "gtm": [
+   "python3 recount: outreach.md 9 emails, worst case 104/102/72/102/104/68/99/95/68 (<120); B1 30 emails, max 104, no present-tense co-design left. icp.md: Song 2021 2.58%/6.76%, 5,000x = 129-338 ok; Meta Quest sales end 2026-02-20, Embodied $3.2M Jan 2020, Akili $1.7M / $0.434 a share ok. CSV: 50 rows, 26/12/12, no emails; Roundtable founders; Specialisterne AU shut 2025-11-30; Freddie Mac 21/9."
+  ],
+  "legal": [
+   "V12 privacy.md, checked against the code and by re-running it: export privacy flags are hard-coded literals at mvp/index.html:1116 (finding 2 is correct); the 'tab hidden' pause is at index.html:1305 (finding 4 is correct); CSP connect-src 'none' is at index.html:6; uid() uses 6 bytes from crypto.getRandomValues (index.html:271); consent text_version 'v0-draft-2026-10-06' is set (index.html:1298), and the consent at_s is not exported (buildExport, index.html:1120); grep finds 0 getUserMedia/mediaDevices/MediaRecorder/geolocation/localStorage/sessionStorage/indexedDB/document.cookie. I re-ran #selftest headless with Playwright 1.56.1 at 1280 px: 59 of 59 pass, 0 external requests, 0 page errors. Both acceptance criteria are met: no biometrics in v0 (section 4) and GDPR/UK GDPR/HIPAA/FERPA applicability stated (section 6). The legal citations are correct as cited: GDPR Arts 4(7), 4(8), 4(14), 4(15), 5(1)(c), 8, 9, 11, 25, 27, 28, 33 (72 h), 35 and Recital 26; ePrivacy 5(3); PECR reg 6; DPA 2018 s.9 and Sch 1; HIPAA 45 CFR 160.103, with the PHI employer-records exclusion; FERPA 34 CFR 99.3; BIPA 740 ILCS 14; EU AI Act Art 5(1)(f). The ledger says '4 real exports' while the doc says 3:"
+  ],
+  "orchestrator": [
+   "F01: graph.py validate gives 'ok: 34 nodes, 9 agents, acyclic'; every node has an agent and outputs. A ledger replay matches every node status in graph.json and is in time order; the only gaps are F01/F02, which were seeded as done, and F03's done without a start. F02: dashboard/index.html renders from state.js over file:// with 0 page errors; its only network requests are optional Google Fonts. It shows '19 of 34 buildings' (56%), which matches the 19 done nodes. F05 figures match finance/model.md:4,23-36,39: $53k/$633k/$4.31M, 0.6%, median margin 68%, H1 $2.09M vs $178k, peak funding $4.93M. VR empathy d 0.33/0.08 matches the dossier. SBIR/STTR reauthorised through 2031 is confirmed (P.L. 119-83, signed 2026-04-13; washington.edu and CRS IN12705, search summaries). Meta's 2026-02-20 end of commercial Quest SKUs and HMS sales is confirmed (forwork.meta.com, search summary). 0770T sunsetting in 2028 matches the dossier. 'Roughly 300+' for a confirmatory trial matches 312 at d = 0.36. D01: all six decisions have options and blocked nodes; the advisor range $4.7k-7k matches advisory-board.md. All three budget totals and the line items recompute exactly. Delaware LLC tax of $400 (HB 4"
+  ],
+  "product": [
+   "Re-ran in this audit (headless Chromium 1194 via Playwright, file://): index.html#selftest gives 59 of 59 at 390x844 and at 1280x800, each with and without reduced-motion emulation, with 0 page errors, 0 console errors and 0 non-file requests. node --check passes on the extracted inline script (100,764 chars). index.html sha256 matches the hash in CHANGELOG.md:11 and advisor-review-kit.md:12. The CSP meta has default-src 'none' and connect-src 'none'. There is no localStorage, sessionStorage, indexedDB, cookie, fetch or sendBeacon in the code. All M1-M5 ranges and defaults in the SPEC (index.html:278-310) match science/mechanism-spec.md, and M5 is off by default. The kit's 'at ceiling 0.8' column recomputes exactly from lo + 0.8(hi - lo): 3.3, 6.8, 0.68, 2.6, 0.25, 0.64, 0.164, 0.84, 8.4, 0.58. Kit line anchors are correct: the banner at index.html:168, CEIL at :236 and the prohibited-phrase list at :1254. buildExport (index.html:1109-1130) carries untimed T0/T1, dose-only summaries and no identifier keys, and session_completed needs a completed debrief and no Stop, as README:90 says. Palette contrast was recomputed and all text pairs pass AA (lowest st on s2 is 6.05:1). Citations "
+  ],
+  "science": [
+   "Verified correct by WebSearch (summary level) or by recomputation. Nario-Redmond, Gospodinov & Cobb 2017, Rehabil Psychol 62(3):324-333: N = 60 and N = 50, pity and interaction discomfort in Experiment 2, empathy up but attitudes not improved. Martingano et al. 2021: emotional empathy d = 0.33, cognitive d = 0.08 (p = .23). Herrera et al. 2018 PLoS ONE: 8-week follow-up and VR petition effect. Song et al. 2021 JOGH: 2.58% and 6.76%. Meta: commercial Quest and HMS sales ended 2026-02-20, support continues to 2030-01-04, Workrooms ended 2026-02-16. SBIR/STTR: lapsed 2025-10-01, reauthorized 2026-04-13 through 2031-09-30, Strategic Breakthrough Award up to $30M. Akili: 2023 revenue $1.7M, $0.4340 per share, about $34M; the 2024 layoff was 46%, so 'about half' is acceptable. Embodied Labs: $3.2M seed, January 2020. Talespin to Cornerstone: March 2024. FDA General Wellness guidance reissued 2026-01-06. 0770T sunset in January 2028 matches the cited source. Hupfeld, Abagis & Shah 2019: n = 251 and 372. Broulidakis/Sonuga-Barke adolescent DMN paper titled 'but not mind wandering', so partners Flag A is correct. Silverman, Gwinn & Van Boven 2015, SPPS 6(4):464-471. The '19% cut DEI funding"
+  ]
+ },
+ "founderAuth": {
+  "keyRegistered": false,
+  "keyRegisteredAt": null,
+  "signatures": 0,
+  "verified": 0,
+  "unsignedFounderActions": 5
  },
  "revenueCheck": {
   "entries": 0,

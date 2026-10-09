@@ -6,8 +6,8 @@
   "severity": "critical",
   "kind": "process",
   "claim": "brand/landing/index.html:140 \"A short browser-based practice module, co-designed with paid ADHD advisors\"; :8 (meta description), :224 \"Co-designed with paid ADHD advisors who can say no.\", :166 \"co-designed with ADHD adults\"",
-  "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled.",
-  "status": "open"
+  "evidence": "The same page says at :234 \"We have not yet recruited advisors, and no ADHD adult has reviewed it.\" V14 is awaiting_human and the advisor budget is still open (founder-decisions.md:8). The headline value claim is false and contradicts the page's own disclosure. It breaches ethics/codesign-charter.md:134. The page is not yet published, but a buyer reading the hero would be misled. || FIXED 2026-10-09 by the orchestrator: brand/landing/index.html lines 8, 17, 140, 166 and 224 now say \"to be co-designed\"; no present-tense advisor claim remains (grep \"co-designed with\" shows only future wording). Pending re-check by the next independent audit.",
+  "status": "fixed"
  },
  {
   "id": "AF-brand-2",

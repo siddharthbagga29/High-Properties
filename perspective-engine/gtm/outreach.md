@@ -1,7 +1,7 @@
 # Perspective Engine: Outreach Sequence Drafts (V08, as of 2026-10-06)
 
 ## Summary (150 words max)
-Nine cold-email drafts: a 3-touch sequence (day 0, day 5, day 11) for each ICP segment in targets.csv: 1 = People/Talent (neurodiversity programme owners), 2 = accommodations / Employee Relations, 3 = higher-education faculty development and disability resources. Every email asks for one 20-minute discovery conversation, not a sale. None makes an efficacy claim, uses a statistic, or frames the offer as DEI. Co-design with paid ADHD advisors is stated only as an intention ("being co-designed with..."). Merge fields match targets.csv columns (`company`, `public_signal`), plus founder-filled fields. Each email is under 120 words including subject and footer, at worst-case merge-field lengths (counts in Part C). **Nothing here has been sent.** Sending is the human-gated node V09: the founder approves each batch of 10 or fewer, sends from their own account, and honors opt-outs. Legal points are marked [COUNSEL].
+Nine cold-email drafts: a 3-touch sequence (day 0, day 5, day 11) for each ICP segment in targets.csv: 1 = People/Talent (neurodiversity programme owners), 2 = accommodations / Employee Relations, 3 = higher-education faculty development and disability resources. Every email asks for one 20-minute discovery conversation, not a sale. None makes an efficacy claim, uses a statistic, or frames the offer as DEI. Co-design with paid ADHD advisors is stated only as a plan ("which I plan to co-design with...") because no advisor is engaged yet. Merge fields match targets.csv columns (`company`, `public_signal`), plus founder-filled fields. Each email is under 120 words including subject and footer, at worst-case merge-field lengths (counts in Part C). **Nothing here has been sent.** Sending is the human-gated node V09: the founder approves each batch of 10 or fewer, sends from their own account, and honors opt-outs. Legal points are marked [COUNSEL].
 
 ---
 
@@ -33,7 +33,7 @@ Hi {{first_name}},
 
 I noticed {{public_signal}} at {{company}}. Hiring is one step; the day-to-day working-style conversations with managers are another.
 
-I'm building a browser-based practice module for managers, being co-designed with paid ADHD advisors. Before building further, I'd like to learn how {{company}} prepares managers for these conversations.
+I'm building a browser-based practice module for managers, which I plan to co-design with paid ADHD advisors. Before building further, I'd like to learn how {{company}} prepares managers for these conversations.
 
 Could we talk for 20 minutes? This is research, not a sales call.
 
@@ -46,7 +46,7 @@ Subject: What manager practice would look like
 
 Hi {{first_name}},
 
-A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. It is being co-designed with paid ADHD advisors, and it is educational only.
+A short follow-up. The module lets a manager rehearse a working-style conversation, then commit to one concrete next step. I plan to co-design it with paid ADHD advisors, and it is educational only.
 
 The open question is whether practice helps managers be more effective and helps teams keep good people. I don't know yet, which is why I'd like 20 minutes with someone at {{company}}. If another team owns this, a pointer would help.
 
@@ -77,7 +77,7 @@ Hi {{first_name}},
 
 I noticed {{public_signal}}, which suggests {{company}} has a real accommodations function.
 
-I'm building a browser-based tool where managers practice the accommodation-request conversation, being co-designed with paid ADHD advisors. It is educational, not legal advice.
+I'm building a browser-based tool where managers practice the accommodation-request conversation, which I plan to co-design with paid ADHD advisors. It is educational, not legal advice.
 
 Could I have 20 minutes to hear where managers struggle with these requests in practice? This is a research conversation, not a sales call.
 
@@ -90,7 +90,7 @@ Subject: What would your team need to see?
 
 Hi {{first_name}},
 
-Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. It is being co-designed with paid ADHD advisors. It is educational only and makes no compliance promise.
+Following up briefly. The idea is that a manager practices responding to an accommodation request before a real one arrives. I plan to co-design it with paid ADHD advisors. It is educational only and makes no compliance promise.
 
 In 20 minutes I'd like to ask two things: where do managers stumble first, and what would your HR and Legal colleagues at {{company}} need to see before trying anything like this? I'm not selling anything yet.
 
@@ -121,7 +121,7 @@ Hi {{first_name}},
 
 I noticed {{public_signal}} at {{company}}.
 
-I'm developing a short browser-based practice module for accommodation and working-style conversations, being co-designed with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
+I'm developing a short browser-based practice module for accommodation and working-style conversations, which I plan to co-design with paid ADHD advisors. I'm exploring whether it could sit alongside faculty development, and whether a research partnership with a faculty investigator makes sense.
 
 Could we talk for 20 minutes? I'm here to learn, not to sell.
 
@@ -134,7 +134,7 @@ Subject: A possible research partnership
 
 Hi {{first_name}},
 
-Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. The module is being co-designed with paid ADHD advisors.
+Following up. On a call I can share the planned design: a practice session, a comparison group, and a measure fixed in advance, with results reported whatever they show, including a null. I plan to co-design the module with paid ADHD advisors.
 
 Who is the right person at {{company}}: a teaching-centre lead, disability-access staff, or a faculty member who studies this? Twenty minutes would be enough to find out.
 
@@ -163,14 +163,14 @@ Counted by `python3` over each fenced block (subject, body, sign-off and footer)
 
 | Email | Day | As written | Worst case |
 |---|---|---|---|
-| S1-T1 | 0 | 76 | 104 |
-| S1-T2 | 5 | 91 | 102 |
+| S1-T1 | 0 | 79 | 107 |
+| S1-T2 | 5 | 92 | 103 |
 | S1-T3 | 11 | 61 | 72 |
-| S2-T1 | 0 | 77 | 102 |
-| S2-T2 | 5 | 93 | 104 |
+| S2-T1 | 0 | 80 | 105 |
+| S2-T2 | 5 | 94 | 105 |
 | S2-T3 | 11 | 57 | 68 |
-| S3-T1 | 0 | 74 | 99 |
-| S3-T2 | 5 | 84 | 95 |
+| S3-T1 | 0 | 77 | 102 |
+| S3-T2 | 5 | 85 | 96 |
 | S3-T3 | 11 | 57 | 68 |
 
 ---
@@ -182,7 +182,7 @@ Counted by `python3` over each fenced block (subject, body, sign-off and footer)
 3. **Recipients.** Public company-level or role-based business contacts only. Never scrape or buy personal emails. Do not guess addresses.
 4. **Opt-outs.** Any "stop", unsubscribe or negative reply goes on a suppression list the same day, with no further contact and no re-adding. Internal standard is same day; the legal deadline is [COUNSEL].
 5. **Verify before send.** Check each `public_signal` against `source_url` on the day of sending. Drop or fix low-confidence rows. Do not repeat any vendor-style productivity figures found in `notes`.
-6. **Truth checks at send time.** Confirm the "being co-designed with paid ADHD advisors" wording is still an honest statement of intent; if advisors are not yet engaged, change it to "I intend to co-design with". The legal entity (M04) and a real postal address must exist. No efficacy claims, statistics, condition-simulation language, DEI framing, legal-outcome promises, prices or LOIs in outreach. The ask is a 20-minute discovery conversation only.
+6. **Truth checks at send time.** Keep the "which I plan to co-design with paid ADHD advisors" wording until advisors are actually engaged and paid; only then may it change to "being co-designed with". The legal entity (M04) and a real postal address must exist. No efficacy claims, statistics, condition-simulation language, DEI framing, legal-outcome promises, prices or LOIs in outreach. The ask is a 20-minute discovery conversation only.
 7. **US first.** Send only US rows until counsel clears the rest. Non-US rows in targets.csv: SAP (Germany), Ubisoft (France), Lloyds and Barclays (UK), Telstra and Westpac (Australia), plus EY, Baker McKenzie and Lenovo (global). [COUNSEL: lawful basis and B2B cold-email rules differ by country; GDPR/UK GDPR/PECR, Australian Spam Act. Not verified here.]
 8. **CAN-SPAM, US.** Treat every message as commercial. Accurate sender and subject (no fake "Re:"), a valid postal address, a working opt-out, and honored requests. [COUNSEL: confirm that B2B research outreach is in scope, the opt-out deadline, and the exact footer.]
 9. **GDPR/privacy, any EU or UK recipient.** [COUNSEL: legitimate-interest assessment, privacy notice link, data-subject requests, retention of the suppression list.]

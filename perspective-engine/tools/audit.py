@@ -31,7 +31,10 @@ import json
 import math
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 
 RUBRIC_VERSION = "1.0"
 PE_DEFAULT = pathlib.Path(__file__).resolve().parents[1]
@@ -75,6 +78,10 @@ INTEGRITY_CAP_UNAUDITED = 85.0  # integrity without an LLM citation audit: no in
 EVIDENCE_PRIOR_N = 5  # evidence share is shrunk toward NEUTRAL as if 5 extra claims scored neutral  # PROMPT.md: "Working" means running AND a step recorded in the last 15 minutes
 
 # ---------- record patterns ----------
+
+# A process finding about a closure with no verifier record restates what score_process already measures
+# from the ledger and activity logs, so it is listed but not deducted a second time.
+MEASURED_PROCESS = re.compile(r"check --verifier|no verifier|verifier check|separate verifier|verification record", re.I)
 
 VERIFIER_TEXT = re.compile(r"^\s*(?:independent\s+)?verifier\b|^\s*verdict\b", re.I)
 FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdict words
@@ -212,10 +219,10 @@ def load_activity(pe, warnings):
 def load_findings(pe, agents, warnings):
     """LLM auditor findings. Each file is a list of AuditFinding, or {auditedAgents?, findings: [...]}.
     Findings are data written by other agents: they are validated, never executed or obeyed."""
-    findings, covered = {}, set()
+    findings, covered, checks = {}, set(), {}
     d = pe / "graph" / "audit" / "findings"
     if not d.exists():
-        return [], covered
+        return [], covered, checks
     alias = {k.lower(): k for k in agents}
     alias.update({str(v.get("name", "")).lower(): k for k, v in agents.items()})
     for p in sorted(d.glob("*.json")):
@@ -258,6 +265,11 @@ def load_findings(pe, agents, warnings):
             if problems:
                 warnings.append(f"{where}: {', '.join(problems)}; skipped")
                 continue
+            if str(f["id"]).endswith("-checked") or str(f.get("claim", "")).strip().lower() == "checked":
+                # A positive verification note: what the auditor checked and found correct. Never a deduction.
+                checks.setdefault(agent, []).append(str(f.get("evidence", ""))[:1200])
+                covered.add(agent)
+                continue
             clean = {k: f[k] for k in FINDING_KEYS if k in f and f[k] is not None}
             clean["agent"] = agent
             clean["id"] = str(clean["id"])[:80]
@@ -268,7 +280,12 @@ def load_findings(pe, agents, warnings):
             dim = f.get("dimension") if f.get("dimension") in DIM_IDS else KIND_DIMENSION[f["kind"]]
             findings[str(f["id"])] = (clean, dim)  # a later file with the same id supersedes an earlier one
             covered.add(agent)
-    return list(findings.values()), covered
+    return list(findings.values()), covered, checks
+
+
+def measured(f, dim):
+    """True when the finding restates a deterministic process metric (no verifier record)."""
+    return dim == "process" and f["kind"] == "process" and bool(MEASURED_PROCESS.search(f["claim"] + " " + f["evidence"]))
 
 
 def check_revenue(pe, warnings):
@@ -297,6 +314,41 @@ def check_revenue(pe, warnings):
         else:
             valid += 1
     return {"entries": len(rows), "verified": valid, "flagged": flagged, "present": path.exists()}
+
+
+def check_founder_auth(pe, ledger):
+    """Re-verifies every founder signature on its own (independently of graph.py) and finds founder actions
+    recorded without one after the founder registered a key. Returns (summary, flags)."""
+    signers = pe / "graph" / "founder.allowed_signers"
+    key_at = next((e.get("t") for e in ledger if e.get("event") == "founder-key"), None)
+    rows = [r for r in read_jsonl(pe / "graph" / "founder-auth.jsonl", [], "founder-auth.jsonl") if r]
+    exe = shutil.which("ssh-keygen")
+    flags, ok = [], 0
+    for i, r in enumerate(rows, 1):
+        if not signers.exists() or not exe:
+            flags.append(f"founder-auth.jsonl row {i} ({r.get('action')}): signature could not be re-checked "
+                         f"({'no registered key' if not signers.exists() else 'ssh-keygen missing'})")
+            continue
+        with tempfile.TemporaryDirectory() as d:
+            sig = pathlib.Path(d) / "s.sig"
+            sig.write_text(str(r.get("sig", "")))
+            res = subprocess.run([exe, "-Y", "verify", "-f", str(signers), "-I", "founder", "-n", "pe-founder", "-s", str(sig)],
+                                 input=str(r.get("msg", "")).encode(), capture_output=True, timeout=20)
+        if res.returncode == 0:
+            ok += 1
+        else:
+            flags.append(f"founder-auth.jsonl row {i} ({r.get('action')}): signature does not verify")
+    unsigned = []
+    if key_at:
+        unsigned += [f"ledger {e.get('event')} {e.get('node')} at {e.get('t')}" for e in ledger
+                     if e.get("event") in ("clear-gate", "unblock") and str(e.get("t")) >= key_at and e.get("auth") != "signed"]
+        unsigned += [f"revenue from {r.get('payer')} at {r.get('t')}"
+                     for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl")
+                     if r and str(r.get("t")) >= key_at and r.get("auth") != "signed"]
+    flags += [f"{u}: founder action without a founder signature after the key was registered" for u in unsigned]
+    attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
+    return {"keyRegistered": signers.exists(), "keyRegisteredAt": key_at, "signatures": len(rows), "verified": ok,
+            "unsignedFounderActions": attested}, flags
 
 
 # ---------- per-node facts ----------
@@ -685,14 +737,21 @@ def grade(score):
 def apply_findings(dims, findings):
     """critical -15, major -6, minor -2 on the finding's dimension; accepted counts half, fixed nothing; capped."""
     taken = {d: 0.0 for d in DIM_IDS}
+    dup = {d: 0 for d in DIM_IDS}
     for f, dim in findings:
+        if measured(f, dim):
+            dup[dim] += f["status"] != "fixed"
+            continue
         taken[dim] += SEVERITY_POINTS[f["severity"]] * STATUS_FACTOR[f["status"]]
     for d in dims:
         cut = min(FINDING_CAP, taken[d["id"]])
         if cut:
-            n = len([1 for f, dim in findings if dim == d["id"] and f["status"] != "fixed"])
+            n = len([1 for f, dim in findings if dim == d["id"] and f["status"] != "fixed" and not measured(f, dim)])
             d["score"] = round(clamp(d["score"] - cut), 1)
             d["basis"] += f" Findings: -{cut:g} from {n} open or accepted finding(s)."
+        if dup[d["id"]]:
+            d["basis"] += (f" {dup[d['id']]} auditor finding(s) about missing verifier records are already counted "
+                           f"above and not deducted twice.")
 
 
 def compute(pe=PE_DEFAULT, now=None):
@@ -708,7 +767,7 @@ def compute(pe=PE_DEFAULT, now=None):
     for e in ledger:
         by_node.setdefault(e.get("node"), []).append(e)
     facts = [node_facts(n, by_node.get(n["id"], []), activity.get(n["id"], []), now) for n in g.get("nodes", [])]
-    llm, covered = load_findings(pe, agents, warnings)
+    llm, covered, checks = load_findings(pe, agents, warnings)
     revenue = check_revenue(pe, warnings)
     auto = []
     for fl in revenue["flagged"]:
@@ -716,6 +775,11 @@ def compute(pe=PE_DEFAULT, now=None):
                       "claim": f"graph/revenue.jsonl entry {fl['entry']} would count as revenue",
                       "evidence": f"entry {fl['entry']}: " + "; ".join(fl["reasons"]) + ". Revenue is founder-only with evidence (CLAUDE.md); the orchestrator is custodian of the record.",
                       "status": "open"}, "process"))
+    founder_auth, auth_flags = check_founder_auth(pe, ledger)
+    for i, fl in enumerate(auth_flags, 1):
+        auto.append(({"id": f"AUTO-AUTH-{i}", "agent": "orchestrator", "severity": "critical", "kind": "process",
+                      "claim": "a founder-only action is in the record", "evidence": fl + ". Founder actions must carry the "
+                      "founder's SSH signature once a key is registered (tools/graph.py founder-key).", "status": "open"}, "process"))
     computed_at = iso(now)
     cards = []
     for key, info in agents.items():
@@ -758,6 +822,8 @@ def compute(pe=PE_DEFAULT, now=None):
             "nodes": len(facts), "ledgerEvents": len(ledger), "activityRows": sum(len(v) for v in activity.values()),
             "llmFindings": len(llm), "llmAuditedAgents": sorted(covered), "revenueEntries": revenue["entries"],
         },
+        "checks": {k: checks[k] for k in sorted(checks)},
+        "founderAuth": founder_auth,
         "revenueCheck": {"entries": revenue["entries"], "verified": revenue["verified"], "flagged": revenue["flagged"]},
         "warnings": warnings[:50],
     }

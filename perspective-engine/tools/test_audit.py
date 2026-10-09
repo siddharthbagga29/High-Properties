@@ -139,6 +139,8 @@ def build_fixture(root):
              "evidence": "", "status": "open"},
             {"id": "F-4", "agent": "alpha", "task": "A1", "severity": "minor", "kind": "hallucination",
              "claim": "a quote", "evidence": "quote not in source", "status": "fixed"},
+            {"id": "AF-alpha-checked", "agent": "alpha", "severity": "minor", "kind": "process",
+             "claim": "checked", "evidence": "the 12% figure matches the cited report", "status": "accepted"},
         ],
     }))
     (pe / "graph" / "revenue.jsonl").write_text(jl([
@@ -354,7 +356,8 @@ def graph_paths(root):
         graph, ROOT=root, PE=pe, GRAPH=pe / "graph" / "graph.json", LEDGER=pe / "graph" / "ledger.jsonl",
         ACTIVITY=pe / "graph" / "activity", LOCK=pe / "graph" / ".lock", STATE_JS=pe / "dashboard" / "state.js",
         CITY_JSON=pe / "city" / "public" / "state.json", REVENUE=pe / "graph" / "revenue.jsonl",
-        AUDIT_JSON=pe / "graph" / "audit" / "scorecards.json",
+        AUDIT_JSON=pe / "graph" / "audit" / "scorecards.json", SIGNERS=pe / "graph" / "founder.allowed_signers",
+        FOUNDER_AUTH=pe / "graph" / "founder-auth.jsonl",
     ):
         yield pe
 
@@ -364,6 +367,36 @@ def run_graph(*argv):
     with contextlib.redirect_stdout(buf):
         rc = graph.main(list(argv))
     return rc, buf.getvalue()
+
+
+class FindingAccounting(Tmp):
+    """Positive 'checked' notes never deduct; a missing-verifier finding is not deducted on top of the metric."""
+
+    def setUp(self):
+        super().setUp()
+        self.pe = build_fixture(self.root)
+
+    def test_checked_note_is_kept_but_never_scored(self):
+        r = audit.compute(self.pe, NOW)
+        alpha = next(c for c in r["scorecards"] if c["agent"] == "alpha")
+        self.assertNotIn("AF-alpha-checked", [f["id"] for f in alpha["findings"]])
+        self.assertEqual(r["checks"]["alpha"], ["the 12% figure matches the cited report"])
+
+    def test_missing_verifier_finding_is_listed_not_double_counted(self):
+        before = audit.compute(self.pe, NOW)
+        p = self.pe / "graph" / "audit" / "findings" / "llm-2.json"
+        p.write_text(json.dumps([{"id": "F-9", "agent": "delta", "task": "D1", "severity": "major", "kind": "process",
+                                  "claim": "D1 closed", "evidence": "no verifier check entry in the activity log",
+                                  "status": "open"}]))
+        after = audit.compute(self.pe, NOW)
+        card = lambda r: next(c for c in r["scorecards"] if c["agent"] == "delta")
+        self.assertIn("F-9", [f["id"] for f in card(after)["findings"]])
+        self.assertEqual(card(before)["score"], card(after)["score"])
+        proc = next(d for d in card(after)["dimensions"] if d["id"] == "process")
+        self.assertIn("not deducted twice", proc["basis"])
+        p.write_text(json.dumps([{"id": "F-9", "agent": "delta", "task": "D1", "severity": "major", "kind": "process",
+                                  "claim": "D1 says co-designed", "evidence": "no advisor exists", "status": "open"}]))
+        self.assertLess(card(audit.compute(self.pe, NOW))["score"], card(before)["score"])
 
 
 class RevenueCommand(Tmp):
@@ -410,7 +443,8 @@ class RevenueCommand(Tmp):
         self.assertEqual(rc, 0)
         rows = self.revenue_lines()
         self.assertEqual(len(rows), 2)
-        self.assertEqual(set(rows[0]), {"t", "amountUsd", "payer", "evidence", "recordedBy"})
+        self.assertEqual(set(rows[0]), {"t", "amountUsd", "payer", "evidence", "recordedBy", "auth"})
+        self.assertEqual(rows[0]["auth"], "attested")  # no founder key registered in this fixture
         self.assertEqual(rows[0]["amountUsd"], 1500.0)
         self.assertEqual(rows[0]["payer"], "Acme Corp")
         self.assertEqual(rows[0]["evidence"], "invoice INV-1")

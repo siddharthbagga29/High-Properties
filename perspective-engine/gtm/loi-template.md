@@ -10,7 +10,7 @@ A one-page, non-binding letter of intent plus a short pilot offer. The buyer com
 **LETTER OF INTENT: Manager Accommodation-Practice Pilot**
 Date: [DATE] | From: [BUYER_LEGAL_NAME] (the "Organisation") | To: [PE_LEGAL_NAME] ("Perspective Engine")
 
-**1. Purpose.** The Organisation intends to run a paid pilot of Perspective Engine's browser-based practice module for manager working-style and accommodation conversations, with one cohort of [COHORT_N] managers in [BUSINESS_UNIT] (the "Cohort"). The module is an educational practice tool co-designed with ADHD adults. It is not diagnostic, therapeutic, or legal-compliance advice, and no legal outcome is promised.
+**1. Purpose.** The Organisation intends to run a paid pilot of Perspective Engine's browser-based practice module for manager working-style and accommodation conversations, with one cohort of [COHORT_N] managers in [BUSINESS_UNIT] (the "Cohort"). The module is an educational practice tool that Perspective Engine plans to co-design with paid ADHD advisors before the pilot starts ([CONFIRM AT SIGNING: advisors engaged and content approved; if not, keep this sentence as a plan]). It is not diagnostic, therapeutic, or legal-compliance advice, and no legal outcome is promised.
 
 **2. Success metric, agreed now, before any data.**
 - *Primary:* the difference between the intervention arm and a control arm (equivalent-content video) in the share of managers with at least one **verified accommodation action at day 30**, as defined in the pre-registration (Schedule A: [DEFINITION_REF]). Verification source: [VERIFICATION_SOURCE].

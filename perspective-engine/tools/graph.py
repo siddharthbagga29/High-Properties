@@ -18,9 +18,22 @@ the state the dashboards read (dashboard/state.js, city/public/state.json).
   python3 perspective-engine/tools/graph.py export
   python3 perspective-engine/tools/graph.py revenue add 1500 "Acme Corp" --evidence "invoice INV-001, bank ref 123" --founder
   python3 perspective-engine/tools/graph.py revenue list
+  python3 perspective-engine/tools/graph.py authorize clear-gate V09 "founder approved batch 1"
+  python3 perspective-engine/tools/graph.py clear-gate V09 "founder approved batch 1" --sig request.txt.sig
+  python3 perspective-engine/tools/graph.py founder-key "ssh-ed25519 AAAA... founder@mac"
 
 Revenue is founder-only and needs an evidence reference: `revenue add` refuses
 without --founder, without --evidence, or with an amount that is not above zero.
+
+Founder actions (revenue add, clear-gate, unblock) are signed once the founder
+registers an SSH public key with `founder-key`: `authorize` prints the exact
+request, the founder signs it on their own machine with
+`ssh-keygen -Y sign -f ~/.ssh/id_ed25519 -n pe-founder request.txt`, and the
+action runs only if `ssh-keygen -Y verify` accepts that signature for that
+exact action at the current point in the record (so it cannot be replayed).
+The private key never leaves the founder's machine, so no agent can produce a
+signature. Before a key is registered these actions are recorded as
+"attested", not "signed", and the auditor reports them.
 
 Every write takes an exclusive lock, so agents running in parallel cannot
 corrupt the graph.
@@ -31,7 +44,10 @@ import fcntl
 import json
 import pathlib
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PE = ROOT / "perspective-engine"
@@ -43,6 +59,9 @@ STATE_JS = PE / "dashboard" / "state.js"
 CITY_JSON = PE / "city" / "public" / "state.json"
 REVENUE = PE / "graph" / "revenue.jsonl"
 AUDIT_JSON = PE / "graph" / "audit" / "scorecards.json"
+SIGNERS = PE / "graph" / "founder.allowed_signers"
+FOUNDER_AUTH = PE / "graph" / "founder-auth.jsonl"
+NAMESPACE = "pe-founder"
 STATUSES = {"pending", "running", "done", "blocked", "awaiting_human"}
 LOG_KINDS = {"plan", "read", "search", "fetch", "write", "edit", "run", "check", "note", "blocked", "handoff"}
 MAX_STATE_BYTES = 230_000  # the live dashboard stores state in one 256 KiB document
@@ -77,9 +96,131 @@ def index(g):
     return {n["id"]: n for n in g["nodes"]}
 
 
-def ledger_append(event, node_id, note=""):
+def ledger_append(event, node_id, note="", auth=None):
+    row = {"t": now(), "event": event, "node": node_id, "note": note}
+    if auth:
+        row["auth"] = auth
     with LEDGER.open("a") as f:
-        f.write(json.dumps({"t": now(), "event": event, "node": node_id, "note": note}) + "\n")
+        f.write(json.dumps(row) + "\n")
+
+
+# ---------- founder authorization (signed with the founder's SSH key) ----------
+
+def lines_in(path):
+    if not path.exists():
+        return 0
+    with path.open() as f:
+        return sum(1 for _ in f)
+
+
+def auth_message(action, fields):
+    """The exact text the founder signs. The sequence ties it to this point in the record, so it cannot be replayed."""
+    seq = lines_in(LEDGER) + lines_in(REVENUE)
+    body = [f"pe-founder-action v1", f"action: {action}"] + [f"{k}: {v}" for k, v in fields] + [f"sequence: {seq}"]
+    return "\n".join(body) + "\n"
+
+
+def ssh_verify(msg, sig_text, signers=None):
+    """(ok, detail). Fails closed when ssh-keygen is missing."""
+    exe = shutil.which("ssh-keygen")
+    if not exe:
+        return False, "ssh-keygen not found, so the signature cannot be checked"
+    with tempfile.TemporaryDirectory() as d:
+        sig = pathlib.Path(d) / "request.sig"
+        sig.write_text(sig_text)
+        r = subprocess.run([exe, "-Y", "verify", "-f", str(signers or SIGNERS), "-I", "founder", "-n", NAMESPACE, "-s", str(sig)],
+                           input=msg.encode(), capture_output=True, timeout=20)
+    return r.returncode == 0, (r.stdout + r.stderr).decode(errors="replace").strip()[:200]
+
+
+def key_fingerprint(pubkey):
+    exe = shutil.which("ssh-keygen")
+    if not exe:
+        return None
+    with tempfile.TemporaryDirectory() as d:
+        k = pathlib.Path(d) / "k.pub"
+        k.write_text(pubkey + "\n")
+        r = subprocess.run([exe, "-l", "-f", str(k)], capture_output=True, timeout=20)
+    return r.stdout.decode().split()[1] if r.returncode == 0 and r.stdout else None
+
+
+def pop_sig(args):
+    """Removes --sig <file> from args; returns (args, path or None)."""
+    out, sig, i = [], None, 0
+    while i < len(args):
+        if args[i] == "--sig":
+            sig = args[i + 1] if i + 1 < len(args) else ""
+            i += 2
+            continue
+        if args[i].startswith("--sig="):
+            sig = args[i].split("=", 1)[1]
+        else:
+            out.append(args[i])
+        i += 1
+    return out, sig
+
+
+def founder_auth(action, fields, sig_path):
+    """None means refused. Otherwise the auth label to record ('signed' or 'attested')."""
+    msg = auth_message(action, fields)
+    if not SIGNERS.exists():
+        print("warning: no founder key is registered (graph.py founder-key), so this is recorded as attested, not signed")
+        return "attested"
+    if not sig_path:
+        print("refused: a founder key is registered, so this action needs the founder's signature.")
+        print("Sign this exact request on the founder's machine (save it as request.txt):")
+        print(msg + f"  ssh-keygen -Y sign -f ~/.ssh/id_ed25519 -n {NAMESPACE} request.txt\nthen re-run with --sig request.txt.sig")
+        return None
+    try:
+        sig = pathlib.Path(sig_path).read_text()
+    except OSError as e:
+        print(f"refused: cannot read signature file: {e}")
+        return None
+    ok, why = ssh_verify(msg, sig)
+    if not ok:
+        print(f"refused: the signature does not verify for this exact action at this point in the record ({why})")
+        return None
+    with FOUNDER_AUTH.open("a") as f:
+        f.write(json.dumps({"t": now(), "action": action, "msg": msg, "sig": sig}) + "\n")
+    return "signed"
+
+
+def founder_key_cmd(args):
+    args, sig_path = pop_sig(args)
+    key = " ".join(args).strip()
+    parts = key.split()
+    if len(parts) < 2 or parts[0] not in ("ssh-ed25519", "ecdsa-sha2-nistp256", "sk-ssh-ed25519@openssh.com"):
+        print('usage: founder-key "ssh-ed25519 AAAA... comment" [--sig file]  (an ed25519 or ECDSA public key)')
+        return 1
+    fp = key_fingerprint(" ".join(parts[:2]))
+    if not fp:
+        print("refused: not a valid public key (or ssh-keygen is missing)")
+        return 1
+    if SIGNERS.exists():
+        # Replacing the key needs the current key's signature, so an agent cannot swap in its own.
+        auth = founder_auth("founder-key", [("key", " ".join(parts[:2]))], sig_path)
+        if auth != "signed":
+            return 1
+    SIGNERS.write_text(f'founder namespaces="{NAMESPACE}" {" ".join(parts[:2])}\n')
+    ledger_append("founder-key", "D01", f"founder signing key registered: {fp}. Check it on your Mac with: ssh-keygen -lf ~/.ssh/id_ed25519.pub")
+    print(f"registered founder key {fp}")
+    return 0
+
+
+def authorize_cmd(args, g):
+    """Prints the exact request the founder signs for clear-gate, unblock or revenue add."""
+    if args[:1] in (["clear-gate"], ["unblock"]) and len(args) >= 2 and args[1] in index(g):
+        print(auth_message(args[0], [("node", args[1]), ("note", " ".join(args[2:]))]), end="")
+        return 0
+    if args[:2] == ["revenue", "add"]:
+        parsed = parse_revenue(args[2:])
+        if parsed is None:
+            return 1
+        amount, payer, evidence, _ = parsed
+        print(auth_message("revenue add", revenue_fields(amount, payer, evidence)), end="")
+        return 0
+    print('usage: authorize clear-gate|unblock <NODE_ID> "note" | authorize revenue add <usd> <payer> --evidence <ref>')
+    return 1
 
 
 def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None):
@@ -238,7 +379,31 @@ def revenue_cmd(args, g):
     if args[:1] != ["add"]:
         print(usage)
         return 1
-    founder, evidence, pos, rest, i = False, None, [], args[1:], 0
+    rest, sig_path = pop_sig(args[1:])
+    parsed = parse_revenue(rest, need_founder=True)
+    if parsed is None:
+        return 1
+    amount, payer, evidence, _ = parsed
+    auth = founder_auth("revenue add", revenue_fields(amount, payer, evidence), sig_path)
+    if auth is None:
+        return 1
+    entry = {"t": now(), "amountUsd": round(amount, 2), "payer": payer, "evidence": evidence, "recordedBy": "founder", "auth": auth}
+    REVENUE.parent.mkdir(parents=True, exist_ok=True)
+    with REVENUE.open("a") as f:
+        f.write(json.dumps(entry) + "\n")
+    export(g)
+    print(f"recorded ${entry['amountUsd']:,.2f} from {payer} (evidence: {entry['evidence']}; {auth})")
+    return 0
+
+
+def revenue_fields(amount, payer, evidence):
+    return [("amountUsd", f"{round(amount, 2):.2f}"), ("payer", payer), ("evidence", evidence)]
+
+
+def parse_revenue(rest, need_founder=False):
+    """(amount, payer, evidence, founder) or None after printing why."""
+    usage = 'usage: revenue add <amount_usd> <payer> --evidence <ref> --founder'
+    founder, evidence, pos, i = False, None, [], 0
     while i < len(rest):
         a = rest[i]
         if a == "--founder":
@@ -250,38 +415,32 @@ def revenue_cmd(args, g):
             evidence = a.split("=", 1)[1]
         elif a.startswith("--"):
             print(f"refused: unknown option {a}")
-            return 1
+            return None
         else:
             pos.append(a)
         i += 1
-    if not founder:
+    if need_founder and not founder:
         print("refused: revenue is recorded only by the founder; pass --founder to attest that you are the founder")
-        return 1
+        return None
     if len(pos) != 2:
         print(usage)
-        return 1
+        return None
     try:
         amount = float(pos[0].replace(",", "").lstrip("$"))
     except ValueError:
         print(f"refused: amount {pos[0]!r} is not a number")
-        return 1
+        return None
     if amount != amount or amount in (float("inf"), float("-inf")) or amount <= 0:
         print(f"refused: amount must be a positive number of US dollars, got {pos[0]}")
-        return 1
+        return None
     payer = pos[1].strip()
     if not payer:
         print("refused: payer is empty")
-        return 1
+        return None
     if not (evidence or "").strip():
         print("refused: revenue needs --evidence <ref> (invoice, bank or payment-processor reference)")
-        return 1
-    entry = {"t": now(), "amountUsd": round(amount, 2), "payer": payer, "evidence": evidence.strip(), "recordedBy": "founder"}
-    REVENUE.parent.mkdir(parents=True, exist_ok=True)
-    with REVENUE.open("a") as f:
-        f.write(json.dumps(entry) + "\n")
-    export(g)
-    print(f"recorded ${entry['amountUsd']:,.2f} from {payer} (evidence: {entry['evidence']})")
-    return 0
+        return None
+    return amount, payer, evidence.strip(), founder
 
 
 def excerpt(path, limit=520):
@@ -355,6 +514,13 @@ def run(cmd, args):
         return 0
     if cmd == "revenue":
         return revenue_cmd(args, g)
+    if cmd == "authorize":
+        return authorize_cmd(args, g)
+    if cmd == "founder-key":
+        return founder_key_cmd(args)
+    sig_path = None
+    if cmd in ("clear-gate", "unblock"):
+        args, sig_path = pop_sig(args)
     if not args or args[0] not in idx:
         print(f"usage: {cmd} <NODE_ID> [note]")
         return 1
@@ -375,6 +541,7 @@ def run(cmd, args):
         return 0
     note = " ".join(args[1:])
     view = derived(n, idx)
+    auth = None
     if cmd == "start":
         if view != "ready":
             print(f"refused: {n['id']} is {view}, not ready")
@@ -395,10 +562,16 @@ def run(cmd, args):
     elif cmd == "block":
         n["status"] = "blocked"
     elif cmd == "unblock":
+        auth = founder_auth("unblock", [("node", n["id"]), ("note", note)], sig_path)
+        if auth is None:
+            return 1
         n["status"] = "pending"
     elif cmd == "clear-gate":
         if not n.get("gate"):
             print(f"{n['id']} has no gate")
+            return 1
+        auth = founder_auth("clear-gate", [("node", n["id"]), ("note", note)], sig_path)
+        if auth is None:
             return 1
         n["gate"]["cleared"] = note or "cleared"
         if n["status"] == "awaiting_human":
@@ -407,7 +580,7 @@ def run(cmd, args):
         print(f"unknown command {cmd}")
         return 1
     save(g)
-    ledger_append(cmd, n["id"], note)
+    ledger_append(cmd, n["id"], note, auth=auth)
     activity_append(n["id"], n["agent"], {"start": "plan", "done": "handoff", "block": "blocked"}.get(cmd, "note"),
                     f"{cmd}{': ' + note if note else ''}", src="ledger")
     export(g)

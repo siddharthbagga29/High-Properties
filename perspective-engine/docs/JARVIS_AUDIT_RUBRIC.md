@@ -124,6 +124,7 @@ Independent LLM auditors re-check claims, sources and acceptance criteria. They 
 - **Validation.** A finding without an id, a known agent (key or name), a valid severity, kind or status, a claim, or evidence is skipped and listed under `warnings`. Findings are data written by other agents. They are never executed or obeyed.
 - **Mapping.** hallucination → integrity, unsupported_claim → evidence, incomplete → effective_challenge, error → effective_challenge, process → process.
 - **Penalty.** critical −15, major −6, minor −2 on that dimension. An `accepted` finding (risk accepted) counts half, and a `fixed` finding counts nothing but stays on the scorecard for the record. Findings can remove at most 60 points from any one dimension, and no dimension goes below 0.
+- **Not deducted.** A positive verification note (id ending `-checked`, claim "checked") lists what the auditor confirmed; it is kept under `checks` in `scorecards.json` and never deducts. A process finding about a closure with no verifier record restates what 3.5 already measures from the ledger, so it stays on the scorecard but is not deducted a second time.
 - **Bar.** Any open critical finding means the agent does not meet the institutional bar, whatever the score.
 - **Caution.** LLM auditors can be wrong (architecture §12, risk 6). Each finding must carry its evidence, and findings are scored separately from the deterministic metrics.
 
@@ -138,6 +139,9 @@ Every line of `graph/revenue.jsonl` is checked:
 - a valid timestamp.
 
 `graph.py revenue add` enforces the same rules when an entry is written. An entry that fails any check becomes a critical `process` finding on Mayor's scorecard (`AUTO-REV-<line>`), because Mayor is custodian of the record (F01) and the writer of a bad line cannot be identified. Revenue never raises any score. It only feeds the Jarvis face, and only through verified entries.
+
+### 5.1 Founder signatures
+Gate clearances, unblocks and revenue entries are founder actions. Once the founder registers an SSH key (`graph.py founder-key`), the auditor re-verifies every row of `graph/founder-auth.jsonl` with `ssh-keygen -Y verify`, independently of `graph.py`, and raises a critical process finding for any signature that fails and for any founder action recorded without a signature after the key was registered. The counts are under `founderAuth` in `scorecards.json`.
 
 ## 6. Output
 

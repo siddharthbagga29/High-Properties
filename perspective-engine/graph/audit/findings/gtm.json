@@ -6,8 +6,8 @@
   "severity": "major",
   "kind": "process",
   "claim": "gtm/outreach.md:36,49,80,93,124,137 \"being co-designed with paid ADHD advisors\"; outreach.md:4 says co-design is \"stated only as an intention\"",
-  "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims.",
-  "status": "open"
+  "evidence": "Present progressive asserts co-design is under way. No advisors are engaged: V14 is awaiting_human (paid ND advisor sessions), docs/founder-decisions.md:8 advisor budget undecided, outreach-log.md:59 says \"no advisors are engaged yet\". Orchestrator fixed batch B1 only; these 6 templates still carry it into future batches. ethics/codesign-charter.md:134 bars such claims. || FIXED 2026-10-09 by the orchestrator: all six outreach.md emails now say \"which I plan to co-design with paid ADHD advisors\" or \"I plan to co-design it...\"; summary and truth-check rule updated; Part C word counts recounted (worst case 107, under 120). Pending re-check.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-2",
@@ -16,8 +16,8 @@
   "severity": "major",
   "kind": "process",
   "claim": "gtm/loi-template.md:13 \"The module is an educational practice tool co-designed with ADHD adults.\"",
-  "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off.",
-  "status": "open"
+  "evidence": "States co-design as done, in the letter a buyer would sign. No advisor has been recruited (brand/landing/index.html:234 \"We have not yet recruited advisors\"; V14 awaiting_human; founder-decisions.md:8 advisor budget open). ethics/codesign-charter.md:134 prohibits saying ND people co-created the product without a named review record. Should read as an intention until advisors sign off. || FIXED 2026-10-09 by the orchestrator: loi-template.md:13 now states co-design as a plan with a confirm-at-signing placeholder. Pending re-check.",
+  "status": "fixed"
  },
  {
   "id": "AF-gtm-3",
