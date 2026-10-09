@@ -430,10 +430,14 @@ def node_facts(n, ledger_rows, act_rows, now):
     status = n.get("status")
     closed = status in CLOSED
     verified = bool(verifier_rows)
+    # Verification that happened only after the node was closed (a retro-check) is worth less than a check before closing.
+    close_t = next((str(e.get("t")) for e in events if e.get("event") in ("done", "clear-gate")), None)
+    on_time = verified and (close_t is None or any(str(r.get("t")) <= close_t for r in verifier_rows))
     return {
         "id": n["id"], "agent": n.get("agent"), "status": status, "closed": closed,
         "in_record": bool(events),
         "verified": verified,
+        "verified_on_time": on_time,
         # A verification outcome is on record: verifier rows, or a block whose note records a failed verification.
         "challenged": verified or bool(verif_blocks),
         "separated": any(r.get("actor") == "verifier" for r in verifier_rows),
@@ -654,7 +658,8 @@ def score_process(facts, agent, all_facts):
     edits = [f for f in all_facts if f["agent"] != "orchestrator" and f["orch_edits"]] if agent == "orchestrator" else []
     if not pool:
         return neutral("no closed task of this agent in the ledger" + (f" ({ids(pre)} predate the ledger)" if pre else ""))
-    per = [25 * f["step_record"] + 50 * f["verified"] + 25 * (f["verified"] and f["separated"]) for f in pool]
+    per = [25 * f["step_record"] + (50 if f["verified_on_time"] else 25 if f["verified"] else 0)
+           + 25 * (f["verified"] and f["separated"]) for f in pool]
     s = sum(per) / len(pool)
     graph_note = ""
     if agent == "orchestrator":
@@ -676,6 +681,9 @@ def score_process(facts, agent, all_facts):
         basis += f"; closed with no verification record: {ids(no_ver)}"
     if unsep:
         basis += f"; verifier rows not flagged --verifier: {ids(unsep)}"
+    late = [f for f in pool if f["verified"] and not f["verified_on_time"]]
+    if late:
+        basis += f"; verified only after closing (half credit): {ids(late)}"
     basis += graph_note
     if edits:
         basis += f"; orchestrator rewrote another agent's output instead of returning it: {ids(edits)} (-10 each)"

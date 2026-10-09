@@ -7,3 +7,4 @@
 {"t": "2026-10-06T13:01:10Z", "node": "V08", "agent": "gtm", "kind": "handoff", "text": "Handed the result back to the orchestrator", "src": "transcript"}
 {"t": "2026-10-06T12:59:17Z", "node": "V08", "agent": "gtm", "kind": "plan", "text": "Task started", "src": "ledger"}
 {"t": "2026-10-06T13:01:18Z", "node": "V08", "agent": "gtm", "kind": "handoff", "text": "Task finished: 9 emails (3x3), max 104 words worst case; US-only until counsel; nothing sent", "src": "ledger"}
+{"t": "2026-10-09T07:00:40Z", "node": "V08", "agent": "gtm", "kind": "edit", "text": "Orchestrator: restated 6 present-tense co-design claims in outreach.md as plans and recounted word counts (AF-gtm-1)", "src": "self"}

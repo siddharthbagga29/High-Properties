@@ -88,7 +88,7 @@ Some terms used below:
 
 ### 3.5 Process discipline and separation of duties (15)
 
-- **Metric.** For each closed task in the ledger, 25 points if step records exist (self-logged `graph.py log` rows or ingested transcript rows), 50 if verifier rows exist, and 25 more if those rows are flagged `--verifier` and so kept separate from builder rows. The score is the average over closed tasks.
+- **Metric.** For each closed task in the ledger, 25 points if step records exist (self-logged `graph.py log` rows or ingested transcript rows), 50 if verifier rows exist from before the task was closed (25 if the only verification is a retro-check after closing), and 25 more if those rows are flagged `--verifier` and so kept separate from builder rows. The score is the average over closed tasks.
 - **Mayor only.**
   - Half of Mayor's score is graph-wide closure discipline: the share of all closures in the ledger that have a verification record. Mayor calls `done` for every agent (PROMPT.md, loop step 5).
   - −10 for each other agent's task whose output Mayor rewrote instead of returning it with the gap. PROMPT.md: "The orchestrator verifies and does not rewrite."

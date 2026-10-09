@@ -399,6 +399,18 @@ class FindingAccounting(Tmp):
         self.assertLess(card(audit.compute(self.pe, NOW))["score"], card(before)["score"])
 
 
+class LateVerification(Tmp):
+    def test_a_check_after_closing_earns_half_the_verification_credit(self):
+        pe = build_fixture(self.root)
+        base = {d["id"]: d for d in next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "beta")["dimensions"]}
+        with (pe / "graph" / "activity" / "B1.jsonl").open("a") as f:
+            f.write(jl([act("2026-10-08T10:00:00Z", "check", "Verifier: retro-check, every criterion PASS", actor="verifier", node="B1")]))
+        after = {d["id"]: d for d in next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "beta")["dimensions"]}
+        self.assertIn("verified only after closing", after["process"]["basis"])
+        self.assertGreater(after["process"]["score"], base["process"]["score"])
+        self.assertLess(after["process"]["score"], 100)
+
+
 class RevenueCommand(Tmp):
     def setUp(self):
         super().setUp()
