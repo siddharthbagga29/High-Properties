@@ -150,11 +150,9 @@ export function peBody(s: PEState): { parts: BodyPartState[]; face: FaceState; o
   const total = parts.reduce((sum, p) => sum + p.total, 0)
   const built = parts.reduce((sum, p) => sum + p.done + PREPARED_WEIGHT * p.prepared, 0)
   const overall = total ? Math.round((built / total) * 1000) / 1000 : 0
-  // Once the founder's signing key is registered, only revenue with a verified signature forms the face. The export
-  // reads registration from the ledger (founderKey); the auditor's flag is a second source. Either one turns it on.
-  const keyRegistered = Boolean(s.founderKey?.registered) ||
-    Boolean((s.audit as { founderAuth?: { keyRegistered?: boolean } } | undefined)?.founderAuth?.keyRegistered)
-  return { parts, face: faceState(s.revenue ?? [], { requireSigned: keyRegistered }), overall }
+  // Only revenue whose founder signature the export verified forms the face: with no key registered there is none,
+  // so nothing an agent records on trust can complete it.
+  return { parts, face: faceState(s.revenue ?? [], { requireSigned: true }), overall }
 }
 
 // ---------- ledger events in plain words ----------

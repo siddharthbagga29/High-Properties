@@ -251,15 +251,16 @@ class FixtureScores(Tmp):
         # One verifier row naming a false statement -> -5; alpha is covered by an LLM audit, so no 85 cap.
         # Fixed minor hallucination F-4 keeps a quarter of its 2 points -> -0.5.
         self.assertEqual(d["integrity"], 94.5)
-        self.assertEqual(d["process"], 100.0)
+        # Steps 25 + on-time verification 50 + separation only declared with --verifier (no verifier transcript) 10.
+        self.assertEqual(d["process"], 85.0)
         self.assertEqual(d["gates"], 100.0)
         # A1 60k within 10+70; A2 135k vs 20+70 = 1.5x -> 50; mean 75.
         self.assertEqual(d["budget"], 75.0)
         # One usage-limit interruption -> -8.
         self.assertEqual(d["reliability"], 92.0)
         c = self.cards["alpha"]
-        # (20*0 + 15*67 + 15*66.2 + 20*94.5 + 15*100 + 5*100 + 5*75 + 5*92) / 100 = 67.23
-        self.assertEqual(c["score"], 67.2)  # integrity 94.5 (fixed finding at a quarter weight)
+        # (20*0 + 15*67 + 15*66.2 + 20*94.5 + 15*85 + 5*100 + 5*75 + 5*92) / 100 = 64.98
+        self.assertEqual(c["score"], 65.0)
         self.assertEqual(c["grade"], "D")
         self.assertFalse(c["meetsInstitutionalBar"])
         self.assertEqual([f["id"] for f in c["findings"]], ["F-1", "F-4"])  # F-3 has no evidence: skipped
@@ -319,10 +320,9 @@ class FixtureScores(Tmp):
     def test_open_critical_blocks_the_bar_despite_a_high_score(self):
         c = self.cards["delta"]
         d = self.dims("delta")
-        self.assertEqual(d["process"], 85.0)  # 100 - 15 (critical, open)
+        self.assertEqual(d["process"], 70.0)  # 25 + 50 + 10 (separation declared only) - 15 (critical, open)
         self.assertEqual(d["integrity"], 100.0)  # covered by the LLM audit: no cap
-        self.assertGreaterEqual(c["score"], 80)
-        self.assertEqual(c["grade"], "A")
+        self.assertEqual(d["first_pass_yield"], 0.0)  # a critical finding on D1 means it did not pass first time
         self.assertFalse(c["meetsInstitutionalBar"])
 
     def test_bar_met_without_critical(self):
@@ -385,19 +385,25 @@ class FindingAccounting(Tmp):
         self.assertEqual(r["checks"]["alpha"], ["the 12% figure matches the cited report"])
 
     def test_missing_verifier_finding_is_listed_not_double_counted(self):
+        # B1 really has no verifier row, so score_process already penalises it: the finding is listed, not deducted.
         before = audit.compute(self.pe, NOW)
         p = self.pe / "graph" / "audit" / "findings" / "llm-2.json"
-        p.write_text(json.dumps([{"id": "F-9", "agent": "delta", "task": "D1", "severity": "major", "kind": "process",
-                                  "claim": "D1 closed", "evidence": "no verifier check entry in the activity log",
+        p.write_text(json.dumps([{"id": "F-9", "agent": "beta", "task": "B1", "severity": "major", "kind": "process",
+                                  "claim": "B1 closed", "evidence": "no verifier check entry in the activity log",
                                   "status": "open"}]))
         after = audit.compute(self.pe, NOW)
-        card = lambda r: next(c for c in r["scorecards"] if c["agent"] == "delta")
+        card = lambda r, a="beta": next(c for c in r["scorecards"] if c["agent"] == a)
         self.assertIn("F-9", [f["id"] for f in card(after)["findings"]])
         self.assertEqual(card(before)["score"], card(after)["score"])
         proc = next(d for d in card(after)["dimensions"] if d["id"] == "process")
         self.assertIn("not deducted twice", proc["basis"])
+        # The same wording about a task that WAS checked on time (D1) is not excused: it is deducted.
         p.write_text(json.dumps([{"id": "F-9", "agent": "delta", "task": "D1", "severity": "major", "kind": "process",
-                                  "claim": "D1 says co-designed", "evidence": "no advisor exists", "status": "open"}]))
+                                  "claim": "D1 closed", "evidence": "no verifier check entry in the activity log",
+                                  "status": "open"}]))
+        self.assertLess(card(audit.compute(self.pe, NOW), "delta")["score"], card(before, "delta")["score"])
+        p.write_text(json.dumps([{"id": "F-9", "agent": "beta", "task": "B1", "severity": "major", "kind": "process",
+                                  "claim": "B1 says co-designed", "evidence": "no advisor exists", "status": "open"}]))
         self.assertLess(card(audit.compute(self.pe, NOW))["score"], card(before)["score"])
 
 
@@ -413,7 +419,14 @@ class AuditFindingsDecideFirstPass(Tmp):
 
     def test_a_major_finding_fails_first_pass_whatever_the_log_says(self):
         pe = build_fixture(self.root)
-        self.assertEqual(self.fpy(pe)["score"], 100.0)  # D1 only has a process finding (F-2)
+        self.assertEqual(self.fpy(pe)["score"], 0.0)  # D1 has critical process finding F-2 (pilot fee sent to a buyer)
+        llm1 = pe / "graph" / "audit" / "findings" / "llm-1.json"
+        data = json.loads(llm1.read_text())
+        for f in data["findings"]:
+            if f["id"] == "F-2":
+                f["status"] = "accepted"  # overturned on re-check
+        llm1.write_text(json.dumps(data))
+        self.assertEqual(self.fpy(pe)["score"], 100.0)
         base = {"id": "F-10", "agent": "delta", "task": "D1", "severity": "major", "kind": "error",
                 "claim": "fee arithmetic wrong", "evidence": "recomputed: 1,800 not 2,000"}
         for status in ("open", "fixed"):

@@ -12,7 +12,8 @@ import { BRAIN_C, BRAIN_S, BUST_BASE, districtCenter } from './world'
 
 const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
 const revenue = (entries: unknown[]) => ({ ...state, revenue: entries }) as GraphState
-const paid = (payer: string, t = '2026-10-08T10:00:00Z') => ({ t, amountUsd: 500, payer, evidence: 'invoice INV-1 paid (bank statement)', recordedBy: 'founder' })
+// Revenue as the export publishes it once the founder's signature on it was re-checked (sigVerified).
+const paid = (payer: string, t = '2026-10-08T10:00:00Z') => ({ t, amountUsd: 500, payer, evidence: 'invoice INV-1 paid (bank statement)', recordedBy: 'founder', auth: 'signed', sigVerified: true })
 
 describe('body from the record', () => {
   const body = bodyAt(state)
@@ -64,6 +65,7 @@ describe('body from the record', () => {
 
   it('forms the face only from founder-recorded revenue with evidence, one stage per paying customer', () => {
     expect(bodyAt(revenue([{ ...paid('Acme'), recordedBy: 'agent' }])).face.stage).toBe(0)
+    expect(bodyAt(revenue([{ ...paid('Acme'), auth: 'attested', sigVerified: false }])).face.stage).toBe(0)  // on trust: never
     expect(bodyAt(revenue([{ ...paid('Acme'), evidence: '' }])).face.stage).toBe(0)
     expect(bodyAt(revenue([paid('Acme')])).face.stage).toBe(1)
     expect(bodyAt(revenue([paid('Acme'), paid('acme ')])).face.stage).toBe(1)

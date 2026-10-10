@@ -36,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 RUBRIC_VERSION = "1.0"
 PE_DEFAULT = pathlib.Path(__file__).resolve().parents[1]
@@ -64,7 +65,7 @@ DIM_IDS = [d[0] for d in DIMENSIONS]
 SEVERITY_POINTS = {"critical": 15, "major": 6, "minor": 2}
 # A finding fixed after the second line caught it still says something about the first pass, so it keeps a
 # quarter of its weight (issues found by the second line count against the first line even once remediated).
-STATUS_FACTOR = {"open": 1.0, "accepted": 0.5, "fixed": 0.25}
+STATUS_FACTOR = {"open": 1.0, "accepted": 0.0, "fixed": 0.25}  # accepted = re-checked and overturned: not a defect
 FINDING_CAP = 60  # most points LLM findings can remove from one dimension
 KIND_DIMENSION = {
     "hallucination": "integrity",
@@ -87,6 +88,37 @@ EVIDENCE_PRIOR_N = 5  # evidence share is shrunk toward NEUTRAL as if 5 extra cl
 MEASURED_PROCESS = re.compile(
     r"\b(?:no|without(?:\s+an?|\s+any)?)\s+(?:independent\s+|separate\s+)?(?:verifier|verification|['\"]?check['\"]?)"
     r"(?:\s+or\s+verifier)?\s+(?:check\s+)?(?:record|row|entr(?:y|ies)|step|run)s?\b|has no ['\"]?check['\"]? entr", re.I)
+
+# Since the verdict rule (graph.py, 2026-10-10T06:59Z) a verifier check ends with exactly one "VERDICT: PASS|FAIL";
+# older rows are read with the earlier keyword rule. Done events after GATE_V3_SINCE must carry output hashes and a
+# gate-valid check (tools/graph.py verifier_cleared).
+VERDICT_RULE_SINCE = "2026-10-10T06:59:14Z"
+GATE_V3_SINCE = "2026-10-10T09:00:00Z"
+# Tasks closed before the ledger began (seeded by hand on 2026-10-06); any other closed task needs ledger events.
+PRE_LEDGER = {"F01", "F02"}
+VERDICT_END = re.compile(r"VERDICT: (PASS|FAIL)\.?\s*$")
+VERDICT_WORD = re.compile(r"verdict\s*:", re.I)
+
+
+def verdict_of(text):
+    """'PASS' or 'FAIL' when the text ends with exactly one well-formed verdict in plain characters, else None.
+    Independent re-implementation of the rule graph.py enforces."""
+    text = str(text)
+    if unicodedata.normalize("NFKC", text) != text or any(unicodedata.category(c) == "Cf" for c in text):
+        return None
+    if len(VERDICT_WORD.findall(text)) != 1:
+        return None
+    m = VERDICT_END.search(text)
+    return m.group(1) if m else None
+
+
+def row_fails(r):
+    """A verifier row that reports a failure: by its verdict, or for rows before the verdict rule by keyword."""
+    v = verdict_of(r.get("text", ""))
+    if v:
+        return v == "FAIL"
+    return str(r.get("t", "")) < VERDICT_RULE_SINCE and bool(FAIL_TEXT.search(str(r.get("text", ""))))
+
 
 VERIFIER_TEXT = re.compile(r"^\s*(?:independent\s+)?verifier\b|^\s*verdict\b", re.I)
 FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdict words
@@ -288,11 +320,16 @@ def load_findings(pe, agents, warnings):
     return list(findings.values()), covered, checks
 
 
+MEASURED_TASKS = set()  # set by compute(): closed tasks that lacked a verifier check before closing
+
+
 def measured(f, dim):
-    """True when a non-critical process finding says only that a closure has no verifier record, which score_process
-    already measures. Anything else (a faked check, a false claim) is deducted normally."""
+    """True when a non-critical process finding says only that a closure had no verifier record, and the record
+    confirms that this task really lacked an on-time check, which score_process already penalises. Anything else
+    (a faked check, a false claim, a task that was in fact checked) is deducted normally."""
     first_evidence = str(f["evidence"]).split("||")[0]
     return (dim == "process" and f["kind"] == "process" and f["severity"] != "critical"
+            and f.get("task") in MEASURED_TASKS
             and bool(MEASURED_PROCESS.search(f["claim"] + " " + first_evidence)))
 
 
@@ -358,7 +395,54 @@ def auth_row_ok(r, keys):
     return False
 
 
-GATE_EVENTS = ("start", "done", "block", "unblock", "clear-gate")
+GATE_EVENTS = ("start", "done", "block", "unblock", "clear-gate", "reopen")
+
+
+def fingerprint(pubkey):
+    exe = shutil.which("ssh-keygen")
+    if not exe or not pubkey:
+        return None
+    with tempfile.TemporaryDirectory() as d:
+        k = pathlib.Path(d) / "k.pub"
+        k.write_text(str(pubkey) + "\n")
+        res = subprocess.run([exe, "-l", "-f", str(k)], capture_output=True, timeout=20)
+    return res.stdout.decode().split()[1] if res.returncode == 0 and res.stdout else None
+
+
+def git_ledger_history(pe):
+    """[(commit, text)] of every committed version of the ledger, oldest first; [] outside git."""
+    led = pe / "graph" / "ledger.jsonl"
+    try:
+        top = subprocess.run(["git", "-C", str(pe), "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=20)
+        if top.returncode:
+            return []
+        rel = str(led.resolve().relative_to(pathlib.Path(top.stdout.strip()).resolve()))
+        log = subprocess.run(["git", "-C", top.stdout.strip(), "log", "--reverse", "--format=%H", "--", rel],
+                             capture_output=True, text=True, timeout=30)
+        out = []
+        for h in log.stdout.split():
+            show = subprocess.run(["git", "-C", top.stdout.strip(), "show", f"{h}:{rel}"], capture_output=True, text=True, timeout=30)
+            if show.returncode == 0:
+                out.append((h, show.stdout))
+        return out
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+
+
+def path_hash(f):
+    """Same rule as graph.py: sha256 of a file or of a directory tree, symlinks resolved; None if missing or empty."""
+    f = f.resolve() if f.is_symlink() else f
+    if f.is_file():
+        return hashlib.sha256(f.read_bytes()).hexdigest()
+    if f.is_dir():
+        files = sorted(p for p in f.rglob("*") if p.is_file())
+        if not files:
+            return None
+        h = hashlib.sha256()
+        for p in files:
+            h.update(str(p.relative_to(f)).encode() + b"\0" + hashlib.sha256(p.read_bytes()).hexdigest().encode() + b"\0")
+        return "dir:" + h.hexdigest()
+    return None
 
 
 def replay_status(events, gated):
@@ -378,10 +462,12 @@ def replay_status(events, gated):
             cleared = True
             if status == "awaiting_human":
                 status = "done"
+        elif ev == "reopen":
+            status, cleared = "running", False
     return status
 
 
-def check_founder_auth(pe, ledger, nodes=()):
+def check_founder_auth(pe, ledger, nodes=(), activity=None):
     """Re-verifies founder signatures from the record alone and checks that founder-only state changes are backed by
     them. Returns (summary, flags) where flags are (severity, text)."""
     flags = []
@@ -391,17 +477,37 @@ def check_founder_auth(pe, ledger, nodes=()):
     by_ref = {}
     for r in rows:
         by_ref.setdefault(r.get("ref"), []).append(r)
+    history = git_ledger_history(pe)
+    # The ledger must only grow: every committed version extends the previous one, and the working copy extends the last.
+    texts = [t for _, t in history]
+    led_path = pe / "graph" / "ledger.jsonl"
+    if led_path.exists():
+        texts.append(led_path.read_text())
+    for i in range(1, len(texts)):
+        if not texts[i].startswith(texts[i - 1]):
+            where = history[i][0][:10] if i < len(history) else "the working copy"
+            flags.append(("critical", f"graph/ledger.jsonl was rewritten, not appended to (at {where}): earlier lines changed or vanished"))
+            break
+    if any('"event": "founder-key"' in t for _, t in history) and not key_events:
+        flags.append(("critical", "a founder-key event exists in the ledger's git history but not in the ledger now"))
     keys = []
     for e in key_events:
         if not e.get("key"):
             flags.append(("critical", f"founder-key event at {e.get('t')} carries no public key, so the key in force cannot be pinned"))
             continue
+        fp = fingerprint(e["key"])
+        if not fp:
+            flags.append(("critical", f"founder-key event at {e.get('t')}: the key is not a valid public key (or ssh-keygen is missing)"))
+            continue
+        if e.get("fp") != fp:
+            flags.append(("critical", f"founder-key event at {e.get('t')}: the stored fingerprint {e.get('fp')} is not the key's ({fp})"))
         if keys:
             cand = [r for r in by_ref.get(e.get("authRef"), []) if r.get("action") == "founder-key"
                     and (r.get("fields") or {}).get("key") == e["key"]]
             if not cand or not auth_row_ok(cand[0], keys):
                 flags.append(("critical", f"founder key replaced at {e.get('t')} without a verified signature by the previous key"))
-        keys.append((str(e.get("t")), e["key"], e.get("fp")))
+                continue  # an unsigned key event never comes into force (graph.py ignores it too)
+        keys.append((str(e.get("t")), e["key"], fp))
     key_at = str(key_events[0].get("t")) if key_events else None
 
     verified = {}
@@ -423,7 +529,10 @@ def check_founder_auth(pe, ledger, nodes=()):
     used = {}
     for e in ledger:
         if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_at and str(e.get("t")) > key_at)):
-            if not covered(e.get("authRef"), e.get("event"), {"node": e.get("node"), "note": e.get("note", "")}):
+            fields = {"node": e.get("node"), "note": e.get("note", "")}
+            if e.get("event") == "clear-gate" and "outputs" in e:
+                fields["outputs"] = e.get("outputs")
+            if not covered(e.get("authRef"), e.get("event"), fields):
                 flags.append(("critical", f"ledger {e.get('event')} {e.get('node')} at {e.get('t')} has no verified founder signature"))
             used[e.get("authRef")] = used.get(e.get("authRef"), 0) + 1
     for r in revenue:
@@ -454,6 +563,31 @@ def check_founder_auth(pe, ledger, nodes=()):
             if expect and expect != n.get("status"):
                 mismatches += 1
                 flags.append(("major", f"{n.get('id')}: graph.json says {n.get('status')} but the ledger implies {expect} (changed outside graph.py?)"))
+    # The done gate, replayed: closures after GATE_V3_SINCE need recorded output hashes and a verifier PASS on them.
+    activity = activity or {}
+    for e in ledger:
+        if e.get("event") != "done" or str(e.get("t")) < GATE_V3_SINCE:
+            continue
+        rows = activity.get(e.get("node"), [])
+        ok = e.get("outputs") is not None and any(
+            r.get("actor") == "verifier" and r.get("kind") == "check" and verdict_of(r.get("text", "")) == "PASS"
+            and r.get("outputs") == e.get("outputs") and str(r.get("t")) <= str(e.get("t")) for r in rows)
+        if not ok:
+            flags.append(("critical", f"{e.get('node')}: closed at {e.get('t')} without a verifier PASS on the outputs it recorded"))
+    root = pe.parent
+    for n in nodes:
+        mine = events.get(n.get("id"), [])
+        if n.get("status") != "pending" and not mine and n.get("id") not in PRE_LEDGER:
+            flags.append(("critical", f"{n.get('id')}: status {n.get('status')} with no ledger event at all (changed outside graph.py?)"))
+        if n.get("status") in ("done", "awaiting_human"):
+            missing = [o for o in n.get("outputs", []) if path_hash(root / o) is None]
+            if missing:
+                flags.append(("major", f"{n.get('id')}: closed but outputs are missing or empty: {', '.join(missing)}"))
+            closes = [e for e in mine if e.get("event") == "done" and e.get("outputs") is not None]
+            if closes and not missing:
+                now = {o: path_hash(root / o) for o in n.get("outputs", [])}
+                if now != closes[-1]["outputs"]:
+                    flags.append(("major", f"{n.get('id')}: outputs changed after the task was closed; reopen it so the change is verified"))
     attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
     attested += sum(1 for r in revenue if r.get("auth") != "signed")
     return {"keyRegistered": bool(key_events), "keyRegisteredAt": key_at, "keyFingerprint": keys[-1][2] if keys else None,
@@ -498,12 +632,12 @@ def node_facts(n, ledger_rows, act_rows, now):
     builder_rows = [r for r in rows if r.get("src") != "ledger" and not is_verifier(r)]
     # A revision boundary: the builder wrote or edited again, or the node was (re)started.
     boundaries = sorted(
-        [str(r["t"]) for r in builder_rows if r.get("kind") in ("write", "edit")]
-        + [str(e.get("t")) for e in events if e.get("event") in ("start", "unblock")]
+        [str(r.get("t", "")) for r in builder_rows if r.get("kind") in ("write", "edit", "run") and r.get("t")]
+        + [str(e.get("t")) for e in events if e.get("event") in ("start", "unblock", "reopen")]
     )
     last_boundary = boundaries[-1] if boundaries else ""
 
-    fail_rows = [r for r in verifier_rows if FAIL_TEXT.search(str(r.get("text", "")))]
+    fail_rows = [r for r in verifier_rows if row_fails(r)]
     # Failed rounds seen in the activity log: FAIL/GAP rows grouped until the builder revises.
     clusters, prev = 0, None
     for r in fail_rows:
@@ -520,7 +654,7 @@ def node_facts(n, ledger_rows, act_rows, now):
     rework = max(clusters, rounds_note)
 
     open_fail = [r for r in fail_rows if str(r["t"]) > last_boundary]
-    minor_rows = [r for r in rows if r.get("src") != "ledger" and not FAIL_TEXT.search(str(r.get("text", "")))
+    minor_rows = [r for r in rows if r.get("src") != "ledger" and not row_fails(r)
                   and ((is_verifier(r) and MINOR_TEXT.search(str(r.get("text", "")))) or MINOR_LEAD.match(str(r.get("text", ""))))]
     open_minor = [r for r in minor_rows if str(r["t"]) > last_boundary]
     false_rows = [r for r in fail_rows if FALSE_TEXT.search(str(r.get("text", "")))]
@@ -553,7 +687,10 @@ def node_facts(n, ledger_rows, act_rows, now):
         "verified_on_time": on_time,
         # A verification outcome is on record: verifier rows, or a block whose note records a failed verification.
         "challenged": verified or bool(verif_blocks),
-        "separated": any(r.get("actor") == "verifier" for r in verifier_rows),
+        # --verifier is a flag anyone can pass; separation is evidenced only by an ingested verifier transcript
+        # (tools/activity.py --verifier), i.e. a separate agent run whose own tool calls are on record.
+        "separated": any(r.get("actor") == "verifier" and r.get("src") == "transcript" for r in verifier_rows),
+        "declared": any(r.get("actor") == "verifier" for r in verifier_rows),
         "step_record": bool([r for r in builder_rows]),
         "self_logged": len([r for r in builder_rows if r.get("src") == "self"]),
         "transcript_rows": len([r for r in builder_rows if r.get("src") == "transcript"]),
@@ -752,11 +889,12 @@ def score_integrity(facts, agent, covered):
     if not pool:
         return neutral("no task of this agent in the ledger")
     corr = [(f["id"], d) for f in pool for d in f["corrections"]]
-    self_ver = [f for f in pool if agent == "orchestrator" and f["closed"] and not f["verified"]]
+    # The orchestrator's own tasks closed with no verifier check before closing (a later retro-check does not erase it).
+    self_ver = [f for f in pool if agent == "orchestrator" and f["closed"] and not f["verified_on_time"]]
     false_rows = sum(f["false_rows"] for f in pool)
     s = 100 - 20 * len(corr) - 10 * len(self_ver) - 5 * false_rows
     parts = [f"{len(corr)} orchestrator corrections of a false claim" + (f" ({', '.join(f'{i} on {d}' for i, d in corr)})" if corr else ""),
-             f"{len(self_ver)} self-verified completions" + (f" ({ids(self_ver)}: closed by their builder with no verifier row)" if self_ver else ""),
+             f"{len(self_ver)} self-verified completions" + (f" ({ids(self_ver)}: closed by their builder with no verifier check before closing)" if self_ver else ""),
              f"{false_rows} verifier FAIL/GAP rows naming a false statement" + (" (" + ", ".join(f"{f['id']} {f['false_rows']}" for f in pool if f["false_rows"]) + ")" if false_rows else "")]
     basis = f"Over {len(pool)} tasks in the ledger: " + "; ".join(parts)
     s = clamp(s)
@@ -774,7 +912,7 @@ def score_process(facts, agent, all_facts):
     if not pool:
         return neutral("no closed task of this agent in the ledger" + (f" ({ids(pre)} predate the ledger)" if pre else ""))
     per = [25 * f["step_record"] + (50 if f["verified_on_time"] else 25 if f["verified"] else 0)
-           + 25 * (f["verified"] and f["separated"]) for f in pool]
+           + (25 if f["verified"] and f["separated"] else 10 if f["verified"] and f["declared"] else 0) for f in pool]
     s = sum(per) / len(pool)
     graph_note = ""
     if agent == "orchestrator":
@@ -787,15 +925,20 @@ def score_process(facts, agent, all_facts):
                           f"in the ledger have a verification record")
     s -= 10 * len(edits)
     no_ver = [f for f in pool if not f["verified"]]
-    unsep = [f for f in pool if f["verified"] and not f["separated"]]
+    unsep = [f for f in pool if f["verified"] and not f["declared"]]
+    declared_only = [f for f in pool if f["verified"] and f["declared"] and not f["separated"]]
     no_steps = [f for f in pool if not f["step_record"]]
     basis = (f"{len(pool)} closed tasks in the ledger: step records on {len(pool) - len(no_steps)} "
              f"({sum(f['self_logged'] for f in pool)} self-logged rows, {sum(f['transcript_rows'] for f in pool)} transcript rows); "
-             f"verifier rows on {len(pool) - len(no_ver)}; flagged --verifier (separate from builder rows) on {len(pool) - len(no_ver) - len(unsep)}")
+             f"verifier rows on {len(pool) - len(no_ver)}; a separate verifier run evidenced by its own ingested transcript on "
+             f"{len(pool) - len(no_ver) - len(unsep) - len(declared_only)}")
     if no_ver:
         basis += f"; closed with no verification record: {ids(no_ver)}"
     if unsep:
         basis += f"; verifier rows not flagged --verifier: {ids(unsep)}"
+    if declared_only:
+        basis += (f"; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): "
+                  f"{ids(declared_only)}")
     late = [f for f in pool if f["verified"] and not f["verified_on_time"]]
     if late:
         basis += f"; verified only after closing (half credit): {ids(late)}"
@@ -858,7 +1001,7 @@ def grade(score):
 
 
 def apply_findings(dims, findings):
-    """critical -15, major -6, minor -2 on the finding's dimension; accepted counts half, fixed a quarter; capped."""
+    """critical -15, major -6, minor -2 on the finding's dimension; fixed counts a quarter, accepted (overturned) nothing; capped."""
     taken = {d: 0.0 for d in DIM_IDS}
     dup = {d: 0 for d in DIM_IDS}
     for f, dim in findings:
@@ -872,7 +1015,7 @@ def apply_findings(dims, findings):
             n = len([1 for f, dim in findings if dim == d["id"] and f["status"] != "fixed" and not measured(f, dim)])
             nf = len([1 for f, dim in findings if dim == d["id"] and f["status"] == "fixed" and not measured(f, dim)])
             d["score"] = round(clamp(d["score"] - cut), 1)
-            d["basis"] += f" Findings: -{cut:g} from {n} open or accepted finding(s)" + (f" and {nf} fixed after the audit (a quarter weight each)" if nf else "") + "."
+            d["basis"] += f" Findings: -{cut:g} from {n} open finding(s)" + (f" and {nf} fixed after the audit (a quarter weight each)" if nf else "") + "."
         if dup[d["id"]]:
             d["basis"] += (f" {dup[d['id']]} auditor finding(s) about missing verifier records are already counted "
                            f"above and not deducted twice.")
@@ -891,11 +1034,14 @@ def compute(pe=PE_DEFAULT, now=None):
     for e in ledger:
         by_node.setdefault(e.get("node"), []).append(e)
     facts = [node_facts(n, by_node.get(n["id"], []), activity.get(n["id"], []), now) for n in g.get("nodes", [])]
+    MEASURED_TASKS.clear()
+    MEASURED_TASKS.update(f["id"] for f in facts if f["in_record"] and f["closed"] and not f["verified_on_time"])
     llm, covered, checks = load_findings(pe, agents, warnings)
     # A task an auditor found a major or critical problem in did not pass first time, however the fix was logged.
     serious = {}
     for f, _ in llm:
-        if f.get("task") and f["severity"] in ("major", "critical") and f["status"] != "accepted" and f["kind"] != "process":
+        if f.get("task") and f["status"] != "accepted" and (
+                (f["severity"] in ("major", "critical") and f["kind"] != "process") or f["severity"] == "critical"):
             serious[f["task"]] = serious.get(f["task"], 0) + 1
     for fact in facts:
         if serious.get(fact["id"]):
@@ -908,7 +1054,7 @@ def compute(pe=PE_DEFAULT, now=None):
                       "claim": f"graph/revenue.jsonl entry {fl['entry']} would count as revenue",
                       "evidence": f"entry {fl['entry']}: " + "; ".join(fl["reasons"]) + ". Revenue is founder-only with evidence (CLAUDE.md); the orchestrator is custodian of the record.",
                       "status": "open"}, "process"))
-    founder_auth, auth_flags = check_founder_auth(pe, ledger, g.get("nodes", []))
+    founder_auth, auth_flags = check_founder_auth(pe, ledger, g.get("nodes", []), activity)
     for i, (sev, fl) in enumerate(auth_flags, 1):
         auto.append(({"id": f"AUTO-AUTH-{i}", "agent": "orchestrator", "severity": sev, "kind": "process",
                       "claim": "a founder-only action or a state change is not backed by the record", "evidence": fl + ". Founder "

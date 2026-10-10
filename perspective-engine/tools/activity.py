@@ -6,7 +6,9 @@ file read or written, command run) or a real tool failure, stamped with the
 time the transcript recorded it. Output is appended to graph/activity/<NODE>.jsonl
 (deduplicated on export).
 
-  python3 perspective-engine/tools/activity.py <NODE_ID> <transcript.jsonl> [--agent KEY]
+  python3 perspective-engine/tools/activity.py <NODE_ID> <transcript.jsonl> [--verifier]
+      --verifier: the transcript is the independent verifier's run; its rows are credited to the verifier, which is
+      the evidence the auditor needs to give separation-of-duties credit
   python3 perspective-engine/tools/activity.py --runs perspective-engine/graph/runs.json
   python3 perspective-engine/tools/activity.py --ledger    # backfill start/done events from the ledger
 """
@@ -67,7 +69,10 @@ def extract(transcript):
                 o = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            t = (o.get("timestamp") or "")[:19] + "Z"
+            ts = (o.get("timestamp") or "")[:19]
+            if len(ts) < 19:
+                continue  # no usable timestamp: skip rather than invent one
+            t = ts + "Z"
             msg = o.get("message") or {}
             content = msg.get("content") if isinstance(msg, dict) else None
             if not isinstance(content, list):
@@ -89,12 +94,12 @@ def extract(transcript):
     return rows
 
 
-def ingest(node, transcript, agent=None):
+def ingest(node, transcript, agent=None, actor=None):
     g = graph.load()
     n = graph.index(g)[node]
     rows = extract(transcript)
     for r in rows:
-        graph.activity_append(node, agent or n["agent"], r["kind"], r["text"], src="transcript", t=r["t"])
+        graph.activity_append(node, agent or n["agent"], r["kind"], r["text"], src="transcript", t=r["t"], actor=actor)
     return len(rows)
 
 
@@ -126,7 +131,8 @@ def main(argv):
                 else:
                     print(f"{node}: transcript missing ({p})")
         elif len(argv) >= 2:
-            print(f"{argv[0]}: {ingest(argv[0], argv[1])} events")
+            actor = "verifier" if "--verifier" in argv[2:] else None
+            print(f"{argv[0]}: {ingest(argv[0], argv[1], actor=actor)} events" + (" (verifier)" if actor else ""))
         else:
             print(__doc__)
             return 1

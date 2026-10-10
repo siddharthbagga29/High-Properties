@@ -66,6 +66,15 @@ class FounderSignedActions(Tmp):
         r = audit.compute(self.pe, NOW)
         return r, [f for c in r["scorecards"] for f in c["findings"] if f["id"].startswith("AUTO-AUTH")]
 
+    def prepare_gate(self, node="A2"):
+        """Reopen a gated task and verify it under today's gate, so done records the outputs the founder approves."""
+        self.assertEqual(run_graph("reopen", node, "re-verify under the current gate")[0], 0)
+        run_graph("log", node, "read", "--verifier", "Verifier: starting review")
+        self.assertEqual(run_graph("log", node, "check", "--verifier", "every criterion met. VERDICT: PASS")[0], 0)
+        rc, out = run_graph("done", node, "verified")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.node(node)["status"], "awaiting_human")
+
     def register(self):
         rc, out = run_graph("founder-key", self.founder_pub)
         self.assertEqual(rc, 0, out)
@@ -74,6 +83,10 @@ class FounderSignedActions(Tmp):
     # ---- before and at registration ----
 
     def test_before_a_key_is_registered_actions_are_attested_not_signed(self):
+        rc, out = run_graph("clear-gate", "A2", "founder approved")
+        self.assertEqual(rc, 1)  # A2 was closed before outputs were recorded at done: re-verify first
+        self.assertIn("not the ones verified at done", out)
+        self.prepare_gate()
         rc, out = run_graph("clear-gate", "A2", "founder approved")
         self.assertEqual(rc, 0, out)
         self.assertIn("attested, not signed", out)
@@ -90,6 +103,7 @@ class FounderSignedActions(Tmp):
     # ---- signing ----
 
     def test_a_valid_signature_for_that_exact_action_is_required(self):
+        self.prepare_gate()
         self.register()
         rc, out = run_graph("clear-gate", "A2", "approved batch 1")
         self.assertEqual(rc, 1)
@@ -121,6 +135,7 @@ class FounderSignedActions(Tmp):
         self.assertEqual(self.node("A3")["status"], "blocked")
 
     def test_a_signature_made_for_another_copy_of_the_record_is_refused(self):
+        self.prepare_gate()
         self.register()
         sig = self.signed(self.founder, "clear-gate", "A2", "ok")
         with (self.pe / "graph" / "ledger.jsonl").open("a") as f:  # this copy differs from the one that was signed
@@ -180,6 +195,7 @@ class FounderSignedActions(Tmp):
 
     def test_a_signed_key_rotation_keeps_earlier_signatures_valid(self):
         """Proof E: earlier rows are checked against the key in force when they were made."""
+        self.prepare_gate()
         self.register()
         good = self.signed(self.founder, "clear-gate", "A2", "ok")
         self.assertEqual(run_graph("clear-gate", "A2", "ok", "--sig", good)[0], 0)
@@ -223,7 +239,87 @@ class FounderSignedActions(Tmp):
         _, auto = self.auto()
         self.assertTrue(any("B1: graph.json says running but the ledger implies done" in f["evidence"] for f in auto))
 
+    def git(self, *args):
+        subprocess.run(["git", "-C", str(self.root), *args], check=True, capture_output=True)
+
+    def commit_record(self, msg):
+        self.git("add", "-A")
+        self.git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", msg)
+
+    def test_deleting_the_key_line_fails_closed_and_is_flagged(self):
+        """Re-review proof D': remove the founder-key line from the ledger after it was committed."""
+        self.git("init", "-q")
+        self.commit_record("record")
+        self.register()
+        self.commit_record("founder key")
+        led = self.pe / "graph" / "ledger.jsonl"
+        led.write_text("".join(l + "\n" for l in led.read_text().splitlines() if '"founder-key"' not in l))
+        rc, out = run_graph("revenue", "add", "100", "X", "--evidence", "e", "--founder")
+        self.assertEqual(rc, 1)
+        self.assertIn("stay closed", out)
+        self.assertTrue(graph.founder_key_state()["registered"])  # read from git history
+        _, auto = self.auto()
+        texts = " ".join(f["evidence"] for f in auto)
+        self.assertIn("rewritten, not appended to", texts)
+        self.assertIn("git history but not in the ledger now", texts)
+
+    def test_an_unsigned_key_event_is_ignored_by_graph_py_and_the_export(self):
+        """Re-review proof B': append an unsigned founder-key event; it must never come into force."""
+        self.register()
+        agent_key = " ".join(self.agent_pub.split()[:2])
+        with (self.pe / "graph" / "ledger.jsonl").open("a") as f:
+            f.write(json.dumps({"t": "2099-01-01T00:00:00Z", "event": "founder-key", "node": "D01", "note": "",
+                                "key": agent_key, "fp": graph.key_fingerprint(agent_key)}) + "\n")
+        self.assertEqual(graph.founder_keys()[-1][1], " ".join(self.founder_pub.split()[:2]))
+        self.assertTrue(graph.founder_key_state()["problems"])
+        argv = ["revenue", "add", "5000", "Acme", "--evidence", "INV"]
+        forged = self.signed(self.agent, *argv)
+        self.assertEqual(run_graph(*argv, "--founder", "--sig", forged)[0], 1)
+        _, auto = self.auto()
+        self.assertTrue(any("without a verified signature by the previous key" in f["evidence"] for f in auto))
+
+    def test_the_shown_fingerprint_is_recomputed_from_the_key(self):
+        self.register()
+        led = self.pe / "graph" / "ledger.jsonl"
+        rows = [json.loads(l) for l in led.read_text().splitlines()]
+        real_fp = rows[-1]["fp"]
+        rows[-1]["fp"] = "SHA256:not-the-key"
+        led.write_text("".join(json.dumps(r) + "\n" for r in rows))
+        self.assertEqual(graph.founder_key_state()["fingerprint"], real_fp)
+        _, auto = self.auto()
+        self.assertTrue(any("stored fingerprint SHA256:not-the-key is not the key's" in f["evidence"] for f in auto))
+
+    def test_clear_gate_signs_the_outputs_and_refuses_changed_content(self):
+        """Re-review: outputs of a gated task changed after done, before the founder's approval."""
+        self.prepare_gate()
+        self.register()
+        (self.pe / "out" / "a2.md").write_text("# Notes\n\nNow claims 3 paying customers.\n")
+        rc, out = run_graph("clear-gate", "A2", "ok")
+        self.assertEqual(rc, 1)
+        self.assertIn("not the ones verified at done", out)
+        self.assertEqual(self.node("A2")["status"], "awaiting_human")
+        _, auto = self.auto()
+        self.assertTrue(any("A2: outputs changed after the task was closed" in f["evidence"] for f in auto))
+
+    def test_a_status_with_no_ledger_event_and_a_closure_without_a_gate_valid_check_are_flagged(self):
+        g = graph.load()
+        graph.index(g)["A3"]["status"] = "done"  # A3 has no ledger events
+        graph.save(g)
+        with (self.pe / "graph" / "ledger.jsonl").open("a") as f:  # a forged closure after the gate rule took effect
+            f.write(json.dumps({"t": "2099-01-01T00:00:00Z", "event": "done", "node": "G1", "note": "",
+                                "outputs": {"perspective-engine/out/g1.md": None}}) + "\n")
+        _, auto = self.auto()
+        texts = " ".join(f["evidence"] for f in auto)
+        self.assertIn("A3: status done with no ledger event at all", texts)
+        self.assertIn("G1: closed at 2099-01-01T00:00:00Z without a verifier PASS", texts)
+
+    def test_missing_outputs_of_a_closed_task_are_flagged(self):
+        (self.pe / "out" / "b1.md").unlink()
+        _, auto = self.auto()
+        self.assertTrue(any("B1: closed but outputs are missing or empty" in f["evidence"] for f in auto))
+
     def test_fails_closed_without_ssh_keygen(self):
+        self.prepare_gate()
         self.register()
         good = self.signed(self.founder, "clear-gate", "A2", "ok")
         real = shutil.which

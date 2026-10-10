@@ -14,6 +14,7 @@ the state the dashboards read (dashboard/state.js, city/public/state.json).
   python3 perspective-engine/tools/graph.py log F05 write "drafted section 2: kill criteria"
   python3 perspective-engine/tools/graph.py done F05 "one-line summary"
   python3 perspective-engine/tools/graph.py block F05 "reason"
+  python3 perspective-engine/tools/graph.py reopen F05 "rework after audit finding AF-x"
   python3 perspective-engine/tools/graph.py clear-gate V09 "founder approved batch 1"
   python3 perspective-engine/tools/graph.py export
   python3 perspective-engine/tools/graph.py revenue add 1500 "Acme Corp" --evidence "invoice INV-001, bank ref 123" --founder
@@ -57,6 +58,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 PE = ROOT / "perspective-engine"
@@ -152,13 +154,73 @@ def msg_ref(msg):
     return hashlib.sha256(msg.encode()).hexdigest()
 
 
-def founder_keys():
-    """[(t, key, fingerprint)] from founder-key ledger events, oldest first. The ledger is the only trust root."""
-    return [(str(e.get("t")), e["key"], e.get("fp")) for e in jsonl(LEDGER) if e.get("event") == "founder-key" and e.get("key")]
+def ledger_had_key_in_git():
+    """True if any committed version of the ledger ever added a founder-key event (git pickaxe). Deleting the line
+    from the working ledger therefore cannot make the record look as if no key was ever registered."""
+    try:
+        rel = str(LEDGER.relative_to(ROOT))
+        r = subprocess.run(["git", "-C", str(ROOT), "log", "--format=%H", "-S", '"event": "founder-key"', "--", rel],
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+    return r.returncode == 0 and bool(r.stdout.strip())
 
 
 def key_ever_registered():
-    return any(e.get("event") == "founder-key" for e in jsonl(LEDGER))
+    return any(e.get("event") == "founder-key" for e in jsonl(LEDGER)) or ledger_had_key_in_git()
+
+
+def row_in_force(r, keys):
+    """The (t, key, fp) that was in force when founder-auth row r was made, by its fingerprint and time, or None."""
+    for i, (t, key, fp) in enumerate(keys):
+        nxt = keys[i + 1][0] if i + 1 < len(keys) else None
+        if r.get("keyFp") == fp and str(r.get("t")) >= t and (nxt is None or str(r.get("t")) <= nxt):
+            return t, key, fp
+    return None
+
+
+def auth_row_valid(r, keys):
+    """A founder-auth row is valid when its message hashes to its ref, its JSON body repeats its action and fields,
+    and its signature verifies against the key in force when it was made."""
+    msg = str(r.get("msg", ""))
+    if msg_ref(msg) != r.get("ref"):
+        return False
+    try:
+        body = json.loads(msg.split("\n", 1)[1])
+    except (IndexError, json.JSONDecodeError):
+        return False
+    if body.get("action") != r.get("action") or body.get("fields") != r.get("fields"):
+        return False
+    k = row_in_force(r, keys)
+    return bool(k) and ssh_verify(msg, str(r.get("sig", "")), k[1])[0]
+
+
+def key_chain():
+    """(keys, problems). keys: [(t, key, fingerprint)] in force, oldest first, with fingerprints recomputed from the
+    keys themselves. A key event counts only if its key is valid and, after the first, the previous key signed it.
+    Events that fail are ignored (and reported), so an appended or edited key line cannot take over signing."""
+    rows = jsonl(FOUNDER_AUTH)
+    keys, problems = [], []
+    for e in jsonl(LEDGER):
+        if e.get("event") != "founder-key":
+            continue
+        key = e.get("key")
+        fp = key_fingerprint(key) if key else None
+        if not fp:
+            problems.append(f"founder-key event at {e.get('t')} has no valid public key")
+            continue
+        if keys:
+            cand = [r for r in rows if r.get("ref") == e.get("authRef") and r.get("action") == "founder-key"
+                    and (r.get("fields") or {}).get("key") == key]
+            if not cand or not auth_row_valid(cand[0], keys):
+                problems.append(f"founder-key event at {e.get('t')} is not signed by the previous key")
+                continue
+        keys.append((str(e.get("t")), key, fp))
+    return keys, problems
+
+
+def founder_keys():
+    return key_chain()[0]
 
 
 def ssh_verify(msg, sig_text, pubkey):
@@ -211,11 +273,13 @@ def founder_auth(action, fields, sig_path):
         print(f"refused: control characters (newlines, tabs) in {', '.join(bad)}")
         return None
     if not key_ever_registered():
-        print("warning: no founder key is registered (graph.py founder-key), so this is recorded as attested, not signed")
+        print("warning: no founder key is registered (graph.py founder-key), so this is recorded as attested, not signed;"
+              " attested revenue never forms the face")
         return "attested", None
-    keys = founder_keys()
+    keys, problems = key_chain()
     if not keys:
-        print("refused: the ledger has a founder-key event without a pinned public key; founder actions stay closed until it is fixed")
+        print("refused: a founder key was registered (ledger or git history) but no valid key is in the ledger now; founder"
+              " actions stay closed until the ledger is restored. " + "; ".join(problems))
         return None
     msg = auth_message(action, fields)
     if not sig_path:
@@ -245,21 +309,7 @@ def founder_auth(action, fields, sig_path):
 def verified_auth_rows():
     """{ref: row} for founder-auth rows whose signature verifies against the key that was in force when it was made."""
     keys = founder_keys()
-    out = {}
-    for r in jsonl(FOUNDER_AUTH):
-        for i, (t, key, fp) in enumerate(keys):
-            nxt = keys[i + 1][0] if i + 1 < len(keys) else None
-            if r.get("keyFp") == fp and str(r.get("t")) >= t and (nxt is None or str(r.get("t")) <= nxt):
-                msg = str(r.get("msg", ""))
-                if msg_ref(msg) == r.get("ref") and ssh_verify(msg, str(r.get("sig", "")), key)[0]:
-                    try:
-                        body = json.loads(msg.split("\n", 1)[1])
-                    except (IndexError, json.JSONDecodeError):
-                        break
-                    if body.get("action") == r.get("action") and body.get("fields") == r.get("fields"):
-                        out[r["ref"]] = r
-                break
-    return out
+    return {r["ref"]: r for r in jsonl(FOUNDER_AUTH) if r.get("ref") and auth_row_valid(r, keys)}
 
 
 def revenue_verified(entries):
@@ -275,47 +325,77 @@ def revenue_verified(entries):
 
 
 def founder_key_state():
-    keys = founder_keys()
+    keys, problems = key_chain()
     return {"registered": key_ever_registered(), "fingerprint": keys[-1][2] if keys else None,
-            "registeredAt": keys[0][0] if keys else None, "rotations": max(0, len(keys) - 1)}
+            "registeredAt": keys[0][0] if keys else None, "rotations": max(0, len(keys) - 1), "problems": problems}
 
 
-# A verifier's check row must end in an explicit verdict; done reads the verdict, never the absence of a word.
-VERDICT = re.compile(r"\bVERDICT:\s*(PASS|FAIL)\b", re.I)
+# A verifier's check row ends with exactly one verdict, "VERDICT: PASS" or "VERDICT: FAIL", in plain characters.
+VERDICT_END = re.compile(r"VERDICT: (PASS|FAIL)\.?\s*$")
+VERDICT_WORD = re.compile(r"verdict\s*:", re.I)
 # Rows that can change a task's outputs: after one of these, an earlier check no longer counts.
 CHANGE_KINDS = ("write", "edit", "run")
+RESTART = re.compile(r"^(start|unblock|reopen)\b")
+
+
+def verdict_of(text):
+    """'PASS' or 'FAIL' when the text ends with exactly one well-formed verdict, else None. Text that changes under
+    Unicode compatibility normalisation or carries invisible format characters has no verdict, so look-alike
+    letters and zero-width characters cannot hide or fake one."""
+    text = str(text)
+    if unicodedata.normalize("NFKC", text) != text or any(unicodedata.category(c) == "Cf" for c in text):
+        return None
+    if len(VERDICT_WORD.findall(text)) != 1:
+        return None
+    m = VERDICT_END.search(text)
+    return m.group(1) if m else None
+
+
+def path_hash(f):
+    """sha256 of a file, or of a directory tree (relative paths and file hashes, symlinks resolved); None if missing
+    or an empty directory."""
+    f = f.resolve() if f.is_symlink() else f
+    if f.is_file():
+        return hashlib.sha256(f.read_bytes()).hexdigest()
+    if f.is_dir():
+        files = sorted(p for p in f.rglob("*") if p.is_file())
+        if not files:
+            return None
+        h = hashlib.sha256()
+        for p in files:
+            h.update(str(p.relative_to(f)).encode() + b"\0" + hashlib.sha256(p.read_bytes()).hexdigest().encode() + b"\0")
+        return "dir:" + h.hexdigest()
+    return None
 
 
 def output_hashes(n):
-    """sha256 of each output file as it is now (None when missing)."""
-    out = {}
-    for o in n["outputs"]:
-        f = ROOT / o
-        out[o] = hashlib.sha256(f.read_bytes()).hexdigest() if f.is_file() else None
-    return out
+    return {o: path_hash(ROOT / o) for o in n["outputs"]}
 
 
 def verifier_cleared(n):
-    """(ok, reason). done needs, after the last change to the task (a builder write, edit or run row, or a start or
-    unblock), a verifier check whose last verdict is VERDICT: PASS, and outputs identical to what that check saw."""
+    """(ok, reason). done needs, after the last change to the task (a self-logged write, edit or run row by anyone,
+    or a start, unblock or reopen), at least one verifier check with a PASS verdict, no FAIL verdict, and every
+    verifier row in that span (including the read the verifier logs when it starts) pinned to the outputs as they
+    are now."""
     rows = jsonl(ACTIVITY / f"{n['id']}.jsonl")
     last_change = -1
     for i, r in enumerate(rows):
-        builder_change = r.get("actor") != "verifier" and r.get("src") != "ledger" and r.get("kind") in CHANGE_KINDS
-        restart = r.get("src") == "ledger" and re.match(r"^(start|unblock)\b", str(r.get("text", "")))
-        if builder_change or restart:
+        own_change = r.get("src") == "self" and r.get("kind") in CHANGE_KINDS
+        restart = r.get("src") == "ledger" and RESTART.match(str(r.get("text", "")))
+        if own_change or restart:
             last_change = i
-    verdicts = [r for r in rows[last_change + 1:] if r.get("actor") == "verifier" and r.get("kind") == "check"
-                and VERDICT.search(str(r.get("text", "")))]
+    # Verifier rows logged through graph.py (src self) carry the output hashes; ingested transcript rows do not.
+    span = [r for r in rows[last_change + 1:] if r.get("actor") == "verifier" and r.get("src") == "self"]
+    verdicts = [verdict_of(r.get("text", "")) for r in span if r.get("kind") == "check"]
+    verdicts = [v for v in verdicts if v]
     if not verdicts:
         return False, ("no verifier verdict is recorded since the last change; the verifier runs "
                        f'graph.py log {n["id"]} check --verifier "<criteria> ... VERDICT: PASS" first')
-    last = verdicts[-1]
-    found = VERDICT.findall(str(last.get("text", "")))
-    if any(v.upper() == "FAIL" for v in found) or not found or found[-1].upper() != "PASS":
-        return False, "the latest verifier verdict is not PASS; fix the gaps and have the verifier check again"
-    if last.get("outputs") != output_hashes(n):
-        return False, "the outputs changed after the verifier's check (their hashes differ); the verifier must check again"
+    if "FAIL" in verdicts:
+        return False, "a verifier verdict since the last change is FAIL; fix the gaps (a change) and have the verifier check again"
+    now = output_hashes(n)
+    if any(r.get("outputs") != now for r in span):
+        return False, "the outputs changed during or after the verifier's review (their hashes differ); the verifier must check again"
     return True, ""
 
 
@@ -349,7 +429,10 @@ def founder_key_cmd(args):
 def authorize_cmd(args, g):
     """Prints the exact request the founder signs for clear-gate, unblock or revenue add."""
     if args[:1] in (["clear-gate"], ["unblock"]) and len(args) >= 2 and args[1] in index(g):
-        print(auth_message(args[0], {"node": args[1], "note": " ".join(args[2:])}), end="")
+        fields = {"node": args[1], "note": " ".join(args[2:])}
+        if args[0] == "clear-gate":
+            fields["outputs"] = output_hashes(index(g)[args[1]])
+        print(auth_message(args[0], fields), end="")
         return 0
     if args[:2] == ["revenue", "add"]:
         parsed = parse_revenue(args[2:])
@@ -381,10 +464,10 @@ def activity_all():
     if not ACTIVITY.exists():
         return out
     for p in sorted(ACTIVITY.glob("*.jsonl")):
-        rows = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+        rows = [r for r in jsonl(p) if isinstance(r, dict)]
         seen, uniq = set(), []
-        for r in sorted(rows, key=lambda r: r["t"]):
-            k = (r["t"], r["kind"], r["text"])
+        for r in sorted(rows, key=lambda r: str(r.get("t", ""))):
+            k = (r.get("t"), r.get("kind"), r.get("text"))
             if k not in seen:
                 seen.add(k)
                 uniq.append(r)
@@ -684,16 +767,19 @@ def run(cmd, args):
             return 1
         text = " ".join(args[2:])
         outputs = None
+        if actor:
+            # Every verifier row pins the outputs as they are now, so a change during the review is caught.
+            outputs = output_hashes(n)
         if actor and args[1] == "check":
-            # A verifier's check is the thing done relies on: never cut it, require a verdict, and pin the outputs it saw.
+            # A verifier's check is the thing done relies on: never cut it, and require one plain verdict at the end.
             if len(text) > LOG_TEXT_MAX:
                 print(f"refused: a verifier check must fit in {LOG_TEXT_MAX} characters ({len(text)} given); "
                       "put details in earlier note rows and the verdict in this one")
                 return 1
-            if not VERDICT.search(text):
-                print('refused: a verifier check must end with an explicit verdict, "VERDICT: PASS" or "VERDICT: FAIL"')
+            if not verdict_of(text):
+                print('refused: a verifier check must end with exactly one verdict, "VERDICT: PASS" or "VERDICT: FAIL",'
+                      " in plain characters, and use the word verdict nowhere else")
                 return 1
-            outputs = output_hashes(n)
         activity_append(n["id"], n["agent"], args[1], text, actor=actor, outputs=outputs)
         export(g)
         print(f"{n['id']} logged {args[1]}")
@@ -710,7 +796,8 @@ def run(cmd, args):
         if n["status"] != "running":
             print(f"refused: {n['id']} is {n['status']}, start it first")
             return 1
-        missing = [o for o in n["outputs"] if not (ROOT / o).exists() or (ROOT / o).stat().st_size == 0]
+        hashes = output_hashes(n)
+        missing = [o for o, h in hashes.items() if h is None or ((ROOT / o).is_file() and (ROOT / o).stat().st_size == 0)]
         if missing:
             print("refused: missing or empty outputs: " + ", ".join(missing))
             return 1
@@ -722,6 +809,19 @@ def run(cmd, args):
         n["status"] = "awaiting_human" if gate and not gate.get("cleared") else "done"
         if n["status"] == "awaiting_human":
             print(f"prepared; waiting on founder: {gate['reason']}")
+    elif cmd == "reopen":
+        # Back to running for rework: the output must be verified again, and an earlier founder approval no longer
+        # covers it (the gate is re-armed). Conservative, so it needs no signature.
+        if n["status"] not in ("done", "awaiting_human"):
+            print(f"refused: {n['id']} is {n['status']}; only done or awaiting_human tasks can be reopened")
+            return 1
+        if not note.strip():
+            print('usage: reopen <NODE_ID> "why"')
+            return 1
+        if n.get("gate") and n["gate"].get("cleared"):
+            note = f"{note} (founder approval '{n['gate']['cleared']}' re-armed)"
+            n["gate"]["cleared"] = None
+        n["status"] = "running"
     elif cmd == "block":
         if n["status"] not in ("pending", "running"):
             print(f"refused: {n['id']} is {n['status']}; only pending or running tasks can be blocked")
@@ -740,7 +840,14 @@ def run(cmd, args):
         if not n.get("gate"):
             print(f"{n['id']} has no gate")
             return 1
-        res = founder_auth("clear-gate", {"node": n["id"], "note": note}, sig_path)
+        hashes = output_hashes(n)
+        if n["status"] == "awaiting_human":
+            # The founder approves the content the verifier passed: refuse if it changed since done.
+            closed = [e for e in jsonl(LEDGER) if e.get("node") == n["id"] and e.get("event") == "done"]
+            if not closed or closed[-1].get("outputs") != hashes:
+                print(f"refused: {n['id']}'s outputs are not the ones verified at done; reopen it and have it verified again")
+                return 1
+        res = founder_auth("clear-gate", {"node": n["id"], "note": note, "outputs": hashes}, sig_path)
         if res is None:
             return 1
         auth, auth_ref = res
@@ -751,7 +858,8 @@ def run(cmd, args):
         print(f"unknown command {cmd}")
         return 1
     save(g)
-    ledger_append(cmd, n["id"], note, auth=auth, authRef=auth_ref)
+    ledger_append(cmd, n["id"], note, auth=auth, authRef=auth_ref,
+                  outputs=output_hashes(n) if cmd in ("done", "clear-gate") else None)
     activity_append(n["id"], n["agent"], {"start": "plan", "done": "handoff", "block": "blocked"}.get(cmd, "note"),
                     f"{cmd}{': ' + note if note else ''}", src="ledger")
     export(g)

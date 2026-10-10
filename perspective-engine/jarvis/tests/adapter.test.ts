@@ -178,14 +178,14 @@ describe('peContext, peEvents and peBody on the real state.json', () => {
   it('needs signed revenue for the face once the founder key is registered', () => {
     const pay = (payer: string, auth: 'signed' | 'attested') => ({ t: '2026-10-09T10:00:00Z', amountUsd: 500, payer, evidence: 'INV', recordedBy: 'founder' as const, auth })
     const revenue = [pay('Acme', 'attested'), pay('Beta', 'signed')]
-    expect(peBody({ ...real, revenue }).face.stage).toBe(2)
+    expect(peBody({ ...real, revenue }).face.stage).toBe(0)  // no verified signature: nothing counts, key or no key
     // The label "signed" alone does not count: only sigVerified, which the export computes from the signature log.
     expect(peBody({ ...real, revenue, founderKey: { registered: true } }).face).toMatchObject({ stage: 0, excluded: 2 })
     const checked = revenue.map(e => ({ ...e, sigVerified: e.auth === 'signed' }))
     expect(peBody({ ...real, revenue: checked, founderKey: { registered: true } }).face).toMatchObject({ stage: 1, payers: 1, unsigned: 0 })
-    // Either the ledger (founderKey) or the auditor turns the requirement on; a stale or missing audit cannot turn it off.
-    expect(peBody({ ...real, revenue: checked, audit: { founderAuth: { keyRegistered: true } } }).face.stage).toBe(1)
-    expect(peBody({ ...real, revenue: checked, founderKey: { registered: true }, audit: null }).face.stage).toBe(1)
+    // Nothing about key registration, the audit or its absence can turn the requirement off.
+    expect(peBody({ ...real, revenue: checked, founderKey: { registered: false }, audit: null }).face.stage).toBe(1)
+    expect(peBody({ ...real, revenue, founderKey: { registered: false }, audit: null }).face.stage).toBe(0)
   })
 
   it('feeds a briefing whose counts match the file', () => {

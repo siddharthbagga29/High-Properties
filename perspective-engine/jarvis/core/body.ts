@@ -35,13 +35,15 @@ export function isVerifiedRevenue(e: RevenueEntry): boolean {
 }
 
 /**
- * requireSigned: once the founder has registered a signing key, only entries whose signature the export verified
- * (sigVerified === true) count, so a row merely labelled "signed" cannot form the face. Before that, attested
- * entries count and the label says so. Entries left out are counted and named in the label, never dropped silently.
+ * By default only entries whose founder signature the export verified (sigVerified === true) count, so revenue
+ * recorded on trust, or a row merely labelled "signed", can never form the face. requireSigned: false is an explicit
+ * opt-out for other deployments; it counts attested entries and the label says so. Entries left out are counted
+ * and named in the label, never dropped silently.
  */
 export function faceState(entries: RevenueEntry[], opts: { requireSigned?: boolean } = {}): FaceState {
+  const requireSigned = opts.requireSigned !== false
   const valid = (entries ?? []).filter(isVerifiedRevenue)
-  const verified = valid.filter(e => !opts.requireSigned || e.sigVerified === true)
+  const verified = valid.filter(e => !requireSigned || e.sigVerified === true)
   const excluded = valid.length - verified.length
   const payers = new Set(verified.map(e => e.payer.trim().toLowerCase())).size
   const stage = Math.min(3, payers) as FaceState['stage']
@@ -49,6 +51,6 @@ export function faceState(entries: RevenueEntry[], opts: { requireSigned?: boole
   const unsigned = verified.filter(e => e.sigVerified !== true).length
   let note = ''
   if (unsigned) note += ` ${unsigned === 1 ? 'One entry was' : `${unsigned} entries were`} recorded on trust, not signed with the founder's key.`
-  if (excluded) note += ` ${excluded === 1 ? 'One entry is' : `${excluded} entries are`} not counted: no verified founder signature.`
+  if (excluded) note += ` ${excluded === 1 ? 'One entry is' : `${excluded} entries are`} not counted: no verified founder signature (the face forms only from revenue signed with the founder's key).`
   return { stage, payers, totalUsd, label: FACE_LABELS[stage] + note, verifiedEntries: verified.length, unsigned, excluded }
 }

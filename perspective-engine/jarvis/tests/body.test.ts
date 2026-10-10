@@ -23,7 +23,7 @@ describe('partState', () => {
 
 describe('faceState', () => {
   const pay = (payer: string, amountUsd = 500, over: Partial<RevenueEntry> = {}): RevenueEntry => ({
-    t: '2026-11-01T10:00:00Z', amountUsd, payer, evidence: `invoice-${payer}.pdf`, recordedBy: 'founder', ...over,
+    t: '2026-11-01T10:00:00Z', amountUsd, payer, evidence: `invoice-${payer}.pdf`, recordedBy: 'founder', auth: 'signed', sigVerified: true, ...over,
   })
 
   it('stays unformed without verified revenue', () => {
@@ -61,8 +61,14 @@ describe('faceState and the founder signature', () => {
   const entry = (payer: string, auth?: 'signed' | 'attested') =>
     ({ t: '2026-10-09T10:00:00Z', amountUsd: 1000, payer, evidence: 'INV-1', recordedBy: 'founder' as const, ...(auth ? { auth } : {}) })
 
-  it('counts attested revenue before a key is registered, and says it is unsigned', () => {
+  it('by default revenue recorded on trust never forms the face, and the label says why', () => {
     const f = faceState([entry('Acme', 'attested')])
+    expect(f).toMatchObject({ stage: 0, unsigned: 0, excluded: 1 })
+    expect(f.label).toContain('One entry is not counted: no verified founder signature')
+  })
+
+  it('an explicit opt-out counts attested revenue and says it is unsigned', () => {
+    const f = faceState([entry('Acme', 'attested')], { requireSigned: false })
     expect(f).toMatchObject({ stage: 1, unsigned: 1 })
     expect(f.label).toContain("One entry was recorded on trust, not signed with the founder's key.")
   })
@@ -71,7 +77,7 @@ describe('faceState and the founder signature', () => {
     const verified = { ...entry('Gamma', 'signed'), sigVerified: true }
     const f = faceState([entry('Acme', 'attested'), entry('Beta'), verified], { requireSigned: true })
     expect(f).toMatchObject({ stage: 1, payers: 1, verifiedEntries: 1, unsigned: 0, excluded: 2 })
-    expect(f.label).toContain('2 entries are not counted: no verified founder signature.')
+    expect(f.label).toContain('2 entries are not counted: no verified founder signature')
   })
 
   it('a row that only says auth "signed" does not count once a key exists', () => {
