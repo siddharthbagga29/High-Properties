@@ -548,14 +548,35 @@ def revenue_all():
     return out
 
 
+def clip(text, n):
+    text = str(text or "")
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
 def audit_state():
-    """The auditor's scorecards (tools/audit.py writes graph/audit/scorecards.json), or None."""
+    """The auditor's scorecards for the live city (tools/audit.py writes graph/audit/scorecards.json), or None.
+    Long texts are clipped for display; the full findings stay in graph/audit/."""
     if not AUDIT_JSON.exists():
         return None
     try:
-        return json.loads(AUDIT_JSON.read_text())
+        a = json.loads(AUDIT_JSON.read_text())
     except json.JSONDecodeError:
         return None
+    for c in a.get("scorecards", []):
+        for d in c.get("dimensions", []):
+            d["basis"] = clip(d.get("basis"), 420)
+        for f in c.get("findings", []):
+            f["claim"] = clip(f.get("claim"), 260)
+            f["evidence"] = clip(f.get("evidence"), 260)
+    a["checks"] = {k: len(v) for k, v in (a.get("checks") or {}).items()}  # counts only; the notes stay in the repo
+    return a
+
+
+def city_row(r):
+    """An activity row as the city shows it: no output hashes, text clipped."""
+    keep = {k: r[k] for k in ("t", "node", "agent", "kind", "src", "actor") if k in r}
+    keep["text"] = clip(r.get("text"), 300)
+    return keep
 
 
 def size(doc):
@@ -571,7 +592,7 @@ def export(g):
              "revenue": revenue_verified(revenue_all()), "founderKey": founder_key_state(), "audit": audit_state()}
     STATE_JS.write_text("window.PE_STATE = " + json.dumps(state, indent=1) + ";\n")
     if CITY_JSON.parent.exists():
-        act = activity_all()
+        act = {k: [city_row(r) for r in v] for k, v in activity_all().items()}
         city = dict(state, ledger=ledger, excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]}, activity=act)
         # Keep the live document under its size cap: trim the oldest activity first.
         # Revenue and audit are never trimmed.

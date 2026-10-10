@@ -1,5 +1,5 @@
 {
- "computedAt": "2026-10-10T07:43:49Z",
+ "computedAt": "2026-10-10T12:51:41Z",
  "rubricVersion": "1.0",
  "scorecards": [
   {
@@ -42,7 +42,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 0.0,
-     "basis": "3 closed tasks in the ledger: step records on 3 (19 self-logged rows, 0 transcript rows); verifier rows on 3; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): F05 F07 D01; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 24/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -60 from 8 open finding(s) and 23 fixed after the audit (a quarter weight each)."
+     "basis": "3 closed tasks in the ledger: step records on 3 (19 self-logged rows, 0 transcript rows); verifier rows on 3; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): F05 F07 D01; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 16/16 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -60 from 8 open finding(s) and 23 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -558,7 +558,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "science",
@@ -716,7 +716,7 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "ethics",
@@ -814,35 +814,35 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "product",
    "name": "Ada",
-   "score": 74.8,
-   "grade": "C",
+   "score": 52.2,
+   "grade": "F",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 50.0,
-     "basis": "1/2 verified tasks passed first time (V14); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
+     "score": 0.0,
+     "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 44.5,
-     "basis": "3 failed verification rounds over 2 verified tasks (1.50 per task); rework: F04 x3; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -10.5 from 3 open finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 0.0,
+     "basis": "3 failed verification rounds over 1 verified tasks (3.00 per task); rework: F04 x3; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -10.5 from 3 open finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 94.2,
-     "basis": "168/177 numeric claims (95%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F04 index.html 3/5, F04 README.md 144/151, V14 CHANGELOG.md 21/21; untraced examples: F04: 0.2; F04: 30 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 70.0,
+     "basis": "No data: no numeric claims found in 0 readable output files of closed tasks. Scored neutral (70)."
     },
     {
      "id": "integrity",
@@ -855,8 +855,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 84.5,
-     "basis": "2 closed tasks in the ledger: step records on 2 (86 self-logged rows, 260 transcript rows); verifier rows on 2; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): F04 V14. Findings: -0.5 from 0 open finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 69.5,
+     "basis": "No data: no closed task of this agent in the ledger. Scored neutral (70). Findings: -0.5 from 0 open finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -932,7 +932,7 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "data",
@@ -1030,35 +1030,35 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "gtm",
    "name": "Ogilvy",
-   "score": 64.3,
-   "grade": "D",
+   "score": 59.3,
+   "grade": "F",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 20.0,
-     "basis": "1/5 verified tasks passed first time (V08); needed rework, a block or a later correction: V05 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings), V06 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 major or critical auditor findings), V07 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings), V09 (0 failed rounds, 0 blocks, 1 orchestrator corrections, 0 major or critical auditor findings)."
+     "score": 0.0,
+     "basis": "0/2 verified tasks passed first time (none); needed rework, a block or a later correction: V05 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings), V07 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 46.5,
-     "basis": "2 failed verification rounds over 5 verified tasks (0.40 per task); rework: V05 x1, V07 x1; 2 open FAIL/GAP rows after the last revision; open on: V05, V07; 1 non-blocking notes left open (V09 1). Findings: -8.5 from 2 open finding(s) and 5 fixed after the audit (a quarter weight each)."
+     "score": 61.5,
+     "basis": "2 failed verification rounds over 2 verified tasks (1.00 per task); rework: V05 x1, V07 x1; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -8.5 from 2 open finding(s) and 5 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 92.7,
-     "basis": "112/115 numeric claims (97%) in 5 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V05 icp.md 28/30, V06 loi-template.md 17/18, V07 targets.csv 58/58, V09 outreach-log.md 9/9; untraced examples: V05: 6-12 months; V06: 95%. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -3.5 from 1 open finding(s) and 3 fixed after the audit (a quarter weight each)."
+     "score": 66.5,
+     "basis": "No data: no numeric claims found in 0 readable output files of closed tasks. Scored neutral (70). Findings: -3.5 from 1 open finding(s) and 3 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "integrity",
@@ -1071,8 +1071,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 57.0,
-     "basis": "5 closed tasks in the ledger: step records on 5 (26 self-logged rows, 103 transcript rows); verifier rows on 5; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): V05 V06 V07 V08 V09; verified only after closing (half credit): V05 V06 V07 V08. Findings: -8 from 1 open finding(s) and 6 fixed after the audit (a quarter weight each)."
+     "score": 62.0,
+     "basis": "No data: no closed task of this agent in the ledger. Scored neutral (70). Findings: -8 from 1 open finding(s) and 6 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -1277,7 +1277,7 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "finance",
@@ -1445,7 +1445,7 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "legal",
@@ -1553,12 +1553,12 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   },
   {
    "agent": "brand",
    "name": "Rams",
-   "score": 61.4,
+   "score": 63.2,
    "grade": "D",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -1573,15 +1573,15 @@
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 52.0,
-     "basis": "1 failed verification rounds over 1 verified tasks (1.00 per task); rework: V13 x1; 1 open FAIL/GAP rows after the last revision; open on: V13; 0 non-blocking notes left open. Findings: -3 from 1 open finding(s) and 2 fixed after the audit (a quarter weight each)."
+     "score": 67.0,
+     "basis": "1 failed verification rounds over 1 verified tasks (1.00 per task); rework: V13 x1; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -3 from 1 open finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 83.3,
-     "basis": "4/4 numeric claims (100%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V13 index.html 4/4. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 70.0,
+     "basis": "No data: no numeric claims found in 0 readable output files of closed tasks. Scored neutral (70)."
     },
     {
      "id": "integrity",
@@ -1594,8 +1594,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 54.8,
-     "basis": "1 closed tasks in the ledger: step records on 1 (3 self-logged rows, 11 transcript rows); verifier rows on 1; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): V13; verified only after closing (half credit): V13. Findings: -5.25 from 0 open finding(s) and 2 fixed after the audit (a quarter weight each)."
+     "score": 64.8,
+     "basis": "No data: no closed task of this agent in the ledger. Scored neutral (70). Findings: -5.25 from 0 open finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -1671,15 +1671,15 @@
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T07:43:49Z"
+   "computedAt": "2026-10-10T12:51:41Z"
   }
  ],
  "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
  "neutralScore": 70.0,
  "inputs": {
   "nodes": 34,
-  "ledgerEvents": 61,
-  "activityRows": 1267,
+  "ledgerEvents": 69,
+  "activityRows": 1283,
   "llmFindings": 106,
   "llmAuditedAgents": [
    "brand",

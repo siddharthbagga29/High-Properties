@@ -134,7 +134,7 @@
       ],
       "gate": null,
       "budget_k": 80,
-      "status": "done"
+      "status": "running"
     },
     {
       "id": "F05",
@@ -343,7 +343,7 @@
       ],
       "gate": null,
       "budget_k": 15,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 73.4,
         "duration_s": 83,
@@ -369,7 +369,7 @@
       ],
       "gate": null,
       "budget_k": 8,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 74.4,
         "duration_s": 67,
@@ -393,7 +393,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 102.5,
         "duration_s": 180,
@@ -418,7 +418,7 @@
       ],
       "gate": null,
       "budget_k": 8,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 82.7,
         "duration_s": 107,
@@ -444,7 +444,7 @@
         "reason": "Sending email uses the founder's Gmail; needs authorization and approval of each batch."
       },
       "budget_k": 10,
-      "status": "awaiting_human"
+      "status": "running"
     },
     {
       "id": "V10",
@@ -533,7 +533,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 100.4,
         "duration_s": 206,
@@ -562,7 +562,7 @@
         "reason": "Needs real feedback sessions with paid ND advisors."
       },
       "budget_k": 40,
-      "status": "awaiting_human"
+      "status": "running"
     },
     {
       "id": "V15",

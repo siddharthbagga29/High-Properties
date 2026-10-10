@@ -568,10 +568,10 @@ def check_founder_auth(pe, ledger, nodes=(), activity=None):
     for e in ledger:
         if e.get("event") != "done" or str(e.get("t")) < GATE_V3_SINCE:
             continue
-        rows = activity.get(e.get("node"), [])
+        act_rows = activity.get(e.get("node"), [])
         ok = e.get("outputs") is not None and any(
             r.get("actor") == "verifier" and r.get("kind") == "check" and verdict_of(r.get("text", "")) == "PASS"
-            and r.get("outputs") == e.get("outputs") and str(r.get("t")) <= str(e.get("t")) for r in rows)
+            and r.get("outputs") == e.get("outputs") and str(r.get("t")) <= str(e.get("t")) for r in act_rows)
         if not ok:
             flags.append(("critical", f"{e.get('node')}: closed at {e.get('t')} without a verifier PASS on the outputs it recorded"))
     root = pe.parent
