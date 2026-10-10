@@ -8,7 +8,7 @@ Regenerate (numbers below are printed by the script, never hand-typed): `python3
 ## Results (verbatim script output)
 ```
 Perspective Engine bottom-up Monte Carlo | trials=10000 seed=20261006 horizon=60 months (2027-01..2031-12)
-Model run time: 2.6 s | inputs: 32, sourced numerically: 0, assumptions: 32
+Model run time: 2.4 s | inputs: 32, sourced numerically: 0, assumptions: 32
 
 ARR (annual contracts only), P10 / P50 / P90
   month 12 (Dec 2027): $0k / $0k / $105k
@@ -83,7 +83,7 @@ Top drivers of month-60 ARR (Spearman rank correlation)
 | `sigma` | 0.4 | 0.6 | 0.9 | lognormal sigma, account size spread | assumption | Account sizes are skewed |
 | `price` | 100 | 200 | 400 | USD per manager seat per year | assumption | No public pricing found (dossier section 7); memo's $25k-60k/yr is unverified and only a cross-check on the ACV line in the results, not an input |
 | `exp` | 0 | 0.08 | 0.25 | annual seat growth at renewal | assumption | No data |
-| `churn` | 0.1 | 0.2 | 0.35 | annual logo churn at renewal | assumption | Includes budget-line cuts (19% of firms cut DEI funding in 2025, https://www.hr-brew.com/stories/2025/12/04/2025-in-review-businesses-walked-a-fine-line-on-dei-as-the-government-ramped-up-threats-on-corporate-initiatives); product is positioned outside DEI |
+| `churn` | 0.1 | 0.2 | 0.35 | annual logo churn at renewal | assumption | Includes budget-line cuts: 19% of organisations said they were decreasing DEI funding in 2025 and 23% increasing (Paradigm 2025 DEI Benchmarking Study, 443 organisations surveyed March 2025, https://info.paradigmiq.com/hubfs/2025%20DEI%20Benchmarking%20Study.pdf ; seen in secondary reports by web-search summary only, report not read; same source as gtm/icp.md section 2). Context only, not a numeric basis for the churn range; product is positioned outside DEI |
 | `p_fail` | 0.3 | 0.5 | 0.7 | P(H1 value hypothesis fails) | assumption | Dossier: no controlled ADHD-simulation trial; cognitive empathy d=0.08 (https://tmb.apaopen.org/pub/vr-improves-emotional-empathy-only); Nario-Redmond 2017 (https://pubmed.ncbi.nlm.nih.gov/28287757/) |
 | `t_res` | 10 | 14 | 22 | months, estimation-study readout | assumption | First-year milestone is the study; readout lag assumed |
 | `f_acq` | 0.05 | 0.15 | 0.35 | x pilot signing rate after H1 failure | assumption | Growth cap: residual referral-only sales |

@@ -1,12 +1,12 @@
-# V11 Non-dilutive funding map (as of 2026-10-06)
+# V11 Non-dilutive funding map (as of 2026-10-06; country decision recorded 2026-10-09)
 
-**Summary (under 150 words).** Founder country is unconfirmed, so the map is tiered by country. Only the US tier has realistic fit. Best bets: NIDILRR SBIR Phase I (employment focus, about $100k, forecast due 2026-12-16), NIH SBIR via NIMH/NICHD (about $314k Phase I under parent notice PA-27-100, next receipt 2027-01-05), NSF SBIR via Project Pitch (up to $305k, Learning and Cognition topic, full-proposal window 2027-03-04 for a new pitch). All three need a US-owned for-profit and federal registrations. UK, EU and India options mostly fit poorly: Innovate UK open calls are AI R&D, EIC Accelerator needs TRL 6-8 and has a very low win rate, BIRAC is biotech-only, and India's SISFS window closed 2026-05-31. Foundation money for this niche is thin or closed: Kessler is sunsetting, DIF x Tech excludes for-profits, and Zero Project gives recognition only. Fit and probability scores are my judgement. Nothing was applied for or contacted.
+**Summary (under 150 words).** The founder chose the United States on 2026-10-08; ownership structure is still open, and non-US rows are reference only. Best bets: NIDILRR SBIR Phase I (employment focus, about $100k, forecast due 2026-12-16), NIH SBIR via NIMH/NICHD (about $314k Phase I under parent notice PA-27-100, next receipt 2027-01-05), NSF SBIR via Project Pitch (up to $305k, Learning and Cognition topic, full-proposal window 2027-03-04 for a new pitch). All three need a US-owned for-profit and federal registrations. UK, EU and India options mostly fit poorly: Innovate UK open calls are AI R&D, EIC Accelerator needs TRL 6-8 and has a very low win rate, BIRAC is biotech-only, and India's SISFS window closed 2026-05-31. Foundation money for this niche is thin or closed: Kessler is sunsetting, DIF x Tech excludes for-profits, and Zero Project gives recognition only. Fit and probability scores are my judgement. Nothing was applied for or contacted.
 
 **Method and caveats.** About 27 web searches (over the 10-15 target, to verify dates). Most agency sites (nsf.gov, acl.gov, grants.gov, bwcoconsulting) blocked fetch, so figures are from search snippets and secondary summaries, not the solicitation text. Re-check each NOFO before relying on an amount or date. "Unverified" means no source found. The evidence dossier says some NIH institutes list Phase I up to $700k. I could not confirm that; the standard Phase I cap is $314,363 under NIH notice NOT-OD-25-013 (seen by search summary only; this file said $306,872 until the 2026-10-09 correction, which was the earlier figure).
 
 ## 1. Ranked shortlist: fit x probability x amount (US-centred)
 
-Score = amount (USD k) x fit (0-1) x P(award | submitted). Fit and P are my assumptions for a first-time, pre-revenue applicant with no preliminary data. P is not sourced from published success rates. FX is assumed at 1 GBP = 1.30 USD, 1 EUR = 1.15 USD, 1 lakh INR = 1.2k USD.
+Score = amount (USD k) x fit (0-1) x P(award | submitted). Fit and P are my assumptions for a first-time, pre-revenue applicant with no preliminary data. P is not sourced from published success rates. Rows 5 and 7-11 (EU, India, UK) are reference only: the founder chose the United States on 2026-10-08 (docs/founder-decisions.md item 1), so they apply only if that decision is reopened. FX is assumed at 1 GBP = 1.30 USD, 1 EUR = 1.15 USD, 1 lakh INR = 1.2k USD.
 
 | # | Program | Amount | Next deadline | Fit | P | Score | Source |
 |---|---|---|---|---|---|---|---|
@@ -22,12 +22,12 @@ Score = amount (USD k) x fit (0-1) x P(award | submitted). Fit and P are my assu
 | 10 | UK: Innovate UK Smart Grants (replaced by Growth Catalyst) and open competitions | Not scored: per-project amounts unverified. Growth Catalyst Early Stage was GBP 25k-50k | No fitting open call found. Growth Catalyst Early Stage closed 2026-04-30 and was limited to AI, semiconductors, quantum and similar technologies. Open now: Frontier AI SME Champions Phase 1 (closes 2026-11-11), Efficient, Structured and Controllable AI Systems (2026-10-12 to 2026-11-18). Both are AI R&D | 0.10. AI-model R&D only | n/a | n/a | https://apply-for-innovation-funding.service.gov.uk/competition/search ; https://venturenomix.com/innovate-uk-grants-q3-q4-2026/ ; https://apply-for-innovation-funding.service.gov.uk/competition/2220/overview/bcfd2780-f307-4434-be32-46889a239024 ; https://casrai.org/guides/innovate-uk-smart-grants |
 | 11 | UK: Knowledge Transfer Partnerships (KTP), a company plus a UK university partner | Unverified | Rolling per one search result; confirm | 0.30. The academic partner could run the outcome study. Needs a UK-registered company | n/a | n/a | https://venturenomix.com/innovate-uk-grants-q3-q4-2026/ |
 
-## 2. What is live by founder country (next action date)
+## 2. What is live (US chosen 2026-10-08; other countries reference only)
 
 - **US (for-profit, more than 50% directly owned and controlled by US citizens or permanent residents, 13 CFR 121.702; exactly 50% fails. This line said "at least 51%", the older wording, until 2026-10-09; source https://www.law.cornell.edu/cfr/text/13/121.702 , search summary).** NIDILRR forecast 2026-12-16; NIH 2027-01-05 (April 5 is more realistic given registration lead time); NSF Project Pitch now, then the 2027-03-04 full proposal; IES FY27 unverified. SBIR/STTR was reauthorized 2026-04-13 through 2031-09-30 (dossier section 9). Founder gates: SAM.gov or UEI, SBA company registry, eRA Commons and Grants.gov accounts. Registration lead time is unverified.
-- **UK.** Nothing fitting is open. Options: KTP with a university (rolling), the EIC Accelerator grant-only route (UK is an associated country), or watch Innovate UK Business Connect and the Innovation Funding Service weekly.
-- **EU.** EIC Accelerator short application is rolling. Treat it as a 2027 target after a pilot result, since the 2026-11-04 full-proposal slot needs a prior GO.
-- **India.** SISFS is closed. BIRAC BIG is probably out of scope. NIDHI-EIR via an incubator is the low-effort option. All dates are unverified.
+- **UK (reference only, not live since the US decision).** Nothing fitting is open. Options: KTP with a university (rolling), the EIC Accelerator grant-only route (UK is an associated country), or watch Innovate UK Business Connect and the Innovation Funding Service weekly.
+- **EU (reference only, not live since the US decision).** EIC Accelerator short application is rolling. Treat it as a 2027 target after a pilot result, since the 2026-11-04 full-proposal slot needs a prior GO.
+- **India (reference only, not live since the US decision).** SISFS is closed. BIRAC BIG is probably out of scope. NIDHI-EIR via an incubator is the low-effort option. All dates are unverified.
 
 ## 3. Foundations and prizes (neurodiversity, disability inclusion, workforce)
 
@@ -47,11 +47,11 @@ Screened out: BioChallenge 2026 (New Orleans; over $100k, deadline was 2026-08-0
 - NIH may classify a controlled pilot that measures manager behaviour as a clinical trial, which determines the NOFO variant ("clinical trial required" or "not allowed"). Confirm with the NIH program officer. That contact is a founder gate.
 - Frame as disability employment, ADA-style accessibility and workforce productivity, not DEI (dossier section 6). Do not make symptom, diagnosis or treatment claims (dossier section 8).
 - Use the dossier's design points as the technical-merit story: lived-experience co-design, adaptation and strengths, and behaviour outcomes rather than empathy-only measures.
-- Sequence if US-based: NSF pitch now (free, rolling), NIDILRR in December as a low-cost feasibility award, NIH in January or April. Check for no-overlap rules between agencies before submitting duplicates. That rule is unverified.
+- Sequence (US chosen 2026-10-08): NSF pitch now (free, rolling), NIDILRR in December as a low-cost feasibility award, NIH in January or April. Check for no-overlap rules between agencies before submitting duplicates. That rule is unverified.
 
 ## 5. Open items for the founder (not done by this node)
 
-1. Confirm country and ownership structure. This decides which tier is open.
-2. Start SAM.gov, SBA and eRA registrations if US-based. These need the founder's accounts.
+1. Country is decided: United States, 2026-10-08 (docs/founder-decisions.md item 1). Still open: the ownership and control structure. The US tier is open only if the company is more than 50% directly owned and controlled by US citizens or permanent residents (13 CFR 121.702); each owner's citizenship or permanent-resident status is unverified here.
+2. Start SAM.gov, SBA and eRA registrations once the US entity exists. These need the founder's accounts.
 3. Verify every date and amount against the live NOFOs, because I could not read agency pages directly.
 4. Any program officer contact or application is out of scope for this node.
