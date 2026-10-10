@@ -36,6 +36,7 @@ export interface PEState {
   activity?: Record<string, PEActivityEvent[]>
   audit?: unknown
   revenue?: RevenueEntry[]
+  founderKey?: { registered?: boolean; fingerprint?: string | null; registeredAt?: string | null }
 }
 
 // ---------- the body map (docs/JARVIS_ARCHITECTURE.md §9); builtBy is the agent key in state.agents ----------
@@ -149,8 +150,10 @@ export function peBody(s: PEState): { parts: BodyPartState[]; face: FaceState; o
   const total = parts.reduce((sum, p) => sum + p.total, 0)
   const built = parts.reduce((sum, p) => sum + p.done + PREPARED_WEIGHT * p.prepared, 0)
   const overall = total ? Math.round((built / total) * 1000) / 1000 : 0
-  // Once the founder's signing key is registered (the auditor reports it), only signed revenue forms the face.
-  const keyRegistered = Boolean((s.audit as { founderAuth?: { keyRegistered?: boolean } } | undefined)?.founderAuth?.keyRegistered)
+  // Once the founder's signing key is registered, only revenue with a verified signature forms the face. The export
+  // reads registration from the ledger (founderKey); the auditor's flag is a second source. Either one turns it on.
+  const keyRegistered = Boolean(s.founderKey?.registered) ||
+    Boolean((s.audit as { founderAuth?: { keyRegistered?: boolean } } | undefined)?.founderAuth?.keyRegistered)
   return { parts, face: faceState(s.revenue ?? [], { requireSigned: keyRegistered }), overall }
 }
 

@@ -22,16 +22,25 @@ describe('scorecards', () => {
   it('reads every published card, best first', () => {
     expect(view.cards).toHaveLength(9)
     expect(view.cards.map(c => c.score)).toEqual([...view.cards.map(c => c.score)].sort((a, b) => b - a))
-    expect(view.cards.filter(c => c.meetsInstitutionalBar).map(c => c.agent).sort()).toEqual(['finance', 'legal'])
+    // Exactly the cards the auditor marked: score >= 80 and no open critical finding.
+    for (const c of view.cards) {
+      const openCritical = c.findings.some(f => f.severity === 'critical' && f.status === 'open')
+      expect(c.meetsInstitutionalBar, c.agent).toBe(c.score >= 80 && !openCritical)
+    }
     expect(view.notice).toContain('not a certification')
   })
   it('summarises the team and one agent with its top findings', () => {
-    expect(auditSummary(view)).toMatch(/^2 of 9 agents meet the institutional bar: Ginsburg 97 A, Pacioli 86 B\. Lowest: Milton at 58 \(F\)\./)
+    const meet = view.cards.filter(c => c.meetsInstitutionalBar)
+    expect(auditSummary(view)).toMatch(new RegExp(`^${meet.length} of 9 agents meet the institutional bar`))
+    const lowest = view.cards[view.cards.length - 1]
+    expect(auditSummary(view)).toContain(`Lowest: ${lowest.name} at ${Math.round(lowest.score)} (${lowest.grade}).`)
     const curie = findCard(view, 'curie')!
-    expect(cardSummary(curie)).toContain('Curie: 74 out of 100, grade C; does not meet the institutional bar.')
+    expect(cardSummary(curie)).toContain(`Curie: ${Math.round(curie.score)} out of 100, grade ${curie.grade}; ` +
+      `${curie.meetsInstitutionalBar ? 'meets' : 'does not meet'} the institutional bar.`)
+    // Top findings put open before closed and severe before minor.
     const top = topFindings(curie)
-    expect(top[0].status).toBe('open')
-    expect(top[0].severity).not.toBe('minor')
+    const rank = (f: { status: string; severity: string }) => (f.status === 'open' ? 0 : 3) + ({ critical: 0, major: 1, minor: 2 } as Record<string, number>)[f.severity]
+    expect(top.map(rank)).toEqual([...top.map(rank)].sort((a, b) => a - b))
   })
   it('drops malformed rows instead of trusting them', () => {
     const v = readAudit({ audit: { scorecards: [{ agent: 'x', score: 'high' }, { agent: 'y', score: 91, findings: [{ severity: 'apocalyptic', claim: 'c' }, { severity: 'minor', claim: 'ok' }] }, null] } })

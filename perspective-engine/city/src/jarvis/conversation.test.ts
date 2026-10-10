@@ -121,7 +121,7 @@ describe('deterministic intents answer from the record', () => {
     expect(one.dive).toEqual({ kind: 'agent', id: 'finance' })
     const h = await respond('any hallucinations?', env)
     const n = view.cards.flatMap(c => c.findings).filter(f => f.status === 'open' && f.kind === 'hallucination').length
-    expect(h.text.toLowerCase()).toContain(n === 1 ? 'one open finding is flagged' : 'open findings are flagged')
+    expect(h.text.toLowerCase()).toContain(n === 0 ? 'no open finding is flagged' : n === 1 ? 'one open finding is flagged' : 'open findings are flagged')
   })
 
   it('navigate flies to tasks and agents through the policy-checked tool', async () => {

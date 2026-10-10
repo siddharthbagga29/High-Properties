@@ -1,11 +1,11 @@
 {
- "computedAt": "2026-10-10T00:50:44Z",
+ "computedAt": "2026-10-10T06:59:14Z",
  "rubricVersion": "1.0",
  "scorecards": [
   {
    "agent": "orchestrator",
    "name": "Mayor",
-   "score": 70.7,
+   "score": 71.1,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -14,7 +14,7 @@
      "label": "First-pass yield",
      "weight": 20,
      "score": 33.3,
-     "basis": "1/3 verified tasks passed first time (F07); needed rework, a block or a later correction: F05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 fixes after an audit finding), D01 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 fixes after an audit finding)."
+     "basis": "1/3 verified tasks passed first time (F07); needed rework, a block or a later correction: F05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings), D01 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
@@ -27,8 +27,8 @@
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 79.7,
-     "basis": "45/54 numeric claims (83%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 33/36, F07 PLAN.md 1/6, D01 founder-decisions.md 11/11; untraced examples: F02: 0%; F05: d≈0.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -2.5 from 1 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 79.8,
+     "basis": "53/62 numeric claims (85%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 33/36, F07 PLAN.md 1/6, D01 founder-decisions.md 19/19; untraced examples: F02: 0%; F05: d≈0.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -4.5 from 2 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "integrity",
@@ -41,8 +41,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 32.8,
-     "basis": "3 closed tasks in the ledger: step records on 2 (8 self-logged rows, 0 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 24/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -10.5 from 3 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each). 2 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
+     "score": 35.5,
+     "basis": "3 closed tasks in the ledger: step records on 3 (17 self-logged rows, 0 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 24/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -12 from 4 open or accepted finding(s). 1 auditor finding(s) about missing verifier records are already counted above and not deducted twice."
     },
     {
      "id": "gates",
@@ -216,37 +216,47 @@
      "claim": "graph/activity/D01.jsonl 2026-10-08T12:07:24Z \"Mayor: tiered ownership options (4) and first-year budgets ... prepared and number-checked in docs/ownership-and-budget-options.md\"; that file, line 3: \"An independent checker re-opened every cited file, recomputed every total and made the corrections listed at the end.\"",
      "evidence": "D01's write list is docs/founder-decisions.md only. The 238-line ownership, tax and budget analysis is legal and finance domain work, which the orchestrator role card forbids outside F-series nodes ('You never do domain work yourself except F-series planning nodes'). D01 has no check entry and no actor 'verifier' entry, so the 'independent checker' claim is not supported by the record. On the meri",
      "status": "fixed"
+    },
+    {
+     "id": "AF-science-9",
+     "agent": "orchestrator",
+     "task": "F05",
+     "severity": "minor",
+     "kind": "unsupported_claim",
+     "claim": "docs/execution-plan.md:30 \"Surveys disagree on US DEI budgets (one 2025 survey: 19% of companies cut DEI funding; 78% of C-suite leaders said they rebrand it; dossier s6)\"",
+     "evidence": "VERIFIER R2 2026-10-09 (science/data verifier; filed in science.json because this verifier may write only science and data findings; the file belongs to the orchestrator, task F05, not to science). This is a stale cross-reference. The F03 rework of research/evidence-dossier.md:47 (dossier s6) now gives these as separate sources ('separate sources, not one survey'). 19% is the Paradigm 2025 benchma",
+     "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "science",
    "name": "Curie",
-   "score": 78.6,
-   "grade": "C",
-   "meetsInstitutionalBar": false,
+   "score": 87.9,
+   "grade": "B",
+   "meetsInstitutionalBar": true,
    "dimensions": [
     {
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 25.0,
-     "basis": "1/4 verified tasks passed first time (V01); needed rework, a block or a later correction: F03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding), V03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 fixes after an audit finding), V15 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 fixes after an audit finding)."
+     "score": 75.0,
+     "basis": "3/4 verified tasks passed first time (V01 V03 V15); needed rework, a block or a later correction: F03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 97.5,
-     "basis": "0 failed verification rounds over 4 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -2.5 from 1 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 93.0,
+     "basis": "0 failed verification rounds over 4 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 2 non-blocking notes left open (F03 1, V03 1). Findings: -1 from 0 open or accepted finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 91.2,
-     "basis": "214/226 numeric claims (95%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 56/58, V01 mechanism-spec.md 41/41, V03 preregistration.md 102/111, V15 partners.md 15/16; untraced examples: F03: 4-8 weeks; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -3 from 1 open or accepted finding(s) and 2 fixed after the audit (a quarter weight each)."
+     "score": 90.7,
+     "basis": "214/226 numeric claims (95%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F03 evidence-dossier.md 56/58, V01 mechanism-spec.md 41/41, V03 preregistration.md 102/111, V15 partners.md 15/16; untraced examples: F03: 4-8 weeks; V03: d = 0.66; V15: 4-8 weeks. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -3.5 from 1 open or accepted finding(s) and 3 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "integrity",
@@ -343,7 +353,7 @@
      "kind": "unsupported_claim",
      "claim": "science/partners.md:78 \"Prior art to read (not a partner): Wong, Lin, Wu and Qin, Computers in Human Behavior, May 2026, 8-session VR programme for 350 ADHD caregivers ... (snippet-level; affiliation unverified)\"",
      "evidence": "VERIFIER 2026-10-09, WebSearch, search-summary level. The study itself is real: 'Immersive virtual reality for caregivers of children and adolescents with ADHD: A mixed-methods study of stress reduction, empathy engagement, and quality of life outcomes', Computers in Human Behavior vol. 183, https://www.sciencedirect.com/science/article/pii/S0747563226001469 ; 350 caregivers, eight sessions, stres",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-science-7",
@@ -353,10 +363,20 @@
      "kind": "error",
      "claim": "science/preregistration.md:147 (OSF paste-ready, Inference criteria) \"The expected CI width (about 0.36 to 0.50 SD) means \\\"inconclusive\\\" is the likely outcome\"",
      "evidence": "VERIFIER 2026-10-09, recomputed in python3. preregistration.md:87 correctly calls 0.50 / 0.41 / 0.36 SD the expected 95% CI HALF-width at N = 80 / 120 / 150 (recomputed 1.96 x sqrt(2/(N x 0.7 / 2) x 0.75 x 1.2) = 0.497 / 0.406 / 0.363). Line 147 calls the same numbers the 'CI width'; the full width is twice that, about 0.73 to 0.99 SD. The conclusion (inconclusive is the likely outcome) still hold",
+     "status": "fixed"
+    },
+    {
+     "id": "AF-science-8",
+     "agent": "science",
+     "task": "V03",
+     "severity": "minor",
+     "kind": "unsupported_claim",
+     "claim": "science/preregistration.md:111 (OSF paste-ready) \"OMS-WA ... (full form: 23 items, five factors, per the paper's abstract as relayed by web-search summaries ... shortened 11-item and 9-item versions exist ...)\" and :172 \"OMS-WA item count (23, search-summary level only) and version (full 23-item form or an 11- or 9-item short form)\"",
+     "evidence": "VERIFIER R2 2026-10-09, WebSearch, search-summary level. The R2 rework copied data/instruments.md's '23 items, full form' into the paste-ready OSF text. Searches support 23 only as the 2024 paper's Study 1 EFA result. An extended search on Szeto, Dobson & Knaak 2019 (R2MR meta-analysis, https://pmc.ncbi.nlm.nih.gov/articles/PMC6591743/) relays the OMS-WA as a 22-item, five-subscale scale. The shor",
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "ethics",
@@ -370,7 +390,7 @@
      "label": "First-pass yield",
      "weight": 20,
      "score": 33.3,
-     "basis": "1/3 verified tasks passed first time (F06); needed rework, a block or a later correction: V04 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding), M03 (2 failed rounds, 1 blocks, 0 orchestrator corrections, 0 fixes after an audit finding)."
+     "basis": "1/3 verified tasks passed first time (F06); needed rework, a block or a later correction: V04 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings), M03 (2 failed rounds, 1 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
@@ -397,8 +417,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 83.3,
-     "basis": "3 closed tasks in the ledger: step records on 3 (20 self-logged rows, 111 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): F06 V04."
+     "score": 82.8,
+     "basis": "3 closed tasks in the ledger: step records on 3 (20 self-logged rows, 111 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): F06 V04. Findings: -0.5 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -454,21 +474,21 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "product",
    "name": "Ada",
-   "score": 68.0,
-   "grade": "D",
+   "score": 77.9,
+   "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 0.0,
-     "basis": "0/2 verified tasks passed first time (none); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 3 fixes after an audit finding), V14 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 fixes after an audit finding)."
+     "score": 50.0,
+     "basis": "1/2 verified tasks passed first time (V14); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
@@ -481,8 +501,8 @@
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 95.0,
-     "basis": "158/165 numeric claims (96%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F04 index.html 3/5, F04 README.md 140/145, V14 CHANGELOG.md 15/15; untraced examples: F04: 0.2; F04: 30 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 94.2,
+     "basis": "168/177 numeric claims (95%) in 3 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F04 index.html 3/5, F04 README.md 144/151, V14 CHANGELOG.md 21/21; untraced examples: F04: 0.2; F04: 30 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
     },
     {
      "id": "integrity",
@@ -496,7 +516,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 99.5,
-     "basis": "2 closed tasks in the ledger: step records on 2 (81 self-logged rows, 260 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -0.5 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "basis": "2 closed tasks in the ledger: step records on 2 (86 self-logged rows, 260 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2. Findings: -0.5 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -562,35 +582,35 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "data",
    "name": "Tukey",
-   "score": 71.7,
-   "grade": "C",
-   "meetsInstitutionalBar": false,
+   "score": 91.0,
+   "grade": "A",
+   "meetsInstitutionalBar": true,
    "dimensions": [
     {
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 0.0,
-     "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: V02 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding)."
+     "score": 100.0,
+     "basis": "1/1 verified tasks passed first time (V02)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 99.5,
-     "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -0.5 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 96.5,
+     "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V02 1). Findings: -0.5 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 90.3,
-     "basis": "29/31 numeric claims (94%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V02 instruments.md 29/31; untraced examples: V02: 7 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "score": 88.3,
+     "basis": "29/31 numeric claims (94%) in 1 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V02 instruments.md 29/31; untraced examples: V02: 7 days. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -2 from 1 open or accepted finding(s)."
     },
     {
      "id": "integrity",
@@ -648,15 +668,25 @@
      "claim": "data/instruments.md:41 \"OMS-WA, Opening Minds Scale for Workplace Attitudes ... | 22 | T0, T2 | **[confirmed]**\" and data/instruments.md:64 \"OMS-WA (22)\"; copied to science/preregistration.md:111 \"(22 items; Lindsay et al. 2024 ...)\"",
      "evidence": "WebSearch, search-summary level: https://link.springer.com/article/10.1007/s44202-024-00249-9 ; https://d-nb.info/1352252481/34 . The citation itself is right (Lindsay, Dobson, Krupa, Knaak, Szeto 2024, Discover Psychology 4:134), but the item count is not confirmed. The snippets describe a 27-item initial OMS-WA cut to 23 items over five factors in Study 1 (N = 207). The figure '22 items' refers ",
      "status": "fixed"
+    },
+    {
+     "id": "AF-data-3",
+     "agent": "data",
+     "task": "V02",
+     "severity": "minor",
+     "kind": "unsupported_claim",
+     "claim": "data/instruments.md:41 \"23 (five factors), **settled at search-summary level** ... The earlier \\\"22 items\\\" came from one secondary description and is not supported ... Study 3 fit reported as mixed (robust CFI 0.91, robust RMSEA 0.13, search-summary level)\" and data/instruments.md:64 \"OMS-WA (23 items, search-summary level; 11 or 9 if a short form is chosen)\"",
+     "evidence": "VERIFIER R2 2026-10-09, WebSearch, search-summary level only (link.springer.com, d-nb.info and sciencedirect are unreachable from here). (1) 23 is supported only as the Study 1 EFA result (five factors, 23 items, N = 207, from a 27-item pool; one passage gives N = 209). Two extended searches confirmed this. (2) '22 is not supported' is contradicted. An extended search on Szeto, Dobson & Knaak 2019",
+     "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "gtm",
    "name": "Ogilvy",
-   "score": 72.9,
-   "grade": "C",
+   "score": 66.7,
+   "grade": "D",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
@@ -664,21 +694,21 @@
      "label": "First-pass yield",
      "weight": 20,
      "score": 20.0,
-     "basis": "1/5 verified tasks passed first time (V08); needed rework, a block or a later correction: V05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding), V06 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding), V07 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 5 fixes after an audit finding), V09 (0 failed rounds, 0 blocks, 1 orchestrator corrections, 2 fixes after an audit finding)."
+     "basis": "1/5 verified tasks passed first time (V08); needed rework, a block or a later correction: V05 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings), V06 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 major or critical auditor findings), V07 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings), V09 (0 failed rounds, 0 blocks, 1 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 90.5,
-     "basis": "0 failed verification rounds over 5 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -9.5 from 3 open or accepted finding(s) and 3 fixed after the audit (a quarter weight each)."
+     "score": 46.5,
+     "basis": "2 failed verification rounds over 5 verified tasks (0.40 per task); rework: V05 x1, V07 x1; 2 open FAIL/GAP rows after the last revision; open on: V05, V07; 1 non-blocking notes left open (V09 1). Findings: -8.5 from 2 open or accepted finding(s) and 5 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
-     "score": 94.5,
-     "basis": "105/108 numeric claims (97%) in 5 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V05 icp.md 28/30, V06 loi-template.md 17/18, V07 targets.csv 58/58, V09 outreach-log.md 2/2; untraced examples: V05: 6-12 months; V06: 95%. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -1.5 from 0 open or accepted finding(s) and 3 fixed after the audit (a quarter weight each)."
+     "score": 92.7,
+     "basis": "112/115 numeric claims (97%) in 5 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V05 icp.md 28/30, V06 loi-template.md 17/18, V07 targets.csv 58/58, V09 outreach-log.md 9/9; untraced examples: V05: 6-12 months; V06: 95%. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -3.5 from 1 open or accepted finding(s) and 3 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "integrity",
@@ -691,8 +721,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 69.0,
-     "basis": "5 closed tasks in the ledger: step records on 5 (21 self-logged rows, 103 transcript rows); verifier rows on 5; flagged --verifier (separate from builder rows) on 4; verifier rows not flagged --verifier: V09; verified only after closing (half credit): V05 V06 V07 V08. Findings: -6 from 1 open or accepted finding(s) and 4 fixed after the audit (a quarter weight each)."
+     "score": 73.5,
+     "basis": "5 closed tasks in the ledger: step records on 5 (26 self-logged rows, 103 transcript rows); verifier rows on 5; flagged --verifier (separate from builder rows) on 5; verified only after closing (half credit): V05 V06 V07 V08. Findings: -6.5 from 1 open or accepted finding(s) and 5 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -814,7 +844,7 @@
      "kind": "process",
      "claim": "targets.csv rows rated confidence 'medium' that the new scale (icp.md:82: medium = signal confirmed by a web-search summary of the cited source; low = secondary or vendor source, or not confirmed) would rate low: Microsoft:2, Dell Technologies:8 and Wells Fargo:13 cite hcamag.com trade-press articles, Telstra:20 cites itnews.com.au; University of Pittsburgh:41 cites https://www.utimes.pitt.edu/new",
      "evidence": "VERIFIER 2026-10-09 (new): python listing of source_url domains against confidence. Goldman Sachs:17 is rated low for a 'secondary university-careers blog', so trade-press sources should be low by the same rule, or re-sourced to a primary page (for example the AskEARN/Disability:IN roster or the company careers page; outreach-log.md:37 already names jobs.dell.com/en/neurodiversity for Dell). Pitt:",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-gtm-15",
@@ -824,6 +854,36 @@
      "kind": "error",
      "claim": "gtm/icp.md:20 'Use' column: \"Outcome language: fewer manager-employee friction cases, smoother accommodation conversations (as pilot hypotheses, not claims)\"",
      "evidence": "VERIFIER 2026-10-09 (new): science/preregistration.md:47 (H1) and :104 fix the primary outcome as AAI-verified (share of 10 listed practices used and verified at day 30). No hypothesis or measure (H1-H5, :47-51; measured variables :104-121) covers friction cases or conversation quality. The brand rework (AF-brand-3) removed 'fewer friction cases' from the landing page for exactly this reason, but ",
+     "status": "fixed"
+    },
+    {
+     "id": "AF-gtm-16",
+     "agent": "gtm",
+     "task": "V07",
+     "severity": "minor",
+     "kind": "process",
+     "claim": "gtm/icp.md:82 (clarified 2026-10-10): 'The Neurodiversity @ Work Employer Roundtable roster on AskEARN counts as a primary source for membership only'; yet targets.csv rows SAP:3, JPMorgan Chase:4, EY:5, Ford:6, DXC:7 and HP:9 cite only that roster while their public_signal adds program claims, and stay 'medium'",
+     "evidence": "VERIFIER R2 2026-10-09 (new; checks run 2026-10-10): python listing of targets.csv. Signals beyond membership on rows whose only source_url is https://askearn.org/page/neurodiversity-work-employer-roundtable: SAP:3 'Autism at Work program launched 2013; neurodiversity ERG'; JPMorgan:4 'Neurodiversity Hiring Program since 2015; neurodiversity hub'; EY:5 'Neurodiversity Centers of Excellence and neu",
+     "status": "open"
+    },
+    {
+     "id": "AF-gtm-17",
+     "agent": "gtm",
+     "task": "V05",
+     "severity": "minor",
+     "kind": "unsupported_claim",
+     "claim": "gtm/icp.md:22 Core line: \"A short browser-based practice module that helps managers have better working-style and accommodation conversations, to be co-designed with paid neurodivergent advisors.\"",
+     "evidence": "VERIFIER R2 2026-10-09 (new; checks run 2026-10-10): the AF-gtm-15 rework made icp.md:20 say that 'the quality of accommodation conversations' is 'not measured in the pilot: do not offer them as outcomes'. Two lines later the recommended Core line, the sentence most likely to be reused in outreach, LOI and landing copy, states as fact that the module 'helps managers have better ... accommodation c",
+     "status": "open"
+    },
+    {
+     "id": "AF-gtm-18",
+     "agent": "gtm",
+     "task": "V09",
+     "severity": "minor",
+     "kind": "error",
+     "claim": "gtm/outreach-log.md:4 \"Every row below has status = prepared.\" (and :33 \"tried for 9 of the 10 accounts\")",
+     "evidence": "VERIFIER R2 2026-10-09 (new; checks run 2026-10-10): the AF-gtm-10 rework gave three rows the status 'HELD 2026-10-10: reference case, not a first target; not in B1' (:16-18) and 'HELD (not in B1)' in the send log (:560-562), but left the banner at :4 saying every row is prepared. A founder reading only the banner could treat the held drafts as part of the batch. :33 (re-check method) still counts",
      "status": "open"
     },
     {
@@ -844,7 +904,7 @@
      "kind": "error",
      "claim": "targets.csv:23 Ubisoft \"Neurodiversity ERG formed in 2020; Roundtable member\"; :26 Hearst \"Roundtable member\"; :15 Travelers \"Roundtable member since 2018\"; :6 Ford \"FordWorks autism hiring initiative\"",
      "evidence": "WebSearch summaries: Ubisoft's own ERG spotlight (news.ubisoft.com) says the founder started it on 2021-02-14; Ubisoft and Hearst are on no Roundtable roster found (AskEARN, Disability:IN). Travelers' membership is confirmed (sustainability.travelers.com) but not the 2018 year. Ford's program is FordInclusiveWorks (2016 pilot, HR Dive, The Drum). || VERIFIER 2026-10-09: Checked all four rows by We",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-gtm-8",
@@ -867,12 +927,12 @@
      "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "finance",
    "name": "Pacioli",
-   "score": 73.1,
+   "score": 79.5,
    "grade": "C",
    "meetsInstitutionalBar": false,
    "dimensions": [
@@ -880,15 +940,15 @@
      "id": "first_pass_yield",
      "label": "First-pass yield",
      "weight": 20,
-     "score": 0.0,
-     "basis": "0/3 verified tasks passed first time (none); needed rework, a block or a later correction: V10 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding), V11 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 fixes after an audit finding), M05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 4 fixes after an audit finding)."
+     "score": 33.3,
+     "basis": "1/3 verified tasks passed first time (M05); needed rework, a block or a later correction: V10 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings), V11 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 91.5,
-     "basis": "0 failed verification rounds over 3 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -8.5 from 2 open or accepted finding(s) and 5 fixed after the audit (a quarter weight each)."
+     "score": 89.5,
+     "basis": "0 failed verification rounds over 3 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V11 1). Findings: -7.5 from 1 open or accepted finding(s) and 7 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
@@ -909,7 +969,7 @@
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 83.3,
-     "basis": "3 closed tasks in the ledger: step records on 3 (50 self-logged rows, 152 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): V10 V11."
+     "basis": "3 closed tasks in the ledger: step records on 3 (53 self-logged rows, 152 transcript rows); verifier rows on 3; flagged --verifier (separate from builder rows) on 3; verified only after closing (half credit): V10 V11."
     },
     {
      "id": "gates",
@@ -965,6 +1025,16 @@
      "status": "fixed"
     },
     {
+     "id": "AF-finance-10",
+     "agent": "finance",
+     "task": "V11",
+     "severity": "minor",
+     "kind": "incomplete",
+     "claim": "docs/ownership-and-budget-options.md:182 \"The cap is $314,363 per sbir-draft R9 (grants.md's $306,872 is older; the FY2027 value is unverified, and one third-party guide lists $323,090)\"",
+     "evidence": "VERIFIER R2 2026-10-09 (checked 2026-10-10): finance/grants.md was corrected to $314,363 / $2,095,748 on 2026-10-09 (AF-finance-4; grants.md:5, :13 and :46 today), and '$306,872' now appears in grants.md only inside dated correction notes. The orchestrator's file still names $306,872 as grants.md's figure, so a reader who checks grants.md will not find that number in use. The figure the line relie",
+     "status": "open"
+    },
+    {
      "id": "AF-finance-4",
      "agent": "finance",
      "task": "V11",
@@ -1012,7 +1082,7 @@
      "kind": "incomplete",
      "claim": "finance/grants.md:3 \"Founder country is unconfirmed, so the map is tiered by country.\" and finance/grants.md:54 \"Confirm country and ownership structure. This decides which tier is open.\"",
      "evidence": "VERIFIER 2026-10-09: docs/founder-decisions.md:7 records 'Decided 2026-10-08: United States. Ownership structure still open'. grants.md was edited on 2026-10-09 (13:53 UTC), including the summary on line 3, but kept the 'country is unconfirmed' sentence. The map therefore still reads as if the UK, EU and India tiers (section 2, and rows 5 and 7-11 of the section 1 table) were live options. AF-lega",
-     "status": "open"
+     "status": "fixed"
     },
     {
      "id": "AF-finance-9",
@@ -1022,15 +1092,15 @@
      "kind": "incomplete",
      "claim": "finance/sbir-draft.md:21 (R3) \"(D01 says \"at least 51%\", which is the older wording; grants.md was corrected to \"more than 50%\" on 2026-10-09)\" and finance/sbir-draft.md:245 \"docs/founder-decisions.md item 1 still says \"at least 51%\"; its owner should change it.\"",
      "evidence": "VERIFIER 2026-10-09: docs/founder-decisions.md:7 was rewritten at 18:59 UTC on 2026-10-09, after the M05 rework at 13:55 UTC. It now reads 'more than 50% directly owned **and controlled** by US citizens or permanent residents (13 CFR 121.702; exactly 50% fails, so 51% is the safe margin ...)'. The two sentences in the draft therefore misdescribe D01. The rule itself (R3, more than 50%) is correct.",
-     "status": "open"
+     "status": "fixed"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "legal",
    "name": "Ginsburg",
-   "score": 87.1,
+   "score": 81.5,
    "grade": "B",
    "meetsInstitutionalBar": true,
    "dimensions": [
@@ -1039,35 +1109,35 @@
      "label": "First-pass yield",
      "weight": 20,
      "score": 50.0,
-     "basis": "1/2 verified tasks passed first time (V12); needed rework, a block or a later correction: M04 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 2 fixes after an audit finding)."
+     "basis": "1/2 verified tasks passed first time (V12); needed rework, a block or a later correction: M04 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 92.5,
-     "basis": "0 failed verification rounds over 2 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 1 non-blocking notes left open (V12 1). Findings: -4.5 from 2 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 62.0,
+     "basis": "1 failed verification rounds over 2 verified tasks (0.50 per task); rework: M04 x1; 1 open FAIL/GAP rows after the last revision; open on: M04; 1 non-blocking notes left open (V12 1). Findings: -5 from 2 open or accepted finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
      "label": "Evidence discipline",
      "weight": 15,
      "score": 98.1,
-     "basis": "74/74 numeric claims (100%) in 2 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V12 privacy.md 3/3, M04 entity-checklist.md 71/71. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
+     "basis": "75/75 numeric claims (100%) in 2 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: V12 privacy.md 3/3, M04 entity-checklist.md 72/72. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings)."
     },
     {
      "id": "integrity",
      "label": "Honesty and research integrity",
      "weight": 20,
-     "score": 100.0,
-     "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 0 verifier FAIL/GAP rows naming a false statement."
+     "score": 95.0,
+     "basis": "Over 2 tasks in the ledger: 0 orchestrator corrections of a false claim; 0 self-verified completions; 1 verifier FAIL/GAP rows naming a false statement (M04 1)."
     },
     {
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
      "score": 100.0,
-     "basis": "2 closed tasks in the ledger: step records on 2 (22 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
+     "basis": "2 closed tasks in the ledger: step records on 2 (25 self-logged rows, 97 transcript rows); verifier rows on 2; flagged --verifier (separate from builder rows) on 2."
     },
     {
      "id": "gates",
@@ -1120,16 +1190,26 @@
      "kind": "incomplete",
      "claim": "legal/entity-checklist.md:15 \"`founder-decisions.md` states the SBIR test as \"at least 51%\". The rule text reads \"more than 50%\"\"",
      "evidence": "VERIFIER 2026-10-09: docs/founder-decisions.md:7 was modified at 18:59 UTC on 2026-10-09, after the M04 rework at 13:57 UTC. It now reads 'more than 50% directly owned **and controlled** by US citizens or permanent residents (13 CFR 121.702; exactly 50% fails, so 51% is the safe margin ...)', so the checklist's description of that file is no longer true. The legal substance at :15 is correct: more",
+     "status": "fixed"
+    },
+    {
+     "id": "AF-legal-4",
+     "agent": "legal",
+     "task": "M04",
+     "severity": "minor",
+     "kind": "incomplete",
+     "claim": "legal/entity-checklist.md:17 \"`founder-decisions.md` item 6 says the legal agent runs this search in M04; that has not happened, and the owner of that file should update it.\"",
+     "evidence": "VERIFIER R2 2026-10-09 (checked 2026-10-10): docs/founder-decisions.md:12 (item 6) was rewritten by its owner at 2026-10-10T01:03:40Z (graph/activity/D01.jsonl; file mtime 01:04:22Z). That was about ten minutes after legal's round-2 edit of entity-checklist.md (mtime 00:53:26Z). Item 6 now reads 'Corrected 2026-10-10 (audit AF-legal-2): this row used to say the legal agent would run a free USPTO/W",
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   },
   {
    "agent": "brand",
    "name": "Rams",
-   "score": 70.7,
-   "grade": "C",
+   "score": 63.7,
+   "grade": "D",
    "meetsInstitutionalBar": false,
    "dimensions": [
     {
@@ -1137,14 +1217,14 @@
      "label": "First-pass yield",
      "weight": 20,
      "score": 0.0,
-     "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: V13 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 fixes after an audit finding)."
+     "basis": "0/1 verified tasks passed first time (none); needed rework, a block or a later correction: V13 (1 failed rounds, 0 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
     },
     {
      "id": "effective_challenge",
      "label": "Verification outcome: rework and open gaps",
      "weight": 15,
-     "score": 97.5,
-     "basis": "0 failed verification rounds over 1 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -2.5 from 1 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 52.0,
+     "basis": "1 failed verification rounds over 1 verified tasks (1.00 per task); rework: V13 x1; 1 open FAIL/GAP rows after the last revision; open on: V13; 0 non-blocking notes left open. Findings: -3 from 1 open or accepted finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "evidence",
@@ -1164,8 +1244,8 @@
      "id": "process",
      "label": "Process discipline and separation of duties",
      "weight": 15,
-     "score": 71.2,
-     "basis": "1 closed tasks in the ledger: step records on 1 (2 self-logged rows, 11 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; verified only after closing (half credit): V13. Findings: -3.75 from 0 open or accepted finding(s) and 1 fixed after the audit (a quarter weight each)."
+     "score": 69.8,
+     "basis": "1 closed tasks in the ledger: step records on 1 (3 self-logged rows, 11 transcript rows); verifier rows on 1; flagged --verifier (separate from builder rows) on 1; verified only after closing (half credit): V13. Findings: -5.25 from 0 open or accepted finding(s) and 2 fixed after the audit (a quarter weight each)."
     },
     {
      "id": "gates",
@@ -1228,10 +1308,20 @@
      "kind": "error",
      "claim": "brand/landing/index.html:217 \"We write down the measures and the stop thresholds before anyone takes part. If discomfort or attitudes get worse beyond the threshold, we pause.\"",
      "evidence": "VERIFIER 2026-10-09 (new): science/preregistration.md:96 (Stopping rule) pre-registers a single pause trigger: T-arm enrolment pauses only if the T minus C increase in the QPS Reliability and Social Functioning subscale (an attitude/stigma measure) exceeds a threshold still to be set with advisors. Distress, pity and self-efficacy are examined by the safety reviewer but have no threshold. So the b",
+     "status": "fixed"
+    },
+    {
+     "id": "AF-brand-5",
+     "agent": "brand",
+     "task": "V13",
+     "severity": "minor",
+     "kind": "error",
+     "claim": "brand/landing/index.html:217 \"The pilot compares the simulation with an information-only module of the same length. If stigma-related attitudes worsen more after the simulation than after the information module ... we stop enrolling people into the simulation and review it.\"",
+     "evidence": "VERIFIER R2 2026-10-09 (new; checks run 2026-10-10): grep -o -i 'simulat' now finds 3 matches, all on :217, added by the AF-brand-4 rework. Before it the count was 0, and that was how V13's acceptance criterion 'no claim to simulate ADHD' was verified (AF-brand-checked; AF-brand-2 and AF-brand-3 verifier notes 'grep -ci simulat = 0'). The page's own wording elsewhere is deliberate: :166 'It is an ",
      "status": "open"
     }
    ],
-   "computedAt": "2026-10-10T00:50:44Z"
+   "computedAt": "2026-10-10T06:59:14Z"
   }
  ],
  "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -1239,8 +1329,8 @@
  "inputs": {
   "nodes": 34,
   "ledgerEvents": 61,
-  "activityRows": 1220,
-  "llmFindings": 62,
+  "activityRows": 1258,
+  "llmFindings": 71,
   "llmAuditedAgents": [
    "brand",
    "data",
@@ -1286,9 +1376,12 @@
  "founderAuth": {
   "keyRegistered": false,
   "keyRegisteredAt": null,
+  "keyFingerprint": null,
+  "rotations": 0,
   "signatures": 0,
   "verified": 0,
-  "unsignedFounderActions": 5
+  "unsignedFounderActions": 5,
+  "statusMismatches": 0
  },
  "revenueCheck": {
   "entries": 0,

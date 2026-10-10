@@ -26,6 +26,7 @@ certification under any of them.
 """
 import argparse
 import datetime
+import hashlib
 import html
 import json
 import math
@@ -83,15 +84,15 @@ EVIDENCE_PRIOR_N = 5  # evidence share is shrunk toward NEUTRAL as if 5 extra cl
 
 # A process finding about a closure with no verifier record restates what score_process already measures
 # from the ledger and activity logs, so it is listed but not deducted a second time.
-MEASURED_PROCESS = re.compile(r"check --verifier|no verifier|verifier check|separate verifier|verification record", re.I)
+MEASURED_PROCESS = re.compile(
+    r"\b(?:no|without(?:\s+an?|\s+any)?)\s+(?:independent\s+|separate\s+)?(?:verifier|verification|['\"]?check['\"]?)"
+    r"(?:\s+or\s+verifier)?\s+(?:check\s+)?(?:record|row|entr(?:y|ies)|step|run)s?\b|has no ['\"]?check['\"]? entr", re.I)
 
 VERIFIER_TEXT = re.compile(r"^\s*(?:independent\s+)?verifier\b|^\s*verdict\b", re.I)
 FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdict words
 MINOR_TEXT = re.compile(r"non-blocking|\bminor\b", re.I)
 MINOR_LEAD = re.compile(r"^\s*(?:minor,\s*)?non-blocking\b", re.I)
 FALSE_TEXT = re.compile(r"\bfalse\b|fabricat|\binvent(?:ed|s)?\b|misquot|misattribut|does not (?:say|exist|report)|not in the source", re.I)
-# The owner's own fix of an auditor finding after the task closed ("Rework (AF-...): ...").
-AUDIT_REWORK_TEXT = re.compile(r"^\s*rework\s*\(", re.I)
 CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:\s*(?:also\s+)?correct", re.I)
 ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:", re.I)
 FOUNDER_STOP = re.compile(r"stopped by the founder|founder (?:stopped|paused|halted)", re.I)
@@ -288,8 +289,11 @@ def load_findings(pe, agents, warnings):
 
 
 def measured(f, dim):
-    """True when the finding restates a deterministic process metric (no verifier record)."""
-    return dim == "process" and f["kind"] == "process" and bool(MEASURED_PROCESS.search(f["claim"] + " " + f["evidence"]))
+    """True when a non-critical process finding says only that a closure has no verifier record, which score_process
+    already measures. Anything else (a faked check, a false claim) is deducted normally."""
+    first_evidence = str(f["evidence"]).split("||")[0]
+    return (dim == "process" and f["kind"] == "process" and f["severity"] != "critical"
+            and bool(MEASURED_PROCESS.search(f["claim"] + " " + first_evidence)))
 
 
 def check_revenue(pe, warnings):
@@ -320,40 +324,141 @@ def check_revenue(pe, warnings):
     return {"entries": len(rows), "verified": valid, "flagged": flagged, "present": path.exists()}
 
 
-def check_founder_auth(pe, ledger):
-    """Re-verifies every founder signature on its own (independently of graph.py) and finds founder actions
-    recorded without one after the founder registered a key. Returns (summary, flags)."""
-    signers = pe / "graph" / "founder.allowed_signers"
-    key_at = next((e.get("t") for e in ledger if e.get("event") == "founder-key"), None)
-    rows = [r for r in read_jsonl(pe / "graph" / "founder-auth.jsonl", [], "founder-auth.jsonl") if r]
+def ssh_check(msg, sig, pubkey):
+    """True/False from ssh-keygen against one public key; None when ssh-keygen is missing. Independent of graph.py."""
     exe = shutil.which("ssh-keygen")
-    flags, ok = [], 0
-    for i, r in enumerate(rows, 1):
-        if not signers.exists() or not exe:
-            flags.append(f"founder-auth.jsonl row {i} ({r.get('action')}): signature could not be re-checked "
-                         f"({'no registered key' if not signers.exists() else 'ssh-keygen missing'})")
+    if not exe:
+        return None
+    with tempfile.TemporaryDirectory() as d:
+        signers = pathlib.Path(d) / "allowed_signers"
+        signers.write_text(f'founder namespaces="pe-founder" {pubkey}\n')
+        sigf = pathlib.Path(d) / "s.sig"
+        sigf.write_text(str(sig))
+        res = subprocess.run([exe, "-Y", "verify", "-f", str(signers), "-I", "founder", "-n", "pe-founder", "-s", str(sigf)],
+                             input=str(msg).encode(), capture_output=True, timeout=20)
+    return res.returncode == 0
+
+
+def auth_row_ok(r, keys):
+    """A founder-auth row is valid when its message hashes to its ref, its JSON body names the same action and fields,
+    and its signature verifies against the key that was in force at the row's time (by fingerprint)."""
+    msg = str(r.get("msg", ""))
+    if hashlib.sha256(msg.encode()).hexdigest() != r.get("ref"):
+        return False
+    try:
+        body = json.loads(msg.split("\n", 1)[1])
+    except (IndexError, json.JSONDecodeError):
+        return False
+    if body.get("action") != r.get("action") or body.get("fields") != r.get("fields"):
+        return False
+    for i, (t, key, fp) in enumerate(keys):
+        nxt = keys[i + 1][0] if i + 1 < len(keys) else None
+        if r.get("keyFp") == fp and str(r.get("t")) >= t and (nxt is None or str(r.get("t")) <= nxt):
+            return ssh_check(msg, r.get("sig", ""), key)
+    return False
+
+
+GATE_EVENTS = ("start", "done", "block", "unblock", "clear-gate")
+
+
+def replay_status(events, gated):
+    """The status the ledger alone implies for one node."""
+    status, cleared = None, False
+    for e in events:
+        ev = e.get("event")
+        if ev == "start":
+            status = "running"
+        elif ev == "done":
+            status = "awaiting_human" if gated and not cleared else "done"
+        elif ev == "block":
+            status = "blocked"
+        elif ev == "unblock":
+            status = "pending"
+        elif ev == "clear-gate":
+            cleared = True
+            if status == "awaiting_human":
+                status = "done"
+    return status
+
+
+def check_founder_auth(pe, ledger, nodes=()):
+    """Re-verifies founder signatures from the record alone and checks that founder-only state changes are backed by
+    them. Returns (summary, flags) where flags are (severity, text)."""
+    flags = []
+    rows = [r for r in read_jsonl(pe / "graph" / "founder-auth.jsonl", [], "founder-auth.jsonl") if r]
+    revenue = [r for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl") if r]
+    key_events = [e for e in ledger if e.get("event") == "founder-key"]
+    by_ref = {}
+    for r in rows:
+        by_ref.setdefault(r.get("ref"), []).append(r)
+    keys = []
+    for e in key_events:
+        if not e.get("key"):
+            flags.append(("critical", f"founder-key event at {e.get('t')} carries no public key, so the key in force cannot be pinned"))
             continue
-        with tempfile.TemporaryDirectory() as d:
-            sig = pathlib.Path(d) / "s.sig"
-            sig.write_text(str(r.get("sig", "")))
-            res = subprocess.run([exe, "-Y", "verify", "-f", str(signers), "-I", "founder", "-n", "pe-founder", "-s", str(sig)],
-                                 input=str(r.get("msg", "")).encode(), capture_output=True, timeout=20)
-        if res.returncode == 0:
-            ok += 1
+        if keys:
+            cand = [r for r in by_ref.get(e.get("authRef"), []) if r.get("action") == "founder-key"
+                    and (r.get("fields") or {}).get("key") == e["key"]]
+            if not cand or not auth_row_ok(cand[0], keys):
+                flags.append(("critical", f"founder key replaced at {e.get('t')} without a verified signature by the previous key"))
+        keys.append((str(e.get("t")), e["key"], e.get("fp")))
+    key_at = str(key_events[0].get("t")) if key_events else None
+
+    verified = {}
+    for i, r in enumerate(rows, 1):
+        ok = auth_row_ok(r, keys)
+        if ok is None:
+            flags.append(("critical", f"founder-auth.jsonl row {i} ({r.get('action')}): cannot be re-checked, ssh-keygen is missing"))
+        elif not ok:
+            flags.append(("critical", f"founder-auth.jsonl row {i} ({r.get('action')}): signature or message does not verify against the key in force"))
+        elif r.get("ref") in verified:
+            flags.append(("critical", f"founder-auth.jsonl row {i} ({r.get('action')}): the same signed request was used twice"))
         else:
-            flags.append(f"founder-auth.jsonl row {i} ({r.get('action')}): signature does not verify")
-    unsigned = []
-    if key_at:
-        unsigned += [f"ledger {e.get('event')} {e.get('node')} at {e.get('t')}" for e in ledger
-                     if e.get("event") in ("clear-gate", "unblock") and str(e.get("t")) >= key_at and e.get("auth") != "signed"]
-        unsigned += [f"revenue from {r.get('payer')} at {r.get('t')}"
-                     for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl")
-                     if r and str(r.get("t")) >= key_at and r.get("auth") != "signed"]
-    flags += [f"{u}: founder action without a founder signature after the key was registered" for u in unsigned]
+            verified[r.get("ref")] = r
+
+    def covered(ref, action, fields):
+        r = verified.get(ref)
+        return bool(r) and r.get("action") == action and r.get("fields") == fields
+
+    used = {}
+    for e in ledger:
+        if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_at and str(e.get("t")) > key_at)):
+            if not covered(e.get("authRef"), e.get("event"), {"node": e.get("node"), "note": e.get("note", "")}):
+                flags.append(("critical", f"ledger {e.get('event')} {e.get('node')} at {e.get('t')} has no verified founder signature"))
+            used[e.get("authRef")] = used.get(e.get("authRef"), 0) + 1
+    for r in revenue:
+        if r.get("auth") == "signed" or (key_at and str(r.get("t")) > key_at):
+            try:
+                fields = {"amountUsd": f"{round(float(r.get('amountUsd')), 2):.2f}", "payer": r.get("payer"), "evidence": r.get("evidence")}
+            except (TypeError, ValueError):
+                fields = None
+            if not fields or not covered(r.get("authRef"), "revenue add", fields):
+                flags.append(("critical", f"revenue from {r.get('payer')} at {r.get('t')} has no verified founder signature"))
+            used[r.get("authRef")] = used.get(r.get("authRef"), 0) + 1
+    for ref, n in used.items():
+        if ref and n > 1:
+            flags.append(("critical", f"one founder signature ({str(ref)[:12]}) backs {n} records"))
+
+    events = {}
+    for e in ledger:
+        if e.get("event") in GATE_EVENTS:
+            events.setdefault(e.get("node"), []).append(e)
+    mismatches = 0
+    for n in nodes:
+        gate = n.get("gate")
+        mine = events.get(n.get("id"), [])
+        if gate and (gate.get("cleared") or n.get("status") == "done") and not any(e.get("event") == "clear-gate" for e in mine):
+            flags.append(("critical", f"{n.get('id')}: founder gate shows as cleared or done but the ledger has no clear-gate event"))
+        if mine:
+            expect = replay_status(mine, bool(gate))
+            if expect and expect != n.get("status"):
+                mismatches += 1
+                flags.append(("major", f"{n.get('id')}: graph.json says {n.get('status')} but the ledger implies {expect} (changed outside graph.py?)"))
     attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
-    attested += sum(1 for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl") if r and r.get("auth") != "signed")
-    return {"keyRegistered": signers.exists(), "keyRegisteredAt": key_at, "signatures": len(rows), "verified": ok,
-            "unsignedFounderActions": attested}, flags
+    attested += sum(1 for r in revenue if r.get("auth") != "signed")
+    return {"keyRegistered": bool(key_events), "keyRegisteredAt": key_at, "keyFingerprint": keys[-1][2] if keys else None,
+            "rotations": max(0, len(keys) - 1), "signatures": len(rows), "verified": len(verified),
+            "unsignedFounderActions": attested, "statusMismatches": mismatches}, flags
 
 
 # ---------- per-node facts ----------
@@ -421,7 +526,7 @@ def node_facts(n, ledger_rows, act_rows, now):
     false_rows = [r for r in fail_rows if FALSE_TEXT.search(str(r.get("text", "")))]
 
     corrections = sorted({str(r["t"])[:10] for r in rows if r.get("src") != "ledger" and CORRECTION_TEXT.match(str(r.get("text", "")))})
-    audit_rework = [r for r in builder_rows if r.get("kind") in ("edit", "write") and AUDIT_REWORK_TEXT.match(str(r.get("text", "")))]
+
     orch_edits = [r for r in rows if r.get("src") != "ledger" and r.get("kind") in ("edit", "write")
                   and ORCH_EDIT_TEXT.match(str(r.get("text", "")))]
 
@@ -437,7 +542,9 @@ def node_facts(n, ledger_rows, act_rows, now):
     closed = status in CLOSED
     verified = bool(verifier_rows)
     # Verification that happened only after the node was closed (a retro-check) is worth less than a check before closing.
-    close_t = next((str(e.get("t")) for e in events if e.get("event") in ("done", "clear-gate")), None)
+    # Closing is the done event; a gate the founder cleared before done does not close the task.
+    close_t = next((str(e.get("t")) for e in events if e.get("event") == "done"), None) or \
+        next((str(e.get("t")) for e in events if e.get("event") == "clear-gate"), None)
     on_time = verified and (close_t is None or any(str(r.get("t")) <= close_t for r in verifier_rows))
     return {
         "id": n["id"], "agent": n.get("agent"), "status": status, "closed": closed,
@@ -454,8 +561,8 @@ def node_facts(n, ledger_rows, act_rows, now):
         "rework": rework,
         "quality_blocks": len(quality_blocks),
         "attempted": closed or rework > 0 or bool(quality_blocks),
-        "first_pass": closed and rework == 0 and not quality_blocks and not corrections and not audit_rework,
-        "audit_rework": len(audit_rework),
+        "first_pass": closed and rework == 0 and not quality_blocks and not corrections,
+        "audit_findings": 0,  # set in compute(): major or critical auditor findings on this task
         "open_fail": len(open_fail),
         "open_minor": len(open_minor),
         "false_rows": len(false_rows),
@@ -583,7 +690,7 @@ def score_fpy(facts):
     if failed:
         basis += "; needed rework, a block or a later correction: " + ", ".join(
             f"{f['id']} ({f['rework']} failed rounds, {f['quality_blocks']} blocks, {len(f['corrections'])} orchestrator corrections, "
-            f"{f['audit_rework']} fixes after an audit finding)" for f in failed)
+            f"{f['audit_findings']} major or critical auditor findings)" for f in failed)
     if unverified:
         basis += f"; not counted, no verification record: {ids(unverified)}"
     return s, basis + "."
@@ -785,6 +892,15 @@ def compute(pe=PE_DEFAULT, now=None):
         by_node.setdefault(e.get("node"), []).append(e)
     facts = [node_facts(n, by_node.get(n["id"], []), activity.get(n["id"], []), now) for n in g.get("nodes", [])]
     llm, covered, checks = load_findings(pe, agents, warnings)
+    # A task an auditor found a major or critical problem in did not pass first time, however the fix was logged.
+    serious = {}
+    for f, _ in llm:
+        if f.get("task") and f["severity"] in ("major", "critical") and f["status"] != "accepted" and f["kind"] != "process":
+            serious[f["task"]] = serious.get(f["task"], 0) + 1
+    for fact in facts:
+        if serious.get(fact["id"]):
+            fact["audit_findings"] = serious[fact["id"]]
+            fact["first_pass"] = False
     revenue = check_revenue(pe, warnings)
     auto = []
     for fl in revenue["flagged"]:
@@ -792,11 +908,12 @@ def compute(pe=PE_DEFAULT, now=None):
                       "claim": f"graph/revenue.jsonl entry {fl['entry']} would count as revenue",
                       "evidence": f"entry {fl['entry']}: " + "; ".join(fl["reasons"]) + ". Revenue is founder-only with evidence (CLAUDE.md); the orchestrator is custodian of the record.",
                       "status": "open"}, "process"))
-    founder_auth, auth_flags = check_founder_auth(pe, ledger)
-    for i, fl in enumerate(auth_flags, 1):
-        auto.append(({"id": f"AUTO-AUTH-{i}", "agent": "orchestrator", "severity": "critical", "kind": "process",
-                      "claim": "a founder-only action is in the record", "evidence": fl + ". Founder actions must carry the "
-                      "founder's SSH signature once a key is registered (tools/graph.py founder-key).", "status": "open"}, "process"))
+    founder_auth, auth_flags = check_founder_auth(pe, ledger, g.get("nodes", []))
+    for i, (sev, fl) in enumerate(auth_flags, 1):
+        auto.append(({"id": f"AUTO-AUTH-{i}", "agent": "orchestrator", "severity": sev, "kind": "process",
+                      "claim": "a founder-only action or a state change is not backed by the record", "evidence": fl + ". Founder "
+                      "actions must carry the founder's SSH signature once a key is registered (tools/graph.py founder-key), and "
+                      "graph state changes only through tools/graph.py.", "status": "open"}, "process"))
     computed_at = iso(now)
     cards = []
     for key, info in agents.items():

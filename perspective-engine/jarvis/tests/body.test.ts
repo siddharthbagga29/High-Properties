@@ -27,7 +27,7 @@ describe('faceState', () => {
   })
 
   it('stays unformed without verified revenue', () => {
-    expect(faceState([])).toEqual({ stage: 0, payers: 0, totalUsd: 0, label: 'No verified revenue yet: the face stays unformed.', verifiedEntries: 0, unsigned: 0 })
+    expect(faceState([])).toEqual({ stage: 0, payers: 0, totalUsd: 0, label: 'No verified revenue yet: the face stays unformed.', verifiedEntries: 0, unsigned: 0, excluded: 0 })
   })
 
   it('ignores entries without founder record, evidence, a payer, a positive amount or a valid time', () => {
@@ -67,9 +67,15 @@ describe('faceState and the founder signature', () => {
     expect(f.label).toContain("One entry was recorded on trust, not signed with the founder's key.")
   })
 
-  it('once a key is registered, only signed revenue forms the face', () => {
-    const f = faceState([entry('Acme', 'attested'), entry('Beta'), entry('Gamma', 'signed')], { requireSigned: true })
-    expect(f).toMatchObject({ stage: 1, payers: 1, verifiedEntries: 1, unsigned: 0 })
-    expect(f.label).not.toContain('on trust')
+  it('once a key is registered, only revenue whose signature was verified forms the face', () => {
+    const verified = { ...entry('Gamma', 'signed'), sigVerified: true }
+    const f = faceState([entry('Acme', 'attested'), entry('Beta'), verified], { requireSigned: true })
+    expect(f).toMatchObject({ stage: 1, payers: 1, verifiedEntries: 1, unsigned: 0, excluded: 2 })
+    expect(f.label).toContain('2 entries are not counted: no verified founder signature.')
+  })
+
+  it('a row that only says auth "signed" does not count once a key exists', () => {
+    const forged = ['A', 'B', 'C'].map(p => entry(p, 'signed'))
+    expect(faceState(forged, { requireSigned: true })).toMatchObject({ stage: 0, excluded: 3 })
   })
 })

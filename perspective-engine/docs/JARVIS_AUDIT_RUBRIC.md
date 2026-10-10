@@ -56,7 +56,7 @@ Some terms used below:
 - **Data.** Ledger `block` notes (classified by wording; "round N" and "twice" give the round count), verifier FAIL/GAP rows, and "Orchestrator: corrected …" rows.
 - **Score** = 100 × FPY. Closed tasks with no verification record are left out here and penalised under process.
 - **Anchors.** 100: every verified task passed first time. 80: four in five did. 50: half needed rework. 0: none passed first time.
-- **After an audit.** A task whose owner had to fix it after an auditor finding (an activity row starting "Rework (") no longer counts as passed first time, even if a later retro-verification passed it.
+- **After an audit.** A task with a major or critical auditor finding (hallucination, unsupported claim, incomplete work or error) that was not overturned as `accepted` does not count as passed first time, whether or not it has since been fixed and however the fix was logged.
 
 ### 3.2 Verification outcome: rework and open gaps (15)
 

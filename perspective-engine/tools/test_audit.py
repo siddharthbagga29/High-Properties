@@ -240,8 +240,9 @@ class FixtureScores(Tmp):
 
     def test_alpha(self):
         d = self.dims("alpha")
-        # A1 first pass; A2 failed twice (2 FAIL/GAP clusters split by an edit; block note says round 2) -> 1/2.
-        self.assertEqual(d["first_pass_yield"], 50.0)
+        # A1 has open major finding F-1 (an auditor caught it), so it did not pass first time; A2 failed twice
+        # (2 FAIL/GAP clusters split by an edit; block note says round 2) -> 0/2.
+        self.assertEqual(d["first_pass_yield"], 0.0)
         # 2 rounds over 2 tasks = 1.0/task -> -30; 1 open non-blocking note (after the last edit) -> -3.
         self.assertEqual(d["effective_challenge"], 67.0)
         # a1.md: 12% (URL), $500 ([U]), 30 users (caption "assumptions") traced; 40 customers not -> 3/4.
@@ -257,14 +258,15 @@ class FixtureScores(Tmp):
         # One usage-limit interruption -> -8.
         self.assertEqual(d["reliability"], 92.0)
         c = self.cards["alpha"]
-        # (20*50 + 15*67 + 15*66.2 + 20*94.5 + 15*100 + 5*100 + 5*75 + 5*92) / 100 = 77.23
-        self.assertEqual(c["score"], 77.2)  # integrity 94.5 (fixed finding at a quarter weight)
-        self.assertEqual(c["grade"], "C")
+        # (20*0 + 15*67 + 15*66.2 + 20*94.5 + 15*100 + 5*100 + 5*75 + 5*92) / 100 = 67.23
+        self.assertEqual(c["score"], 67.2)  # integrity 94.5 (fixed finding at a quarter weight)
+        self.assertEqual(c["grade"], "D")
         self.assertFalse(c["meetsInstitutionalBar"])
         self.assertEqual([f["id"] for f in c["findings"]], ["F-1", "F-4"])  # F-3 has no evidence: skipped
         self.assertTrue(any("F-3" in w and "no evidence" in w for w in self.result["warnings"]))
         basis = {x["id"]: x["basis"] for x in c["dimensions"]}
         self.assertIn("A2 (2 failed rounds, 1 blocks", basis["first_pass_yield"])
+        self.assertIn("A1 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)", basis["first_pass_yield"])
         self.assertIn("A1 a1.md 3/4", basis["evidence"])
         self.assertIn("A2 135k vs 20k", basis["budget"])
 
@@ -357,8 +359,7 @@ def graph_paths(root):
         graph, ROOT=root, PE=pe, GRAPH=pe / "graph" / "graph.json", LEDGER=pe / "graph" / "ledger.jsonl",
         ACTIVITY=pe / "graph" / "activity", LOCK=pe / "graph" / ".lock", STATE_JS=pe / "dashboard" / "state.js",
         CITY_JSON=pe / "city" / "public" / "state.json", REVENUE=pe / "graph" / "revenue.jsonl",
-        AUDIT_JSON=pe / "graph" / "audit" / "scorecards.json", SIGNERS=pe / "graph" / "founder.allowed_signers",
-        FOUNDER_AUTH=pe / "graph" / "founder-auth.jsonl",
+        AUDIT_JSON=pe / "graph" / "audit" / "scorecards.json", FOUNDER_AUTH=pe / "graph" / "founder-auth.jsonl",
     ):
         yield pe
 
@@ -400,17 +401,64 @@ class FindingAccounting(Tmp):
         self.assertLess(card(audit.compute(self.pe, NOW))["score"], card(before)["score"])
 
 
-class AuditReworkIsNotFirstPass(Tmp):
-    def test_a_fix_after_an_audit_finding_fails_first_pass_yield(self):
+class AuditFindingsDecideFirstPass(Tmp):
+    """First-pass yield follows the auditor's findings on a task, not how (or whether) the fix was logged."""
+
+    def fpy(self, pe):
+        card = next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "delta")
+        return next(d for d in card["dimensions"] if d["id"] == "first_pass_yield")
+
+    def add(self, pe, finding):
+        (pe / "graph" / "audit" / "findings" / "llm-3.json").write_text(json.dumps([finding]))
+
+    def test_a_major_finding_fails_first_pass_whatever_the_log_says(self):
         pe = build_fixture(self.root)
-        fpy = lambda: next(d for d in next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "delta")["dimensions"]
-                           if d["id"] == "first_pass_yield")
-        self.assertEqual(fpy()["score"], 100.0)
+        self.assertEqual(self.fpy(pe)["score"], 100.0)  # D1 only has a process finding (F-2)
+        base = {"id": "F-10", "agent": "delta", "task": "D1", "severity": "major", "kind": "error",
+                "claim": "fee arithmetic wrong", "evidence": "recomputed: 1,800 not 2,000"}
+        for status in ("open", "fixed"):
+            self.add(pe, dict(base, status=status))
+            after = self.fpy(pe)
+            self.assertEqual(after["score"], 0.0, status)
+            self.assertIn("1 major or critical auditor findings", after["basis"])
+        # Logging the fix with any wording changes nothing; an overturned finding (accepted) does not count.
         with (pe / "graph" / "activity" / "D1.jsonl").open("a") as f:
-            f.write(jl([act("2026-10-08T10:00:00Z", "edit", "Rework (F-2): removed the pilot fee claim", node="D1")]))
-        after = fpy()
-        self.assertEqual(after["score"], 0.0)
-        self.assertIn("1 fixes after an audit finding", after["basis"])
+            f.write(jl([act("2026-10-08T10:00:00Z", "edit", "Fixed F-10: corrected the fee", node="D1")]))
+        self.assertEqual(self.fpy(pe)["score"], 0.0)
+        self.add(pe, dict(base, status="accepted"))
+        self.assertEqual(self.fpy(pe)["score"], 100.0)
+        self.add(pe, dict(base, status="open", severity="minor"))
+        self.assertEqual(self.fpy(pe)["score"], 100.0)
+
+
+class ReviewerScoringCases(Tmp):
+    def test_a_critical_finding_about_a_faked_check_is_deducted(self):
+        pe = build_fixture(self.root)
+        card = lambda: next(c for c in audit.compute(pe, NOW)["scorecards"] if c["agent"] == "delta")
+        before = card()["score"]
+        (pe / "graph" / "audit" / "findings" / "llm-4.json").write_text(json.dumps([{
+            "id": "F-11", "agent": "delta", "task": "D1", "severity": "critical", "kind": "process",
+            "claim": "the builder wrote its own verifier check and flagged it --verifier",
+            "evidence": "the check row and the builder's edit came from the same transcript", "status": "open"}]))
+        self.assertLess(card()["score"], before)
+
+    def test_a_check_before_done_is_on_time_even_if_the_gate_was_cleared_first(self):
+        pe = build_fixture(self.root)
+        with (pe / "graph" / "ledger.jsonl").open("a") as f:
+            f.write(jl([{"t": "2026-10-06T08:00:00Z", "event": "start", "node": "B2", "note": ""},
+                        {"t": "2026-10-06T08:05:00Z", "event": "clear-gate", "node": "B2", "note": "ok"},
+                        {"t": "2026-10-06T08:30:00Z", "event": "done", "node": "B2", "note": ""}]))
+        (pe / "graph" / "activity" / "B2.jsonl").write_text(jl([
+            act("2026-10-06T08:10:00Z", "write", "Wrote out/b2.md", node="B2"),
+            act("2026-10-06T08:20:00Z", "check", "Verifier: PASS", actor="verifier", node="B2")]))
+        g = json.loads((pe / "graph" / "graph.json").read_text())
+        g["nodes"].append({"id": "B2", "phase": 0, "agent": "beta", "title": "task B2", "deps": [], "budget_k": 0,
+                           "outputs": ["perspective-engine/out/b1.md"], "accept": ["it works"], "status": "done",
+                           "gate": {"reason": "founder", "cleared": "ok"}})
+        (pe / "graph" / "graph.json").write_text(json.dumps(g))
+        facts = {f["id"]: f for f in [audit.node_facts(n, [e for e in audit.read_jsonl(pe / "graph" / "ledger.jsonl", [], "l") if e and e.get("node") == n["id"]],
+                                                      audit.read_jsonl(pe / "graph" / "activity" / f"{n['id']}.jsonl", [], "a"), NOW) for n in g["nodes"]]}
+        self.assertTrue(facts["B2"]["verified_on_time"])
 
 
 class LateVerification(Tmp):
