@@ -5,7 +5,7 @@
 ## The four levels, mapped to real data (`graph/graph.json` + `graph/ledger.jsonl`)
 | Level | Name | What it is | Numbers shown |
 |---|---|---|---|
-| L1 | Venture (×1) | The cortex: all 33 tasks as particle patches in 9 lobes | tasks built / total, tokens spent, gates waiting on the founder, ledger events |
+| L1 | Venture (×1) | The cortex: every task in `graph/graph.json` as a particle patch in 9 lobes (34 tasks on 2026-10-10 per `graph.py validate`; the city reads the tasks from the graph export `state.json`, not from this file) | tasks built / total, tokens spent, gates waiting on the founder, ledger events |
 | L2 | Districts (×12) | The city: one district per agent, laid out on a 3×3 grid with City Hall in the centre | per agent: done/total, tokens used vs budget, current task |
 | L3 | Agent (×140) | One district: towers (tasks) and its worker | the agent's execution trace, efficiency trend, collaborators |
 | L4 | Records (×2000) | One tower: its atoms (acceptance criteria, outputs, inputs, ledger events, gate) | per record: status, timestamp, excerpt of the output file |

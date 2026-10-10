@@ -232,7 +232,7 @@ pre.json{max-height:320px;overflow:auto;background:var(--bg);border:1px solid va
 (function(){
 'use strict';
 /* ===== constants (all numeric ranges are DESIGN parameters from perspective-engine/science/mechanism-spec.md, not empirical ADHD estimates) ===== */
-const VERSION='0.1.1-F04';
+const VERSION='0.1.2-F04';
 const CEIL=0.8, DEF_I=0.5;            // session ceiling and default intensity (spec section 1)
 const MIN_VIS_GAP=2.5;                // s between visual cue events: keeps every change well under 3 Hz
 const BASE_DELAY=1.0, BASE_CV=0.25;   // scenario baseline response-registration delay (design)
@@ -281,7 +281,7 @@ const MECH={
   fixed:'Minimum gap between intrusions: 5 s (fixed). Timing is irregular on purpose; no periodicity is claimed.'},
  M2:{name:'M2 Reaction-time variability',grade:'S1',gradeTxt:'Evidence S1: among the most consistent group-level findings',
   what:'Your answers are registered after a delay with a wider spread and a slow tail. The average delay stays the same (variability, not slowing).',
-  ev:'Intra-individual reaction-time variability is among the most consistent ADHD findings at group level (PubMed 24204553). Slow-tail shape is a design assumption (unverified). Link to default-mode intrusions (M1 coupling) is motivated by Sonuga-Barke & Castellanos 2007; its strength is unverified.',
+  ev:'Intra-individual reaction-time variability is among the most consistent ADHD findings at group level (Kofler et al. 2013, meta-analysis of 319 studies, Clin Psychol Rev 33(6):795-811, doi:10.1016/j.cpr.2013.06.001). The same review also finds it in other clinical groups, so it is not specific to ADHD. Slow-tail shape is a design assumption (unverified). Link to default-mode intrusions (M1 coupling) is motivated by Sonuga-Barke & Castellanos 2007; its strength is unverified.',
   params:[{k:'cvm',label:'Variability multiplier on baseline CV',unit:'x',lo:1,hi:3,drv:1},
           {k:'tail',label:'Share of responses from slow tail',unit:'',lo:0.05,hi:0.30,drv:1},
           {k:'couple',label:'Coupling M1 to M2 (first response after an intrusion from slow tail)',unit:'prob',lo:0,hi:0.8,drv:1}],
@@ -408,7 +408,7 @@ const NOT_ADMIN=[
  {instrument:'QPS (Fuermaier 2012), 37 items; 2 subscales at T1',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'IRI Perspective-Taking (Davis 1983), 7 items',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'RIBS (Evans-Lacko 2011), 8 items; intended 4 at T1',why:'item texts not in the instruments spec; ADHD wording would be an unvalidated adaptation'},
- {instrument:'OMS-WA (Lindsay 2024), 22 to 23 items (count unverified in the instruments spec), T0',why:'item texts not in the instruments spec; licensing unverified'},
+ {instrument:'OMS-WA (Lindsay 2024), 23 items (instruments spec: search-summary level, full text not read), T0',why:'item texts not in the instruments spec; licensing unverified'},
  {instrument:'AQ-27 Pity and Fear subscales (Corrigan 2003)',why:'item texts not in the instruments spec; ADHD vignette would be an unvalidated adaptation'},
  {instrument:'Marlowe-Crowne short form C, 13 items, T0',why:'item texts not in the instruments spec'},
  {instrument:'Self-efficacy items 2 and 3',why:'instruments spec gives 3 items but names only one'},
