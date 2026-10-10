@@ -1,7 +1,7 @@
 window.PE_STATE = {
- "generated": "2026-10-10T07:42:16Z",
+ "generated": "2026-10-10T07:44:12Z",
  "project": "Perspective Engine",
- "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
+ "north_star": "A perspective-taking simulator, to be co-designed with paid ADHD advisors and tested in a pre-registered pilot, with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
   "orchestrator": {
    "name": "Mayor",
@@ -1109,14 +1109,14 @@ window.PE_STATE = {
   "problems": []
  },
  "audit": {
-  "computedAt": "2026-10-10T07:42:16Z",
+  "computedAt": "2026-10-10T07:43:49Z",
   "rubricVersion": "1.0",
   "scorecards": [
    {
     "agent": "orchestrator",
     "name": "Mayor",
-    "score": 64.5,
-    "grade": "D",
+    "score": 58.0,
+    "grade": "F",
     "meetsInstitutionalBar": false,
     "dimensions": [
      {
@@ -1124,7 +1124,7 @@ window.PE_STATE = {
       "label": "First-pass yield",
       "weight": 20,
       "score": 33.3,
-      "basis": "1/3 verified tasks passed first time (F07); needed rework, a block or a later correction: F05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings), D01 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
+      "basis": "1/3 verified tasks passed first time (F07); needed rework, a block or a later correction: F05 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 3 major or critical auditor findings), D01 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
      },
      {
       "id": "effective_challenge",
@@ -1137,8 +1137,8 @@ window.PE_STATE = {
       "id": "evidence",
       "label": "Evidence discipline",
       "weight": 15,
-      "score": 81.3,
-      "basis": "53/62 numeric claims (85%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 33/36, F07 PLAN.md 1/6, D01 founder-decisions.md 19/19; untraced examples: F02: 0%; F05: d\u22480.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -3 from 1 open finding(s) and 2 fixed after the audit (a quarter weight each)."
+      "score": 71.8,
+      "basis": "53/62 numeric claims (85%) in 4 output files are traceable: a source URL, file or task reference, citation, derivation or [S]/[U]/unverified/assumption/estimate/measured label on the line or table caption, or a restatement of such a figure; by task: F02 index.html 0/1, F05 execution-plan.md 33/36, F07 PLAN.md 1/6, D01 founder-decisions.md 19/19; untraced examples: F02: 0%; F05: d\u22480.33; F07: 160k. Score shrinks the share toward neutral by 5 claims (small samples are imprecise). Fabricated citations cannot be detected offline (left to LLM findings). Findings: -12.5 from 2 open finding(s) and 5 fixed after the audit (a quarter weight each)."
      },
      {
       "id": "integrity",
@@ -1151,8 +1151,8 @@ window.PE_STATE = {
       "id": "process",
       "label": "Process discipline and separation of duties",
       "weight": 15,
-      "score": 34.0,
-      "basis": "3 closed tasks in the ledger: step records on 3 (17 self-logged rows, 0 transcript rows); verifier rows on 3; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): F05 F07 D01; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 24/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -6 from 2 open finding(s) and 2 fixed after the audit (a quarter weight each)."
+      "score": 0.0,
+      "basis": "3 closed tasks in the ledger: step records on 3 (19 self-logged rows, 0 transcript rows); verifier rows on 3; a separate verifier run evidenced by its own ingested transcript on 0; separation only declared with the --verifier flag (identity not evidenced, 10 of 25): F05 F07 D01; verified only after closing (half credit): F05 F07 D01; graph-wide closure discipline (half of this score): 24/24 closures in the ledger have a verification record; orchestrator rewrote another agent's output instead of returning it: V06 V08 V09 V13 (-10 each); not scored, closed before the ledger began: F01 F02. Findings: -60 from 8 open finding(s) and 23 fixed after the audit (a quarter weight each)."
      },
      {
       "id": "gates",
@@ -1177,6 +1177,56 @@ window.PE_STATE = {
      }
     ],
     "findings": [
+     {
+      "id": "AF-orchestrator-18",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "critical",
+      "kind": "process",
+      "claim": "tools/graph.py: deleting the founder-key line from the ledger made signing fail open (attested revenue then formed the face).",
+      "evidence": "Independent re-review R3, proof D' on a temp copy. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. graph.py reads key registration from git history too and fails closed; the face never counts unsigned revenue.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-19",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "critical",
+      "kind": "process",
+      "claim": "tools/graph.py and the export honoured an unsigned founder-key event appended to the ledger.",
+      "evidence": "R3 proof B'. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Only a key chain where each rotation is signed by the previous key comes into force.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-23",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "critical",
+      "kind": "process",
+      "claim": "--verifier is a self-asserted flag: a builder can clear done alone, and the auditor gave full separation-of-duties credit.",
+      "evidence": "R4 proof O6, A10. || PARTLY FIXED in d13d239: separation credit now needs an ingested verifier transcript (activity.py --verifier); a bare flag earns 10 of 25. The flag itself still cannot prove identity; residual risk documented.",
+      "status": "open"
+     },
+     {
+      "id": "AF-orchestrator-24",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "critical",
+      "kind": "process",
+      "claim": "The auditor did not re-check the done gate: out-of-band closures and graph.json edits went unflagged.",
+      "evidence": "R4 D1, D3, N5. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The auditor replays the gate for new closures, flags statuses with no ledger event and outputs changed after closing.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-38",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "critical",
+      "kind": "process",
+      "claim": "With no founder key registered, any agent could complete the Jarvis face with honour-system revenue.",
+      "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The face forms only from export-verified signed revenue, key or no key.",
+      "status": "fixed"
+     },
      {
       "id": "AF-orchestrator-1",
       "agent": "orchestrator",
@@ -1208,6 +1258,96 @@ window.PE_STATE = {
       "status": "fixed"
      },
      {
+      "id": "AF-orchestrator-20",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "The fingerprint shown to the founder was the stored ledger field, never recomputed from the key.",
+      "evidence": "R3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Fingerprints are recomputed with ssh-keygen; the auditor flags a mismatch.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-21",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "unsupported_claim",
+      "claim": "docs/JARVIS_SECURITY.md row 11 and graph.py said the key is 'never in a file an agent could edit'.",
+      "evidence": "R3: the ledger is a writable file. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The docs now say the controls detect tampering (git history, auditor) rather than prevent it.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-25",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "The verdict token was accepted anywhere and in any case (quoted, negated or retracted PASS cleared done).",
+      "evidence": "R4 O1', N3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. One plain uppercase verdict, at the end, in NFKC-stable text.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-26",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "Directory and symlink-to-directory outputs were hashed as None; an empty directory passed done.",
+      "evidence": "R4 N1, N1b, I6. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Directory trees are hashed; an empty one is refused.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-27",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "Outputs of a gated task could change after done and before the founder's clear-gate.",
+      "evidence": "R4 G1. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. done records output hashes; clear-gate refuses changed outputs and the founder signs the hashes.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-28",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "tools/audit.py rework and open-FAIL scoring depended on the case and wording of FAIL/GAP.",
+      "evidence": "R4 A1-A5. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Rows since the verdict rule are scored by their verdict.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-29",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "tools/audit.py first-pass yield kept credit for risk-accepted findings and ignored critical process findings.",
+      "evidence": "R4 A7, A8. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. accepted now means overturned (weight 0); critical process findings count.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-30",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "major",
+      "kind": "process",
+      "claim": "The measured-process exemption matched wording only and excused serious findings.",
+      "evidence": "R4 A9. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Applies only when the record confirms the task lacked an on-time check, never for critical findings.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-39",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "process",
+      "claim": "19 of 26 closed tasks were closed before today's gate existed and would fail it; their checks are retro-checks.",
+      "evidence": "Completeness critic. || To be resolved by reopening and re-verifying under the current gate.",
+      "status": "open"
+     },
+     {
       "id": "AF-orchestrator-4",
       "agent": "orchestrator",
       "task": "F05",
@@ -1215,6 +1355,56 @@ window.PE_STATE = {
       "kind": "error",
       "claim": "docs/execution-plan.md:37 \"The load models four mechanisms grounded in published findings: salience capture, momentary lapses (RT variability and DMN interference), time-blindness (delay aversion), and hyperfocus.\"",
       "evidence": "This contradicts the project's own spec and build. science/mechanism-spec.md section 6 (line 97) lists 'Time perception differences or \"time blindness\" (not in the evidence base here); M3 does not distort the clock'. M3 is delay aversion only. Hyperfocus is M5, graded S3 (self-report only) and OFF by default (spec line 62), so it is not one of the four default mechanisms. The four defaults are M1 ",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-40",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "process",
+      "claim": "Rework rounds 1-2 changed the outputs of 22 closed tasks without reopening them; four gated tasks await founder approval of content no gate-valid check has seen.",
+      "evidence": "Completeness critic: output mtimes after done events. || To be resolved by reopening and re-verifying under the current gate (graph.py reopen).",
+      "status": "open"
+     },
+     {
+      "id": "AF-orchestrator-41",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "unsupported_claim",
+      "claim": "PROMPT.md, the plan summary and the north star stated co-design and a 'validated' simulator as fact.",
+      "evidence": "Completeness critic. || FIXED by the orchestrator (2026-10-10): stated as a plan; 'validated' replaced by 'tested in a pre-registered pilot'. Pending independent re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-42",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "process",
+      "claim": "Reviewer findings were not in the audit record, so scorecards omitted them.",
+      "evidence": "Completeness critic. || FIXED: recorded here as AF-orchestrator-18 onward. Pending independent re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-43",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "unsupported_claim",
+      "claim": "docs/JARVIS_PROGRESS.md was stale and overstated fixes.",
+      "evidence": "Completeness critic. || To be rewritten from the record after this round.",
+      "status": "open"
+     },
+     {
+      "id": "AF-orchestrator-44",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "major",
+      "kind": "process",
+      "claim": "The orchestrator's integrity score counted 0 self-verified completions although D01, F05 and F07 were closed in the same second they started.",
+      "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Self-verified completions now count closures with no check before closing.",
       "status": "fixed"
      },
      {
@@ -1298,6 +1488,16 @@ window.PE_STATE = {
       "status": "open"
      },
      {
+      "id": "AF-orchestrator-22",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Two byte-identical copies of the record accept the same founder signature.",
+      "evidence": "R3 proof H. || Documented residual risk in JARVIS_SECURITY.md row 11; a repository identity is not part of the signed message.",
+      "status": "open"
+     },
+     {
       "id": "AF-orchestrator-3",
       "agent": "orchestrator",
       "task": "F01",
@@ -1305,6 +1505,116 @@ window.PE_STATE = {
       "kind": "error",
       "claim": "tools/graph.py:395-398 \"elif cmd == \"block\": n[\"status\"] = \"blocked\"\" / \"elif cmd == \"unblock\": n[\"status\"] = \"pending\"\", and clear-gate (graph.py:399-405) with no actor check; PROMPT.md:12 \"only the founder's `clear-gate` finishes it\"",
       "evidence": "block and unblock accept any current status. On the scratch copy, 'unblock F04' turned a verified done node into pending, and its dependent V12 then refused 'start' (V12 is pending, not ready). One mistyped command can silently undo verified work, and only the ledger records it. 'clear-gate V14 \"agent\"' run from an agent shell moved V14 from awaiting_human to done; nothing tells the founder's clea",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-31",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "The auditor's revision boundaries use timestamps while the gate uses file order.",
+      "evidence": "R4 A3-A6. || Partly fixed: run rows now count as boundaries in the auditor too.",
+      "status": "open"
+     },
+     {
+      "id": "AF-orchestrator-32",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Unicode look-alikes and zero-width characters could hide or fake a verdict.",
+      "evidence": "R4 N2, N2b. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-33",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "A FAIL check followed by a PASS check with no change cleared done.",
+      "evidence": "R4 O2. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Any FAIL since the last change blocks done.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-34",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Output hashes were taken at log time, not at review time.",
+      "evidence": "R4 G2. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Every verifier row pins hashes; a change during the review is caught.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-35",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Ingesting a verifier transcript after its check blocked done, and its rows were credited to the builder.",
+      "evidence": "R4 I4, I1. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Transcript rows are not boundaries; activity.py --verifier credits them to the verifier.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-36",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Activity rows without timestamps crashed the export or were given a fake time.",
+      "evidence": "R4 I2, I3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-37",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "Several tests did not test what their names said.",
+      "evidence": "R4. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Tests rewritten; 61 tool tests.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-45",
+      "agent": "orchestrator",
+      "task": "D01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "ledger:48 unblock of M05 cites no founder request.",
+      "evidence": "Completeness critic. || Needs the founder's ratification, like AF-orchestrator-12.",
+      "status": "open"
+     },
+     {
+      "id": "AF-orchestrator-46",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "PROMPT.md named an obsolete trust root (graph/founder.allowed_signers).",
+      "evidence": "Completeness critic. || FIXED (2026-10-10). Pending independent re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-47",
+      "agent": "orchestrator",
+      "task": "F05",
+      "severity": "minor",
+      "kind": "unsupported_claim",
+      "claim": "docs/JARVIS_SECURITY.md labelled built controls as planned.",
+      "evidence": "Completeness critic. || FIXED (2026-10-10): rows 1, 5-8, 12 relabelled with the files and tests that implement them. Pending re-check.",
+      "status": "fixed"
+     },
+     {
+      "id": "AF-orchestrator-48",
+      "agent": "orchestrator",
+      "task": "F01",
+      "severity": "minor",
+      "kind": "process",
+      "claim": "The auditor ignored missing outputs of closed tasks.",
+      "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
       "status": "fixed"
      },
      {
@@ -1358,28 +1668,28 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "science",
     "name": "Curie",
-    "score": 85.6,
-    "grade": "B",
-    "meetsInstitutionalBar": true,
+    "score": 79.7,
+    "grade": "C",
+    "meetsInstitutionalBar": false,
     "dimensions": [
      {
       "id": "first_pass_yield",
       "label": "First-pass yield",
       "weight": 20,
-      "score": 75.0,
-      "basis": "3/4 verified tasks passed first time (V01 V03 V15); needed rework, a block or a later correction: F03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
+      "score": 50.0,
+      "basis": "2/4 verified tasks passed first time (V01 V15); needed rework, a block or a later correction: F03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings), V03 (0 failed rounds, 0 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
      },
      {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 93.0,
-      "basis": "0 failed verification rounds over 4 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 2 non-blocking notes left open (F03 1, V03 1). Findings: -1 from 0 open finding(s) and 2 fixed after the audit (a quarter weight each)."
+      "score": 87.0,
+      "basis": "0 failed verification rounds over 4 verified tasks (0.00 per task); 0 open FAIL/GAP rows after the last revision; 2 non-blocking notes left open (F03 1, V03 1). Findings: -7 from 1 open finding(s) and 2 fixed after the audit (a quarter weight each)."
      },
      {
       "id": "evidence",
@@ -1434,6 +1744,16 @@ window.PE_STATE = {
       "claim": "research/evidence-dossier.md:26 \"Ventura et al. 2020 meta-analysis: overall VR effect on empathy SDM = 0.43 (CI 0.31-0.55). https://journals.sagepub.com/doi/abs/10.1089/cyber.2019.0681\" and research/evidence-dossier.md:28 \"Another reported meta-analysis found perspective-taking d+ = 0.51 (wide CI 0.15-0.88) and a non-significant empathy effect (d+ = 0.21).\"",
       "evidence": "WebSearch, search summaries only (a direct fetch of tmb.apaopen.org was EGRESS_BLOCKED). SDM = 0.43 [CI 0.31, 0.55], z = 6.93, is the overall effect in Martingano, Herrera & Konrath 2021, Technology, Mind, and Behavior (k = 43, N = 5,644): https://tmb.apaopen.org/pub/vr-improves-emotional-empathy-only ; https://scholarworks.indianapolis.iu.edu/items/7d7127c0-6c5e-4455-adea-d93c54ea48cc . Ventura e",
       "status": "fixed"
+     },
+     {
+      "id": "AF-science-10",
+      "agent": "science",
+      "task": "V03",
+      "severity": "major",
+      "kind": "incomplete",
+      "claim": "The pre-registration does not apply the changes ethics/irb-packet.md:238 lists as needed before the OSF post (distress and pause rules, deletion withdrawals versus ITT, a difficulty item, the C-arm closing), and the consent form's deletion promise conflicts with never excluding randomized managers.",
+      "evidence": "Completeness critic: ethics/irb-packet.md:238 versus science/preregistration.md.",
+      "status": "open"
      },
      {
       "id": "AF-science-2",
@@ -1506,7 +1826,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "ethics",
@@ -1604,12 +1924,12 @@ window.PE_STATE = {
       "status": "fixed"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "product",
     "name": "Ada",
-    "score": 75.7,
+    "score": 74.8,
     "grade": "C",
     "meetsInstitutionalBar": false,
     "dimensions": [
@@ -1618,14 +1938,14 @@ window.PE_STATE = {
       "label": "First-pass yield",
       "weight": 20,
       "score": 50.0,
-      "basis": "1/2 verified tasks passed first time (V14); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 0 major or critical auditor findings)."
+      "basis": "1/2 verified tasks passed first time (V14); needed rework, a block or a later correction: F04 (3 failed rounds, 2 blocks, 0 orchestrator corrections, 1 major or critical auditor findings)."
      },
      {
       "id": "effective_challenge",
       "label": "Verification outcome: rework and open gaps",
       "weight": 15,
-      "score": 50.5,
-      "basis": "3 failed verification rounds over 2 verified tasks (1.50 per task); rework: F04 x3; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -4.5 from 2 open finding(s) and 1 fixed after the audit (a quarter weight each)."
+      "score": 44.5,
+      "basis": "3 failed verification rounds over 2 verified tasks (1.50 per task); rework: F04 x3; 0 open FAIL/GAP rows after the last revision; 0 non-blocking notes left open. Findings: -10.5 from 3 open finding(s) and 1 fixed after the audit (a quarter weight each)."
      },
      {
       "id": "evidence",
@@ -1672,6 +1992,16 @@ window.PE_STATE = {
     ],
     "findings": [
      {
+      "id": "AF-product-5",
+      "agent": "product",
+      "task": "F04",
+      "severity": "major",
+      "kind": "incomplete",
+      "claim": "F04 is closed and shown as 'built and verified' although two acceptance criteria are unmet (charter debrief; JSON export of the validated day-0 measures).",
+      "evidence": "Completeness critic; open AF-product-2 and AF-product-3 cover the same criteria.",
+      "status": "open"
+     },
+     {
       "id": "AF-product-1",
       "agent": "product",
       "task": "F04",
@@ -1712,7 +2042,7 @@ window.PE_STATE = {
       "status": "fixed"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "data",
@@ -1810,7 +2140,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "gtm",
@@ -2057,7 +2387,7 @@ window.PE_STATE = {
       "status": "fixed"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "finance",
@@ -2225,7 +2555,7 @@ window.PE_STATE = {
       "status": "fixed"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "legal",
@@ -2333,7 +2663,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    },
    {
     "agent": "brand",
@@ -2451,7 +2781,7 @@ window.PE_STATE = {
       "status": "open"
      }
     ],
-    "computedAt": "2026-10-10T07:42:16Z"
+    "computedAt": "2026-10-10T07:43:49Z"
    }
   ],
   "notice": "A rubric informed by NIST AI RMF 1.0, SR 11-7, ISO/IEC 42001, GRADE, first-pass yield and research-integrity definitions; not a certification. See docs/JARVIS_AUDIT_RUBRIC.md.",
@@ -2459,8 +2789,8 @@ window.PE_STATE = {
   "inputs": {
    "nodes": 34,
    "ledgerEvents": 61,
-   "activityRows": 1265,
-   "llmFindings": 73,
+   "activityRows": 1267,
+   "llmFindings": 106,
    "llmAuditedAgents": [
     "brand",
     "data",

@@ -97,5 +97,15 @@
   "claim": "docs/execution-plan.md:30 \"Surveys disagree on US DEI budgets (one 2025 survey: 19% of companies cut DEI funding; 78% of C-suite leaders said they rebrand it; dossier s6)\"",
   "evidence": "VERIFIER R2 2026-10-09 (science/data verifier; filed in science.json because this verifier may write only science and data findings; the file belongs to the orchestrator, task F05, not to science). This is a stale cross-reference. The F03 rework of research/evidence-dossier.md:47 (dossier s6) now gives these as separate sources ('separate sources, not one survey'). 19% is the Paradigm 2025 benchmark (443 organisations; 19% decreasing funding, 23% increasing). The 78% (Catalyst / NYU Meltzer) is labelled unverified in both the dossier and gtm/icp.md:12, with the wording 'are rebranding or plan to'. execution-plan.md:30 states 78% with no unverified label and can be read as one survey giving both figures. AF-orchestrator-5's verifier note said :30 matched dossier:47; that was true before this rework and is no longer true. (An extended WebSearch today relays 78% of C-suite leaders as saying their organisations are rebranding DEI, from the Catalyst / Meltzer 'Risks of retreat' report. So the number may well be right; the problem is that the citing line no longer matches its source line.) Fix: '(Paradigm 2025: 19% of organisations decreasing DEI funding; Catalyst / NYU Meltzer 2025: 78% of C-suite leaders reportedly rebranding or planning to, unverified; dossier s6)'.",
   "status": "open"
+ },
+ {
+  "id": "AF-science-10",
+  "agent": "science",
+  "task": "V03",
+  "severity": "major",
+  "kind": "incomplete",
+  "claim": "The pre-registration does not apply the changes ethics/irb-packet.md:238 lists as needed before the OSF post (distress and pause rules, deletion withdrawals versus ITT, a difficulty item, the C-arm closing), and the consent form's deletion promise conflicts with never excluding randomized managers.",
+  "evidence": "Completeness critic: ethics/irb-packet.md:238 versus science/preregistration.md.",
+  "status": "open"
  }
 ]

@@ -27,9 +27,11 @@ Revenue is founder-only and needs an evidence reference: `revenue add` refuses
 without --founder, without --evidence, or with an amount that is not above zero.
 
 Founder actions (revenue add, clear-gate, unblock) are signed once the founder
-registers an SSH public key with `founder-key`. The key is pinned in the ledger
-(the founder-key event carries the full public key), never in a file an agent
-could edit. `authorize` prints the exact request: one JSON line naming the
+registers an SSH public key with `founder-key`. The key is recorded in the
+ledger (the founder-key event carries the full public key). The ledger is a
+file, so this detects tampering rather than preventing it: a key that ever
+appeared in the ledger's git history counts as registered (deleting the line
+fails closed), and a later key counts only if the previous key signed it. `authorize` prints the exact request: one JSON line naming the
 action, its fields and a hash of the record at that moment. The founder signs
 it on their own machine with
 `ssh-keygen -Y sign -f ~/.ssh/id_ed25519 -n pe-founder request.txt`, and the

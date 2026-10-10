@@ -6,7 +6,7 @@ import type { GraphState, Status } from './types'
  */
 export const BRIEF = {
   idea: 'Perspective Engine is a planned manager-accommodation program that runs in an ordinary browser. A manager does one workplace task twice, once with attention load switched on. Then they hear ADHD adults describe what actually helps, practise three accommodations, and are checked 30 days later on what they actually changed. The plan is to co-design it with paid ADHD advisors who can veto any content.',
-  goal: 'Goal by month 12: a validated simulator, 3 paid B2B pilots and a published pilot study.',
+  goal: 'Goal by month 12: a simulator tested in a pre-registered pilot, 3 paid B2B pilots and a published pilot study.',
   hook: 'You are looking at a company being built by nine AI agents. Every bright point is a record of their work, read from the project ledger.',
   claim: {
     text: 'Meta stopped selling Quest headsets to businesses on 20 February 2026. That is why this product runs in a browser and treats headsets as optional.',

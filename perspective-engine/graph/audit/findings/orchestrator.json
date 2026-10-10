@@ -177,5 +177,315 @@
   "claim": "docs/JARVIS_ARCHITECTURE.md:170 \"Once the founder's signing key is registered, no agent, routine or Jarvis itself can add a revenue entry that counts towards the face or passes the auditor without the founder's private key.\"; tools/graph.py:29-38 (docstring) \"The key is pinned in the ledger ..., never in a file an agent could edit. ... A second key can replace the first only with the first key's signature.\"",
   "evidence": "Found by the R2 verifier on 2026-10-10. graph.py trusts every founder-key event in graph/ledger.jsonl, a file any agent can append to. founder_keys() (:155) lists every such event, and founder_auth (:206) verifies against the last one. verified_auth_rows (:245), revenue_verified (:265) and founder_key_state (:277) accept any listed key. Only the founder-key command checks the previous key's signature; nothing checks it for an event appended to the ledger by hand, which CLAUDE.md forbids but nothing prevents. audit.py check_founder_auth (:400-403) does check the rotation chain, but the export and the face do not read that check: jarvis/core/adapters/perspective-engine.ts:155-157 reads only founderKey.registered. Demonstrated on a scratch copy (mk.sh layout; real graph untouched). I registered key F with 'graph.py founder-key', then appended by hand a founder-key row carrying agent key A. I ran 'graph.py authorize revenue add 9999 \"Fake Corp\" --evidence INV-1', signed the request with A (ssh-keygen -Y sign -n pe-founder), and ran 'revenue add ... --founder --sig'. It printed 'recorded $9,999.00 ... signed'. The export showed founderKey.fingerprint = A, rotations 1 and the entry sigVerified true, so peBody counts it and the face forms. audit.py flagged it critical ('founder key replaced ... without a verified signature by the previous key'). The 'passes the auditor' half of :170 holds; the 'counts towards the face' half does not. JARVIS_PROGRESS.md:31 names trust on first use and editing graph.py and audit.py as limits, but not a ledger append. Fix: in graph.py, honour a founder-key event after the first only if its authRef resolves to a founder-auth row that verifies under the previous key, the check audit.py already makes. Otherwise close founder actions and export every revenue entry with sigVerified false. Add a regression test. Until then, state this limit at JARVIS_ARCHITECTURE.md:170.",
   "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-18",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "tools/graph.py: deleting the founder-key line from the ledger made signing fail open (attested revenue then formed the face).",
+  "evidence": "Independent re-review R3, proof D' on a temp copy. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. graph.py reads key registration from git history too and fails closed; the face never counts unsigned revenue.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-19",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "tools/graph.py and the export honoured an unsigned founder-key event appended to the ledger.",
+  "evidence": "R3 proof B'. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Only a key chain where each rotation is signed by the previous key comes into force.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-20",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "The fingerprint shown to the founder was the stored ledger field, never recomputed from the key.",
+  "evidence": "R3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Fingerprints are recomputed with ssh-keygen; the auditor flags a mismatch.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-21",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "unsupported_claim",
+  "claim": "docs/JARVIS_SECURITY.md row 11 and graph.py said the key is 'never in a file an agent could edit'.",
+  "evidence": "R3: the ledger is a writable file. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The docs now say the controls detect tampering (git history, auditor) rather than prevent it.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-22",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Two byte-identical copies of the record accept the same founder signature.",
+  "evidence": "R3 proof H. || Documented residual risk in JARVIS_SECURITY.md row 11; a repository identity is not part of the signed message.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-23",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "--verifier is a self-asserted flag: a builder can clear done alone, and the auditor gave full separation-of-duties credit.",
+  "evidence": "R4 proof O6, A10. || PARTLY FIXED in d13d239: separation credit now needs an ingested verifier transcript (activity.py --verifier); a bare flag earns 10 of 25. The flag itself still cannot prove identity; residual risk documented.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-24",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "The auditor did not re-check the done gate: out-of-band closures and graph.json edits went unflagged.",
+  "evidence": "R4 D1, D3, N5. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The auditor replays the gate for new closures, flags statuses with no ledger event and outputs changed after closing.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-25",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "The verdict token was accepted anywhere and in any case (quoted, negated or retracted PASS cleared done).",
+  "evidence": "R4 O1', N3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. One plain uppercase verdict, at the end, in NFKC-stable text.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-26",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "Directory and symlink-to-directory outputs were hashed as None; an empty directory passed done.",
+  "evidence": "R4 N1, N1b, I6. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Directory trees are hashed; an empty one is refused.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-27",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "Outputs of a gated task could change after done and before the founder's clear-gate.",
+  "evidence": "R4 G1. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. done records output hashes; clear-gate refuses changed outputs and the founder signs the hashes.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-28",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "tools/audit.py rework and open-FAIL scoring depended on the case and wording of FAIL/GAP.",
+  "evidence": "R4 A1-A5. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Rows since the verdict rule are scored by their verdict.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-29",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "tools/audit.py first-pass yield kept credit for risk-accepted findings and ignored critical process findings.",
+  "evidence": "R4 A7, A8. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. accepted now means overturned (weight 0); critical process findings count.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-30",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "major",
+  "kind": "process",
+  "claim": "The measured-process exemption matched wording only and excused serious findings.",
+  "evidence": "R4 A9. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Applies only when the record confirms the task lacked an on-time check, never for critical findings.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-31",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "The auditor's revision boundaries use timestamps while the gate uses file order.",
+  "evidence": "R4 A3-A6. || Partly fixed: run rows now count as boundaries in the auditor too.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-32",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Unicode look-alikes and zero-width characters could hide or fake a verdict.",
+  "evidence": "R4 N2, N2b. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-33",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "A FAIL check followed by a PASS check with no change cleared done.",
+  "evidence": "R4 O2. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Any FAIL since the last change blocks done.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-34",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Output hashes were taken at log time, not at review time.",
+  "evidence": "R4 G2. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Every verifier row pins hashes; a change during the review is caught.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-35",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Ingesting a verifier transcript after its check blocked done, and its rows were credited to the builder.",
+  "evidence": "R4 I4, I1. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Transcript rows are not boundaries; activity.py --verifier credits them to the verifier.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-36",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Activity rows without timestamps crashed the export or were given a fake time.",
+  "evidence": "R4 I2, I3. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-37",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "Several tests did not test what their names said.",
+  "evidence": "R4. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Tests rewritten; 61 tool tests.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-38",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "critical",
+  "kind": "process",
+  "claim": "With no founder key registered, any agent could complete the Jarvis face with honour-system revenue.",
+  "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. The face forms only from export-verified signed revenue, key or no key.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-39",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "process",
+  "claim": "19 of 26 closed tasks were closed before today's gate existed and would fail it; their checks are retro-checks.",
+  "evidence": "Completeness critic. || To be resolved by reopening and re-verifying under the current gate.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-40",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "process",
+  "claim": "Rework rounds 1-2 changed the outputs of 22 closed tasks without reopening them; four gated tasks await founder approval of content no gate-valid check has seen.",
+  "evidence": "Completeness critic: output mtimes after done events. || To be resolved by reopening and re-verifying under the current gate (graph.py reopen).",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-41",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "unsupported_claim",
+  "claim": "PROMPT.md, the plan summary and the north star stated co-design and a 'validated' simulator as fact.",
+  "evidence": "Completeness critic. || FIXED by the orchestrator (2026-10-10): stated as a plan; 'validated' replaced by 'tested in a pre-registered pilot'. Pending independent re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-42",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "process",
+  "claim": "Reviewer findings were not in the audit record, so scorecards omitted them.",
+  "evidence": "Completeness critic. || FIXED: recorded here as AF-orchestrator-18 onward. Pending independent re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-43",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "unsupported_claim",
+  "claim": "docs/JARVIS_PROGRESS.md was stale and overstated fixes.",
+  "evidence": "Completeness critic. || To be rewritten from the record after this round.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-44",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "major",
+  "kind": "process",
+  "claim": "The orchestrator's integrity score counted 0 self-verified completions although D01, F05 and F07 were closed in the same second they started.",
+  "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check. Self-verified completions now count closures with no check before closing.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-45",
+  "agent": "orchestrator",
+  "task": "D01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "ledger:48 unblock of M05 cites no founder request.",
+  "evidence": "Completeness critic. || Needs the founder's ratification, like AF-orchestrator-12.",
+  "status": "open"
+ },
+ {
+  "id": "AF-orchestrator-46",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "PROMPT.md named an obsolete trust root (graph/founder.allowed_signers).",
+  "evidence": "Completeness critic. || FIXED (2026-10-10). Pending independent re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-47",
+  "agent": "orchestrator",
+  "task": "F05",
+  "severity": "minor",
+  "kind": "unsupported_claim",
+  "claim": "docs/JARVIS_SECURITY.md labelled built controls as planned.",
+  "evidence": "Completeness critic. || FIXED (2026-10-10): rows 1, 5-8, 12 relabelled with the files and tests that implement them. Pending re-check.",
+  "status": "fixed"
+ },
+ {
+  "id": "AF-orchestrator-48",
+  "agent": "orchestrator",
+  "task": "F01",
+  "severity": "minor",
+  "kind": "process",
+  "claim": "The auditor ignored missing outputs of closed tasks.",
+  "evidence": "Completeness critic. || FIXED by the orchestrator in commit d13d239 (2026-10-10); pending independent re-check.",
+  "status": "fixed"
  }
 ]

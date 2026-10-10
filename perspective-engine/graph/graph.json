@@ -1,6 +1,6 @@
 {
   "project": "Perspective Engine",
-  "north_star": "A validated, co-designed perspective-taking simulator with 3 paid B2B pilots and a published pilot study by month 12.",
+  "north_star": "A perspective-taking simulator, to be co-designed with paid ADHD advisors and tested in a pre-registered pilot, with 3 paid B2B pilots and a published pilot study by month 12.",
   "version": 1,
   "agents": {
     "orchestrator": {

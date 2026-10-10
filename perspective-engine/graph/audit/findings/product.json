@@ -47,5 +47,15 @@
   "claim": "checked",
   "evidence": "Re-ran in this audit (headless Chromium 1194 via Playwright, file://): index.html#selftest gives 59 of 59 at 390x844 and at 1280x800, each with and without reduced-motion emulation, with 0 page errors, 0 console errors and 0 non-file requests. node --check passes on the extracted inline script (100,764 chars). index.html sha256 matches the hash in CHANGELOG.md:11 and advisor-review-kit.md:12. The CSP meta has default-src 'none' and connect-src 'none'. There is no localStorage, sessionStorage, indexedDB, cookie, fetch or sendBeacon in the code. All M1-M5 ranges and defaults in the SPEC (index.html:278-310) match science/mechanism-spec.md, and M5 is off by default. The kit's 'at ceiling 0.8' column recomputes exactly from lo + 0.8(hi - lo): 3.3, 6.8, 0.68, 2.6, 0.25, 0.64, 0.164, 0.84, 8.4, 0.58. Kit line anchors are correct: the banner at index.html:168, CEIL at :236 and the prohibited-phrase list at :1254. buildExport (index.html:1109-1130) carries untimed T0/T1, dose-only summaries and no identifier keys, and session_completed needs a completed debrief and no Stop, as README:90 says. Palette contrast was recomputed and all text pairs pass AA (lowest st on s2 is 6.05:1). Citations confirmed: Hupfeld, Abagis & Shah, 'Living in the zone', ADHD Atten Def Hyp Disord 11:191-208 (2019; PubMed 30267329, search summary); Sonuga-Barke & Castellanos 2007 (auditor's knowledge); Nario-Redmond et al. 2017, cited correctly as 'One study found' (index.html:183). The product agent correctly refused the dispatch's 'time-blindness' framing and followed spec section 6 (README:62). It invented no scale item texts. Ledger claims for F04 (line 55) and V14 (line 58) match the files.",
   "status": "accepted"
+ },
+ {
+  "id": "AF-product-5",
+  "agent": "product",
+  "task": "F04",
+  "severity": "major",
+  "kind": "incomplete",
+  "claim": "F04 is closed and shown as 'built and verified' although two acceptance criteria are unmet (charter debrief; JSON export of the validated day-0 measures).",
+  "evidence": "Completeness critic; open AF-product-2 and AF-product-3 cover the same criteria.",
+  "status": "open"
  }
 ]
