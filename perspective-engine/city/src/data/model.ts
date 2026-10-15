@@ -43,6 +43,8 @@ export function statusesAt(state: GraphState, t: number | null): Map<string, Sta
     else if (e.event === 'done') raw.set(n.id, n.gate && !cleared.has(n.id) ? 'awaiting_human' : 'done')
     else if (e.event === 'block') raw.set(n.id, 'blocked')
     else if (e.event === 'unblock') raw.set(n.id, 'pending')
+    // graph.py reopen: back to running for rework, and an earlier founder approval no longer covers it (gate re-armed).
+    else if (e.event === 'reopen') { raw.set(n.id, 'running'); cleared.delete(n.id) }
     else if (e.event === 'clear-gate') {
       cleared.add(n.id)
       if (raw.get(n.id) === 'awaiting_human') raw.set(n.id, 'done')

@@ -103,7 +103,7 @@
       ],
       "gate": null,
       "budget_k": 60,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 93.2,
         "duration_s": 82,
@@ -134,7 +134,7 @@
       ],
       "gate": null,
       "budget_k": 80,
-      "status": "running"
+      "status": "blocked"
     },
     {
       "id": "F05",
@@ -153,7 +153,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running"
+      "status": "done"
     },
     {
       "id": "F07",
@@ -174,7 +174,7 @@
       ],
       "gate": null,
       "budget_k": 0,
-      "status": "running"
+      "status": "blocked"
     },
     {
       "id": "F06",
@@ -221,7 +221,7 @@
         "reason": "Only the founder can answer: country/ownership (decides US grant eligibility), advisor budget, effect size, facilitator."
       },
       "budget_k": 5,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "V01",
@@ -241,7 +241,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 84.1,
         "duration_s": 145,
@@ -266,7 +266,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 116.7,
         "duration_s": 217,
@@ -293,7 +293,7 @@
         "reason": "Posting to OSF needs the founder's OSF account."
       },
       "budget_k": 20,
-      "status": "running",
+      "status": "awaiting_human",
       "run": {
         "used_k": 103.1,
         "duration_s": 226,
@@ -318,7 +318,7 @@
       ],
       "gate": null,
       "budget_k": 12,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 81.2,
         "duration_s": 125,
@@ -343,7 +343,7 @@
       ],
       "gate": null,
       "budget_k": 15,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 73.4,
         "duration_s": 83,
@@ -393,7 +393,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 102.5,
         "duration_s": 180,
@@ -444,7 +444,7 @@
         "reason": "Sending email uses the founder's Gmail; needs authorization and approval of each batch."
       },
       "budget_k": 10,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "V10",
@@ -533,7 +533,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 100.4,
         "duration_s": 206,
@@ -562,7 +562,7 @@
         "reason": "Needs real feedback sessions with paid ND advisors."
       },
       "budget_k": 40,
-      "status": "running"
+      "status": "blocked"
     },
     {
       "id": "V15",
@@ -581,7 +581,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 122.2,
         "duration_s": null,
@@ -672,7 +672,7 @@
         "reason": "Incorporation needs founder identity and payment."
       },
       "budget_k": 10,
-      "status": "running"
+      "status": "awaiting_human"
     },
     {
       "id": "M05",

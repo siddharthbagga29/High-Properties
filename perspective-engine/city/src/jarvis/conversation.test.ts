@@ -5,7 +5,9 @@ import { respond } from './conversation'
 import { readAudit } from './scorecards'
 import { makeEnv, rowsFrom } from './test-helpers'
 
-const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
+// A frozen export (commit adc3c91) so these content assertions do not drift as the live record moves;
+// the replay invariants run against the live export in data/model.test.ts.
+const state = JSON.parse(readFileSync(new URL('../test/state.fixture.json', import.meta.url), 'utf8')) as GraphState
 const NOW = new Date('2026-10-09T13:00:00Z')
 const count = (view: string) => state.nodes.filter(n => n.view === view).length
 const DONE = count('done'), WAITING = count('awaiting_human'), TOTAL = state.nodes.length

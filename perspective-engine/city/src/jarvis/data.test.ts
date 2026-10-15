@@ -14,7 +14,9 @@ import { createRequest } from './requests'
 import { auditSummary, cardSummary, findCard, gradeOf, readAudit, topFindings } from './scorecards'
 import { resolveTarget } from './targets'
 
-const state = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8')) as GraphState
+// A frozen export (commit adc3c91) so these content assertions do not drift as the live record moves;
+// the replay invariants run against the live export in data/model.test.ts.
+const state = JSON.parse(readFileSync(new URL('../test/state.fixture.json', import.meta.url), 'utf8')) as GraphState
 const NOW = new Date('2026-10-09T13:00:00Z')
 
 describe('scorecards', () => {

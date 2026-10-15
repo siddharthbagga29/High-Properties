@@ -9,11 +9,14 @@ time the transcript recorded it. Output is appended to graph/activity/<NODE>.jso
   python3 perspective-engine/tools/activity.py <NODE_ID> <transcript.jsonl> [--verifier]
       --verifier: the transcript is the independent verifier's run; its rows are credited to the verifier, which is
       the evidence the auditor needs to give separation-of-duties credit
+      --related: the transcript covered several tasks; keep only the rows that name this task's ID or one of its
+      input or output paths, so another task's work is never credited to this one
   python3 perspective-engine/tools/activity.py --runs perspective-engine/graph/runs.json
   python3 perspective-engine/tools/activity.py --ledger    # backfill start/done events from the ledger
 """
 import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
@@ -84,20 +87,37 @@ def extract(transcript):
                     d = describe(b.get("name", ""), b.get("input") or {})
                     if d:
                         pending[b.get("id")] = len(rows)
-                        rows.append({"t": t, "kind": d[0], "text": d[1]})
+                        # "match" (never stored) also carries the call's full input, so --related can see the
+                        # command or path behind a short description.
+                        raw = " ".join(str(v) for v in (b.get("input") or {}).values())[:4000]
+                        rows.append({"t": t, "kind": d[0], "text": d[1], "match": f"{d[1]} {raw}"})
                 elif o.get("type") == "user" and b.get("type") == "tool_result" and b.get("is_error"):
                     i = pending.get(b.get("tool_use_id"))
                     txt = b.get("content")
                     txt = txt if isinstance(txt, str) else json.dumps(txt)
                     reason = "blocked by the network proxy" if "EGRESS" in txt or "egress" in txt or "403" in txt else short(txt, 90)
-                    rows.append({"t": t, "kind": "blocked", "text": f"Failed ({reason}): {rows[i]['text'] if i is not None else ''}"[:240]})
+                    rows.append({"t": t, "kind": "blocked", "text": f"Failed ({reason}): {rows[i]['text'] if i is not None else ''}"[:240],
+                                 "match": rows[i]["match"] if i is not None else ""})
     return rows
 
 
-def ingest(node, transcript, agent=None, actor=None):
+def related(n, text):
+    """True if a row names task n: its ID as a whole word, or one of its input or output paths."""
+    if re.search(rf"(?<![A-Za-z0-9]){re.escape(n['id'])}(?![A-Za-z0-9])", text):
+        return True
+    paths = [rel(p) for p in n.get("outputs", []) + n.get("inputs", [])]
+    return any(p and (p in text or p.removeprefix("perspective-engine/") in text) for p in paths)
+
+
+def ingest(node, transcript, agent=None, actor=None, only_related=False):
     g = graph.load()
     n = graph.index(g)[node]
     rows = extract(transcript)
+    if only_related:
+        rows = [r for r in rows if related(n, r.get("match", r["text"]))]
+    # Idempotent: a transcript ingested twice adds nothing the second time.
+    have = {(r.get("t"), r.get("kind"), r.get("text")) for r in graph.jsonl(graph.ACTIVITY / f"{node}.jsonl") if isinstance(r, dict)}
+    rows = [r for r in rows if (r["t"], r["kind"], r["text"]) not in have]
     for r in rows:
         graph.activity_append(node, agent or n["agent"], r["kind"], r["text"], src="transcript", t=r["t"], actor=actor)
     return len(rows)
@@ -132,7 +152,8 @@ def main(argv):
                     print(f"{node}: transcript missing ({p})")
         elif len(argv) >= 2:
             actor = "verifier" if "--verifier" in argv[2:] else None
-            print(f"{argv[0]}: {ingest(argv[0], argv[1], actor=actor)} events" + (" (verifier)" if actor else ""))
+            n = ingest(argv[0], argv[1], actor=actor, only_related="--related" in argv[2:])
+            print(f"{argv[0]}: {n} events" + (" (verifier)" if actor else ""))
         else:
             print(__doc__)
             return 1

@@ -10,6 +10,16 @@ import { parseFocus } from '../store'
 const state: GraphState = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8'))
 const st = statusesAt(state, null)
 const runningIds = state.nodes.filter(n => st.get(n.id) === 'running').map(n => n.id)
+// The liveness rules need a running task. When the live record has none, mark a task that has activity as running
+// in a copy, so these tests never pass vacuously.
+const live = (() => {
+  if (runningIds.length) return { s: state, st, id: runningIds[0] }
+  const s = structuredClone(state)
+  const n = s.nodes.find(x => (s.activity?.[x.id] ?? []).length > 0)!
+  n.status = 'running'
+  n.view = 'running'
+  return { s, st: statusesAt(s, null), id: n.id }
+})()
 const ev = (p: Partial<ActivityEvent>): ActivityEvent => ({ t: '2026-10-07T00:00:00Z', node: 'F04', agent: 'product', kind: 'note', text: 'x', src: 'self', ...p })
 
 describe('replay', () => {
@@ -22,6 +32,17 @@ describe('replay', () => {
     const mismatches = state.nodes.filter(n => replay.get(n.id) !== n.view && n.status !== 'blocked')
     expect(mismatches.map(n => n.id)).toEqual([])
   })
+  it('a reopened task replays as running and its founder approval is re-armed', () => {
+    const node = { ...state.nodes[0], id: 'X1', deps: [], status: 'running' as const, view: 'running' as const, gate: { reason: 'r', cleared: null } }
+    const at = (m: number) => new Date(Date.UTC(2026, 9, 1, 0, m)).toISOString()
+    const g = { ...state, nodes: [node], ledger: [
+      { t: at(1), node: 'X1', event: 'start' }, { t: at(2), node: 'X1', event: 'done' },
+      { t: at(3), node: 'X1', event: 'clear-gate' }, { t: at(4), node: 'X1', event: 'reopen' },
+      { t: at(5), node: 'X1', event: 'done' },
+    ] } as unknown as GraphState
+    const when = (m: number) => statusesAt(g, Date.parse(at(m)) + 1).get('X1')
+    expect([when(2), when(3), when(4), when(5)]).toEqual(['awaiting_human', 'done', 'running', 'awaiting_human'])
+  })
   it('before the first event only pre-ledger work is built', () => {
     const [start] = timeline(state)
     expect([...statusesAt(state, start).values()].filter(s => s === 'running')).toHaveLength(0)
@@ -30,21 +51,19 @@ describe('replay', () => {
 
 describe('liveness: "running" is not proof of work', () => {
   it('a running task with a step in the last 15 minutes is working', () => {
-    if (!runningIds.length) return
-    const id = runningIds[0]
-    const last = Math.max(...(state.activity?.[id] ?? []).map(e => Date.parse(e.t)))
-    expect(runState(state, st, last + 60_000).get(id)).toBe('working')
-    expect(workingNow(state, st, last + 60_000).map(w => w.node.id)).toContain(id)
+    const { s, st, id } = live
+    const last = Math.max(...(s.activity?.[id] ?? []).map(e => Date.parse(e.t)))
+    expect(runState(s, st, last + 60_000).get(id)).toBe('working')
+    expect(workingNow(s, st, last + 60_000).map(w => w.node.id)).toContain(id)
   })
   it('the same task an hour after its last step is stalled, not working', () => {
-    if (!runningIds.length) return
-    const id = runningIds[0]
-    const last = Math.max(...(state.activity?.[id] ?? []).map(e => Date.parse(e.t)), ...state.ledger.filter(e => e.node === id).map(e => Date.parse(e.t)))
+    const { s, st, id } = live
+    const last = Math.max(...(s.activity?.[id] ?? []).map(e => Date.parse(e.t)), ...s.ledger.filter(e => e.node === id).map(e => Date.parse(e.t)))
     const later = last + 3_600_000
-    expect(runState(state, st, later).get(id)).toBe('stalled')
-    expect(workingNow(state, st, later).map(w => w.node.id)).not.toContain(id)
-    expect(stalledNow(state, st, later).map(w => w.node.id)).toContain(id)
-    expect(ventureStats(state, st, later).running).toBe(workingNow(state, st, later).length)
+    expect(runState(s, st, later).get(id)).toBe('stalled')
+    expect(workingNow(s, st, later).map(w => w.node.id)).not.toContain(id)
+    expect(stalledNow(s, st, later).map(w => w.node.id)).toContain(id)
+    expect(ventureStats(s, st, later).running).toBe(workingNow(s, st, later).length)
   })
   it('agent "running" uses the same rule', () => {
     const far = Date.parse(state.generated) + 86_400_000

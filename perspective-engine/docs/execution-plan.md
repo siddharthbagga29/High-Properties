@@ -2,7 +2,7 @@
 
 **Summary (at most 150 words).** The memo is right that this is a B2B problem, not a consumer app. Four load-bearing claims fail on evidence. Meta ended business Quest sales on 2026-02-20; we will not depend on headset fleets. Disability simulations can raise pity instead of understanding. VR moves emotional empathy but barely the cognitive understanding managers need. The quantum, "18 dB", CPT and $14.8B figures have no support. So we sell a **manager-accommodation program**, with a short experiential module as its hook, to be co-designed with paid ADHD advisors, delivered in any browser (WebXR optional) and judged on what managers *do* 30 days later. The moat is a validated curriculum, a published outcome study, a paid neurodivergent co-design network and outcome data, not EEG. Month 12 target: a pre-registered estimation pilot (80–150 managers; confirmation needs roughly 300+, see `data/instruments.md`), 3 paid enterprise pilots, one non-dilutive grant submitted. Kill criteria below are binding.
 
-*Sources and revisions.* v1 was written from `research/evidence-dossier.md`, F05's only listed input. Later revisions quote `finance/model.md` (V10), `data/instruments.md` (V02), `science/preregistration.md` (V03), `science/mechanism-spec.md` (V01) and `ethics/irb-packet.md` (M03); those reads were outside F05's input list (audit AF-orchestrator-6). Revised 2026-10-09 after audit findings AF-orchestrator-4, -5 and -6.
+*Sources and revisions.* v1 was written from `research/evidence-dossier.md`, F05's only listed input. Later revisions quote `finance/model.md` (V10), `data/instruments.md` (V02), `science/preregistration.md` (V03), `science/mechanism-spec.md` (V01) and `ethics/irb-packet.md` (M03); those reads were outside F05's input list (audit AF-orchestrator-6). Revised 2026-10-09 after audit findings AF-orchestrator-4, -5 and -6; revised 2026-10-15 after AF-science-9 (DEI sources in s2) and a verifier note that V10's inputs are all assumptions (s2, s5).
 
 ---
 
@@ -27,10 +27,10 @@ These thresholds are founder decisions, not measured facts. Revise them only bef
 | "Simulate ADHD" | "Approximates some reported attentional experiences, to be co-designed with paid ADHD advisors" | Nario-Redmond 2017: simulations can increase pity |
 | Empathy Index as the KPI | Behavior at 30 days (accommodation actions, follow-up quality) | VR shifts emotional (d≈0.33) but not cognitive (d≈0.08) empathy |
 | Bio-calibrated EEG/GSR moat | Outcome data + validated curriculum + ND co-design network + publication | Biometrics are a privacy liability; webcam gaze error is about 2–4° |
-| DEI budget | Accessibility, manager effectiveness, retention | Surveys disagree on US DEI budgets (one 2025 survey: 19% of companies cut DEI funding; 78% of C-suite leaders said they rebrand it; dossier s6), so a DEI line item is not a dependable budget |
+| DEI budget | Accessibility, manager effectiveness, retention | Separate 2025 sources, not one survey, checked at search-summary level only (dossier s6): the Paradigm 2025 DEI Benchmarking Study (443 organisations) found 19% decreasing DEI funding, 58% no change and 23% increasing; a Catalyst / NYU Meltzer Center survey reports 78% of C-suite leaders are rebranding DEI or plan to (unverified: summaries differ on which). So a DEI line item is not a dependable budget |
 | CPT reimbursement upside | None assumed | 0770T is a therapy add-on that sunsets in 2028; Akili's reimbursement path failed |
 | Quantum multi-agent modeling | Removed | No scientific or engineering basis |
-| 72% success, $38M P50 ARR | Recomputed bottom-up in V10 from sourced ranges | No basis given |
+| 72% success, $38M P50 ARR | Replaced by V10's bottom-up model (`finance/model.md`); all 32 of its inputs are labelled assumptions, none sourced numerically, so its outputs are not sourced estimates either (s5) | No basis given |
 
 ## 3. The product (what we actually build)
 
@@ -61,7 +61,7 @@ The buyer sees an aggregate dashboard with n≥10 suppression (M02).
 
 ## 5. Economics, honestly
 
-- Pricing is a hypothesis to test in discovery. Start with paid pilots priced per cohort, then move to annual per-manager seats. No figure from the memo is reused until V10 recomputes it from sourced ranges.
+- Pricing is a hypothesis to test in discovery. Start with paid pilots priced per cohort, then move to annual per-manager seats. No figure from the memo is reused. V10 has rebuilt the economics bottom-up, but every one of its 32 inputs is still an unsourced assumption, so its figures (below) are scenario outputs, not estimates; they become estimates only as interview and pilot data replace those inputs.
 - Gross margin should be high: browser delivery, no hardware, no generative inference needed in the core loop. Facilitation is the main cost risk; productize it into self-run sessions by month 9.
 - $50M enterprise value in 48 months would need roughly $5–8M ARR, which assumes a revenue multiple of about 6–10x (assumption; the repo has no sourced multiple). The first bottom-up model (`finance/model.py`, 10,000 trials, every input an unsourced assumption) gives P(ARR ≥ $5M by month 48) = **0.6%** (`finance/model.md`). $5M is the low end of the range, so 0.6% is an upper bound on the $50M outcome under these assumptions, not an estimate of it. Year-5 ARR comes out at $53k / $633k / $4.31M (P10/P50/P90), with gross margin near 68% at the median, not 84%. Whether H1 holds is the dominant driver: P50 year-5 ARR is $2.09M if it holds and $178k if it fails. Cumulative burn through month 60, before grants or financing, is $4.93M at P50. That figure is cut off at the model horizon, not a peak: monthly cash flow is still negative at month 60 in 97% of trials, so the full funding need is larger and the model does not determine it.
 - What this means: the $50M goal is a tail outcome on today's assumptions. Two things move it. First, settle H1 early and cheaply. Second, find a larger seat footprint per account, such as a manager curriculum that HR adopts company-wide. Replace model inputs with interview and pilot data in this order: H1, pilot-rate growth, seats per account, price, conversion, churn.
