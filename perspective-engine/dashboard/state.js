@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-10T13:04:21Z",
+ "generated": "2026-10-15T18:54:07Z",
  "project": "Perspective Engine",
  "north_star": "A perspective-taking simulator, to be co-designed with paid ADHD advisors and tested in a pre-registered pilot, with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
