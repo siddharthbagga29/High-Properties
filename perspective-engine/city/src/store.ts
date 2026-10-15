@@ -45,7 +45,7 @@ interface S {
   pendingAsk: string | null
   askOut: AskOut | null
   replayOpen: boolean
-  /** The Jarvis console. The presence, the bottom bar and the scene (brain or bust click) open it. */
+  /** The Jarvis console. The presence button, the bottom bar and Jarvis's own toasts and replies open it; scene clicks do not (the brain opens its view, a bust part its agent). */
   jarvisOpen: boolean
   hintsUsed: string[]
   statusFilter: Status[]

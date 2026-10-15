@@ -130,10 +130,10 @@ Tool definition (see `core/types.ts`): id, name, description, input schema, risk
 | Level | Where | Contents |
 |---|---|---|
 | Working | in memory (page / agent process) | current conversation, focused artifact, pending confirmation |
-| Episodic | owner-private db (`jarvis-episodes`) and `~/.jarvis/memory.jsonl` | what happened and when: "2026-10-08: founder chose the United States" |
+| Episodic | owner-private db (collection `data/users/me/jarvis/jarvis-memory`) and `~/.jarvis/memory.jsonl` | what happened and when: "2026-10-08: founder chose the United States" |
 | Project | derived from the task graph, never duplicated | completed, in progress, blocked, waiting on you, next, risks |
-| Decisions | owner-private db (`jarvis-decisions`), mirrored to `docs/founder-decisions.md` by the orchestrator | decision, reason, date, project, source |
-| Preferences | owner-private db (`jarvis-preferences`) | communication style, voice on/off, quiet hours, research depth |
+| Decisions | owner-private db (`data/users/me/jarvis/jarvis-decisions`), mirrored to `docs/founder-decisions.md` by the orchestrator | decision, reason, date, project, source |
+| Preferences | owner-private db (document `jarvis-prefs` in collection `data/users/me`) | communication style, voice on/off, quiet hours, research depth |
 
 Retrieval: keyword scoring over memory items plus the graph's own excerpts; prompts receive the top results, never the whole store.
 
@@ -167,7 +167,7 @@ The brain stays the mind at the centre: the plan and the orchestrator. Around it
 | Left arm and hand | Rams (brand) | V13 S05 |
 | **Face** | **Revenue only** | Featureless mask until verified revenue exists. Eyes form at the first verified payment, brow and nose at the second paying customer, the mouth at the third. The face completes only with a real flow of revenue. |
 
-Revenue comes only from `graph/revenue.jsonl`, written by the founder with evidence. Once the founder's signing key is registered, no agent, routine or Jarvis itself can add a revenue entry that counts towards the face or passes the auditor without the founder's private key. Before that, an entry is only attested: it still counts, and the face's label says it was recorded on trust (`faceState` counts `unsigned` entries). Once a key is registered, `peBody` counts only signed entries.
+Revenue comes only from `graph/revenue.jsonl`, written by the founder with evidence. An entry counts towards the face only if its founder signature verifies (`sigVerified`, computed by `graph.py export` against the pinned key): `peBody` always calls `faceState(..., {requireSigned: true})`, so no agent, routine or Jarvis itself can grow the face without the founder's private key. Before a key is registered, entries are only "attested" and none counts; the face's label names each excluded entry and why.
 
 ## 10. The auditor (Jarvis as second line)
 

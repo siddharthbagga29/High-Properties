@@ -36,10 +36,11 @@ action, its fields and a hash of the record at that moment. The founder signs
 it on their own machine with
 `ssh-keygen -Y sign -f ~/.ssh/id_ed25519 -n pe-founder request.txt`, and the
 action runs only if `ssh-keygen -Y verify` accepts that signature against the
-pinned key. A signature cannot be replayed, moved to another action or reused
-on another copy of the record. A second key can replace the first only with
-the first key's signature. The first registration is trust on first use: the
-founder confirms the fingerprint. Before any key is registered these actions
+pinned key. A signature cannot be replayed or moved to another action, and it
+is bound to the hash of the ledger and revenue files; a byte-identical copy of
+the record would accept it too (a documented residual limit). A second key can
+replace the first only with the first key's signature. The first registration
+is trust on first use: the founder confirms the fingerprint. Before any key is registered these actions
 are recorded as "attested", not "signed", and the auditor reports them.
 
 `done` needs an independent verifier check: `log <ID> check --verifier
