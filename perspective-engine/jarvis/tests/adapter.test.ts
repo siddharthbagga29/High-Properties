@@ -124,6 +124,24 @@ describe('peProjectState on edge cases', () => {
     ])
   })
 
+  it('re-arms the gate on reopen: reworked output needs the founder again', () => {
+    const reopened: PEState = {
+      ...base,
+      ledger: [
+        { t: '2026-10-08T09:00:00Z', event: 'done', node: 'X6' },
+        { t: '2026-10-08T10:00:00Z', event: 'clear-gate', node: 'X6', note: 'signed' },
+        { t: '2026-10-08T11:00:00Z', event: 'reopen', node: 'X6', note: 're-verify' },
+        { t: '2026-10-08T12:00:00Z', event: 'done', node: 'X6' },
+      ],
+    }
+    expect(peEvents(reopened).map(e => [e.kind, e.title])).toEqual([
+      ['prepared', 'Curie prepared X6 (Gate); it now needs you'],
+      ['gate_cleared', 'You cleared the gate on X6 (Gate): signed'],
+      ['reopen', 'X6 (Gate) was reopened for rework: re-verify'],
+      ['prepared', 'Curie prepared X6 (Gate); it now needs you'],
+    ])
+  })
+
   it('computes next from ready and from pending tasks behind done or prepared work', () => {
     expect(ps.next.map(i => [i.id, i.detail])).toEqual([['X5', 'ready to start'], ['X7', 'follows once you clear X6']])
   })
@@ -143,7 +161,7 @@ describe('peContext, peEvents and peBody on the real state.json', () => {
     expect(events).toHaveLength(real.ledger.length)
     for (const e of events) {
       expect(e.title).not.toMatch(/undefined/)
-      expect(['start', 'done', 'prepared', 'block', 'unblock', 'gate_cleared']).toContain(e.kind)
+      expect(['start', 'done', 'prepared', 'block', 'unblock', 'reopen', 'gate_cleared']).toContain(e.kind)
     }
     const sorted = [...events].sort((a, b) => Date.parse(a.t) - Date.parse(b.t))
     expect(events.map(e => e.t)).toEqual(sorted.map(e => e.t))
@@ -152,7 +170,11 @@ describe('peContext, peEvents and peBody on the real state.json', () => {
   it('calls a done on a founder-gated task "prepared", and on an ungated one "finished"', () => {
     const events = peEvents(real)
     const gated = new Set(real.nodes.filter(n => n.gate).map(n => n.id))
-    const clearedBy = (node: string, t: string) => real.ledger.some(c => c.event === 'clear-gate' && c.node === node && Date.parse(c.t) <= Date.parse(t))
+    // A clear-gate covers a later done only if no reopen re-armed the gate in between.
+    const clearedBy = (node: string, t: string) => {
+      const before = real.ledger.filter(c => c.node === node && Date.parse(c.t) <= Date.parse(t) && (c.event === 'clear-gate' || c.event === 'reopen'))
+      return before.at(-1)?.event === 'clear-gate'
+    }
     const doneEvents = real.ledger.filter(e => e.event === 'done')
     for (const e of doneEvents) {
       // A start and a done can share a timestamp, so match on the finishing kinds only.

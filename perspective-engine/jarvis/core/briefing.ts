@@ -18,6 +18,7 @@ const KIND_PHRASE: Array<[string[], (n: number) => string]> = [
   [['start', 'started'], n => `${was(n)} started`],
   [['block', 'blocked'], n => `${was(n)} blocked`],
   [['unblock', 'unblocked'], n => `${was(n)} unblocked`],
+  [['reopen', 'reopened'], n => `${was(n)} reopened for rework`],
 ]
 
 /** Events after the last visit (or in the last day on a first visit), newest first, with one sentence that counts them. */

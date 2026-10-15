@@ -173,6 +173,8 @@ export function peEvents(s: PEState): PEEvent[] {
     const who = n ? agentName(s, n.agent) : 'An agent'
     const what = n ? `${n.id} (${n.title})` : e.node
     if (e.event === 'clear-gate') cleared.add(e.node)
+    // graph.py reopen re-arms the gate: an earlier founder approval no longer covers the reworked output.
+    if (e.event === 'reopen') cleared.delete(e.node)
     out.push(describe(e, who, what, Boolean(n?.gate) && !cleared.has(e.node)))
   }
   return out
@@ -187,6 +189,7 @@ function describe(e: PELedgerEvent, who: string, what: string, gated: boolean): 
       : { t: e.t, kind: 'done', title: `${who} finished ${what}` }
     case 'block': return { t: e.t, kind: 'block', title: `${what} was blocked${note}` }
     case 'unblock': return { t: e.t, kind: 'unblock', title: `${what} was unblocked` }
+    case 'reopen': return { t: e.t, kind: 'reopen', title: `${what} was reopened for rework${note}` }
     case 'clear-gate': return { t: e.t, kind: 'gate_cleared', title: `You cleared the gate on ${what}${note}` }
     default: return { t: e.t, kind: e.event, title: `${what}: ${e.event}${note}` }
   }

@@ -37,6 +37,11 @@ describe('sinceLast', () => {
     expect(r.sentence).toBe('Since your last visit, two tasks were finished, one was prepared and now needs you, one was blocked, and one other update came in.')
   })
 
+  it('counts reopened tasks as rework, not as other updates', () => {
+    const reworked = [{ t: '2026-10-08T10:30:00Z', title: 'V05 (ICP) was reopened for rework: re-verify', kind: 'reopen' }]
+    expect(sinceLast(reworked, '2026-10-08T07:00:00Z', NOW).sentence).toBe('Since your last visit, one task was reopened for rework.')
+  })
+
   it('says when nothing changed', () => {
     expect(sinceLast(events, '2026-10-08T11:30:00Z', NOW)).toEqual({ items: [], sentence: 'Nothing has changed since your last visit.' })
   })
