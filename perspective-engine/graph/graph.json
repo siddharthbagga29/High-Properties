@@ -103,7 +103,7 @@
       ],
       "gate": null,
       "budget_k": 60,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 93.2,
         "duration_s": 82,
@@ -153,7 +153,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "done"
+      "status": "running"
     },
     {
       "id": "F07",
@@ -174,7 +174,7 @@
       ],
       "gate": null,
       "budget_k": 0,
-      "status": "done"
+      "status": "running"
     },
     {
       "id": "F06",
@@ -221,7 +221,7 @@
         "reason": "Only the founder can answer: country/ownership (decides US grant eligibility), advisor budget, effect size, facilitator."
       },
       "budget_k": 5,
-      "status": "awaiting_human"
+      "status": "running"
     },
     {
       "id": "V01",
@@ -241,7 +241,7 @@
       ],
       "gate": null,
       "budget_k": 25,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 84.1,
         "duration_s": 145,
@@ -266,7 +266,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 116.7,
         "duration_s": 217,
@@ -293,7 +293,7 @@
         "reason": "Posting to OSF needs the founder's OSF account."
       },
       "budget_k": 20,
-      "status": "awaiting_human",
+      "status": "running",
       "run": {
         "used_k": 103.1,
         "duration_s": 226,
@@ -318,7 +318,7 @@
       ],
       "gate": null,
       "budget_k": 12,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 81.2,
         "duration_s": 125,
@@ -369,7 +369,7 @@
       ],
       "gate": null,
       "budget_k": 8,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 74.4,
         "duration_s": 67,
@@ -418,7 +418,7 @@
       ],
       "gate": null,
       "budget_k": 8,
-      "status": "running",
+      "status": "done",
       "run": {
         "used_k": 82.7,
         "duration_s": 107,
@@ -581,7 +581,7 @@
       ],
       "gate": null,
       "budget_k": 20,
-      "status": "done",
+      "status": "running",
       "run": {
         "used_k": 122.2,
         "duration_s": null,
@@ -672,7 +672,7 @@
         "reason": "Incorporation needs founder identity and payment."
       },
       "budget_k": 10,
-      "status": "awaiting_human"
+      "status": "running"
     },
     {
       "id": "M05",

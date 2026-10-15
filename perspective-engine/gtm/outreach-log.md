@@ -1,10 +1,10 @@
 # Outreach Log: Batch B1 (V09, prepared 2026-10-06)
 
 > **NOT SENT. Founder approval and Gmail authorization required.**
-> Nothing in this file has been sent, scheduled or queued. Sending is the human-gated node V09 (gate: account, founder's Gmail). Every row below has status = prepared.
+> Nothing in this file has been sent, scheduled or queued. Sending is the human-gated node V09 (gate: account, founder's Gmail). Status, corrected 2026-10-10 (audit AF-gtm-18): 8 rows are prepared for B1 and 3 rows (Dell Technologies, Salesforce, Johnson & Johnson) are **HELD: not part of B1, do not send**. One prepared row, Uplight, carries an ICP-fit caveat (size unconfirmed, likely below the test band): the founder decides whether to send or hold it.
 
 ## Summary (150 words max)
-Batch B1 is prepared, not sent. Re-scoped 2026-10-10 (audit AF-gtm-10): it now holds 8 US rows to send: People/Talent (Uplight, Biogen), Accommodations/ER (Principal Financial Group, Acxiom, Mercy) and Higher-ed (Western Washington University, California State University Fullerton, University of Pittsburgh). Dell Technologies, Salesforce and Johnson & Johnson are held: targets.csv tags them reference cases, not first targets (icp.md section 3), so their drafts stay below marked HELD. Every row is `confidence = medium` (scale in icp.md section 6): signals were confirmed by web-search summaries (2026-10-06; Biogen 2026-10-10) because the proxy blocked page fetches, so the founder must open each source before sending. Each account has a 3-touch sequence (day 0, 5, 11) from the outreach.md templates; only `{{first_name}}`, `{{email}}`, `{{sender_name}}` and `{{postal_address}}` remain as placeholders. The send checklist and an empty send/reply log are below.
+Batch B1 is prepared, not sent. Re-scoped 2026-10-10 (audit AF-gtm-10): it now holds 8 US rows to send: People/Talent (Uplight, Biogen), Accommodations/ER (Principal Financial Group, Acxiom, Mercy) and Higher-ed (Western Washington University, California State University Fullerton, University of Pittsburgh). Dell Technologies, Salesforce and Johnson & Johnson are held: targets.csv tags them reference cases, not first targets (icp.md section 3), so their drafts stay below marked HELD. Uplight is likely below the ICP size band: founder decides send or hold. Every row is `confidence = medium` (scale in icp.md section 6): signals were confirmed by web-search summaries (2026-10-06; Biogen 2026-10-10) because the proxy blocked page fetches, so the founder must open each source before sending. Each account has a 3-touch sequence (day 0, 5, 11) from the outreach.md templates; only `{{first_name}}`, `{{email}}`, `{{sender_name}}` and `{{postal_address}}` remain as placeholders. The send checklist and an empty send/reply log are below.
 
 ---
 
@@ -12,7 +12,7 @@ Batch B1 is prepared, not sent. Re-scoped 2026-10-10 (audit AF-gtm-10): it now h
 
 | # | Account | Segment | Signal (as merged into `{{public_signal}}`) | Source (re-checked) | Status |
 |---|---|---|---|---|---|
-| 1 | Uplight | 1 People/Talent | an internal NEUROdiversity employee resource group | https://uplight.com/blog/inside-uplights-neurodiversity-employee-resource-group/ | prepared |
+| 1 | Uplight | 1 People/Talent | an internal NEUROdiversity employee resource group | https://uplight.com/blog/inside-uplights-neurodiversity-employee-resource-group/ | prepared, with ICP-fit caveat (2026-10-10): size unconfirmed, likely below the 1,000-10,000 test band; founder decides send or hold |
 | 2 | Dell Technologies | 1 People/Talent | the Neurodiversity@Dell skills-based hiring program | https://jobs.dell.com/en/neurodiversity (targets.csv now cites https://jobs.dell.com/neurodiversity) | HELD 2026-10-10: reference case, not a first target; not in B1 |
 | 3 | Salesforce | 1 People/Talent | the Autism@Work hiring program built with Specialisterne | https://www.salesforce.com/news/stories/innovation-meets-inclusion-with-salesforces-autismwork-program/ | HELD 2026-10-10: reference case, not a first target; not in B1 |
 | 4 | Johnson & Johnson | 1 People/Talent | the Access Ability hiring program for autistic, neurodivergent and disabled applicants | https://www.careers.jnj.com/access-ability | HELD 2026-10-10: reference case, not a first target; not in B1 |
@@ -30,11 +30,11 @@ Each signal is 15 words or fewer and reads after "I noticed". Company names are 
 
 ## 2. Re-check log (WebSearch, 2026-10-06; Biogen and the Pittsburgh source 2026-10-10)
 
-Method: one WebSearch per account on the signal's key terms. A direct WebFetch of the source page was tried for 9 of the 10 accounts (all except Western Washington University). The egress proxy blocked each one: uplight.com, hcamag.com, salesforce.com, careers.jnj.com, principal.com, acxiom.com, fdc.fullerton.edu, utimes.pitt.edu and mercy.net. Confirmations below come from the search-result summaries, which returned the same URLs as the CSV. They are not a page read. The founder must open each source on the send day (Part D.5).
+Method: one WebSearch per account on the signal's key terms. On 2026-10-06, for the 10 accounts then in the batch, a direct WebFetch of the source page was tried for 9 (all except Western Washington University). The egress proxy blocked each one: uplight.com, hcamag.com, salesforce.com, careers.jnj.com, principal.com, acxiom.com, fdc.fullerton.edu, utimes.pitt.edu and mercy.net. Confirmations below come from the search-result summaries, which returned the same URLs as the CSV. They are not a page read. Biogen, the 11th row (added 2026-10-10), was confirmed by WebSearch summaries only (row below); a WebFetch of its source, the AskEARN roster, was tried on 2026-10-10 in rework R5 and failed (ENOTFOUND askearn.org), so no Biogen page has been read either. The founder must open each source on the send day (Part D.5).
 
 | Account | Confirmed | Caveats |
 |---|---|---|
-| Uplight | Company blog describes a NEUROdiversity ERG for neurodivergent employees, including ADD/ADHD, autism and dyslexia | Summary calls it a private community. Do not quote headcount or membership numbers. Blog date not seen |
+| Uplight | Company blog describes a NEUROdiversity ERG for neurodivergent employees, including ADD/ADHD, autism and dyslexia | Summary calls it a private community. Do not quote headcount or membership numbers. Blog date not seen. ICP fit unconfirmed (added 2026-10-10): no primary headcount source; third-party estimates seen in a 2026-10-10 search summary, all unverified, mostly put it below 1,000 staff (Revelio Labs 874, September 2025; Latka 661; one vendor lists 1,001-5,000), so it is likely below the 1,000-10,000 test band (targets.csv:22) |
 | Dell Technologies | Dell Careers neurodiversity pages describe internships, full-time roles, skills-based interviews, managerial support and career coaching | CSV source (hcamag, manager quote) not retrieved. "Joined Roundtable 2019" is unverified. Use the Dell Careers page as the source (targets.csv cites it since 2026-10-10). Account HELD, not in B1 |
 | Salesforce | Salesforce news story: Autism@Work began in early 2019 with Specialisterne. 2025 Disability Index top score of 100, seventh year, also confirmed | Roundtable membership not re-checked. Not used in the message |
 | Johnson & Johnson | Careers page: Access Ability helps applicants who identify as autistic, neurodivergent or disabled. It also lists disability inclusion training for hiring managers | Alternate URL: https://www.careers.jnj.com/en/hiring-programs/access-ability/ |
@@ -52,7 +52,7 @@ Positioning check: the offer is framed as manager effectiveness, retention and a
 
 ## 3. Send checklist (founder, per batch)
 
-1. [ ] Read every rendered email below and approve or strike each row. Batch size is 10 or fewer (this batch: 8 to send; Dell Technologies, Salesforce and Johnson & Johnson are HELD and not sent with B1).
+1. [ ] Read every rendered email below and approve or strike each row. Batch size is 10 or fewer (this batch: 8 to send; Dell Technologies, Salesforce and Johnson & Johnson are HELD and not sent with B1). Decide on Uplight first: its ICP fit is unconfirmed (section 4 caveat); if held, the batch is 7.
 2. [ ] Authorize Gmail. Send one at a time from the founder's own account. No bulk tool, no alias, no tracking pixels.
 3. [ ] Fill `{{email}}` from a public, company-level or role-based business contact on the organisation's own site. Never guess an address and never use a personal email.
 4. [ ] Fill `{{first_name}}` only from a public company page or the role title. If none, use "Hello".
@@ -74,6 +74,8 @@ Every email ends with the footer `{{sender_name}}, Perspective Engine, {{postal_
 ### Segment 1: People / Talent
 
 #### 1. Uplight (To: {{email}})
+
+> **ICP-fit caveat 2026-10-10 (residual of audit AF-gtm-10): founder decision before sending.** Uplight has no primary size source, and third-party estimates (unverified) mostly put it below the 1,000-10,000-staff test band (section 2; targets.csv:22). Biogen is the only B1 segment-1 row with a sourced in-band size. Send this sequence only as a deliberate test of a just-below-band employer with a strong signal; otherwise mark the row HELD in sections 1 and 5.
 
 **S1-T1 (day 0)**
 ```
@@ -555,7 +557,7 @@ Grammar note for the founder: the Pittsburgh T1 reads "that University of Pittsb
 
 | Account | T1 sent (day 0) | T2 sent (day 5) | T3 sent (day 11) | Reply / outcome | Suppressed? | Status |
 |---|---|---|---|---|---|---|
-| Uplight | not sent | not sent | not sent | none | no | prepared |
+| Uplight | not sent | not sent | not sent | none | no | prepared (ICP-fit caveat: founder decides send or hold) |
 | Biogen | not sent | not sent | not sent | none | no | prepared |
 | Dell Technologies | not sent | not sent | not sent | none | no | HELD (not in B1) |
 | Salesforce | not sent | not sent | not sent | none | no | HELD (not in B1) |
@@ -580,3 +582,4 @@ The pe-gtm agent had no shell tool in this run (tools: Read, Write, Edit, Glob, 
 - WebSearch re-checks run for all 10 accounts, plus one search on 2026 Disability Index recognition (Principal, Acxiom, Salesforce, Mercy) and one on J&J program details. Results are in section 2.
 - Wrote this file. Checked: 10 rows or fewer; US only; all high confidence; 30 emails rendered; only the four allowed placeholders remain; no `notes` text used; every signal 15 words or fewer; no send, schedule or Gmail call made.
 - 2026-10-10 rework (audits AF-gtm-10 and AF-gtm-14; this run had a shell): B1 re-scoped. The 2026-10-06 selection used `confidence` only, not ICP fit, so it picked Dell Technologies, Salesforce and Johnson & Johnson, which targets.csv now tags as reference cases, not first targets. They are HELD. Biogen was added: the only segment-1 first-target candidate with a size source (FY2024 10-K, search summary) and a confirmed signal. Freddie Mac was not added: its program source is third-party, about four years old and now rated low, and its size is unverified. Biogen's signal was re-checked by WebSearch on 2026-10-10 and its 3 emails rendered from the outreach.md S1 templates. The Pittsburgh source column now cites the calendar.pitt.edu listing. Checked: 8 rows to send, all US, all medium; the Biogen drafts use only the four allowed placeholders; no send, schedule or Gmail call made.
+- 2026-10-10 rework R5 (audit AF-gtm-18 and the Uplight residual of AF-gtm-10): banner corrected to 8 prepared and 3 HELD; section 2 method now states the 2026-10-06 fetch count covered the 10 accounts then in the batch and how Biogen was checked (search summary only; one WebFetch of the AskEARN roster failed, ENOTFOUND); Uplight keeps status prepared but carries an ICP-fit caveat in the summary, sections 1, 2, 4 and 5 and the checklist (no primary size source; third-party estimates, unverified, mostly below 1,000 staff). No email text changed. Nothing was sent.

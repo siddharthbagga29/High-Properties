@@ -1,5 +1,5 @@
 window.PE_STATE = {
- "generated": "2026-10-10T12:51:42Z",
+ "generated": "2026-10-10T13:04:21Z",
  "project": "Perspective Engine",
  "north_star": "A perspective-taking simulator, to be co-designed with paid ADHD advisors and tested in a pre-registered pilot, with 3 paid B2B pilots and a published pilot study by month 12.",
  "agents": {
@@ -105,13 +105,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 60,
-   "status": "done",
+   "status": "running",
    "run": {
     "used_k": 93.2,
     "duration_s": 82,
     "tools": 21
    },
-   "view": "done"
+   "view": "running"
   },
   {
    "id": "F04",
@@ -157,8 +157,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "done",
-   "view": "done"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "F07",
@@ -179,8 +179,8 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 0,
-   "status": "done",
-   "view": "done"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "F06",
@@ -228,8 +228,8 @@ window.PE_STATE = {
     "reason": "Only the founder can answer: country/ownership (decides US grant eligibility), advisor budget, effect size, facilitator."
    },
    "budget_k": 5,
-   "status": "awaiting_human",
-   "view": "awaiting_human"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "V01",
@@ -249,13 +249,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 25,
-   "status": "done",
+   "status": "running",
    "run": {
     "used_k": 84.1,
     "duration_s": 145,
     "tools": 12
    },
-   "view": "done"
+   "view": "running"
   },
   {
    "id": "V02",
@@ -275,13 +275,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "done",
+   "status": "running",
    "run": {
     "used_k": 116.7,
     "duration_s": 217,
     "tools": 29
    },
-   "view": "done"
+   "view": "running"
   },
   {
    "id": "V03",
@@ -303,13 +303,13 @@ window.PE_STATE = {
     "reason": "Posting to OSF needs the founder's OSF account."
    },
    "budget_k": 20,
-   "status": "awaiting_human",
+   "status": "running",
    "run": {
     "used_k": 103.1,
     "duration_s": 226,
     "tools": 11
    },
-   "view": "awaiting_human"
+   "view": "running"
   },
   {
    "id": "V04",
@@ -329,13 +329,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 12,
-   "status": "done",
+   "status": "running",
    "run": {
     "used_k": 81.2,
     "duration_s": 125,
     "tools": 10
    },
-   "view": "done"
+   "view": "running"
   },
   {
    "id": "V05",
@@ -382,13 +382,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 8,
-   "status": "running",
+   "status": "done",
    "run": {
     "used_k": 74.4,
     "duration_s": 67,
     "tools": 5
    },
-   "view": "running"
+   "view": "done"
   },
   {
    "id": "V07",
@@ -433,13 +433,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 8,
-   "status": "running",
+   "status": "done",
    "run": {
     "used_k": 82.7,
     "duration_s": 107,
     "tools": 7
    },
-   "view": "running"
+   "view": "done"
   },
   {
    "id": "V09",
@@ -603,13 +603,13 @@ window.PE_STATE = {
    ],
    "gate": null,
    "budget_k": 20,
-   "status": "done",
+   "status": "running",
    "run": {
     "used_k": 122.2,
     "duration_s": null,
     "tools": 28
    },
-   "view": "done"
+   "view": "running"
   },
   {
    "id": "M01",
@@ -698,8 +698,8 @@ window.PE_STATE = {
     "reason": "Incorporation needs founder identity and payment."
    },
    "budget_k": 10,
-   "status": "awaiting_human",
-   "view": "awaiting_human"
+   "status": "running",
+   "view": "running"
   },
   {
    "id": "M05",
@@ -860,114 +860,6 @@ window.PE_STATE = {
  ],
  "ledger": [
   {
-   "t": "2026-10-06T12:59:17Z",
-   "event": "done",
-   "node": "V06",
-   "note": "Non-binding LOI; day-30 verified outcome w/ CI incl. nulls; price anchor left as hypothesis blank"
-  },
-  {
-   "t": "2026-10-06T12:59:17Z",
-   "event": "start",
-   "node": "V08",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T13:01:18Z",
-   "event": "done",
-   "node": "V08",
-   "note": "9 emails (3x3), max 104 words worst case; US-only until counsel; nothing sent"
-  },
-  {
-   "t": "2026-10-06T13:51:33Z",
-   "event": "start",
-   "node": "F07",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T13:51:33Z",
-   "event": "done",
-   "node": "F07",
-   "note": "3D cortex-to-city with semantic zoom, guide, replay, deep links; a11y/BP/SEO 100"
-  },
-  {
-   "t": "2026-10-06T19:07:55Z",
-   "event": "unblock",
-   "node": "F04",
-   "note": "Founder asked for real building; re-queued"
-  },
-  {
-   "t": "2026-10-06T19:09:04Z",
-   "event": "start",
-   "node": "F04",
-   "note": ""
-  },
-  {
-   "t": "2026-10-06T19:17:52Z",
-   "event": "start",
-   "node": "V09",
-   "note": "Ogilvy preparing outreach batch 1 (not sending)"
-  },
-  {
-   "t": "2026-10-06T19:17:52Z",
-   "event": "start",
-   "node": "M03",
-   "note": "Milton preparing the IRB packet"
-  },
-  {
-   "t": "2026-10-06T19:19:31Z",
-   "event": "done",
-   "node": "V09",
-   "note": "Batch B1 prepared, NOT sent: 10 US accounts x 3 touches, signals re-checked, empty send/reply log; awaits founder Gmail OK"
-  },
-  {
-   "t": "2026-10-07T00:39:52Z",
-   "event": "block",
-   "node": "M03",
-   "note": "Failed verification twice: says the Nario-Redmond 2017 abstract omits pity (it reports pity in Exp. 2); summary overstates the strengths slot D4; WCAG 2.3.1 citation unmarked"
-  },
-  {
-   "t": "2026-10-07T00:39:52Z",
-   "event": "unblock",
-   "node": "M03",
-   "note": "Founder asked to retry: round 3 fixes only the three named gaps"
-  },
-  {
-   "t": "2026-10-07T00:40:43Z",
-   "event": "start",
-   "node": "M03",
-   "note": ""
-  },
-  {
-   "t": "2026-10-07T01:03:04Z",
-   "event": "done",
-   "node": "M03",
-   "note": "IRB packet v0.3 verified: consent, debrief, AE handling present; Nario-Redmond and WCAG 2.3.1 citations confirmed; nothing sent"
-  },
-  {
-   "t": "2026-10-07T06:50:10Z",
-   "event": "start",
-   "node": "M05",
-   "note": ""
-  },
-  {
-   "t": "2026-10-07T11:42:02Z",
-   "event": "block",
-   "node": "M05",
-   "note": "Build interrupted by the usage limit at about 07:20 UTC with a partial draft on disk; rebuild queued after the current verification wave"
-  },
-  {
-   "t": "2026-10-07T18:50:26Z",
-   "event": "block",
-   "node": "F04",
-   "note": "Verification round 2 failed on two gaps: index.html top summary is 173 words (cap 150); exported step events keep timestamps that reveal the wait choice and time and the send reaction time"
-  },
-  {
-   "t": "2026-10-07T18:50:26Z",
-   "event": "unblock",
-   "node": "F04",
-   "note": "Founder asked to complete the loop: round 3 limited to the two named gaps"
-  },
-  {
    "t": "2026-10-07T18:50:26Z",
    "event": "unblock",
    "node": "M05",
@@ -1097,6 +989,130 @@ window.PE_STATE = {
    "t": "2026-10-10T12:50:23Z",
    "event": "reopen",
    "node": "V14",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:20Z",
+   "event": "done",
+   "node": "V06",
+   "note": "LOI template re-verified under current gate: non-binding, pre-registered AAI-verified day-30 metric agreed upfront, USD 12,000 price anchor labelled assumption",
+   "outputs": {
+    "perspective-engine/gtm/loi-template.md": "24b2ff122d4197c6d2b8f47e0aef356832e57e9546162107c15ae7ca3f161a46"
+   }
+  },
+  {
+   "t": "2026-10-10T12:55:20Z",
+   "event": "done",
+   "node": "V08",
+   "note": "Outreach drafts re-verified under current gate: 3-touch sequence per segment, worst-case max 107 words (<120), co-design stated as a plan",
+   "outputs": {
+    "perspective-engine/gtm/outreach.md": "9c2a6c4427f7539068eb06ffbac81d072ffe05853f5c254bfcbf7a93f2deba89"
+   }
+  },
+  {
+   "t": "2026-10-10T12:55:57Z",
+   "event": "reopen",
+   "node": "V10",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "V11",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "M05",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "M04",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "F05",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "F07",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T12:55:58Z",
+   "event": "reopen",
+   "node": "D01",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:02:51Z",
+   "event": "done",
+   "node": "V10",
+   "note": "Re-verified R1: stdlib MC reproduces model.md exactly (bar run time); 32 stated triangular inputs; ARR P10/P50/P90 by year; Dec 2031 $53k/$633k/$4.31M",
+   "outputs": {
+    "perspective-engine/finance/model.py": "ea442e8416fb386a1d45631f325bec2ab347e7d0d4cc7239e47ff108561b81f9",
+    "perspective-engine/finance/model.md": "6baada7630a00f819c23d5733e6ed089b01a9b77e4c91cf90f82549d005b8244"
+   }
+  },
+  {
+   "t": "2026-10-10T13:02:51Z",
+   "event": "done",
+   "node": "V11",
+   "note": "Re-verified R1: every row has program, amount, deadline, fit and source URL; scores recomputed; AF-finance-10 concerns another file",
+   "outputs": {
+    "perspective-engine/finance/grants.md": "ceb4998d8576d7dc966d5c1d81e11cbd3fcfa707a59f039d46a2332cd167b9e4"
+   }
+  },
+  {
+   "t": "2026-10-10T13:02:51Z",
+   "event": "done",
+   "node": "M05",
+   "note": "Re-verified R1: specific aims page and line-by-line budget justification; arithmetic and appendix Monte Carlo reproduce exactly",
+   "outputs": {
+    "perspective-engine/finance/sbir-draft.md": "b2a34acdf38529d54f93a5e176038a5faf8ba09d2302fffda3ef84453afbdb41"
+   }
+  },
+  {
+   "t": "2026-10-10T13:03:27Z",
+   "event": "reopen",
+   "node": "F03",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:03:27Z",
+   "event": "reopen",
+   "node": "V01",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:03:28Z",
+   "event": "reopen",
+   "node": "V03",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:03:28Z",
+   "event": "reopen",
+   "node": "V15",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:03:28Z",
+   "event": "reopen",
+   "node": "V02",
+   "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
+  },
+  {
+   "t": "2026-10-10T13:03:28Z",
+   "event": "reopen",
+   "node": "V04",
    "note": "re-verify under the current gate: outputs changed during audit rework rounds 1-2 (AF-orchestrator-39, -40)"
   }
  ],
