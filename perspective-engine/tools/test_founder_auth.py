@@ -289,6 +289,15 @@ class FounderSignedActions(Tmp):
         _, auto = self.auto()
         self.assertTrue(any("stored fingerprint SHA256:not-the-key is not the key's" in f["evidence"] for f in auto))
 
+    def test_clear_gate_works_only_on_finished_verified_work(self):
+        """Third review (AF-orchestrator-49): a gate cleared before done would cover outputs the founder never saw."""
+        self.prepare_gate()
+        self.assertEqual(run_graph("reopen", "A2", "rework")[0], 0)
+        rc, out = run_graph("clear-gate", "A2", "approved early")
+        self.assertEqual(rc, 1)
+        self.assertIn("only on awaiting_human", out)
+        self.assertFalse(self.node("A2")["gate"].get("cleared"))
+
     def test_clear_gate_signs_the_outputs_and_refuses_changed_content(self):
         """Re-review: outputs of a gated task changed after done, before the founder's approval."""
         self.prepare_gate()

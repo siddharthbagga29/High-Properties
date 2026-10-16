@@ -55,6 +55,7 @@ import datetime
 import fcntl
 import hashlib
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -355,48 +356,83 @@ def verdict_of(text):
 
 
 def path_hash(f):
-    """sha256 of a file, or of a directory tree (relative paths and file hashes, symlinks resolved); None if missing
-    or an empty directory."""
+    """sha256 of a file, or of a directory tree: every file's relative path and content hash, and for a file symlink
+    also its target. None if missing, an empty directory, or a directory holding a directory symlink (what lies behind
+    it would sit outside the hash, so done refuses). Names are hashed as raw bytes, so no file name can crash it."""
     f = f.resolve() if f.is_symlink() else f
     if f.is_file():
         return hashlib.sha256(f.read_bytes()).hexdigest()
     if f.is_dir():
-        files = sorted(p for p in f.rglob("*") if p.is_file())
-        if not files:
+        entries = []
+        for dirpath, dirnames, filenames in os.walk(f, followlinks=False):
+            if any(os.path.islink(os.path.join(dirpath, d)) for d in dirnames):
+                return None
+            for name in filenames:
+                p = pathlib.Path(dirpath) / name
+                rel = os.fsencode(p.relative_to(f))
+                content = hashlib.sha256(p.read_bytes()).hexdigest().encode() if p.is_file() else b"broken-link"
+                link = b"\0->" + os.fsencode(os.readlink(p)) if p.is_symlink() else b""
+                entries.append(rel + link + b"\0" + content + b"\0")
+        if not entries:
             return None
         h = hashlib.sha256()
-        for p in files:
-            h.update(str(p.relative_to(f)).encode() + b"\0" + hashlib.sha256(p.read_bytes()).hexdigest().encode() + b"\0")
+        for e in sorted(entries):
+            h.update(e)
         return "dir:" + h.hexdigest()
     return None
 
 
+LIVE_STATE = "live-state"
+
+
 def output_hashes(n):
-    return {o: path_hash(ROOT / o) for o in n["outputs"]}
+    """Output hashes for the gate. The record's own files (graph, ledger, activity, revenue) are live state that every
+    transition rewrites, so they are never pinned (F01 lists graph.json)."""
+    live = {GRAPH.resolve(), LEDGER.resolve(), ACTIVITY.resolve(), REVENUE.resolve()}
+    return {o: LIVE_STATE if (ROOT / o).resolve() in live else path_hash(ROOT / o) for o in n["outputs"]}
 
 
-def verifier_cleared(n):
-    """(ok, reason). done needs, after the last change to the task (a self-logged write, edit or run row by anyone,
-    or a start, unblock or reopen), at least one verifier check with a PASS verdict, no FAIL verdict, and every
-    verifier row in that span (including the read the verifier logs when it starts) pinned to the outputs as they
-    are now."""
+INTENDED_FAIL = re.compile(r"verdict\W*fail", re.I)
+
+
+def check_verdict(r):
+    """PASS, FAIL or None for a verifier check row. A check graph.py refused (kept and marked invalid) counts as FAIL
+    when it was meant as one, so a FAIL broken by its formatting never leaves an earlier PASS standing."""
+    if r.get("invalid"):
+        return "FAIL" if INTENDED_FAIL.search(unicodedata.normalize("NFKC", str(r.get("text", "")))) else None
+    return verdict_of(r.get("text", ""))
+
+
+def verifier_cleared(n, now=None):
+    """(ok, reason). done needs, after the last change to the task (a self-logged write, edit or run row by the
+    builder, or a start, unblock or reopen), at least one verifier check with a PASS verdict, no FAIL verdict, a valid
+    latest check, and every verifier row in that span (including the read the verifier logs when it starts) pinned to
+    the outputs as they are now. A FAIL on these exact outputs stands until they change, whatever rows came after."""
     rows = jsonl(ACTIVITY / f"{n['id']}.jsonl")
-    last_change = -1
+    now = output_hashes(n) if now is None else now
+    last_change = last_restart = -1
     for i, r in enumerate(rows):
-        own_change = r.get("src") == "self" and r.get("kind") in CHANGE_KINDS
+        own_change = r.get("src") == "self" and r.get("kind") in CHANGE_KINDS and r.get("actor") != "verifier"
         restart = r.get("src") == "ledger" and RESTART.match(str(r.get("text", "")))
         if own_change or restart:
             last_change = i
+        if restart:
+            last_restart = i
     # Verifier rows logged through graph.py (src self) carry the output hashes; ingested transcript rows do not.
-    span = [r for r in rows[last_change + 1:] if r.get("actor") == "verifier" and r.get("src") == "self"]
-    verdicts = [verdict_of(r.get("text", "")) for r in span if r.get("kind") == "check"]
-    verdicts = [v for v in verdicts if v]
+    mine = lambda part: [r for r in part if r.get("actor") == "verifier" and r.get("src") == "self"]
+    span = mine(rows[last_change + 1:])
+    checks = [r for r in span if r.get("kind") == "check"]
+    verdicts = [v for v in (check_verdict(r) for r in checks) if v]
     if not verdicts:
         return False, ("no verifier verdict is recorded since the last change; the verifier runs "
                        f'graph.py log {n["id"]} check --verifier "<criteria> ... VERDICT: PASS" first')
     if "FAIL" in verdicts:
         return False, "a verifier verdict since the last change is FAIL; fix the gaps (a change) and have the verifier check again"
-    now = output_hashes(n)
+    if any(r.get("kind") == "check" and check_verdict(r) == "FAIL" and r.get("outputs") == now
+           for r in mine(rows[last_restart + 1:])):
+        return False, "a verifier FAILed these exact outputs; change them to close the gaps and have the verifier check again"
+    if checks[-1].get("invalid"):
+        return False, "the verifier's latest check was refused for its format; it must log a valid verdict"
     if any(r.get("outputs") != now for r in span):
         return False, "the outputs changed during or after the verifier's review (their hashes differ); the verifier must check again"
     return True, ""
@@ -448,7 +484,7 @@ def authorize_cmd(args, g):
     return 1
 
 
-def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None, outputs=None):
+def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None, outputs=None, invalid=False):
     ACTIVITY.mkdir(parents=True, exist_ok=True)
     rec = {"t": t or now(), "node": node_id, "agent": agent, "kind": kind, "text": text[:LOG_TEXT_MAX], "src": src}
     if len(text) > LOG_TEXT_MAX:
@@ -458,6 +494,8 @@ def activity_append(node_id, agent, kind, text, src="self", t=None, actor=None, 
         rec["actor"] = actor
     if outputs is not None:
         rec["outputs"] = outputs
+    if invalid:
+        rec["invalid"] = True
     with (ACTIVITY / f"{node_id}.jsonl").open("a") as f:
         f.write(json.dumps(rec) + "\n")
 
@@ -796,13 +834,19 @@ def run(cmd, args):
             outputs = output_hashes(n)
         if actor and args[1] == "check":
             # A verifier's check is the thing done relies on: never cut it, and require one plain verdict at the end.
+            # A refused check is still kept, marked invalid, so a FAIL lost to its formatting still blocks done.
+            why = None
             if len(text) > LOG_TEXT_MAX:
-                print(f"refused: a verifier check must fit in {LOG_TEXT_MAX} characters ({len(text)} given); "
-                      "put details in earlier note rows and the verdict in this one")
-                return 1
-            if not verdict_of(text):
-                print('refused: a verifier check must end with exactly one verdict, "VERDICT: PASS" or "VERDICT: FAIL",'
-                      " in plain characters, and use the word verdict nowhere else")
+                why = (f"refused: a verifier check must fit in {LOG_TEXT_MAX} characters ({len(text)} given); "
+                       "put details in earlier note rows and the verdict in this one")
+            elif not verdict_of(text):
+                why = ('refused: a verifier check must end with exactly one verdict, "VERDICT: PASS" or "VERDICT: FAIL",'
+                       " in plain characters, and use the word verdict nowhere else")
+            if why:
+                activity_append(n["id"], n["agent"], "check", text[:LOG_TEXT_MAX], actor=actor, outputs=outputs,
+                                invalid=True)
+                export(g)
+                print(why + " (kept as an invalid check: done stays refused until a valid check follows)")
                 return 1
         activity_append(n["id"], n["agent"], args[1], text, actor=actor, outputs=outputs)
         export(g)
@@ -825,7 +869,7 @@ def run(cmd, args):
         if missing:
             print("refused: missing or empty outputs: " + ", ".join(missing))
             return 1
-        ok, why = verifier_cleared(n)
+        ok, why = verifier_cleared(n, hashes)
         if not ok:
             print(f"refused: {why}")
             return 1
@@ -864,26 +908,30 @@ def run(cmd, args):
         if not n.get("gate"):
             print(f"{n['id']} has no gate")
             return 1
+        if n["status"] != "awaiting_human":
+            # The founder approves finished, verified output; an approval given earlier would cover whatever came later.
+            print(f"refused: {n['id']} is {n['status']}; the founder clears a gate only on awaiting_human work, "
+                  "after the verifier passed it")
+            return 1
         hashes = output_hashes(n)
-        if n["status"] == "awaiting_human":
-            # The founder approves the content the verifier passed: refuse if it changed since done.
-            closed = [e for e in jsonl(LEDGER) if e.get("node") == n["id"] and e.get("event") == "done"]
-            if not closed or closed[-1].get("outputs") != hashes:
-                print(f"refused: {n['id']}'s outputs are not the ones verified at done; reopen it and have it verified again")
-                return 1
+        # The founder approves the content the verifier passed: refuse if it changed since done.
+        closed = [e for e in jsonl(LEDGER) if e.get("node") == n["id"] and e.get("event") == "done"]
+        if not closed or closed[-1].get("outputs") != hashes:
+            print(f"refused: {n['id']}'s outputs are not the ones verified at done; reopen it and have it verified again")
+            return 1
         res = founder_auth("clear-gate", {"node": n["id"], "note": note, "outputs": hashes}, sig_path)
         if res is None:
             return 1
         auth, auth_ref = res
         n["gate"]["cleared"] = note or "cleared"
-        if n["status"] == "awaiting_human":
-            n["status"] = "done"
+        n["status"] = "done"
     else:
         print(f"unknown command {cmd}")
         return 1
     save(g)
+    # Record the hashes that were verified (done) or signed (clear-gate), never a fresh read taken after save.
     ledger_append(cmd, n["id"], note, auth=auth, authRef=auth_ref,
-                  outputs=output_hashes(n) if cmd in ("done", "clear-gate") else None)
+                  outputs=hashes if cmd in ("done", "clear-gate") else None)
     activity_append(n["id"], n["agent"], {"start": "plan", "done": "handoff", "block": "blocked"}.get(cmd, "note"),
                     f"{cmd}{': ' + note if note else ''}", src="ledger")
     export(g)

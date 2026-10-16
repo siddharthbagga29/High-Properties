@@ -117,6 +117,92 @@ class GraphRules(Tmp):
         self.assertEqual(rc, 1)
         self.assertIn("outputs changed", out)
 
+    # ---- third independent review (2026-10-16) ----
+
+    def test_a_fail_on_the_same_bytes_stands_after_a_no_op_edit_or_a_verifier_run(self):
+        self.check("criterion 2 has no source. VERDICT: FAIL")
+        run_graph("log", "G1", "edit", "addressed the gap")  # nothing changed on disk
+        self.check("re-checked. VERDICT: PASS")
+        rc, out = self.done()
+        self.assertEqual((rc, "FAILed these exact outputs" in out), (1, True))
+        run_graph("log", "G1", "run", "--verifier", "ran the linter")  # a verifier row is not a change
+        self.check("re-checked again. VERDICT: PASS")
+        self.assertEqual(self.done()[0], 1)
+        self.out.write_text("# G1\n\nDone, with the source for criterion 2.\n")
+        run_graph("log", "G1", "edit", "added the source")
+        self.check("criterion 2 now sourced. VERDICT: PASS")
+        self.assertEqual(self.done()[0], 0)
+
+    def test_a_fail_refused_for_its_format_is_kept_and_blocks_done(self):
+        self.check("criteria 1-3 met so far. VERDICT: PASS")
+        for broken in ('It says "Legal verdict: cleared". VERDICT: FAIL', "missing source\u2026 VERDICT: FAIL",
+                       "x" * (graph.LOG_TEXT_MAX + 5) + " VERDICT: FAIL"):
+            rc, out = run_graph("log", "G1", "check", "--verifier", broken)
+            self.assertEqual(rc, 1)
+            self.assertIn("kept as an invalid check", out)
+            rc, out = self.done()
+            self.assertEqual(rc, 1, broken[:40])
+        rows = graph.jsonl(graph.ACTIVITY / "G1.jsonl")
+        self.assertEqual(sum(1 for r in rows if r.get("invalid")), 3)
+
+    def test_a_latest_check_refused_for_its_format_needs_a_valid_one(self):
+        rc, _ = run_graph("log", "G1", "check", "--verifier", "all met\u2026 VERDICT: PASS")
+        self.assertEqual(rc, 1)
+        rc, out = self.done()
+        self.assertEqual(rc, 1)
+        self.check("all met. VERDICT: PASS")
+        self.assertEqual(self.done()[0], 0)
+
+    def test_a_directory_symlink_inside_a_directory_output_is_refused(self):
+        g = graph.load()
+        graph.index(g)["G1"]["outputs"] = ["perspective-engine/out/site"]
+        graph.save(g)
+        site, assets = self.pe / "out" / "site", self.pe / "out" / "assets"
+        site.mkdir()
+        assets.mkdir()
+        (site / "index.html").write_text("<p>v1</p>")
+        (assets / "app.js").write_text("ok()")
+        (site / "assets").symlink_to(assets)
+        self.assertIsNone(graph.path_hash(site))
+        rc, out = self.done()
+        self.assertEqual((rc, "missing or empty" in out), (1, True))
+
+    def test_retargeting_a_file_symlink_changes_the_hash_and_odd_names_do_not_crash(self):
+        site = self.pe / "out" / "site"
+        site.mkdir()
+        (site / "a.js").write_text("same")
+        (site / "b.js").write_text("same")
+        (site / "app.js").symlink_to("a.js")
+        before = graph.path_hash(site)
+        (site / "app.js").unlink()
+        (site / "app.js").symlink_to("b.js")
+        self.assertNotEqual(graph.path_hash(site), before)
+        (site / "caf\udce9.txt").write_text("x")  # a name that is not valid UTF-8
+        self.assertTrue(graph.path_hash(site).startswith("dir:"))
+
+    def test_the_done_event_records_the_verified_hashes_not_a_later_read(self):
+        from unittest import mock
+        self.check("VERDICT: PASS")
+        verified = graph.output_hashes(graph.index(graph.load())["G1"])
+        real_save = graph.save
+
+        def save_then_swap(g):  # a watcher edits the output while graph.py saves
+            real_save(g)
+            self.out.write_text("# G1\n\nSwapped after the check.\n")
+        with mock.patch.object(graph, "save", save_then_swap):
+            self.assertEqual(self.done()[0], 0)
+        e = json.loads((self.pe / "graph" / "ledger.jsonl").read_text().splitlines()[-1])
+        self.assertEqual(e["outputs"], verified)
+
+    def test_the_record_files_are_live_state_not_pinned_outputs(self):
+        g = graph.load()
+        graph.index(g)["G1"]["outputs"] = ["perspective-engine/out/g1.md", "perspective-engine/graph/graph.json"]
+        graph.save(g)
+        self.check("VERDICT: PASS")
+        self.assertEqual(self.done()[0], 0)  # done rewrites graph.json; that is not a change to the deliverable
+        e = json.loads((self.pe / "graph" / "ledger.jsonl").read_text().splitlines()[-1])
+        self.assertEqual(e["outputs"]["perspective-engine/graph/graph.json"], graph.LIVE_STATE)
+
     def test_the_done_event_records_the_output_hashes(self):
         self.check("VERDICT: PASS")
         self.assertEqual(self.done()[0], 0)
