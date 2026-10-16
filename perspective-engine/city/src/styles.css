@@ -271,6 +271,7 @@ blockquote { margin: 12px 0; padding: 2px 0 2px 14px; border-left: 2px solid var
 .track input::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; margin-top: -6px; border-radius: 50%; background: var(--bone); box-shadow: 0 0 0 4px rgba(43, 240, 255, 0.25); }
 .track input::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: var(--bone); }
 .tlabel { font: 400 11px var(--mono); color: var(--dim); white-space: nowrap; }
+.tcut { grid-column: 1 / -1; margin: 0; font: 400 10px var(--mono); color: var(--dim); }
 .livepill { border: 1px solid var(--edge); background: transparent; border-radius: 999px; padding: 4px 10px; font: 600 10px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
 .livepill.on { color: var(--ink); background: var(--cyan); border-color: var(--cyan); }
 

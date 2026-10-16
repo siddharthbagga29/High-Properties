@@ -18,8 +18,19 @@ export const ms = (iso: string) => Date.parse(iso)
 export function timeline(state: GraphState): [number, number] {
   const ts = state.ledger.map(e => ms(e.t)).filter(Number.isFinite)
   const end = Math.max(ms(state.generated), ...ts)
-  const start = state.ledgerBase ? ms(state.ledgerBase.t) : ts.length ? Math.min(...ts) - 60_000 : end - 3_600_000
+  const cut = historyCut(state)
+  const start = cut ? cut.t : ts.length ? Math.min(...ts) - 60_000 : end - 3_600_000
   return [start, end]
+}
+
+/** Where the replay's history stops when the export had to cut the ledger, with the note that says so; null when the
+ * document carries the whole ledger. */
+export function historyCut(state: GraphState): { t: number; note: string } | null {
+  const b = state.ledgerBase
+  if (!b) return null
+  const t = ms(b.t)
+  const when = `${new Date(t).toISOString().slice(0, 16).replace('T', ' ')} UTC`
+  return { t, note: `Replay starts ${when}: the ${b.events} earlier ledger events were cut to fit the live document, so history before then is not available here.` }
 }
 
 /**
@@ -231,10 +242,9 @@ const WINDOW = LIVE_WINDOW_MIN * 60_000
 export const isToolCall = (e: ActivityEvent) => e.src === 'transcript' && !(e.kind === 'blocked' && e.text.startsWith('Failed ('))
 
 /** Tool calls among these rows, each call once even when it was credited to several tasks. Rows ingested before
- * calls had an id count once each. */
+ * calls had an id are told apart as the record tells rows apart (graph.py activity_all): by time, kind and text. */
 export function countCalls(events: ActivityEvent[]): number {
-  const calls = events.filter(isToolCall)
-  return new Set(calls.map(e => e.call).filter(Boolean)).size + calls.filter(e => !e.call).length
+  return new Set(events.filter(isToolCall).map(e => e.call ?? `${e.t} ${e.kind} ${e.text}`)).size
 }
 
 /** The first row with actor 'verifier'. Rows before it had no actor field, so a verifier row was known by its text. */
@@ -245,20 +255,28 @@ export const ACTOR_FIELD_FROM = '2026-10-07T19:01:56Z'
 export const isVerifier = (e: ActivityEvent) =>
   e.actor === 'verifier' || (!e.actor && ms(e.t) < ms(ACTOR_FIELD_FROM) && /^verifier\b/i.test(e.text))
 
-/** Latest recorded moment for a task (any activity row or ledger event) at or before `at`. */
+/**
+ * A row that shows work on its task. A call credited by --related only because its command named one of the task's
+ * outputs (related 'path') may have read that output as another task's input: it stays in the feed, but only writing
+ * or editing the output itself counts as a step on the task.
+ */
+export const isStep = (e: ActivityEvent) => e.related !== 'path' || e.kind === 'write' || e.kind === 'edit'
+
+/** Latest recorded moment for a task (any activity row that is a step on it, or a ledger event) at or before `at`. */
 export function lastSignal(state: GraphState, id: string, at: number): number | null {
   let best = -Infinity
-  for (const e of state.activity?.[id] ?? []) { const t = ms(e.t); if (t <= at && t > best) best = t }
+  for (const e of state.activity?.[id] ?? []) { const t = ms(e.t); if (isStep(e) && t <= at && t > best) best = t }
   for (const e of state.ledger) if (e.node === id) { const t = ms(e.t); if (t <= at && t > best) best = t }
   return Number.isFinite(best) ? best : null
 }
 
-/** The agent's own latest step: its transcript and self-logged rows, not the verifier's or the ledger's. */
+/** The agent's own latest step: its transcript and self-logged rows that are steps on its tasks, not the verifier's
+ * or the ledger's. */
 export function lastOwnStep(state: GraphState, agent: string, at: number): number | null {
   let best = -Infinity
   for (const n of state.nodes) if (n.agent === agent)
     for (const e of state.activity?.[n.id] ?? []) {
-      if (e.src === 'ledger' || isVerifier(e)) continue
+      if (e.src === 'ledger' || isVerifier(e) || !isStep(e)) continue
       const t = ms(e.t); if (t <= at && t > best) best = t
     }
   return Number.isFinite(best) ? best : null

@@ -30,6 +30,7 @@ import hashlib
 import html
 import json
 import math
+import os
 import pathlib
 import re
 import shutil
@@ -147,7 +148,11 @@ CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b\W*(?:also\s+)?(?:cor
 ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b", re.I)
 FOUNDER_STOP = re.compile(r"stopped by the founder|founder (?:stopped|paused|halted)", re.I)
 INTERRUPT_TEXT = re.compile(r"usage limit|session limit|cut off|interrupted|push failed|timed out|stalled", re.I)
-VERIF_BLOCK = re.compile(r"verif|\bround \d+|(?<!push )\bfail", re.I)
+# A note that records a failed round ("round 2", "failed") is a quality block whatever else it mentions. Other
+# verification wording ("after the current verification wave") only classifies a note that is not an interruption.
+VERIF_FAILED = re.compile(r"\bround \d+|(?<!push )\bfail", re.I)
+EXTERNAL_BLOCK = re.compile(r"\b(?:account|credential|payment|signature|gate)\b", re.I)
+ROUND_NO = re.compile(r"\bround (\d+)\b", re.I)
 
 
 def says(rx, text):
@@ -155,8 +160,7 @@ def says(rx, text):
     negate ("no false or invented figures found" names no false statement)."""
     text = str(text)
     return any(not NEGATED.search(text[max(0, m.start() - 80):m.start()]) for m in rx.finditer(text))
-EXTERNAL_BLOCK = re.compile(r"\b(?:account|credential|payment|signature|gate)\b", re.I)
-ROUND_NO = re.compile(r"\bround (\d+)\b", re.I)
+
 
 # ---------- evidence patterns ----------
 
@@ -225,6 +229,10 @@ CANON_UNITS = [
     (r"years?|yrs?", "yr"), (r"seconds?", "s"), (r"million|m\b", "m"), (r"billion|bn|b\b", "bn"),
 ]
 TEXT_SUFFIXES = {".md", ".csv", ".html", ".htm", ".txt"}
+# An element no reader sees: the hidden attribute, aria-hidden="true", or an inline display:none / visibility:hidden.
+HIDDEN_ELEMENT = re.compile(
+    r"(?is)<(\w+)\b[^>]*?(?:\shidden(?=[\s/>=])|\saria-hidden\s*=\s*[\"']?true"
+    r"|\sstyle\s*=\s*[\"'][^\"']*(?:display\s*:\s*none|visibility\s*:\s*hidden))[^>]*>.*?</\1\s*>")
 
 
 # ---------- loading ----------
@@ -329,7 +337,7 @@ def load_findings(pe, agents, warnings):
             if problems:
                 warnings.append(f"{where}: {', '.join(problems)}; skipped")
                 continue
-            if str(f["id"]).endswith("-checked") or str(f.get("claim", "")).strip().lower() == "checked":
+            if is_check_note(f):
                 # A positive verification note: what the auditor checked and found correct. Never a deduction.
                 checks.setdefault(agent, []).append(str(f.get("evidence", ""))[:1200])
                 covered.setdefault(agent, set()).add(p.name)
@@ -342,32 +350,44 @@ def load_findings(pe, agents, warnings):
             clean["claim"] = str(clean["claim"])[:400]
             clean["evidence"] = str(clean["evidence"])[:400]
             dim = f.get("dimension") if f.get("dimension") in DIM_IDS else KIND_DIMENSION[f["kind"]]
-            fid = str(f["id"])
-            if fid in findings:
-                # Anyone can write a findings file, so a repeated id never softens or moves the first one: it keeps
-                # its agent, task, kind and dimension, and takes the repeat's severity and status only if stricter.
-                first, first_dim = findings[fid]
-                weight = lambda x: SEVERITY_POINTS[x["severity"]] * STATUS_FACTOR[x["status"]]
-                if weight(clean) > weight(first):
-                    findings[fid] = (dict(first, severity=clean["severity"], status=clean["status"]), first_dim)
-                warnings.append(f"{where}: repeats the id first defined in findings/{origin[fid]}; kept the stricter "
-                                "version with the original agent, task and kind")
+            # Anyone can write a findings file, and file names decide which is read first, so a repeated id never
+            # softens or moves a finding: filed again about the same agent, task and kind it keeps the stricter
+            # severity and status; filed about another agent, task or kind it is a second finding, and both count.
+            key = (clean["id"], agent, clean.get("task"), clean["kind"], dim)
+            if clean["id"] in origin:
+                warnings.append(f"{where}: repeats the id first defined in findings/{origin[clean['id']]}; " + (
+                    "kept the stricter version" if key in findings else "counted as a separate finding, since it names "
+                    "another agent, task or kind"))
+            if key in findings:
+                first = findings[key][0]
+                if finding_weight(clean) > finding_weight(first):
+                    findings[key] = (dict(first, severity=clean["severity"], status=clean["status"]), dim)
                 continue
-            findings[fid], origin[fid] = (clean, dim), p.name
+            findings[key] = (clean, dim)
+            origin.setdefault(clean["id"], p.name)
             covered.setdefault(agent, set()).add(p.name)
     return list(findings.values()), covered, checks
 
 
-MEASURED_TASKS = set()  # set by compute(): closed tasks that lacked a verifier check before closing
+def is_check_note(f):
+    return str(f.get("id")).endswith("-checked") or str(f.get("claim", "")).strip().lower() == "checked"
+
+
+def finding_weight(f):
+    return SEVERITY_POINTS[f["severity"]] * STATUS_FACTOR[f["status"]]
+
+
+MEASURED_TASKS = {}  # set by compute(): closed tasks that lacked a verifier check before closing, with their owner
 
 
 def measured(f, dim):
     """True when a non-critical process finding says only that a closure had no verifier record, and the record
-    confirms that this task really lacked an on-time check, which score_process already penalises. Anything else
-    (a faked check, a false claim, a task that was in fact checked) is deducted normally."""
+    confirms that this task of the same agent really lacked an on-time check, which that agent's score_process already
+    penalises. Anything else (a faked check, a false claim, a task that was in fact checked, another agent's task, which
+    the finding's agent is not scored on there) is deducted normally."""
     first_evidence = str(f["evidence"]).split("||")[0]
     return (dim == "process" and f["kind"] == "process" and f["severity"] != "critical"
-            and f.get("task") in MEASURED_TASKS
+            and f.get("task") in MEASURED_TASKS and MEASURED_TASKS[f["task"]] == f["agent"]
             and bool(MEASURED_PROCESS.search(f["claim"] + " " + first_evidence)))
 
 
@@ -447,39 +467,121 @@ def fingerprint(pubkey):
     return res.stdout.decode().split()[1] if res.returncode == 0 and res.stdout else None
 
 
-def git_ledger_history(pe):
-    """[(commit, text)] of every committed version of the ledger, oldest first; [] outside git."""
-    led = pe / "graph" / "ledger.jsonl"
+def git_history(pe, rels):
+    """{file: [(n, commit, text)]}: every committed version of every file under the given paths (relative to pe), oldest
+    first, n numbering the commits in that order and text None where a commit deleted the file. {} outside git. One
+    git log and one git cat-file, however many files and commits."""
     try:
         top = subprocess.run(["git", "-C", str(pe), "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=20)
         if top.returncode:
-            return []
-        rel = str(led.resolve().relative_to(pathlib.Path(top.stdout.strip()).resolve()))
-        log = subprocess.run(["git", "-C", top.stdout.strip(), "log", "--reverse", "--format=%H", "--", rel],
-                             capture_output=True, text=True, timeout=30)
-        out = []
-        for h in log.stdout.split():
-            show = subprocess.run(["git", "-C", top.stdout.strip(), "show", f"{h}:{rel}"], capture_output=True, text=True, timeout=30)
-            if show.returncode == 0:
-                out.append((h, show.stdout))
-        return out
-    except (OSError, ValueError, subprocess.SubprocessError):
-        return []
+            return {}
+        top = pathlib.Path(top.stdout.strip()).resolve()
+        specs = [str((pe / r).resolve().relative_to(top)) for r in rels]
+        log = subprocess.run(["git", "-C", str(top), "log", "--reverse", "--raw", "--no-abbrev", "--no-renames",
+                              "--format=%H", "--", *specs], capture_output=True, text=True, timeout=60)
+        changes, commits = [], []
+        for line in log.stdout.splitlines():
+            if line.startswith(":"):
+                meta, path = line.split("\t", 1)
+                changes.append((len(commits) - 1, commits[-1], top / path, meta.split()[3]))  # the new blob, 0s if deleted
+            elif line.strip():
+                commits.append(line.strip())
+        blobs = sorted({b for *_, b in changes if b.strip("0")})
+        cat = subprocess.run(["git", "-C", str(top), "cat-file", "--batch"], input="".join(b + "\n" for b in blobs).encode(),
+                             capture_output=True, timeout=60)
+        texts, out, i = {}, cat.stdout, 0
+        for b in blobs:  # each object: "<blob> blob <size>\n<content>\n"
+            j = out.index(b"\n", i)
+            size = int(out[i:j].split()[2])
+            texts[b], i = out[j + 1:j + 1 + size].decode(errors="replace"), j + 2 + size
+        hist = {}
+        for n, c, path, b in changes:
+            hist.setdefault(path, []).append((n, c, texts.get(b)))
+        return hist
+    except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+        return {}
+
+
+def file_text(p):
+    return p.read_bytes().decode(errors="replace") if p.exists() else None
+
+
+def appended_only(versions):
+    """The index of the first version (a text, None where the file was deleted) that does not extend the version
+    before it, or None when every version only appended."""
+    for i in range(1, len(versions)):
+        if versions[i] is None or (versions[i - 1] is not None and not versions[i].startswith(versions[i - 1])):
+            return i
+    return None
 
 
 def path_hash(f):
-    """Same rule as graph.py: sha256 of a file or of a directory tree, symlinks resolved; None if missing or empty."""
+    """Same rule as graph.py: sha256 of a file, or of a directory tree: every file's relative path and content hash, and
+    for a file symlink also its target. None if missing, an empty directory, or a directory holding a directory
+    symlink. Names are hashed as raw bytes."""
     f = f.resolve() if f.is_symlink() else f
     if f.is_file():
         return hashlib.sha256(f.read_bytes()).hexdigest()
     if f.is_dir():
-        files = sorted(p for p in f.rglob("*") if p.is_file())
-        if not files:
+        entries = []
+        for dirpath, dirnames, filenames in os.walk(f, followlinks=False):
+            if any(os.path.islink(os.path.join(dirpath, d)) for d in dirnames):
+                return None
+            for name in filenames:
+                p = pathlib.Path(dirpath) / name
+                content = hashlib.sha256(p.read_bytes()).hexdigest().encode() if p.is_file() else b"broken-link"
+                link = b"\0->" + os.fsencode(os.readlink(p)) if p.is_symlink() else b""
+                entries.append(os.fsencode(p.relative_to(f)) + link + b"\0" + content + b"\0")
+        if not entries:
             return None
         h = hashlib.sha256()
-        for p in files:
-            h.update(str(p.relative_to(f)).encode() + b"\0" + hashlib.sha256(p.read_bytes()).hexdigest().encode() + b"\0")
+        for e in sorted(entries):
+            h.update(e)
         return "dir:" + h.hexdigest()
+    return None
+
+
+def rows_at(rows, done):
+    """A node's activity rows, in file order, as they stood when the done event was written: the rows dated up to it,
+    stopping at the row graph.py writes right after the event."""
+    out = []
+    for r in rows:
+        if r.get("src") == "ledger" and str(r.get("t")) == str(done.get("t")) and str(r.get("text", "")).startswith("done"):
+            break
+        if str(r.get("t")) <= str(done.get("t")):
+            out.append(r)
+    return out
+
+
+def gate_refusal(rows, outputs):
+    """Why graph.py's done gate (verifier_cleared, as of commit be004ae) refuses a done that records these output hashes
+    over these activity rows, or None when it passes. The same rules, re-implemented: after the last change (a
+    self-logged write, edit or run row not by the verifier, or a start, unblock or reopen) a valid PASS and no FAIL from
+    the verifier, a FAIL on these exact outputs standing until they change, and every verifier row pinned to them."""
+    if outputs is None:
+        return "it recorded no output hashes"
+    last_change = last_restart = -1
+    for i, r in enumerate(rows):
+        restart = r.get("src") == "ledger" and RESTART.match(str(r.get("text", "")))
+        if restart or (r.get("src") == "self" and r.get("kind") in CHANGE_KINDS and r.get("actor") != "verifier"):
+            last_change = i
+        if restart:
+            last_restart = i
+    mine = lambda part: [r for r in part if r.get("actor") == "verifier" and r.get("src") == "self"]
+    span = mine(rows[last_change + 1:])
+    checks = [r for r in span if r.get("kind") == "check"]
+    verdicts = [v for v in map(check_verdict, checks) if v]
+    if not verdicts:
+        return "no verifier verdict since the last change"
+    if "FAIL" in verdicts:
+        return "a verifier verdict since the last change is FAIL"
+    if any(r.get("kind") == "check" and check_verdict(r) == "FAIL" and r.get("outputs") == outputs
+           for r in mine(rows[last_restart + 1:])):
+        return "the verifier FAILed these exact outputs and they did not change"
+    if checks[-1].get("invalid"):
+        return "the verifier's latest check was refused for its format"
+    if any(r.get("outputs") != outputs for r in span):
+        return "the outputs changed during or after the verifier's review"
     return None
 
 
@@ -505,28 +607,121 @@ def replay_status(events, gated):
     return status
 
 
-def check_founder_auth(pe, ledger, nodes=(), activity=None):
-    """Re-verifies founder signatures from the record alone and checks that founder-only state changes are backed by
-    them. Returns (summary, flags) where flags are (severity, text)."""
+def order_flags(label, lines, clock):
+    """graph.py appends every line of the ledger and the revenue file with its own clock, so a line is dated no earlier
+    than the lines above it and no later than now. One dated earlier was written later than it says (backdated); one
+    dated after the audit ran comes from no clock."""
+    flags, last = [], ""
+    for i, r in enumerate(lines, 1):
+        t = str(r.get("t"))
+        what = f"{label} entry {i} ({r.get('event') or 'revenue'} {r.get('node') or r.get('payer') or ''} at {t})"
+        if t > clock:
+            flags.append(("critical", f"{what} is dated after the audit ran ({clock})"))
+        elif t < last:
+            flags.append(("critical", f"{what} is dated before the entry above it ({last}): it was written later than "
+                                      "it says, so the auditor judges it by its place in the file"))
+        else:
+            last = t
+    return flags
+
+
+def check_activity_logs(pe, hist, clock):
+    """The activity logs are only appended to (graph.py and activity.py open them in append mode): every committed
+    version extends the one before it and the working copy extends the last. The rows graph.py logs (src self) carry
+    its clock, so they are in time order, and no row is dated after the audit ran. Returns flags."""
     flags = []
+    d = pe / "graph" / "activity"
+    paths = set(p.resolve() for p in d.glob("*.jsonl")) if d.exists() else set()
+    paths |= {p for p in hist if p.parent == d.resolve() and p.suffix == ".jsonl"}
+    for p in sorted(paths):
+        versions = [t for _, _, t in hist.get(p, [])]
+        i = appended_only(versions + [file_text(p)]) if versions else None
+        if i is not None:
+            where = hist[p][i][1][:10] if i < len(versions) else "the working copy"
+            flags.append(("critical", f"graph/activity/{p.name} was rewritten, not appended to (at {where}): earlier "
+                                      "rows changed or vanished"))
+        rows = [r for r in read_jsonl(p, [], f"activity/{p.name}") if r]
+        last = ""
+        for r in rows:
+            t = str(r.get("t"))
+            if r.get("src") == "self" and last > t:
+                flags.append(("critical", f"graph/activity/{p.name}: a row graph.py logged ({r.get('kind')} at {t}) is "
+                                          f"dated before the row above it ({last}), so it was written later than it says"))
+                break
+            if r.get("src") == "self" and t <= clock:
+                last = t
+        future = [r for r in rows if str(r.get("t")) > clock]
+        if future:
+            flags.append(("major", f"graph/activity/{p.name}: {len(future)} rows dated after the audit ran (first "
+                                   f"{future[0].get('t')}), left out of every metric"))
+    return flags
+
+
+def check_findings_history(pe, hist):
+    """Findings files are rewritten when a re-check fixes or overturns a finding (its status changes), but no finding is
+    ever deleted (an overturned one is marked accepted) and no severity is lowered. Compares every committed version
+    of every findings file with the files now. Returns flags."""
+    def items(text):
+        try:
+            data = json.loads(text or "[]")
+        except json.JSONDecodeError:
+            return []
+        data = data.get("findings", []) if isinstance(data, dict) else data
+        return [f for f in data if isinstance(f, dict) and f.get("id") and not is_check_note(f)] if isinstance(data, list) else []
+
+    d = (pe / "graph" / "audit" / "findings").resolve()
+    worst = {}
+    for p, versions in hist.items():
+        if p.parent != d or p.suffix != ".json":
+            continue
+        for _, c, text in versions:
+            for f in items(text):
+                pts = SEVERITY_POINTS.get(f.get("severity"), 0)
+                if pts > worst.get(str(f["id"]), (-1,))[0]:
+                    worst[str(f["id"])] = (pts, f.get("severity"), p.name, c[:10])
+    now = {}
+    for p in d.glob("*.json") if d.exists() else []:
+        for f in items(file_text(p)):
+            now[str(f["id"])] = max(now.get(str(f["id"]), 0), SEVERITY_POINTS.get(f.get("severity"), 0))
+    flags = []
+    for fid, (pts, sev, name, c) in sorted(worst.items()):
+        if fid not in now:
+            flags.append(("major", f"finding {fid} ({sev}, in findings/{name} at {c}) is in no findings file now: a "
+                                   "finding is overturned by marking it accepted, never deleted"))
+        elif now[fid] < pts:
+            flags.append(("major", f"finding {fid} was {sev} in findings/{name} at {c} and is less severe now: a "
+                                   "severity is never lowered"))
+    return flags
+
+
+def check_founder_auth(pe, ledger, nodes=(), clock=None):
+    """Re-verifies founder signatures from the record alone and checks that founder-only state changes are backed by
+    them, that the record files were only appended to, and that graph.py's done gate held for every closure. Which
+    rule covers a line is judged by its place in the file, never by the date it declares. Returns (summary, flags)
+    where flags are (severity, text)."""
+    flags = []
+    clock = clock or iso(datetime.datetime.now(datetime.timezone.utc))
     rows = [r for r in read_jsonl(pe / "graph" / "founder-auth.jsonl", [], "founder-auth.jsonl") if r]
-    revenue = [r for r in read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl") if r]
+    revenue_lines = read_jsonl(pe / "graph" / "revenue.jsonl", [], "revenue.jsonl")
+    revenue = [r for r in revenue_lines if r]
     key_events = [e for e in ledger if e.get("event") == "founder-key"]
     by_ref = {}
     for r in rows:
         by_ref.setdefault(r.get("ref"), []).append(r)
-    history = git_ledger_history(pe)
-    # The ledger must only grow: every committed version extends the previous one, and the working copy extends the last.
-    texts = [t for _, t in history]
-    led_path = pe / "graph" / "ledger.jsonl"
-    if led_path.exists():
-        texts.append(led_path.read_text())
-    for i in range(1, len(texts)):
-        if not texts[i].startswith(texts[i - 1]):
-            where = history[i][0][:10] if i < len(history) else "the working copy"
-            flags.append(("critical", f"graph/ledger.jsonl was rewritten, not appended to (at {where}): earlier lines changed or vanished"))
-            break
-    if any('"event": "founder-key"' in t for _, t in history) and not key_events:
+    hist = git_history(pe, ["graph/ledger.jsonl", "graph/revenue.jsonl", "graph/activity", "graph/audit/findings"])
+    led_path, rev_path = (pe / "graph" / "ledger.jsonl").resolve(), (pe / "graph" / "revenue.jsonl").resolve()
+    history = [(c, t) for _, c, t in hist.get(led_path, [])]
+    # The ledger and the revenue file must only grow: every committed version extends the previous one, and the
+    # working copy extends the last.
+    for path, label in ((led_path, "graph/ledger.jsonl"), (rev_path, "graph/revenue.jsonl")):
+        versions = [t for _, _, t in hist.get(path, [])]
+        i = appended_only(versions + [file_text(path)]) if versions else None
+        if i is not None:
+            where = hist[path][i][1][:10] if i < len(versions) else "the working copy"
+            flags.append(("critical", f"{label} was rewritten, not appended to (at {where}): earlier lines changed or vanished"))
+    flags += order_flags("graph/ledger.jsonl", ledger, clock) + order_flags("graph/revenue.jsonl", revenue, clock)
+    flags += check_activity_logs(pe, hist, clock) + check_findings_history(pe, hist)
+    if any(t and '"event": "founder-key"' in t for _, t in history) and not key_events:
         flags.append(("critical", "a founder-key event exists in the ledger's git history but not in the ledger now"))
     keys = []
     for e in key_events:
@@ -564,17 +759,28 @@ def check_founder_auth(pe, ledger, nodes=(), activity=None):
         r = verified.get(ref)
         return bool(r) and r.get("action") == action and r.get("fields") == fields
 
+    # A founder action needs a signature once the key is registered: in the ledger, every one below the key's line.
+    # The revenue file has no place in the ledger's order, so git anchors it: rows beyond those committed with the key's
+    # registration were added after it, whatever their dates say.
+    key_line = next((i for i, e in enumerate(ledger) if e.get("event") == "founder-key"), None)
+    key_commit = next((n for n, _, t in hist.get(led_path, []) if t and '"event": "founder-key"' in t), None)
+    signed_from = None
+    if key_commit is not None:
+        at_key = [t for n, _, t in hist.get(rev_path, []) if n <= key_commit]
+        signed_from = len([x for x in ((at_key[-1] if at_key else "") or "").splitlines() if x.strip()])
     used = {}
-    for e in ledger:
-        if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_at and str(e.get("t")) > key_at)):
+    for i, e in enumerate(ledger):
+        if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_line is not None and i > key_line)):
             fields = {"node": e.get("node"), "note": e.get("note", "")}
             if e.get("event") == "clear-gate" and "outputs" in e:
                 fields["outputs"] = e.get("outputs")
             if not covered(e.get("authRef"), e.get("event"), fields):
                 flags.append(("critical", f"ledger {e.get('event')} {e.get('node')} at {e.get('t')} has no verified founder signature"))
             used[e.get("authRef")] = used.get(e.get("authRef"), 0) + 1
-    for r in revenue:
-        if r.get("auth") == "signed" or (key_at and str(r.get("t")) > key_at):
+    for i, r in enumerate(revenue_lines):
+        if r is None:
+            continue
+        if r.get("auth") == "signed" or (key_at and str(r.get("t")) > key_at) or (signed_from is not None and i >= signed_from):
             try:
                 fields = {"amountUsd": f"{round(float(r.get('amountUsd')), 2):.2f}", "payer": r.get("payer"), "evidence": r.get("evidence")}
             except (TypeError, ValueError):
@@ -601,17 +807,40 @@ def check_founder_auth(pe, ledger, nodes=(), activity=None):
             if expect and expect != n.get("status"):
                 mismatches += 1
                 flags.append(("major", f"{n.get('id')}: graph.json says {n.get('status')} but the ledger implies {expect} (changed outside graph.py?)"))
-    # The done gate, replayed: closures after GATE_V3_SINCE need recorded output hashes and a verifier PASS on them.
-    activity = activity or {}
+    # The founder approves finished, verified work (graph.py clears a gate only on awaiting_human work): a clear-gate
+    # above the done it would cover, in ledger order, approved outputs the founder had not seen.
+    latest = {}
     for e in ledger:
-        if e.get("event") != "done" or str(e.get("t")) < GATE_V3_SINCE:
+        if e.get("event") in ("start", "done", "block", "unblock", "reopen"):
+            latest[e.get("node")] = e.get("event")
+        elif e.get("event") == "clear-gate" and latest.get(e.get("node")) != "done":
+            flags.append(("major", f"{e.get('node')}: the founder gate was cleared at {e.get('t')} before the task was done "
+                                   "(in ledger order), so the approval covers work the founder had not seen"))
+    # The done gate, replayed in ledger order over the activity log as graph.py read it (file order). Closures below the
+    # first line dated GATE_V3_SINCE need recorded output hashes and a verifier PASS on them; below the first line dated
+    # GATE_V4_SINCE, everything graph.py's done gate checks now.
+    v3 = next((i for i, e in enumerate(ledger) if str(e.get("t")) >= GATE_V3_SINCE), len(ledger))
+    v4 = next((i for i, e in enumerate(ledger) if str(e.get("t")) >= GATE_V4_SINCE), len(ledger))
+    logs = {}
+    for i, e in enumerate(ledger):
+        if e.get("event") != "done" or i < v3:
             continue
-        act_rows = activity.get(e.get("node"), [])
+        node = str(e.get("node"))
+        if node not in logs:
+            p = pe / "graph" / "activity" / f"{node}.jsonl"
+            logs[node] = [r for r in read_jsonl(p, [], "activity") if r] if re.fullmatch(r"[\w-]+", node) else []
+        act_rows = rows_at(logs[node], e)
+        if i >= v4:
+            why = gate_refusal(act_rows, e.get("outputs"))
+            if why:
+                flags.append(("critical", f"{node}: closed at {e.get('t')} without a verifier PASS that graph.py's done "
+                                          f"gate accepts ({why})"))
+            continue
         ok = e.get("outputs") is not None and any(
-            r.get("actor") == "verifier" and r.get("kind") == "check" and verdict_of(r.get("text", "")) == "PASS"
-            and r.get("outputs") == e.get("outputs") and str(r.get("t")) <= str(e.get("t")) for r in act_rows)
+            r.get("actor") == "verifier" and r.get("kind") == "check" and check_verdict(r) == "PASS"
+            and r.get("outputs") == e.get("outputs") for r in act_rows)
         if not ok:
-            flags.append(("critical", f"{e.get('node')}: closed at {e.get('t')} without a verifier PASS on the outputs it recorded"))
+            flags.append(("critical", f"{node}: closed at {e.get('t')} without a verifier PASS on the outputs it recorded"))
     root = pe.parent
     for n in nodes:
         mine = events.get(n.get("id"), [])
@@ -623,8 +852,10 @@ def check_founder_auth(pe, ledger, nodes=(), activity=None):
                 flags.append(("major", f"{n.get('id')}: closed but outputs are missing or empty: {', '.join(missing)}"))
             closes = [e for e in mine if e.get("event") == "done" and e.get("outputs") is not None]
             if closes and not missing:
-                now = {o: path_hash(root / o) for o in n.get("outputs", [])}
-                if now != closes[-1]["outputs"]:
+                # The record's own files are live state: graph.py pins them as LIVE_STATE, never by their bytes.
+                pinned = closes[-1]["outputs"]
+                now = {o: LIVE_STATE if pinned.get(o) == LIVE_STATE else path_hash(root / o) for o in n.get("outputs", [])}
+                if now != pinned:
                     flags.append(("major", f"{n.get('id')}: outputs changed after the task was closed; reopen it so the change is verified"))
     attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
     attested += sum(1 for r in revenue if r.get("auth") != "signed")
@@ -636,16 +867,24 @@ def check_founder_auth(pe, ledger, nodes=(), activity=None):
 # ---------- per-node facts ----------
 
 def is_verifier(r):
-    return r.get("actor") == "verifier" or bool(VERIFIER_TEXT.match(str(r.get("text", ""))))
+    """A row by the independent verifier: actor verifier. Rows from before the --verifier flag existed carry no actor
+    and are read by their wording; on any later row the wording proves nothing (a builder may log "Verifier GAP
+    fixed"), as for graph.py's done gate."""
+    if r.get("actor") == "verifier":
+        return True
+    return ("actor" not in r and str(r.get("t", "")) < VERIFIER_ACTOR_SINCE
+            and bool(VERIFIER_TEXT.match(str(r.get("text", "")))))
 
 
 def block_class(note):
     note = note or ""
+    if VERIF_FAILED.search(note):
+        return "verification"
     if FOUNDER_STOP.search(note):
         return "founder_stop"
     if INTERRUPT_TEXT.search(note):
         return "interruption"
-    if re.search(r"verif|\bround \d+|\bfail", note, re.I):
+    if re.search(r"verif", note, re.I):
         return "verification"
     if EXTERNAL_BLOCK.search(note):
         return "external"
@@ -668,15 +907,20 @@ def node_facts(n, ledger_rows, act_rows, now):
     rows = act_rows or []
     verifier_rows = [r for r in rows if r.get("src") != "ledger" and is_verifier(r)]
     builder_rows = [r for r in rows if r.get("src") != "ledger" and not is_verifier(r)]
-    # A revision boundary: the builder wrote or edited again, or the node was (re)started.
+    # A revision boundary, as graph.py's done gate counts one: the builder logged a write, edit or run through graph.py
+    # (an ingested transcript row may be another task's call credited here by --related), or the node was (re)started.
+    # Verifier rows logged through graph.py pin the output hashes, so outputs that differ between two of them were
+    # revised in between, logged or not: that boundary sits just after the earlier row ("~" sorts after its time).
+    pinned = [r for r in verifier_rows if r.get("outputs") is not None]
     boundaries = sorted(
-        [str(r.get("t", "")) for r in builder_rows if r.get("kind") in ("write", "edit", "run") and r.get("t")]
+        [str(r.get("t", "")) for r in builder_rows if r.get("src") == "self" and r.get("kind") in CHANGE_KINDS and r.get("t")]
         + [str(e.get("t")) for e in events if e.get("event") in ("start", "unblock", "reopen")]
+        + [str(a.get("t")) + "~" for a, b in zip(pinned, pinned[1:]) if a["outputs"] != b["outputs"]]
     )
     last_boundary = boundaries[-1] if boundaries else ""
 
     fail_rows = [r for r in verifier_rows if row_fails(r)]
-    # Failed rounds seen in the activity log: FAIL/GAP rows grouped until the builder revises.
+    # Failed rounds seen in the activity log: FAIL rows grouped until the next revision boundary.
     clusters, prev = 0, None
     for r in fail_rows:
         t = str(r["t"])
@@ -693,16 +937,25 @@ def node_facts(n, ledger_rows, act_rows, now):
 
     open_fail = [r for r in fail_rows if str(r["t"]) > last_boundary]
     minor_rows = [r for r in rows if r.get("src") != "ledger" and not row_fails(r)
-                  and ((is_verifier(r) and MINOR_TEXT.search(str(r.get("text", "")))) or MINOR_LEAD.match(str(r.get("text", ""))))]
+                  and ((is_verifier(r) and says(MINOR_TEXT, r.get("text", ""))) or MINOR_LEAD.match(str(r.get("text", ""))))]
     open_minor = [r for r in minor_rows if str(r["t"]) > last_boundary]
-    false_rows = [r for r in fail_rows if FALSE_TEXT.search(str(r.get("text", "")))]
+    # A FAIL names a false statement when its own text does or, for a FAIL verdict, when a verifier row of the same
+    # review does: graph.py tells verifiers to put long details in note rows before the verdict. A review runs from the
+    # boundary or verdict before the check up to the check. At most one per FAIL. (Before the verdict rule each GAP row
+    # was its own FAIL and is read alone.)
+    verdict_ts = [str(v.get("t")) for v in verifier_rows if v.get("kind") == "check" and check_verdict(v)]
+    review = lambda r: [v for v in verifier_rows if max([b for b in boundaries + verdict_ts if b < str(r["t"])], default="")
+                        < str(v.get("t")) <= str(r["t"])]
+    false_rows = [r for r in fail_rows if says(FALSE_TEXT, r.get("text", ""))
+                  or (check_verdict(r) and any(says(FALSE_TEXT, v.get("text", "")) for v in review(r)))]
 
     corrections = sorted({str(r["t"])[:10] for r in rows if r.get("src") != "ledger" and CORRECTION_TEXT.match(str(r.get("text", "")))})
 
     orch_edits = [r for r in rows if r.get("src") != "ledger" and r.get("kind") in ("edit", "write")
                   and ORCH_EDIT_TEXT.match(str(r.get("text", "")))]
 
-    interruptions = [e for e, c in classes if c == "interruption"]
+    # A note that records a failed round and a stall or limit counts as both.
+    interruptions = [e for e, c in classes if c == "interruption" or (c == "verification" and INTERRUPT_TEXT.search(e.get("note") or ""))]
     interruptions += [r for r in builder_rows if r.get("src") == "self" and r.get("kind") in ("note", "blocked", "handoff", "plan")
                       and INTERRUPT_TEXT.search(str(r.get("text", "")))]
     founder_stops = [e for e, c in classes if c == "founder_stop"]
@@ -712,19 +965,25 @@ def node_facts(n, ledger_rows, act_rows, now):
 
     status = n.get("status")
     closed = status in CLOSED
-    verified = bool(verifier_rows)
+    # Verification is a check on record: a verifier check row logged through graph.py, with a verdict since the verdict
+    # rule. A read is not a check, and an ingested transcript row takes its time from the transcript file, so it shows
+    # a separate run (below), never when or whether a check happened.
+    checks = [r for r in verifier_rows if r.get("src") == "self" and r.get("kind") == "check"
+              and (check_verdict(r) or str(r.get("t", "")) < VERDICT_RULE_SINCE)]
+    verified = bool(checks)
     # Verification that happened only after the node was closed (a retro-check) is worth less than a check before closing.
     # Closing is the done event; a gate the founder cleared before done does not close the task.
     close_t = next((str(e.get("t")) for e in events if e.get("event") == "done"), None) or \
         next((str(e.get("t")) for e in events if e.get("event") == "clear-gate"), None)
-    on_time = verified and (close_t is None or any(str(r.get("t")) <= close_t for r in verifier_rows))
+    on_time = verified and (close_t is None or any(str(r.get("t")) <= close_t for r in checks))
     return {
         "id": n["id"], "agent": n.get("agent"), "status": status, "closed": closed,
         "in_record": bool(events),
         "verified": verified,
         "verified_on_time": on_time,
-        # A verification outcome is on record: verifier rows, or a block whose note records a failed verification.
-        "challenged": verified or bool(verif_blocks),
+        # A verification outcome is on record: a verifier check or FAIL row, or a block whose note records a failed
+        # verification.
+        "challenged": verified or bool(fail_rows) or bool(verif_blocks),
         # --verifier is a flag anyone can pass; separation is evidenced only by an ingested verifier transcript
         # (tools/activity.py --verifier), i.e. a separate agent run whose own tool calls are on record.
         "separated": any(r.get("actor") == "verifier" and r.get("src") == "transcript" for r in verifier_rows),
@@ -758,17 +1017,21 @@ def node_facts(n, ledger_rows, act_rows, now):
 
 def text_lines(path):
     """(line, context) pairs of prose from an output file. Code blocks, HTML comments, scripts and headings are not
-    claims. A markdown table row's context is the table's caption: the heading or prose line just above the table."""
+    claims, and what no reader sees (a hidden element, an empty-text link, a link definition) is neither a claim nor a
+    label. A markdown table row's context is the table's caption: the heading or prose line just above the table."""
     raw = path.read_text(errors="ignore")
-    if path.suffix in (".html", ".htm"):
-        raw = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", raw)
+    if path.suffix in (".html", ".htm", ".md"):
+        raw = re.sub(r"(?is)<(script|style|template|noscript)\b.*?</\1\s*>", " ", raw)
         raw = re.sub(r"(?s)<!--.*?-->", " ", raw)
+        raw = HIDDEN_ELEMENT.sub(" ", raw)
+    if path.suffix in (".html", ".htm"):
         raw = re.sub(r"(?i)</?(?:td|th)\b[^>]*>", " | ", raw)
         raw = re.sub(r"(?i)<(?:br|/p|/div|/li|/tr|/h\d|/section|/header|/footer|/article)\b[^>]*>", "\n", raw)
         raw = html.unescape(re.sub(r"<[^>]+>", " ", raw))
         return [(ln.strip(), "") for ln in raw.splitlines() if ln.strip()]
     if path.suffix == ".md":
-        raw = re.sub(r"(?s)<!--.*?-->", " ", raw)
+        raw = re.sub(r"!?\[\s*\]\([^)]*\)", " ", raw)
+        raw = re.sub(r"(?m)^ {0,3}\[[^\]]+\]:[ \t]*\S.*$", " ", raw)
     out, fence, last_prose, caption, in_table = [], False, "", "", False
     for ln in raw.splitlines():
         s = ln.strip()
@@ -933,13 +1196,17 @@ def score_integrity(facts, agent, covered):
     s = 100 - 20 * len(corr) - 10 * len(self_ver) - 5 * false_rows
     parts = [f"{len(corr)} orchestrator corrections of a false claim" + (f" ({', '.join(f'{i} on {d}' for i, d in corr)})" if corr else ""),
              f"{len(self_ver)} self-verified completions" + (f" ({ids(self_ver)}: closed by their builder with no verifier check before closing)" if self_ver else ""),
-             f"{false_rows} verifier FAIL/GAP rows naming a false statement" + (" (" + ", ".join(f"{f['id']} {f['false_rows']}" for f in pool if f["false_rows"]) + ")" if false_rows else "")]
+             f"{false_rows} failed verifier reviews naming a false statement" + (" (" + ", ".join(f"{f['id']} {f['false_rows']}" for f in pool if f["false_rows"]) + ")" if false_rows else "")]
     basis = f"Over {len(pool)} tasks in the ledger: " + "; ".join(parts)
     s = clamp(s)
     if agent not in covered:
         s = min(s, INTEGRITY_CAP_UNAUDITED)
         basis += (f". No independent LLM citation audit covers this agent yet, so this dimension is capped at "
                   f"{INTEGRITY_CAP_UNAUDITED:g} (fabricated citations cannot be ruled out offline)")
+    else:
+        # Any agent can write a findings file, so the founder sees which files lift the cap.
+        basis += (f". Not capped at {INTEGRITY_CAP_UNAUDITED:g}: an LLM citation audit covers this agent in "
+                  + ", ".join(f"findings/{x}" for x in sorted(covered[agent])))
     return s, basis + "."
 
 
@@ -968,10 +1235,10 @@ def score_process(facts, agent, all_facts):
     no_steps = [f for f in pool if not f["step_record"]]
     basis = (f"{len(pool)} closed tasks in the ledger: step records on {len(pool) - len(no_steps)} "
              f"({sum(f['self_logged'] for f in pool)} self-logged rows, {sum(f['transcript_rows'] for f in pool)} transcript rows); "
-             f"verifier rows on {len(pool) - len(no_ver)}; a separate verifier run evidenced by its own ingested transcript on "
+             f"a verifier check on {len(pool) - len(no_ver)}; a separate verifier run evidenced by its own ingested transcript on "
              f"{len(pool) - len(no_ver) - len(unsep) - len(declared_only)}")
     if no_ver:
-        basis += f"; closed with no verification record: {ids(no_ver)}"
+        basis += f"; closed with no verification record (no verifier check logged through graph.py): {ids(no_ver)}"
     if unsep:
         basis += f"; verifier rows not flagged --verifier: {ids(unsep)}"
     if declared_only:
@@ -1063,17 +1330,41 @@ def compute(pe=PE_DEFAULT, now=None):
     pe = pathlib.Path(pe)
     root = pe.parent
     now = now or datetime.datetime.now(datetime.timezone.utc)
+    # A row dated after the audit ran (after now and after the real clock, as --now may be in the past) comes from no
+    # clock: it is left out of every metric, and check_founder_auth flags it.
+    clock = iso(max(now, datetime.datetime.now(datetime.timezone.utc)))
     warnings = []
     g = json.loads((pe / "graph" / "graph.json").read_text())
     agents = g.get("agents", {})
     ledger = [e for e in read_jsonl(pe / "graph" / "ledger.jsonl", warnings, "ledger.jsonl") if e]
-    activity = load_activity(pe, warnings)
+    activity = {k: [r for r in v if str(r.get("t")) <= clock] for k, v in load_activity(pe, warnings).items()}
     by_node = {}
     for e in ledger:
         by_node.setdefault(e.get("node"), []).append(e)
-    facts = [node_facts(n, by_node.get(n["id"], []), activity.get(n["id"], []), now) for n in g.get("nodes", [])]
+    # Ownership as graph.py recorded it: every row it writes names the task's agent at that moment. A task whose owner
+    # in graph.json differs, or that graph.json no longer lists, is scored against the agent graph.py first recorded.
+    recorded = {k: next((r["agent"] for r in v if r.get("src") in ("self", "ledger") and r.get("agent") in agents), None)
+                for k, v in activity.items()}
+    nodes, owner_flags = [], []
+    for n in g.get("nodes", []):
+        who = recorded.get(n["id"])
+        if who and who != n.get("agent"):
+            owner_flags.append(("major", f"{n['id']}: graph.json names {n.get('agent')} as its agent but graph.py logged "
+                                         f"its work for {who} (reassigned outside graph.py?); scored against {who}"))
+            n = dict(n, agent=who)
+        nodes.append(n)
+    listed = {n["id"] for n in nodes}
+    logged = {k for k, v in by_node.items() if isinstance(k, str) and any(e.get("event") in GATE_EVENTS for e in v)}
+    for i in sorted((logged | set(activity)) - listed):
+        owner_flags.append(("major", f"{i}: the ledger or an activity log records this task but graph.json does not list "
+                                     "it (removed outside graph.py?); " + (f"scored against {recorded[i]}, the agent "
+                                     "graph.py logged" if recorded.get(i) else "no agent is recorded to score it against")))
+        if recorded.get(i):
+            nodes.append({"id": i, "agent": recorded[i], "outputs": [],
+                          "status": replay_status(by_node.get(i, []), False) or "pending"})
+    facts = [node_facts(n, by_node.get(n["id"], []), activity.get(n["id"], []), now) for n in nodes]
     MEASURED_TASKS.clear()
-    MEASURED_TASKS.update(f["id"] for f in facts if f["in_record"] and f["closed"] and not f["verified_on_time"])
+    MEASURED_TASKS.update({f["id"]: f["agent"] for f in facts if f["in_record"] and f["closed"] and not f["verified_on_time"]})
     llm, covered, checks = load_findings(pe, agents, warnings)
     # A task an auditor found a major or critical problem in did not pass first time, however the fix was logged.
     serious = {}
@@ -1092,8 +1383,8 @@ def compute(pe=PE_DEFAULT, now=None):
                       "claim": f"graph/revenue.jsonl entry {fl['entry']} would count as revenue",
                       "evidence": f"entry {fl['entry']}: " + "; ".join(fl["reasons"]) + ". Revenue is founder-only with evidence (CLAUDE.md); the orchestrator is custodian of the record.",
                       "status": "open"}, "process"))
-    founder_auth, auth_flags = check_founder_auth(pe, ledger, g.get("nodes", []), activity)
-    for i, (sev, fl) in enumerate(auth_flags, 1):
+    founder_auth, auth_flags = check_founder_auth(pe, ledger, g.get("nodes", []), clock)
+    for i, (sev, fl) in enumerate(auth_flags + owner_flags, 1):
         auto.append(({"id": f"AUTO-AUTH-{i}", "agent": "orchestrator", "severity": sev, "kind": "process",
                       "claim": "a founder-only action or a state change is not backed by the record", "evidence": fl + ". Founder "
                       "actions must carry the founder's SSH signature once a key is registered (tools/graph.py founder-key), and "

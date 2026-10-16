@@ -24,7 +24,9 @@ export interface PENode {
   deps?: string[]
 }
 export interface PELedgerEvent { t: string; event: string; node: string; note?: string }
-export interface PEActivityEvent { t: string; node: string; agent?: string; kind: string; text: string; src?: string; actor?: string }
+/** `related` is set on a row credited from a transcript that covered several tasks: 'id' when the call named the task,
+ * 'path' when it only named one of the task's outputs. */
+export interface PEActivityEvent { t: string; node: string; agent?: string; kind: string; text: string; src?: string; actor?: string; related?: string }
 export interface PEAgent { name: string; district?: string; role?: string }
 export interface PEState {
   generated: string
@@ -59,12 +61,16 @@ export const STALL_MINUTES = 15
 const statusOfNode = (n: PENode): PEStatus => n.view ?? n.status
 const agentName = (s: PEState, key: string) => s.agents?.[key]?.name ?? key
 
+/** A row that shows work on its task (same rule as the city's isStep): a command that only named the task's output may
+ * have read it as another task's input, so only writing or editing the output counts. */
+const isStep = (e: PEActivityEvent) => e.related !== 'path' || e.kind === 'write' || e.kind === 'edit'
+
 /** Latest time anything was recorded for each node: ledger events and activity steps. */
 function lastSeen(s: PEState): Map<string, number> {
   const seen = new Map<string, number>()
   const note = (node: string, t: string) => seen.set(node, Math.max(seen.get(node) ?? 0, timeOf(t)))
   for (const e of s.ledger ?? []) note(e.node, e.t)
-  for (const [node, events] of Object.entries(s.activity ?? {})) for (const e of events) note(e.node || node, e.t)
+  for (const [node, events] of Object.entries(s.activity ?? {})) for (const e of events) if (isStep(e)) note(e.node || node, e.t)
   return seen
 }
 

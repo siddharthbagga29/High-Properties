@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { BRIEF, reality } from './brief'
 import { answer } from './guide'
 import { newer } from './live'
-import { agentFeed, agentStats, atomsOf, collapseFeed, criterionState, feed, freshEvents, isVerifier, runState, stalledNow, statusesAt, timeline, ventureStats, workingNow } from './model'
-import type { ActivityEvent, GraphState } from './types'
+import {
+  agentFeed, agentStats, atomsOf, collapseFeed, countCalls, criterionState, feed, freshEvents, historyCut, isVerifier, lastOwnStep, runState,
+  stalledNow, statusesAt, timeline, ventureStats, workingNow,
+} from './model'
+import type { ActivityEvent, GraphState, TaskNode } from './types'
 import { parseFocus } from '../store'
 
 const state: GraphState = JSON.parse(readFileSync(new URL('../../public/state.json', import.meta.url), 'utf8'))
@@ -21,6 +24,13 @@ const live = (() => {
   return { s, st: statusesAt(s, null), id: n.id }
 })()
 const ev = (p: Partial<ActivityEvent>): ActivityEvent => ({ t: '2026-10-07T00:00:00Z', node: 'F04', agent: 'product', kind: 'note', text: 'x', src: 'self', ...p })
+const minute = (m: number) => new Date(Date.UTC(2026, 9, 1, 0, m)).toISOString()
+/** A small record written out in the test, on the live agents: its tasks, ledger events and activity rows. */
+const record = (nodes: Partial<TaskNode>[], ledger: { t: string; node: string; event: string }[], activity: Record<string, ActivityEvent[]> = {}): GraphState => ({
+  ...state, ledgerBase: undefined, activity, ledger: ledger.map(e => ({ note: '', ...e })),
+  nodes: nodes.map(n => ({ phase: 0, agent: 'gtm', title: `task ${n.id}`, deps: [], outputs: [], accept: [], gate: null, budget_k: 0, status: 'pending', view: 'pending', ...n }) as TaskNode),
+})
+const gateAt = (s: GraphState, id: string, t: number | null) => atomsOf(s, id, statusesAt(s, t), t).find(a => a.level4Type === 'gate')?.status
 
 describe('replay', () => {
   it('live statuses equal the exported view', () => {
@@ -46,6 +56,40 @@ describe('replay', () => {
   it('before the first event only pre-ledger work is built', () => {
     const [start] = timeline(state)
     expect([...statusesAt(state, start).values()].filter(s => s === 'running')).toHaveLength(0)
+  })
+  it('in a replay the founder gate is as the ledger had it at that moment, not as it is now', () => {
+    const cleared = record([{ id: 'X1', status: 'done', view: 'done', gate: { type: 'founder', reason: 'r', cleared: minute(3) } }], [
+      { t: minute(1), node: 'X1', event: 'start' }, { t: minute(2), node: 'X1', event: 'done' }, { t: minute(3), node: 'X1', event: 'clear-gate' },
+    ])
+    const when = (s: GraphState, m: number) => gateAt(s, 'X1', Date.parse(minute(m)) + 1)
+    expect([when(cleared, 2), when(cleared, 3), gateAt(cleared, 'X1', null)]).toEqual(['waiting', 'met', 'met'])
+    // A reopen re-arms the gate: the time it was cleared still shows it cleared.
+    const rearmed = record([{ id: 'X1', status: 'running', view: 'running', gate: { type: 'founder', reason: 'r' } }], [
+      ...cleared.ledger, { t: minute(4), node: 'X1', event: 'reopen' },
+    ])
+    expect([when(rearmed, 3), when(rearmed, 4), gateAt(rearmed, 'X1', null)]).toEqual(['met', 'waiting', 'waiting'])
+  })
+  it('a ledger cut to fit the document replays from its base like the whole ledger, and says the history before is missing', () => {
+    const full = record([{ id: 'A' }, { id: 'B', gate: { type: 'founder', reason: 'r' } }, { id: 'C', deps: ['A'] }, { id: 'D', status: 'done', view: 'done' }], [
+      { t: minute(1), node: 'A', event: 'start' }, { t: minute(2), node: 'A', event: 'done' }, { t: minute(3), node: 'B', event: 'start' },
+      { t: minute(4), node: 'B', event: 'done' }, { t: minute(5), node: 'B', event: 'clear-gate' }, { t: minute(6), node: 'C', event: 'start' },
+      { t: minute(7), node: 'C', event: 'block' }, { t: minute(8), node: 'C', event: 'unblock' }, { t: minute(9), node: 'B', event: 'reopen' },
+      { t: minute(10), node: 'B', event: 'done' },
+    ])
+    // The base graph.py ledger_base exports for a cut after the first five events (tools/test_activity.py checks the same values).
+    const ledgerBase = { t: minute(5), events: 5, status: { A: 'done', B: 'done', C: 'pending', D: 'done' } as const, cleared: ['B'] }
+    const cut: GraphState = { ...full, ledger: full.ledger.slice(5), ledgerBase }
+    expect(timeline(cut)[0]).toBe(Date.parse(minute(5)))
+    expect(historyCut(cut)?.note).toBe('Replay starts 2026-10-01 00:05 UTC: the 5 earlier ledger events were cut to fit the live document, so history before then is not available here.')
+    expect(historyCut(full)).toBeNull()
+    for (let m = 5; m <= 11; m++) {
+      const t = Date.parse(minute(m))
+      expect(Object.fromEntries(statusesAt(cut, t))).toEqual(Object.fromEntries(statusesAt(full, t)))
+      expect(gateAt(cut, 'B', t)).toBe(gateAt(full, 'B', t))
+    }
+    // Without its base the cut ledger replays as if it were the whole history, and gets the statuses wrong.
+    const end = Date.parse(minute(11))
+    expect(Object.fromEntries(statusesAt({ ...cut, ledgerBase: undefined }, end))).not.toEqual(Object.fromEntries(statusesAt(full, end)))
   })
 })
 
@@ -73,6 +117,48 @@ describe('liveness: "running" is not proof of work', () => {
     expect(isVerifier(ev({ text: 'Verifier: checked the export' }))).toBe(true)
     expect(isVerifier(ev({ actor: 'verifier' }))).toBe(true)
     expect(isVerifier(ev({ text: 'Wrote README' }))).toBe(false)
+  })
+  it('a row\'s text makes it the verifier\'s only for rows from before the actor field', () => {
+    const fix = ev({ t: '2026-10-16T05:07:26Z', node: 'X1', agent: 'gtm', kind: 'edit', text: 'Verifier GAP fixed: section 6 recounted against targets.csv' })
+    expect(isVerifier(fix)).toBe(false)
+    expect(isVerifier({ ...fix, actor: 'verifier' })).toBe(true)
+    expect(isVerifier({ ...fix, t: '2026-10-07T19:00:00Z' })).toBe(true)
+    const s = record([{ id: 'X1' }], [], { X1: [fix] })
+    expect(lastOwnStep(s, 'gtm', Date.parse(fix.t))).toBe(Date.parse(fix.t))
+  })
+  it('a call credited only because its command named a task\'s output is not a step on that task', () => {
+    // A V07 session's command read V05's output as its input and was ingested --related for V05, two hours after V05
+    // was reopened with nobody on it.
+    const read = ev({ t: minute(120), node: 'X1', agent: 'gtm', kind: 'run', src: 'transcript', related: 'path', text: 'Append segment-1 rows to targets.csv' })
+    const with_ = (e: ActivityEvent) => record([{ id: 'X1', status: 'running', view: 'running' }], [{ t: minute(0), node: 'X1', event: 'reopen' }], { X1: [e] })
+    const at = Date.parse(minute(121))
+    const s = with_(read), gtm = agentStats(s, statusesAt(s, null), at).find(a => a.key === 'gtm')!
+    expect(runState(s, statusesAt(s, null), at).get('X1')).toBe('stalled')
+    expect([gtm.running?.id, gtm.stalled?.id, gtm.lastStep]).toEqual([undefined, 'X1', null])
+    // Naming the task, writing or editing its output, or a whole transcript ingested for the task are steps on it.
+    for (const e of [{ ...read, related: 'id' as const }, { ...read, kind: 'edit' as const }, { ...read, related: undefined }]) {
+      const w = with_(e)
+      expect(runState(w, statusesAt(w, null), at).get('X1')).toBe('working')
+      expect(lastOwnStep(w, 'gtm', at)).toBe(Date.parse(read.t))
+    }
+  })
+})
+
+describe('tool calls', () => {
+  it('one call credited to several tasks counts once, also when it was ingested before calls had an id', () => {
+    const call = (node: string, agent: string, p: Partial<ActivityEvent>) => ev({ node, agent, kind: 'run', src: 'transcript', text: 'Print briefs', ...p })
+    const failed = ev({ node: 'X1', agent: 'gtm', kind: 'blocked', src: 'transcript', text: 'Failed (Exit code 1): Print briefs', call: 't:a' })
+    // Rows without a call id are told apart as the record tells rows apart (graph.py activity_all): time, kind and text.
+    const legacy = { t: '2026-10-06T10:00:00Z', text: 'Count rows' }
+    const s = record([{ id: 'X1' }, { id: 'X2' }, { id: 'Y1', agent: 'finance' }], [], {
+      X1: [call('X1', 'gtm', { call: 't:a' }), failed, call('X1', 'gtm', legacy), call('X1', 'gtm', { ...legacy, t: '2026-10-06T10:00:01Z' })],
+      X2: [call('X2', 'gtm', { call: 't:a' }), call('X2', 'gtm', legacy)],
+      Y1: [call('Y1', 'finance', { call: 't:a' }), call('Y1', 'finance', { call: 't:b' })],
+    })
+    expect(countCalls(feed(s, null))).toBe(4)
+    expect(ventureStats(s, statusesAt(s, null), null).toolCalls).toBe(4)
+    const by = Object.fromEntries(agentStats(s, statusesAt(s, null), Date.now()).map(a => [a.key, a.toolCalls]))
+    expect([by.gtm, by.finance]).toEqual([3, 2])
   })
 })
 

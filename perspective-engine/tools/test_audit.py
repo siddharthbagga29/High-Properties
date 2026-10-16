@@ -29,7 +29,9 @@ def jl(rows):
 
 
 def act(t, kind, text, src="self", actor=None, node="X"):
-    r = {"t": t, "node": node, "agent": "x", "kind": kind, "text": text, "src": src}
+    # graph.py names the task's agent on every row; the fixture's task ids start with their agent's initial.
+    agent = {"O": "orchestrator", "A": "alpha", "B": "beta", "G": "gamma", "D": "delta"}.get(node[0], "x")
+    r = {"t": t, "node": node, "agent": agent, "kind": kind, "text": text, "src": src}
     if actor:
         r["actor"] = actor
     return r
@@ -83,9 +85,9 @@ def build_fixture(root):
         {"t": "2026-10-06T12:30:00Z", "event": "done", "node": "A2", "note": "verified; awaits founder"},
         {"t": "2026-10-06T13:00:00Z", "event": "start", "node": "B1", "note": ""},
         {"t": "2026-10-06T13:20:00Z", "event": "done", "node": "B1", "note": "list built"},
-        {"t": "2026-10-08T11:00:00Z", "event": "start", "node": "G1", "note": ""},
         {"t": "2026-10-06T14:00:00Z", "event": "start", "node": "D1", "note": ""},
         {"t": "2026-10-06T14:30:00Z", "event": "done", "node": "D1", "note": "verified"},
+        {"t": "2026-10-08T11:00:00Z", "event": "start", "node": "G1", "note": ""},  # graph.py appends in time order
     ]
     (pe / "graph" / "ledger.jsonl").write_text(jl(ledger))
 
@@ -594,7 +596,7 @@ class ExportCarriesAuditAndRevenue(Tmp):
         self.assertEqual(city["revenue"], [])
         self.assertIsNone(dash["audit"])
 
-    def test_trim_activity_first_never_audit_or_revenue(self):
+    def test_trim_activity_first_never_revenue_or_scores_and_the_ledger_last_with_a_base(self):
         rows = [act(f"2026-10-06T10:{i // 60:02d}:{i % 60:02d}Z", "run", f"step {i} " + "x" * 200, node="A1") for i in range(150)]
         with (self.pe / "graph" / "activity" / "A1.jsonl").open("a") as f:
             f.write(jl(rows))
@@ -609,16 +611,24 @@ class ExportCarriesAuditAndRevenue(Tmp):
         self.assertLessEqual(len(json.dumps(city, separators=(",", ":"))), full_size - 20_000)
         self.assertLess(len(city["activity"]["A1"]), 120)
         self.assertEqual(len(city["ledger"]), 14)  # ledger untouched: activity was enough
+        self.assertNotIn("ledgerBase", city)
         self.assertEqual(city["audit"]["scorecards"], full["audit"]["scorecards"])
         self.assertEqual(city["revenue"], full["revenue"])
-        # A cap nothing can meet: audit and revenue still survive whole.
+        # A cap nothing can meet: activity goes, then the excerpts and the audit's texts are shortened (scores and
+        # findings stay), and only then is the ledger cut, with a base holding every task's state at the cut. Revenue
+        # survives whole.
         with mock.patch.object(graph, "MAX_STATE_BYTES", 1_000):
             graph.export(graph.load())
         _, tiny = self.states()
         self.assertEqual(tiny["activity"], {})
-        self.assertEqual(len(tiny["ledger"]), 14)  # under 40 entries, so the window keeps all
-        self.assertEqual(tiny["audit"]["scorecards"], full["audit"]["scorecards"])
+        texts = {"basis", "claim", "evidence"}
+        scores = lambda a: [dict(c, dimensions=[{k: v for k, v in d.items() if k not in texts} for d in c["dimensions"]],
+                                 findings=[{k: v for k, v in f.items() if k not in texts} for f in c["findings"]]) for c in a["scorecards"]]
+        self.assertEqual(scores(tiny["audit"]), scores(full["audit"]))
         self.assertEqual(tiny["revenue"], full["revenue"])
+        base = tiny["ledgerBase"]
+        self.assertEqual((tiny["ledger"], base["events"], base["t"], base["cleared"]), ([], 14, "2026-10-08T11:00:00Z", []))
+        self.assertEqual(base["status"], {"O1": "done", "A1": "done", "A2": "awaiting_human", "A3": "pending", "B1": "done", "G1": "running", "D1": "done"})
 
 
 class RealRecord(unittest.TestCase):

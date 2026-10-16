@@ -613,8 +613,9 @@ def audit_state():
 
 def city_row(r):
     """An activity row as the city shows it: no output hashes, text clipped. "call" (the tool call a transcript row
-    came from) lets the city count a call credited to several tasks once."""
-    keep = {k: r[k] for k in ("t", "node", "agent", "kind", "src", "actor", "call") if k in r}
+    came from) lets the city count a call credited to several tasks once; "related" (how a --related call named the
+    task) lets it tell work on a task from a command that only read its output."""
+    keep = {k: r[k] for k in ("t", "node", "agent", "kind", "src", "actor", "call", "related") if k in r}
     keep["text"] = clip(r.get("text"), 300)
     return keep
 

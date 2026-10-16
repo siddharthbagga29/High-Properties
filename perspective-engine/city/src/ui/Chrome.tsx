@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { sfx } from '../audio/sound'
 import { BRIEF, reality } from '../data/brief'
-import { agentStats, ago, clock, collapseFeed, feed, isVerifier, KIND_LABEL, LIVE_WINDOW_MIN, ms, timeline, ventureStats } from '../data/model'
+import { agentStats, ago, clock, collapseFeed, feed, historyCut, isVerifier, KIND_LABEL, LIVE_WINDOW_MIN, ms, timeline, ventureStats } from '../data/model'
 import type { ActivityEvent, GraphState } from '../data/types'
 import { DEPT, RING } from '../scene/world'
 import { persist, useStore, type Focus, type Source } from '../store'
@@ -319,6 +319,7 @@ export function Replay() {
   const [playing, setPlaying] = useState(false)
   const raf = useRef(0)
   const [start, end] = data ? timeline(data) : [0, 1]
+  const cut = data ? historyCut(data) : null
   // Closing the panel ends the replay: no hidden playback, and the city never stays frozen in the past.
   useEffect(() => {
     if (open) return
@@ -346,10 +347,12 @@ export function Replay() {
       <div className="track">
         <div className="ticks-ev" aria-hidden="true">{data.ledger.map((e, i) => <i key={i} className={`ev ev-${e.event}`} style={{ left: `${((ms(e.t) - start) / (end - start)) * 100}%` }} />)}</div>
         <input type="range" min={start} max={end} step={1000} value={time ?? end} aria-label="Project timeline" aria-valuetext={time === null ? 'Live' : `${clock(time)} UTC`}
+          aria-describedby={cut ? 'replay-cut' : undefined}
           onChange={e => { setPlaying(false); const v = Number(e.target.value); useStore.getState().setTime(v >= end - 1000 ? null : v) }} />
       </div>
       <span className="tlabel">{time === null ? 'Live' : `${clock(time)} UTC`}</span>
       <button className={`livepill${time === null ? ' on' : ''}`} onClick={() => { setPlaying(false); useStore.getState().setTime(null) }}>Live</button>
+      {cut && <p id="replay-cut" className="tcut">{cut.note}</p>}
     </motion.div>
   )
 }

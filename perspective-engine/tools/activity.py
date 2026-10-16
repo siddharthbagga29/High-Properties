@@ -10,8 +10,10 @@ time the transcript recorded it. Output is appended to graph/activity/<NODE>.jso
       --verifier: the transcript is the independent verifier's run; its rows are credited to the verifier, which is
       the evidence the auditor needs to give separation-of-duties credit
       --related: the transcript covered several tasks; keep only the calls that acted on this task: its ID or one of
-      its input or output paths in the file, search or command the call ran (not in content it wrote or handed back),
-      so another task's work is never credited to this one
+      its input or output paths in the file, search or command the call ran (not in content it wrote or handed back,
+      nor in a note or other quoted prose the command passed on), so another task's work is never credited to this
+      one. Each kept row records which of the two matched ("related": "id" or "path"): a command that only names an
+      output may have read it as another task's input
   python3 perspective-engine/tools/activity.py --runs perspective-engine/graph/runs.json
   python3 perspective-engine/tools/activity.py --ledger    # backfill start/done events from the ledger
 """
@@ -66,22 +68,27 @@ def describe(name, inp):
 
 
 # What --related matches: what a call acted on, never what it carried. A shell command keeps its own words but loses
-# heredoc bodies, inline scripts (python3 -c, node -e) and the notes it passes to graph.py: those are content, like a
-# Write's text, and a task named inside them was talked about, not worked on.
+# heredoc bodies, inline scripts (python3 -c, node -e), the notes it passes to graph.py and any other quoted text with
+# a space in it, however graph.py was reached ($G log M04 check --verifier '... V12 NOT CHECKED'): those are content,
+# like a Write's text, and a task named inside them was talked about, not worked on. A quoted single word (a path, a
+# grep pattern) stays.
 WORD = r"""(?:'[^']*'|"(?:[^"\\]|\\.)*"|\\.|[^\s'"\\;&|<>()])+"""
 HEREDOC = re.compile(r"(?<!<)<<-?[ \t]*(['\"]?)([A-Za-z_]\w*)\1([^\n]*).*?\n[ \t]*\2[ \t]*(?=\n|$)", re.S)
 INLINE = re.compile(rf"(\b(?:python[\d.]*|node|tsx)(?:\s+-[\w=-]+)*?\s+(?:-c|-e|-p|--eval|--print))\s+{WORD}")
 GRAPH_ARGS = re.compile(rf"((?:\S*/)?graph\.py\b)((?:[ \t]+{WORD})*)")
 QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
-# Every task runs graph.py; running it is not work on graph.py itself (F01's output).
-RUN_GRAPH = re.compile(r"(\bpython[\d.]*(?:\s+-\w+)*\s+)(?:\S*/)?graph\.py\b")
+# Every task runs graph.py, directly or through a variable (T=.../graph.py && python3 $T done ...); running it is not
+# work on graph.py itself (F01's output).
+RUN_GRAPH = re.compile(r"(\bpython[\d.]*(?:\s+-\w+)*\s+|(?<![\w$-])[A-Za-z_]\w*=)(?:\S*/)?graph\.py\b")
 
 
 def command_words(cmd):
-    """A shell command as --related reads it: without heredoc bodies, inline scripts or graph.py notes."""
+    """A shell command as --related reads it: without heredoc bodies, inline scripts, graph.py notes or quoted prose."""
     cmd = HEREDOC.sub(lambda m: f"<<{m.group(2)}{m.group(3)}", cmd)
+    cmd = cmd.replace("\\\n", " ")  # a line continuation: the shell reads one line
     cmd = INLINE.sub(r"\1 ''", cmd)
     cmd = GRAPH_ARGS.sub(lambda m: m.group(1) + QUOTED.sub("''", m.group(2)), cmd)
+    cmd = QUOTED.sub(lambda m: "''" if re.search(r"\s", m.group(0)) else m.group(0), cmd)
     return RUN_GRAPH.sub(r"\1graph.py", cmd)
 
 
@@ -137,12 +144,12 @@ def extract(transcript):
 
 
 def related(n, text):
-    """True if a row names task n: its ID as a whole word, or one of its input or output paths as a whole path
-    (dashboard/index.html is not inside data/roi-dashboard/index.html)."""
+    """How a row names task n: "id" for its ID as a whole word, "path" for one of its input or output paths as a whole
+    path (dashboard/index.html is not inside data/roi-dashboard/index.html), None if it does not."""
     if re.search(rf"(?<![A-Za-z0-9]){re.escape(n['id'])}(?![A-Za-z0-9])", text):
-        return True
+        return "id"
     paths = {q for p in n.get("outputs", []) + n.get("inputs", []) if p for q in (rel(p), rel(p).removeprefix("perspective-engine/"))}
-    return any(re.search(rf"(?<![\w.-]){re.escape(q)}(?![\w/-]|\.\w)", text) for q in paths)
+    return "path" if any(re.search(rf"(?<![\w.-]){re.escape(q)}(?![\w/-]|\.\w)", text) for q in paths) else None
 
 
 def ingest(node, transcript, agent=None, actor=None, only_related=False):
@@ -150,16 +157,17 @@ def ingest(node, transcript, agent=None, actor=None, only_related=False):
     n = graph.index(g)[node]
     rows = extract(transcript)
     if only_related:
-        rows = [r for r in rows if related(n, r.get("match", r["text"]))]
+        rows = [dict(r, related=how) for r in rows if (how := related(n, r.get("match", r["text"])))]
     # Idempotent: a transcript ingested twice adds nothing the second time.
     have = {(r.get("t"), r.get("kind"), r.get("text")) for r in graph.jsonl(graph.ACTIVITY / f"{node}.jsonl") if isinstance(r, dict)}
     rows = [r for r in rows if (r["t"], r["kind"], r["text"]) not in have]
     graph.ACTIVITY.mkdir(parents=True, exist_ok=True)
     with (graph.ACTIVITY / f"{node}.jsonl").open("a") as f:
         for r in rows:
-            # graph.activity_append's record, plus the id of the call the row came from.
+            # graph.activity_append's record, plus the id of the call the row came from and, under --related, how the
+            # call named this task.
             rec = {"t": r["t"], "node": node, "agent": agent or n["agent"], "kind": r["kind"], "text": r["text"], "src": "transcript"}
-            rec.update({k: v for k, v in (("actor", actor), ("call", r.get("call"))) if v})
+            rec.update({k: v for k, v in (("actor", actor), ("call", r.get("call")), ("related", r.get("related"))) if v})
             f.write(json.dumps(rec) + "\n")
     return len(rows)
 

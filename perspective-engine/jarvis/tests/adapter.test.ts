@@ -101,6 +101,15 @@ describe('peProjectState on edge cases', () => {
     expect(STALL_MINUTES).toBe(15)
   })
 
+  it('does not take a command that only named a task\'s output for work on that task', () => {
+    // Another task's session read X3's output as its input; the row was credited to X3 by --related.
+    const read = { t: '2026-10-08T11:55:00Z', node: 'X3', kind: 'run', text: 'Append rows to the list', src: 'transcript', related: 'path' }
+    const risk = (e: typeof read) => peProjectState({ ...base, activity: { X3: [...base.activity!.X3, e] } }, now).risks.find(r => r.id === 'X3')?.detail
+    expect(risk(read)).toBe('marked running but nothing recorded for 40 minutes')
+    expect(risk({ ...read, related: 'id' })).toBeUndefined()
+    expect(risk({ ...read, kind: 'edit' })).toBeUndefined()
+  })
+
   it('reports blocked tasks with the ledger reason, also as risks', () => {
     expect(ps.blocked).toEqual([{ id: 'X4', title: 'Stuck', owner: 'Curie', detail: 'source paywalled', at: '2026-10-08T11:30:00Z' }])
     expect(ps.risks.find(r => r.id === 'X4')?.detail).toBe('blocked: source paywalled')
