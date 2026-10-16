@@ -11,11 +11,14 @@ export const STATUS_LABEL: Record<Status, string> = {
 
 export const ms = (iso: string) => Date.parse(iso)
 
-/** Start of the project timeline: one minute before the first ledger event. */
+/**
+ * Start of the project timeline: one minute before the first ledger event. When the export had to cut the ledger
+ * (state.ledgerBase), the timeline starts at the cut: the history before it is not in the document.
+ */
 export function timeline(state: GraphState): [number, number] {
   const ts = state.ledger.map(e => ms(e.t)).filter(Number.isFinite)
   const end = Math.max(ms(state.generated), ...ts)
-  const start = ts.length ? Math.min(...ts) - 60_000 : end - 3_600_000
+  const start = state.ledgerBase ? ms(state.ledgerBase.t) : ts.length ? Math.min(...ts) - 60_000 : end - 3_600_000
   return [start, end]
 }
 
@@ -30,11 +33,27 @@ export function statusesAt(state: GraphState, t: number | null): Map<string, Sta
     state.nodes.forEach(n => out.set(n.id, n.view))
     return out
   }
+  const { raw } = replay(state, t)
+  for (const n of state.nodes) {
+    const s = raw.get(n.id)!
+    // Same rule as graph.py dep_ok: a gated task may start from a dependency that is prepared and waiting on the founder.
+    const depsDone = n.deps.every(d => raw.get(d) === 'done' || (!!n.gate && raw.get(d) === 'awaiting_human'))
+    out.set(n.id, s === 'pending' && depsDone ? 'ready' : s)
+  }
+  return out
+}
+
+/**
+ * The ledger replayed up to t: each task's status before "ready" is derived, and the tasks whose founder gate is
+ * cleared. A cut ledger replays from its base (the state at the cut); before the cut there is nothing to replay.
+ */
+function replay(state: GraphState, t: number) {
+  const base = state.ledgerBase
   const logged = new Set(state.ledger.map(e => e.node))
   const raw = new Map<string, Status>()
-  state.nodes.forEach(n => raw.set(n.id, n.status === 'done' && !logged.has(n.id) ? 'done' : 'pending'))
+  state.nodes.forEach(n => raw.set(n.id, base?.status[n.id] ?? (n.status === 'done' && !logged.has(n.id) ? 'done' : 'pending')))
   const byId = new Map(state.nodes.map(n => [n.id, n]))
-  const cleared = new Set<string>()
+  const cleared = new Set<string>(base?.cleared)
   for (const e of [...state.ledger].sort((a, b) => ms(a.t) - ms(b.t))) {
     if (ms(e.t) > t) break
     const n = byId.get(e.node)
@@ -50,13 +69,7 @@ export function statusesAt(state: GraphState, t: number | null): Map<string, Sta
       if (raw.get(n.id) === 'awaiting_human') raw.set(n.id, 'done')
     }
   }
-  for (const n of state.nodes) {
-    const s = raw.get(n.id)!
-    // Same rule as graph.py dep_ok: a gated task may start from a dependency that is prepared and waiting on the founder.
-    const depsDone = n.deps.every(d => raw.get(d) === 'done' || (!!n.gate && raw.get(d) === 'awaiting_human'))
-    out.set(n.id, s === 'pending' && depsDone ? 'ready' : s)
-  }
-  return out
+  return { raw, cleared }
 }
 
 export interface AgentStats {
@@ -106,7 +119,7 @@ export function agentStats(state: GraphState, st: Map<string, Status>, at: numbe
       running: tasks.find(n => live.get(n.id) === 'working') ?? null,
       stalled: tasks.find(n => live.get(n.id) === 'stalled') ?? null,
       lastStep: lastOwnStep(state, key, at),
-      toolCalls: tasks.reduce((s, n) => s + (state.activity?.[n.id] ?? []).filter(e => isToolCall(e) && ms(e.t) <= at).length, 0),
+      toolCalls: countCalls(tasks.flatMap(n => (state.activity?.[n.id] ?? []).filter(e => ms(e.t) <= at))),
       unmeasured: tasks.filter(n => !n.run && (state.activity?.[n.id] ?? []).some(e => e.src !== 'ledger' && ms(e.t) <= at)).length,
       next: tasks.find(n => st.get(n.id) === 'ready') ?? null,
       waiting: tasks.filter(n => st.get(n.id) === 'awaiting_human').length,
@@ -128,7 +141,7 @@ export function ventureStats(state: GraphState, st: Map<string, Status>, t: numb
     running: live.filter(x => x === 'working').length,
     /** Status running but silent: no session is working on it. */
     stalled: live.filter(x => x === 'stalled').length,
-    toolCalls: feed(state, t).filter(isToolCall).length,
+    toolCalls: countCalls(feed(state, t)),
     steps: feed(state, t).length,
     ready: count('ready'),
     waiting: count('awaiting_human'),
@@ -167,9 +180,11 @@ export function atomsOf(state: GraphState, id: string, st: Map<string, Status>, 
     id: `${id}:l${i}`, level4Type: 'ledger', parentIds: p, timestamp: ms(e.t), value: null, category: n.agent,
     status: 'event', meta: { label: e.event, detail: e.note || undefined },
   }))
+  // In a replay the gate is as the ledger had it at t (clear-gate clears it, reopen re-arms it), not as it is now.
   if (n.gate) atoms.push({
     id: `${id}:g`, level4Type: 'gate', parentIds: p, timestamp: null, value: null, category: n.agent,
-    status: n.gate.cleared ? 'met' : 'waiting', meta: { label: 'Founder gate', detail: n.gate.reason },
+    status: (t === null ? n.gate.cleared : replay(state, t).cleared.has(id)) ? 'met' : 'waiting',
+    meta: { label: 'Founder gate', detail: n.gate.reason },
   })
   return atoms
 }
@@ -215,8 +230,20 @@ const WINDOW = LIVE_WINDOW_MIN * 60_000
 /** A real tool call from a transcript. A failed call is one call: its "Failed (...)" result row is not counted again. */
 export const isToolCall = (e: ActivityEvent) => e.src === 'transcript' && !(e.kind === 'blocked' && e.text.startsWith('Failed ('))
 
-/** Rows written by the independent verifier, not by the agent that owns the task. */
-export const isVerifier = (e: ActivityEvent) => e.actor === 'verifier' || /^verifier\b/i.test(e.text)
+/** Tool calls among these rows, each call once even when it was credited to several tasks. Rows ingested before
+ * calls had an id count once each. */
+export function countCalls(events: ActivityEvent[]): number {
+  const calls = events.filter(isToolCall)
+  return new Set(calls.map(e => e.call).filter(Boolean)).size + calls.filter(e => !e.call).length
+}
+
+/** The first row with actor 'verifier'. Rows before it had no actor field, so a verifier row was known by its text. */
+export const ACTOR_FIELD_FROM = '2026-10-07T19:01:56Z'
+
+/** Rows written by the independent verifier, not by the agent that owns the task. A row's text decides only for rows
+ * from before the actor field: a builder's "Verifier GAP fixed ..." is the builder's. */
+export const isVerifier = (e: ActivityEvent) =>
+  e.actor === 'verifier' || (!e.actor && ms(e.t) < ms(ACTOR_FIELD_FROM) && /^verifier\b/i.test(e.text))
 
 /** Latest recorded moment for a task (any activity row or ledger event) at or before `at`. */
 export function lastSignal(state: GraphState, id: string, at: number): number | null {

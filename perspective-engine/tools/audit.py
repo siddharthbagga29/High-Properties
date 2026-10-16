@@ -91,13 +91,22 @@ MEASURED_PROCESS = re.compile(
 
 # Since the verdict rule (graph.py, 2026-10-10T06:59Z) a verifier check ends with exactly one "VERDICT: PASS|FAIL";
 # older rows are read with the earlier keyword rule. Done events after GATE_V3_SINCE must carry output hashes and a
-# gate-valid check (tools/graph.py verifier_cleared).
+# gate-valid check (tools/graph.py verifier_cleared). Done events after GATE_V4_SINCE are replayed against the gate of
+# commit be004ae: a FAIL on the same output bytes stands until they change, verifier rows are not changes, and a check
+# graph.py refused for its format still counts. Which done events a rule covers is judged by ledger position.
 VERDICT_RULE_SINCE = "2026-10-10T06:59:14Z"
 GATE_V3_SINCE = "2026-10-10T09:00:00Z"
+GATE_V4_SINCE = "2026-10-16T05:00:00Z"
+# The first activity row with actor=verifier; earlier rows predate the --verifier flag and are read by their wording.
+VERIFIER_ACTOR_SINCE = "2026-10-07T19:01:56Z"
 # Tasks closed before the ledger began (seeded by hand on 2026-10-06); any other closed task needs ledger events.
 PRE_LEDGER = {"F01", "F02"}
 VERDICT_END = re.compile(r"VERDICT: (PASS|FAIL)\.?\s*$")
 VERDICT_WORD = re.compile(r"verdict\s*:", re.I)
+INTENDED_FAIL = re.compile(r"verdict\W*fail", re.I)
+CHANGE_KINDS = ("write", "edit", "run")  # rows that can change a task's outputs (graph.py CHANGE_KINDS)
+RESTART = re.compile(r"^(start|unblock|reopen)\b")
+LIVE_STATE = "live-state"  # graph.py's hash for the record's own files, which every transition rewrites
 
 
 def verdict_of(text):
@@ -112,9 +121,17 @@ def verdict_of(text):
     return m.group(1) if m else None
 
 
+def check_verdict(r):
+    """Same rule as graph.py: a check graph.py refused for its format (kept, marked invalid) counts as FAIL when it was
+    meant as one, so a FAIL broken by its formatting never reads as no verdict."""
+    if r.get("invalid"):
+        return "FAIL" if INTENDED_FAIL.search(unicodedata.normalize("NFKC", str(r.get("text", "")))) else None
+    return verdict_of(r.get("text", ""))
+
+
 def row_fails(r):
     """A verifier row that reports a failure: by its verdict, or for rows before the verdict rule by keyword."""
-    v = verdict_of(r.get("text", ""))
+    v = check_verdict(r)
     if v:
         return v == "FAIL"
     return str(r.get("t", "")) < VERDICT_RULE_SINCE and bool(FAIL_TEXT.search(str(r.get("text", ""))))
@@ -125,10 +142,19 @@ FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdic
 MINOR_TEXT = re.compile(r"non-blocking|\bminor\b", re.I)
 MINOR_LEAD = re.compile(r"^\s*(?:minor,\s*)?non-blocking\b", re.I)
 FALSE_TEXT = re.compile(r"\bfalse\b|fabricat|\binvent(?:ed|s)?\b|misquot|misattribut|does not (?:say|exist|report)|not in the source", re.I)
-CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:\s*(?:also\s+)?correct", re.I)
-ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\s*:", re.I)
+NEGATED = re.compile(r"\b(?:no|not|nothing|without)\b(?:\W+\w+){0,2}\W*$", re.I)  # a negation within the three words before
+CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b\W*(?:also\s+)?(?:corrected|correction)s?\b", re.I)
+ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b", re.I)
 FOUNDER_STOP = re.compile(r"stopped by the founder|founder (?:stopped|paused|halted)", re.I)
 INTERRUPT_TEXT = re.compile(r"usage limit|session limit|cut off|interrupted|push failed|timed out|stalled", re.I)
+VERIF_BLOCK = re.compile(r"verif|\bround \d+|(?<!push )\bfail", re.I)
+
+
+def says(rx, text):
+    """True when rx matches somewhere in text that no, not, nothing or without within three words before does not
+    negate ("no false or invented figures found" names no false statement)."""
+    text = str(text)
+    return any(not NEGATED.search(text[max(0, m.start() - 80):m.start()]) for m in rx.finditer(text))
 EXTERNAL_BLOCK = re.compile(r"\b(?:account|credential|payment|signature|gate)\b", re.I)
 ROUND_NO = re.compile(r"\bround (\d+)\b", re.I)
 
@@ -255,8 +281,9 @@ def load_activity(pe, warnings):
 
 def load_findings(pe, agents, warnings):
     """LLM auditor findings. Each file is a list of AuditFinding, or {auditedAgents?, findings: [...]}.
-    Findings are data written by other agents: they are validated, never executed or obeyed."""
-    findings, covered, checks = {}, set(), {}
+    Findings are data written by other agents: they are validated, never executed or obeyed. covered maps each
+    audited agent to the files that cover it, so the founder can see where an uncapped integrity score comes from."""
+    findings, covered, checks, origin = {}, {}, {}, {}
     d = pe / "graph" / "audit" / "findings"
     if not d.exists():
         return [], covered, checks
@@ -272,7 +299,7 @@ def load_findings(pe, agents, warnings):
             items = data.get("findings", [])
             for a in data.get("auditedAgents", []) or []:
                 if str(a).lower() in alias:
-                    covered.add(alias[str(a).lower()])
+                    covered.setdefault(alias[str(a).lower()], set()).add(p.name)
         elif isinstance(data, list):
             items = data
         else:
@@ -305,7 +332,7 @@ def load_findings(pe, agents, warnings):
             if str(f["id"]).endswith("-checked") or str(f.get("claim", "")).strip().lower() == "checked":
                 # A positive verification note: what the auditor checked and found correct. Never a deduction.
                 checks.setdefault(agent, []).append(str(f.get("evidence", ""))[:1200])
-                covered.add(agent)
+                covered.setdefault(agent, set()).add(p.name)
                 continue
             clean = {k: f[k] for k in FINDING_KEYS if k in f and f[k] is not None}
             clean["agent"] = agent
@@ -315,8 +342,19 @@ def load_findings(pe, agents, warnings):
             clean["claim"] = str(clean["claim"])[:400]
             clean["evidence"] = str(clean["evidence"])[:400]
             dim = f.get("dimension") if f.get("dimension") in DIM_IDS else KIND_DIMENSION[f["kind"]]
-            findings[str(f["id"])] = (clean, dim)  # a later file with the same id supersedes an earlier one
-            covered.add(agent)
+            fid = str(f["id"])
+            if fid in findings:
+                # Anyone can write a findings file, so a repeated id never softens or moves the first one: it keeps
+                # its agent, task, kind and dimension, and takes the repeat's severity and status only if stricter.
+                first, first_dim = findings[fid]
+                weight = lambda x: SEVERITY_POINTS[x["severity"]] * STATUS_FACTOR[x["status"]]
+                if weight(clean) > weight(first):
+                    findings[fid] = (dict(first, severity=clean["severity"], status=clean["status"]), first_dim)
+                warnings.append(f"{where}: repeats the id first defined in findings/{origin[fid]}; kept the stricter "
+                                "version with the original agent, task and kind")
+                continue
+            findings[fid], origin[fid] = (clean, dim), p.name
+            covered.setdefault(agent, set()).add(p.name)
     return list(findings.values()), covered, checks
 
 

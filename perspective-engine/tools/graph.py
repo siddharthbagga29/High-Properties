@@ -612,14 +612,43 @@ def audit_state():
 
 
 def city_row(r):
-    """An activity row as the city shows it: no output hashes, text clipped."""
-    keep = {k: r[k] for k in ("t", "node", "agent", "kind", "src", "actor") if k in r}
+    """An activity row as the city shows it: no output hashes, text clipped. "call" (the tool call a transcript row
+    came from) lets the city count a call credited to several tasks once."""
+    keep = {k: r[k] for k in ("t", "node", "agent", "kind", "src", "actor", "call") if k in r}
     keep["text"] = clip(r.get("text"), 300)
     return keep
 
 
 def size(doc):
     return len(json.dumps(doc, separators=(",", ":")))
+
+
+def ledger_base(nodes, ledger, cut):
+    """Every task's replay state after the first `cut` events of the time-ordered ledger, by the city's statusesAt
+    rules, for a city document that cannot carry the whole ledger: the replay starts from it, not from nothing."""
+    logged = {e["node"] for e in ledger}
+    raw = {n["id"]: "done" if n["status"] == "done" and n["id"] not in logged else "pending" for n in nodes}
+    gated = {n["id"] for n in nodes if n.get("gate")}
+    cleared = set()
+    for e in ledger[:cut]:
+        i, ev = e["node"], e["event"]
+        if i not in raw:
+            continue
+        if ev in ("start", "reopen"):
+            raw[i] = "running"
+            if ev == "reopen":
+                cleared.discard(i)  # a reopen re-arms the founder gate
+        elif ev == "done":
+            raw[i] = "awaiting_human" if i in gated and i not in cleared else "done"
+        elif ev == "block":
+            raw[i] = "blocked"
+        elif ev == "unblock":
+            raw[i] = "pending"
+        elif ev == "clear-gate":
+            cleared.add(i)
+            if raw[i] == "awaiting_human":
+                raw[i] = "done"
+    return {"t": ledger[cut - 1]["t"], "events": cut, "status": raw, "cleared": sorted(cleared)}
 
 
 def export(g):
@@ -633,20 +662,28 @@ def export(g):
     if CITY_JSON.parent.exists():
         act = {k: [city_row(r) for r in v] for k, v in activity_all().items()}
         city = dict(state, ledger=ledger, excerpts={o: excerpt(o) for n in nodes for o in n["outputs"]}, activity=act)
-        # Keep the live document under its size cap: trim the oldest activity first.
-        # Revenue and audit are never trimmed.
+        # Keep the live document under its size cap: trim the oldest activity first, then drop it, then shorten the
+        # excerpts and the audit text (scores and findings stay). Revenue is never trimmed. The ledger is the replay's
+        # only record, so it goes last, and then with a base: each task's state at the cut.
         cap = 120
         while size(city) > MAX_STATE_BYTES and cap > 10:
             cap -= 10
             city["activity"] = {k: v[-cap:] for k, v in act.items()}
-        # Only if activity at its floor is still not enough: the dashboard's ledger window, then no activity,
-        # then shorter excerpts.
-        if size(city) > MAX_STATE_BYTES:
-            city["ledger"] = ledger[-40:]
         if size(city) > MAX_STATE_BYTES:
             city["activity"] = {}
         if size(city) > MAX_STATE_BYTES:
             city["excerpts"] = {k: (v[:160] + "…" if v and len(v) > 160 else v) for k, v in city["excerpts"].items()}
+        if size(city) > MAX_STATE_BYTES and city["audit"]:
+            city["audit"] = json.loads(json.dumps(city["audit"]))
+            for c in city["audit"].get("scorecards", []):
+                for d in c.get("dimensions", []):
+                    d["basis"] = clip(d.get("basis"), 140)
+                for f in c.get("findings", []):
+                    f["claim"], f["evidence"] = clip(f.get("claim"), 120), clip(f.get("evidence"), 120)
+        ordered, cut = sorted(ledger, key=lambda e: str(e.get("t"))), 0
+        while size(city) > MAX_STATE_BYTES and cut < len(ordered):
+            cut = min(cut + 20, len(ordered))
+            city["ledger"], city["ledgerBase"] = ordered[cut:], ledger_base(nodes, ordered, cut)
         CITY_JSON.write_text(json.dumps(city, separators=(",", ":")))
 
 

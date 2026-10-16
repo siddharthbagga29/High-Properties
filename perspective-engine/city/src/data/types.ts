@@ -32,6 +32,19 @@ export interface ActivityEvent {
   src: 'transcript' | 'self' | 'ledger'
   /** Who took the step. Absent means the owning agent; 'verifier' is the independent checker. */
   actor?: 'agent' | 'verifier'
+  /** The tool call a transcript row came from (transcript + tool_use id): one call credited to several tasks shares it. */
+  call?: string
+}
+
+/** Each task's replayed state at the point where the export had to cut the ledger (graph.py ledger_base). */
+export interface LedgerBase {
+  /** Time of the last event before the cut: the replay cannot go earlier. */
+  t: string
+  /** Ledger events before the cut, not in this export. */
+  events: number
+  status: Record<string, Status>
+  /** Tasks whose founder gate was cleared at the cut. */
+  cleared: string[]
 }
 
 export interface GraphState {
@@ -41,6 +54,8 @@ export interface GraphState {
   agents: Record<string, Agent>
   nodes: TaskNode[]
   ledger: LedgerEvent[]
+  /** Present only when the export had to cut the ledger to fit its size cap: the replay starts from it. */
+  ledgerBase?: LedgerBase
   excerpts: Record<string, string | null>
   activity?: Record<string, ActivityEvent[]>
 }
