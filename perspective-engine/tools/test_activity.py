@@ -5,11 +5,13 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import activity  # noqa: E402
+import audit  # noqa: E402
 
 V05 = {"id": "V05", "outputs": ["perspective-engine/gtm/icp.md"]}
 V07 = {"id": "V07", "outputs": ["perspective-engine/gtm/targets.csv"]}
 V12 = {"id": "V12", "outputs": ["perspective-engine/legal/privacy.md"]}
 M04 = {"id": "M04", "outputs": ["perspective-engine/legal/entity-checklist.md"]}
+GTM = [{"id": i, "outputs": []} for i in ("V06", "V08", "V09")]
 F01 = {"id": "F01", "outputs": ["perspective-engine/graph/graph.json", "perspective-engine/tools/graph.py"]}
 
 
@@ -34,6 +36,24 @@ class Related(unittest.TestCase):
         self.assertFalse(activity.related(V05, "graph.py brief V050"))
         self.assertFalse(activity.related(V05, "AV05 was not it"))
 
+    def test_the_call_that_logged_the_tasks_verifier_check(self):
+        # Review 5, ingest-replay #0, left open after round 1: separation credit needs the run's own verifier check of
+        # the task, not a mention of it, however graph.py was reached.
+        cw = activity.command_words
+        for cmd in ("python3 perspective-engine/tools/graph.py log V12 check --verifier 'all met. VERDICT: PASS'",
+                    "G=perspective-engine/tools/graph.py && python3 $G log V12 check --verifier \"all met. VERDICT: PASS\"",
+                    "cd perspective-engine && python3 -I tools/graph.py log --verifier V12 check 'VERDICT: FAIL'",
+                    'for t in V05 V12; do python3 tools/graph.py log "$t" check --verifier "$(cat rows/$t.txt)"; done',
+                    'P="python3 perspective-engine/tools/graph.py"\n"${P}" log V12 check --verifier \\\n  "VERDICT: PASS"'):
+            self.assertEqual(activity.related(V12, cw(cmd)), "check", cmd)
+        for cmd in ("python3 perspective-engine/tools/graph.py log V12 check 'self-check, VERDICT: PASS'",
+                    "python3 perspective-engine/tools/graph.py log V12 note --verifier 'NOT CHECKED: session limit'",
+                    "python3 perspective-engine/tools/graph.py log M04 check --verifier 'V12 NOT CHECKED. VERDICT: PASS'",
+                    "python3 perspective-engine/tools/graph.py brief V12 --verifier",
+                    "for t in V05 M04; do python3 tools/graph.py log ${t} check --verifier 'see V12'; done",
+                    "echo 'graph.py log V12 check --verifier'"):
+            self.assertNotEqual(activity.related(V12, cw(cmd)), "check", cmd)
+
     def test_a_path_must_be_a_whole_path(self):
         f02 = {"id": "F02", "outputs": ["perspective-engine/dashboard/index.html"]}
         self.assertFalse(activity.related(f02, "cat perspective-engine/data/roi-dashboard/index.html"))
@@ -42,7 +62,7 @@ class Related(unittest.TestCase):
         self.assertTrue(activity.related(V05, "grep -n x gtm/icp.md:12"))
 
 
-class Extract(unittest.TestCase):
+class Transcripts(unittest.TestCase):
     def transcript(self, lines):
         import json, tempfile
         f = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
@@ -50,6 +70,9 @@ class Extract(unittest.TestCase):
         f.close()
         self.addCleanup(pathlib.Path(f.name).unlink)
         return f.name
+
+
+class Extract(Transcripts):
 
     def test_a_short_description_is_matched_on_its_command_and_the_command_is_not_stored(self):
         use = lambda i, cmd, desc: {"type": "assistant", "timestamp": "2026-10-15T19:00:00.000Z",
@@ -188,6 +211,66 @@ class Extract(unittest.TestCase):
             v05, v07 = (activity.graph.jsonl(pathlib.Path(d) / f"{i}.jsonl") for i in ("V05", "V07"))
             self.assertEqual([(r["text"], r["related"]) for r in v05], [("Append segment-1 rows to targets.csv", "path"), ("Log the edit", "id")])
             self.assertEqual([r.get("related") for r in v07], [None, None])  # a whole transcript is the task's own
+
+
+class Auditor(Transcripts):
+    """What tools/audit.py credits from the rows an ingest wrote."""
+
+    def ingest(self, calls, *ids, **kw):
+        """Ingest one transcript for each task; the rows each task got."""
+        import tempfile
+        from unittest import mock
+        tr, d = self.transcript(calls), tempfile.TemporaryDirectory()
+        self.addCleanup(d.cleanup)
+        nodes = [dict(n, agent="legal" if n["id"] in ("V12", "M04") else "gtm") for n in [V05, V07, V12, M04] + GTM]
+        with mock.patch.object(activity.graph, "ACTIVITY", pathlib.Path(d.name)), \
+                mock.patch.object(activity.graph, "load", lambda: {"nodes": nodes}):
+            for i in ids:
+                activity.ingest(i, tr, **kw)
+            return {i: activity.graph.jsonl(pathlib.Path(d.name) / f"{i}.jsonl") for i in ids}
+
+    def facts(self, i, rows):
+        import datetime
+        done = [{"t": "2026-10-16T10:00:00Z", "event": "done", "node": i}]
+        return audit.node_facts({"id": i, "agent": "gtm", "status": "done"}, done, rows,
+                                datetime.datetime(2026, 10, 16, 12, tzinfo=datetime.timezone.utc))
+
+    def test_separation_needs_the_runs_own_verifier_check_of_the_task(self):
+        # Review 5, ingest-replay #0, left open after round 1: a verifier run that checked only M04 and handed back
+        # "V12 NOT CHECKED" still gave V12 separation credit through its read of V12's output.
+        m04_only = [
+            use("a", "Read", {"file_path": "/home/user/High-Properties/perspective-engine/legal/privacy.md"}),
+            use("b", "Bash", {"command": "python3 perspective-engine/tools/graph.py log M04 check --verifier "
+                                         "'consistent with legal/privacy.md. VERDICT: PASS'", "description": "Log the M04 check row"}),
+            use("c", "StructuredOutput", {"result": "M04 PASS. V12 NOT CHECKED: session limit reached before V12."}),
+        ]
+        rows = self.ingest(m04_only, "V12", actor="verifier", only_related=True)["V12"]
+        self.assertEqual([r["text"] for r in rows], ["Read perspective-engine/legal/privacy.md"])  # still listed
+        self.assertFalse(self.facts("V12", rows)["separated"])
+        # Ingested whole, the run is still not a check of V12.
+        self.assertFalse(self.facts("V12", self.ingest(m04_only, "V12", actor="verifier")["V12"])["separated"])
+        # A run that logged V12's verifier check is, ingested whole or --related.
+        both = m04_only + [use("d", "Bash", {"command": "G=perspective-engine/tools/graph.py && python3 $G log V12 check "
+                                                        "--verifier 'all met. VERDICT: PASS'", "description": "Log the V12 check row"})]
+        for only_related in (True, False):
+            rows = self.ingest(both, "V12", actor="verifier", only_related=only_related)["V12"]
+            self.assertEqual([r["text"] for r in rows if r.get("related") == "check"], ["Log the V12 check row"])
+            self.assertTrue(self.facts("V12", rows)["separated"])
+        # Rows ingested before calls were recorded carry no mark and keep the credit they had.
+        legacy = [{k: v for k, v in r.items() if k not in ("call", "related")} for r in rows if r.get("related") != "check"]
+        self.assertTrue(self.facts("V12", legacy)["separated"])
+
+    def test_one_call_credited_to_several_tasks_is_one_call_in_the_process_basis(self):
+        # Review 5, ingest-replay #3, left open after round 1: the process basis counted one call once per task.
+        fail = {"type": "user", "timestamp": "2026-10-16T09:00:01.000Z",
+                "message": {"content": [{"type": "tool_result", "tool_use_id": "only", "is_error": True, "content": "Exit code 1"}]}}
+        calls = [use("only", "Bash", {"command": "for i in V05 V06 V07 V08 V09; do python3 perspective-engine/tools/graph.py brief $i; done",
+                                      "description": "Print briefs for the five gtm tasks"}), fail,
+                 use("own", "Read", {"file_path": "perspective-engine/gtm/icp.md"})]
+        got = self.ingest(calls, "V05", "V06", "V07", "V08", "V09", only_related=True)
+        self.assertEqual(sum(len(v) for v in got.values()), 11)
+        facts = [self.facts(i, v) for i, v in got.items()]
+        self.assertIn("(0 self-logged rows, 2 tool calls from transcripts)", audit.score_process(facts, "gtm", facts)[1])
 
 
 class CityExport(unittest.TestCase):

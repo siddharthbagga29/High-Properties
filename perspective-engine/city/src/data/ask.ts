@@ -1,8 +1,8 @@
 import type { Content } from '@jarvis/types'
 import { BRIEF, reality } from './brief'
 import { answer } from './guide'
-import { agentFeed, agentStats, clock, feed, STATUS_LABEL, taskFeed, ventureStats } from './model'
-import type { GraphState, Status } from './types'
+import { agentFeed, agentStats, clock, feed, isVerifier, STATUS_LABEL, taskFeed, ventureStats } from './model'
+import type { ActivityEvent, GraphState, Status } from './types'
 import type { Focus } from '../store'
 
 type SampleTurn = { role: 'user' | 'assistant'; content: string }
@@ -31,9 +31,11 @@ export function contextParts(state: GraphState, st: Map<string, Status>, focus: 
     `PROJECT: ${state.project}.`,
     `NORTH STAR: ${state.north_star}`,
     `WHERE IT REALLY STANDS: ${reality(state, st)}`,
-    `PROGRESS: ${v.done}/${v.total} tasks built, ${v.running} being worked on now (a step recorded in the last 15 minutes), ${v.stalled} marked running but silent, ${v.waiting} waiting on the founder, ${v.blocked} blocked. Last export ${state.generated}. Rows starting "Verifier" were written by the independent verifier, not the agent.`,
+    `PROGRESS: ${v.done}/${v.total} tasks built, ${v.running} being worked on now (a step recorded in the last 15 minutes), ${v.stalled} marked running but silent, ${v.waiting} waiting on the founder, ${v.blocked} blocked. Last export ${state.generated}. Activity rows tagged [verifier] were written by the independent verifier; every other row is the agent's own, whatever its wording.`,
   ]
-  const line = (e: { t: string; node: string; kind: string; text: string }) => `${e.t.slice(0, 16).replace('T', ' ')} ${e.node} ${e.kind}: ${e.text}`
+  // Who wrote a row is decided as everywhere in the city (isVerifier), never by its wording: a builder may log
+  // "Verifier GAP fixed ...", and the verifier's ingested tool calls read "Read ...".
+  const line = (e: ActivityEvent) => `${e.t.slice(0, 16).replace('T', ' ')} ${e.node} ${isVerifier(e) ? '[verifier] ' : ''}${e.kind}: ${e.text}`
   if (focus.kind === 'agent') {
     const a = agentStats(state, st, t ?? Date.now()).find(x => x.key === focus.id)
     if (a) return {

@@ -143,23 +143,39 @@ FAIL_TEXT = re.compile(r"\bFAILS?\b|\bGAP\b")  # case-sensitive: verifier verdic
 MINOR_TEXT = re.compile(r"non-blocking|\bminor\b", re.I)
 MINOR_LEAD = re.compile(r"^\s*(?:minor,\s*)?non-blocking\b", re.I)
 FALSE_TEXT = re.compile(r"\bfalse\b|fabricat|\binvent(?:ed|s)?\b|misquot|misattribut|does not (?:say|exist|report)|not in the source", re.I)
-NEGATED = re.compile(r"\b(?:no|not|nothing|without)\b(?:\W+\w+){0,2}\W*$", re.I)  # a negation within the three words before
+# A negation up to five words before, in the same clause ("no false ...", "none of the 12 figures is false"), or a nil
+# answer just after ("minor issues: none", "fabrication check: none found", "correction not needed").
+NEGATED = re.compile(r"\b(?:no|not|nothing|none|neither|never|without)\b(?:[^\w.,;:!?\n]+(?!(?:and|but)\b)\w+){0,5}"
+                     r"[^\w.,;:!?\n]*$", re.I)
+NIL_AFTER = re.compile(r"^\w*(?:\s+(?:not\s+(?:needed|required|necessary)|unnecessary)\b|(?:[^\w.;!?\n]+\w+){0,2}?[^\w.;!?\n]+"
+                       r"(?:(?:none|nothing)\s+(?:(?:was|were|is|are)\s+)?(?:found|seen|noted|identified|needed|required|"
+                       r"remain(?:s|ing)?)\b|(?:none|nothing|nil|zero|n/a)(?=\s*(?:[^\w\s]|$)|\s+VERDICT\b)))", re.I)
+JOINED = re.compile(r"^\w*[\s,/]+(?:(?:or|and|nor)\s+)?$", re.I)  # "false or invented": one phrase, negated together
 CORRECTION_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b\W*(?:also\s+)?(?:corrected|correction)s?\b", re.I)
 ORCH_EDIT_TEXT = re.compile(r"^\s*(?:orchestrator|mayor)\b", re.I)
 FOUNDER_STOP = re.compile(r"stopped by the founder|founder (?:stopped|paused|halted)", re.I)
 INTERRUPT_TEXT = re.compile(r"usage limit|session limit|cut off|interrupted|push failed|timed out|stalled", re.I)
-# A note that records a failed round ("round 2", "failed") is a quality block whatever else it mentions. Other
-# verification wording ("after the current verification wave") only classifies a note that is not an interruption.
-VERIF_FAILED = re.compile(r"\bround \d+|(?<!push )\bfail", re.I)
+# A note that records a failed round ("round 2", "failed", a Verifier's GAP) is a verification block, and one that reports
+# a defect ("rework", "wrong") a quality block, whatever else it mentions: a stall, a limit or a founder pause named in
+# it is counted besides, never instead. Other verification wording ("after the current verification wave") only
+# classifies a note that is not an interruption.
+VERIF_FAILED = re.compile(r"\bround \d+|(?<!push )\bfail|(?-i:\bGAP\b|\bVerifier\b)", re.I)
+DEFECT_TEXT = re.compile(r"\brework|\bwrong\b|\bincorrect|\binaccura|\bunmet\b", re.I)
 EXTERNAL_BLOCK = re.compile(r"\b(?:account|credential|payment|signature|gate)\b", re.I)
 ROUND_NO = re.compile(r"\bround (\d+)\b", re.I)
 
 
 def says(rx, text):
-    """True when rx matches somewhere in text that no, not, nothing or without within three words before does not
-    negate ("no false or invented figures found" names no false statement)."""
+    """True when rx matches somewhere in text that a negation (NEGATED, NIL_AFTER) does not cancel: "no false or
+    invented figures found" names no false statement. Matches joined by "or", "and", "nor" or a comma are one phrase."""
     text = str(text)
-    return any(not NEGATED.search(text[max(0, m.start() - 80):m.start()]) for m in rx.finditer(text))
+    phrases = []
+    for m in rx.finditer(text):
+        if phrases and JOINED.match(text[phrases[-1][1]:m.start()]):
+            phrases[-1][1] = m.end()
+        else:
+            phrases.append([m.start(), m.end()])
+    return any(not NEGATED.search(text[max(0, a - 80):a]) and not NIL_AFTER.match(text[b:b + 80]) for a, b in phrases)
 
 
 # ---------- evidence patterns ----------
@@ -229,10 +245,16 @@ CANON_UNITS = [
     (r"years?|yrs?", "yr"), (r"seconds?", "s"), (r"million|m\b", "m"), (r"billion|bn|b\b", "bn"),
 ]
 TEXT_SUFFIXES = {".md", ".csv", ".html", ".htm", ".txt"}
-# An element no reader sees: the hidden attribute, aria-hidden="true", or an inline display:none / visibility:hidden.
-HIDDEN_ELEMENT = re.compile(
-    r"(?is)<(\w+)\b[^>]*?(?:\shidden(?=[\s/>=])|\saria-hidden\s*=\s*[\"']?true"
-    r"|\sstyle\s*=\s*[\"'][^\"']*(?:display\s*:\s*none|visibility\s*:\s*hidden))[^>]*>.*?</\1\s*>")
+# An HTML tag, its attributes read with their quotes (a ">" inside a quoted value does not end it). A Markdown autolink
+# (<https://...>) is not one.
+HTML_TAG = re.compile(r"""<(/?)([A-Za-z][A-Za-z0-9-]*)(?=[\s/>])((?:[^>"']|"[^"]*"|'[^']*')*)>""")
+VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+HTML_ATTR = re.compile(r"""([^\s"'=<>/]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'>]+))?""")
+# An element no reader sees: the hidden attribute, aria-hidden="true", or an inline style that hides it.
+HIDING_STYLE = re.compile(r"(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*(?:hidden|collapse)|color\s*:\s*transparent"
+                          r"|(?:font-size|opacity)\s*:\s*[0.]+(?:px|pt|em|rem|%)?)\s*(?:!\s*important\s*)?(?:;|$)", re.I)
+BLANK_GLYPHS = "\u2800\u3164\uffa0\u115f\u1160"  # characters that render as empty space
+CODE_MASK = str.maketrans("<>&[]", "\ue000\ue001\ue002\ue003\ue004")  # private-use stand-ins while code is masked
 
 
 # ---------- loading ----------
@@ -266,6 +288,19 @@ def read_jsonl(path, warnings, label):
         rows.append(row if isinstance(row, dict) else None)
         if not isinstance(row, dict):
             warnings.append(f"{label} line {i}: not an object, skipped")
+    return rows
+
+
+def jsonl_rows(text):
+    """The rows of a JSONL text as read_jsonl reads them: a dict per non-empty line, None where a line is not one."""
+    rows = []
+    for line in (text or "").splitlines():
+        if line.strip():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                row = None
+            rows.append(row if isinstance(row, dict) else None)
     return rows
 
 
@@ -658,19 +693,23 @@ def check_activity_logs(pe, hist, clock):
 
 
 def check_findings_history(pe, hist):
-    """Findings files are rewritten when a re-check fixes or overturns a finding (its status changes), but no finding is
-    ever deleted (an overturned one is marked accepted) and no severity is lowered. Compares every committed version
-    of every findings file with the files now. Returns flags."""
+    """Findings files are rewritten when a re-check fixes or overturns a finding, but no finding is ever deleted (an
+    overturned one is marked accepted) and no severity is lowered. A re-check records what it found, so a status lowered
+    (open to fixed or accepted) or a finding moved to another agent, task, kind or dimension comes with new evidence;
+    with the same evidence nothing was re-checked. Compares every committed version of every findings file with the
+    files now. Returns flags."""
     def items(text):
         try:
             data = json.loads(text or "[]")
         except json.JSONDecodeError:
             return []
         data = data.get("findings", []) if isinstance(data, dict) else data
-        return [f for f in data if isinstance(f, dict) and f.get("id") and not is_check_note(f)] if isinstance(data, list) else []
+        # what load_findings could count: a finding without a claim or evidence is skipped there
+        return [f for f in data if isinstance(f, dict) and f.get("id") and not is_check_note(f) and str(f.get("claim", "")).strip()
+                and str(f.get("evidence", "")).strip()] if isinstance(data, list) else []
 
     d = (pe / "graph" / "audit" / "findings").resolve()
-    worst = {}
+    worst, states = {}, {}
     for p, versions in hist.items():
         if p.parent != d or p.suffix != ".json":
             continue
@@ -679,18 +718,36 @@ def check_findings_history(pe, hist):
                 pts = SEVERITY_POINTS.get(f.get("severity"), 0)
                 if pts > worst.get(str(f["id"]), (-1,))[0]:
                     worst[str(f["id"])] = (pts, f.get("severity"), p.name, c[:10])
-    now = {}
+                states.setdefault(str(f["id"]), []).append((f, p.name, c[:10]))
+    now, current = {}, {}
     for p in d.glob("*.json") if d.exists() else []:
         for f in items(file_text(p)):
             now[str(f["id"])] = max(now.get(str(f["id"]), 0), SEVERITY_POINTS.get(f.get("severity"), 0))
+            current.setdefault(str(f["id"]), []).append(f)
     flags = []
     for fid, (pts, sev, name, c) in sorted(worst.items()):
         if fid not in now:
-            flags.append(("major", f"finding {fid} ({sev}, in findings/{name} at {c}) is in no findings file now: a "
-                                   "finding is overturned by marking it accepted, never deleted"))
+            flags.append(("major", f"finding {fid} ({sev}, in findings/{name} at {c}) is in no findings file now, or has "
+                                   "lost its claim or evidence: a finding is overturned by marking it accepted, never deleted"))
         elif now[fid] < pts:
             flags.append(("major", f"finding {fid} was {sev} in findings/{name} at {c} and is less severe now: a "
                                    "severity is never lowered"))
+    placed = lambda f: ", ".join(f"{k} {f.get(k)}" for k in ("agent", "task", "kind", "dimension") if f.get(k) is not None)
+    words = lambda f: re.findall(r"\w+", str(f.get("evidence")).lower())  # new evidence is new words, not new spacing
+    for fid in sorted(current):
+        lowered = moved = None
+        for f in current[fid]:
+            for s, name, c in states.get(fid, []):
+                if words(s) != words(f):
+                    continue
+                if not lowered and STATUS_FACTOR.get(f.get("status"), 0.0) < STATUS_FACTOR.get(s.get("status"), 0.0):
+                    lowered = (f"finding {fid} was {s.get('status')} in findings/{name} at {c} and is {f.get('status')} "
+                               "now with the same evidence: a re-check that lowers a status records what it found")
+                if not moved and placed(f).lower() != placed(s).lower():
+                    moved = (f"finding {fid} named {placed(s)} in findings/{name} at {c} and names {placed(f)} now with "
+                             "the same evidence: a finding moves to another agent, task or kind only with a re-check "
+                             "that records why")
+        flags += [("major", x) for x in (lowered, moved) if x]
     return flags
 
 
@@ -759,18 +816,26 @@ def check_founder_auth(pe, ledger, nodes=(), clock=None):
         r = verified.get(ref)
         return bool(r) and r.get("action") == action and r.get("fields") == fields
 
-    # A founder action needs a signature once the key is registered: in the ledger, every one below the key's line.
-    # The revenue file has no place in the ledger's order, so git anchors it: rows beyond those committed with the key's
-    # registration were added after it, whatever their dates say.
+    # A founder action needs a signature once the key is registered: in the ledger, every one below the key's line. Git
+    # anchors both files, as the revenue file has no place in the ledger's order and a line slipped in above the key's
+    # line before a commit records it is still above it: every line beyond the versions committed before the commit that
+    # first records the key (the last commit, while none does yet) came with the key or after it, whatever its place or
+    # date says.
     key_line = next((i for i, e in enumerate(ledger) if e.get("event") == "founder-key"), None)
-    key_commit = next((n for n, _, t in hist.get(led_path, []) if t and '"event": "founder-key"' in t), None)
-    signed_from = None
+    key_commit = next((n for n, _, t in hist.get(led_path, []) if any(e and e.get("event") == "founder-key"
+                                                                      for e in jsonl_rows(t))), None)
+    if key_commit is None and key_events and hist.get(led_path):
+        key_commit = math.inf
+    signed_from = {}
     if key_commit is not None:
-        at_key = [t for n, _, t in hist.get(rev_path, []) if n <= key_commit]
-        signed_from = len([x for x in ((at_key[-1] if at_key else "") or "").splitlines() if x.strip()])
+        for path in (led_path, rev_path):
+            before = [t for n, _, t in hist.get(path, []) if n < key_commit]
+            rows = jsonl_rows(before[-1] if before else "")
+            signed_from[path] = len([e for e in rows if e]) if path == led_path else len(rows)
     used = {}
     for i, e in enumerate(ledger):
-        if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_line is not None and i > key_line)):
+        if e.get("event") in ("clear-gate", "unblock") and (e.get("auth") == "signed" or (key_line is not None and i > key_line)
+                                                            or i >= signed_from.get(led_path, math.inf)):
             fields = {"node": e.get("node"), "note": e.get("note", "")}
             if e.get("event") == "clear-gate" and "outputs" in e:
                 fields["outputs"] = e.get("outputs")
@@ -780,7 +845,7 @@ def check_founder_auth(pe, ledger, nodes=(), clock=None):
     for i, r in enumerate(revenue_lines):
         if r is None:
             continue
-        if r.get("auth") == "signed" or (key_at and str(r.get("t")) > key_at) or (signed_from is not None and i >= signed_from):
+        if r.get("auth") == "signed" or (key_at and str(r.get("t")) > key_at) or i >= signed_from.get(rev_path, math.inf):
             try:
                 fields = {"amountUsd": f"{round(float(r.get('amountUsd')), 2):.2f}", "payer": r.get("payer"), "evidence": r.get("evidence")}
             except (TypeError, ValueError):
@@ -852,9 +917,11 @@ def check_founder_auth(pe, ledger, nodes=(), clock=None):
                 flags.append(("major", f"{n.get('id')}: closed but outputs are missing or empty: {', '.join(missing)}"))
             closes = [e for e in mine if e.get("event") == "done" and e.get("outputs") is not None]
             if closes and not missing:
-                # The record's own files are live state: graph.py pins them as LIVE_STATE, never by their bytes.
+                # The record's own files are live state: graph.py pins them as LIVE_STATE, never by their bytes, and only
+                # them (output_hashes), so a done that pins any other output as LIVE_STATE did not come from graph.py.
                 pinned = closes[-1]["outputs"]
-                now = {o: LIVE_STATE if pinned.get(o) == LIVE_STATE else path_hash(root / o) for o in n.get("outputs", [])}
+                live = {(pe / "graph" / x).resolve() for x in ("graph.json", "ledger.jsonl", "activity", "revenue.jsonl")}
+                now = {o: LIVE_STATE if (root / o).resolve() in live else path_hash(root / o) for o in n.get("outputs", [])}
                 if now != pinned:
                     flags.append(("major", f"{n.get('id')}: outputs changed after the task was closed; reopen it so the change is verified"))
     attested = sum(1 for e in ledger if e.get("event") in ("clear-gate", "unblock") and e.get("auth") != "signed")
@@ -880,6 +947,8 @@ def block_class(note):
     note = note or ""
     if VERIF_FAILED.search(note):
         return "verification"
+    if DEFECT_TEXT.search(note):
+        return "other"
     if FOUNDER_STOP.search(note):
         return "founder_stop"
     if INTERRUPT_TEXT.search(note):
@@ -937,7 +1006,7 @@ def node_facts(n, ledger_rows, act_rows, now):
 
     open_fail = [r for r in fail_rows if str(r["t"]) > last_boundary]
     minor_rows = [r for r in rows if r.get("src") != "ledger" and not row_fails(r)
-                  and ((is_verifier(r) and says(MINOR_TEXT, r.get("text", ""))) or MINOR_LEAD.match(str(r.get("text", ""))))]
+                  and (is_verifier(r) or MINOR_LEAD.match(str(r.get("text", "")))) and says(MINOR_TEXT, r.get("text", ""))]
     open_minor = [r for r in minor_rows if str(r["t"]) > last_boundary]
     # A FAIL names a false statement when its own text does or, for a FAIL verdict, when a verifier row of the same
     # review does: graph.py tells verifiers to put long details in note rows before the verdict. A review runs from the
@@ -949,13 +1018,14 @@ def node_facts(n, ledger_rows, act_rows, now):
     false_rows = [r for r in fail_rows if says(FALSE_TEXT, r.get("text", ""))
                   or (check_verdict(r) and any(says(FALSE_TEXT, v.get("text", "")) for v in review(r)))]
 
-    corrections = sorted({str(r["t"])[:10] for r in rows if r.get("src") != "ledger" and CORRECTION_TEXT.match(str(r.get("text", "")))})
+    corrections = sorted({str(r["t"])[:10] for r in rows if r.get("src") != "ledger" and says(CORRECTION_TEXT, r.get("text", ""))})
 
     orch_edits = [r for r in rows if r.get("src") != "ledger" and r.get("kind") in ("edit", "write")
                   and ORCH_EDIT_TEXT.match(str(r.get("text", "")))]
 
-    # A note that records a failed round and a stall or limit counts as both.
-    interruptions = [e for e, c in classes if c == "interruption" or (c == "verification" and INTERRUPT_TEXT.search(e.get("note") or ""))]
+    # A note that records a failed round or a defect and a stall or limit counts as both.
+    interruptions = [e for e, c in classes if c == "interruption"
+                     or (c in ("verification", "other") and INTERRUPT_TEXT.search(e.get("note") or ""))]
     interruptions += [r for r in builder_rows if r.get("src") == "self" and r.get("kind") in ("note", "blocked", "handoff", "plan")
                       and INTERRUPT_TEXT.search(str(r.get("text", "")))]
     founder_stops = [e for e, c in classes if c == "founder_stop"]
@@ -985,12 +1055,21 @@ def node_facts(n, ledger_rows, act_rows, now):
         # verification.
         "challenged": verified or bool(fail_rows) or bool(verif_blocks),
         # --verifier is a flag anyone can pass; separation is evidenced only by an ingested verifier transcript
-        # (tools/activity.py --verifier), i.e. a separate agent run whose own tool calls are on record.
-        "separated": any(r.get("actor") == "verifier" and r.get("src") == "transcript" for r in verifier_rows),
+        # (tools/activity.py --verifier), i.e. a separate agent run whose own tool calls are on record, and one that
+        # checked this task: it holds the call that logged this task's verifier check (marked related "check"). A run
+        # about another task that only read this one's output, or handed back "V12 NOT CHECKED", is not. Rows ingested
+        # before calls were recorded carry no mark and count as before.
+        "separated": any(r.get("actor") == "verifier" and r.get("src") == "transcript"
+                         and (r.get("related") == "check" or "call" not in r) for r in verifier_rows),
         "declared": any(r.get("actor") == "verifier" for r in verifier_rows),
         "step_record": bool([r for r in builder_rows]),
         "self_logged": len([r for r in builder_rows if r.get("src") == "self"]),
-        "transcript_rows": len([r for r in builder_rows if r.get("src") == "transcript"]),
+        # Each tool call once, as the city counts them: --related credits one call to every task it acted on, and a
+        # failed call's "Failed (...)" row is the same call. Rows from before calls had an id are told apart by time,
+        # kind and text.
+        "transcript_calls": {r.get("call") or (r.get("t"), r.get("kind"), r.get("text")) for r in builder_rows
+                             if r.get("src") == "transcript"
+                             and not (r.get("kind") == "blocked" and str(r.get("text", "")).startswith("Failed ("))},
         "verifier_rows": len(verifier_rows),
         "rework": rework,
         "quality_blocks": len(quality_blocks),
@@ -1015,6 +1094,58 @@ def node_facts(n, ledger_rows, act_rows, now):
 
 # ---------- evidence ----------
 
+def hides(attrs):
+    """True when a tag's attributes keep its element from every reader: hidden, aria-hidden="true" or a HIDING_STYLE.
+    Attributes are read as a browser reads them: the first of a repeated name counts, values have their entities decoded
+    ("hidden" inside a title is text), and CSS comments are ignored."""
+    found = {}
+    for name, value in HTML_ATTR.findall(attrs):
+        found.setdefault(name.lower(), html.unescape(value[1:-1] if value[:1] in ('"', "'") else value))
+    return ("hidden" in found or found.get("aria-hidden", "").strip().lower() == "true"
+            or bool(HIDING_STYLE.search(re.sub(r"(?s)/\*.*?\*/", "", found.get("style", "")))))
+
+
+def drop_hidden(raw):
+    """raw without the elements no reader sees and all they contain. Elements nest as a browser nests them: an end tag
+    closes its element and every element still open inside it, so a nested element of the same name never ends a hidden
+    one early. A hidden element left open ends at the next blank line, where a Markdown paragraph or block ends."""
+    spans, stack = [], []
+    for m in HTML_TAG.finditer(raw):
+        name = m.group(2).lower()
+        if m.group(1):
+            i = next((i for i in range(len(stack) - 1, -1, -1) if stack[i][0] == name), None)
+            if i is not None:
+                spans += [(start, m.end() if j == i else m.start()) for j, (_, start, hidden) in enumerate(stack[i:], i) if hidden]
+                del stack[i:]
+        elif name not in VOID_TAGS:
+            stack.append((name, m.start(), hides(m.group(3))))
+    for _, start, hidden in stack:
+        if hidden:
+            gap = re.compile(r"\n[ \t]*\n").search(raw, start)
+            spans.append((start, gap.start() if gap else len(raw)))
+    out, pos = [], 0
+    for a, b in sorted(spans):
+        if a > pos:
+            out.append(raw[pos:a] + " ")
+        pos = max(pos, b)
+    return "".join(out) + raw[pos:]
+
+
+def blank(text):
+    """True when text renders as nothing: whitespace, invisible format or control characters, or blank glyphs."""
+    return all(c.isspace() or unicodedata.category(c) in ("Cf", "Cc", "Mn", "Me") or c in BLANK_GLYPHS for c in text)
+
+
+def md_visible(raw):
+    """Markdown as a reader sees it: inline HTML shows its text, never its tags or attributes (an href or a title is no
+    label), entities show as the characters they stand for, and a link or image with blank text shows nothing. Code
+    (fenced blocks and inline spans) shows markup as written, so its brackets are masked while the rest is read."""
+    raw = re.sub(r"(?ms)^[ \t]*```.*?(?:^[ \t]*```[^\n]*$|\Z)|`[^`\n]*`", lambda m: m.group(0).translate(CODE_MASK), raw)
+    raw = html.unescape(HTML_TAG.sub(" ", drop_hidden(raw)))
+    raw = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", lambda m: " " if blank(m.group(1)) else m.group(0), raw)
+    return raw.translate({v: k for k, v in CODE_MASK.items()})
+
+
 def text_lines(path):
     """(line, context) pairs of prose from an output file. Code blocks, HTML comments, scripts and headings are not
     claims, and what no reader sees (a hidden element, an empty-text link, a link definition) is neither a claim nor a
@@ -1023,14 +1154,14 @@ def text_lines(path):
     if path.suffix in (".html", ".htm", ".md"):
         raw = re.sub(r"(?is)<(script|style|template|noscript)\b.*?</\1\s*>", " ", raw)
         raw = re.sub(r"(?s)<!--.*?-->", " ", raw)
-        raw = HIDDEN_ELEMENT.sub(" ", raw)
     if path.suffix in (".html", ".htm"):
+        raw = drop_hidden(raw)
         raw = re.sub(r"(?i)</?(?:td|th)\b[^>]*>", " | ", raw)
         raw = re.sub(r"(?i)<(?:br|/p|/div|/li|/tr|/h\d|/section|/header|/footer|/article)\b[^>]*>", "\n", raw)
-        raw = html.unescape(re.sub(r"<[^>]+>", " ", raw))
+        raw = html.unescape(re.sub(r"<[^>]+>", " ", HTML_TAG.sub(" ", raw)))
         return [(ln.strip(), "") for ln in raw.splitlines() if ln.strip()]
     if path.suffix == ".md":
-        raw = re.sub(r"!?\[\s*\]\([^)]*\)", " ", raw)
+        raw = md_visible(raw)
         raw = re.sub(r"(?m)^ {0,3}\[[^\]]+\]:[ \t]*\S.*$", " ", raw)
     out, fence, last_prose, caption, in_table = [], False, "", "", False
     for ln in raw.splitlines():
@@ -1234,7 +1365,8 @@ def score_process(facts, agent, all_facts):
     declared_only = [f for f in pool if f["verified"] and f["declared"] and not f["separated"]]
     no_steps = [f for f in pool if not f["step_record"]]
     basis = (f"{len(pool)} closed tasks in the ledger: step records on {len(pool) - len(no_steps)} "
-             f"({sum(f['self_logged'] for f in pool)} self-logged rows, {sum(f['transcript_rows'] for f in pool)} transcript rows); "
+             f"({sum(f['self_logged'] for f in pool)} self-logged rows, "
+             f"{len(set().union(*(f['transcript_calls'] for f in pool)))} tool calls from transcripts); "
              f"a verifier check on {len(pool) - len(no_ver)}; a separate verifier run evidenced by its own ingested transcript on "
              f"{len(pool) - len(no_ver) - len(unsep) - len(declared_only)}")
     if no_ver:

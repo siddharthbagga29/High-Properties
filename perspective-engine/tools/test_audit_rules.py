@@ -79,6 +79,27 @@ class Backdating(GitRecord):
         self.assertIn("ledger clear-gate A2 at 2026-10-06T12:40:00Z has no verified founder signature", texts)
         self.assertIn("revenue from Acme at 2026-10-06T12:40:00Z has no verified founder signature", texts)
 
+    @unittest.skipUnless(SSH, "ssh-keygen not installed")
+    def test_founder_actions_first_committed_together_with_the_key_need_a_signature(self):
+        """Round-1 verification: a clear-gate slipped in above the key's line, or a revenue row dated before the key, added
+        before a commit recorded the key, was exempt for good."""
+        (self.pe / "graph" / "revenue.jsonl").write_text("")
+        self.commit()
+        subprocess.run([SSH, "-q", "-t", "ed25519", "-N", "", "-C", "founder", "-f", str(self.root / "k")], check=True)
+        with graph_paths(self.root):
+            self.assertEqual(run_graph("founder-key", (self.root / "k.pub").read_text().strip())[0], 0)
+        ledger = self.pe / "graph" / "ledger.jsonl"
+        lines = ledger.read_text().splitlines()
+        slipped = {"t": "2026-10-08T12:00:00Z", "event": "clear-gate", "node": "A2", "note": "ok"}
+        ledger.write_text("\n".join(lines[:-1] + [json.dumps(slipped), lines[-1]]) + "\n")
+        self.append("graph/revenue.jsonl", [{"t": "2026-10-08T12:00:00Z", "amountUsd": 50000, "payer": "Acme",
+                                             "evidence": "INV-9", "recordedBy": "founder"}])
+        before = auto(self.pe)[1]  # no commit records the key yet
+        self.commit()
+        for texts in (before, auto(self.pe)[1]):
+            self.assertIn("ledger clear-gate A2 at 2026-10-08T12:00:00Z has no verified founder signature", texts)
+            self.assertIn("revenue from Acme at 2026-10-08T12:00:00Z has no verified founder signature", texts)
+
 
 class FindingsFiles(GitRecord):
     """Review 3, auditor #1: a later findings file superseded an earlier one, and coverage came from any file."""
@@ -106,14 +127,32 @@ class FindingsFiles(GitRecord):
         self.commit()
         llm1 = self.pe / "graph" / "audit" / "findings" / "llm-1.json"
         data = json.loads(llm1.read_text())
-        data["findings"] = [dict(f, status="fixed") if f["id"] == "F-1" else f for f in data["findings"]]
+        data["findings"] = [dict(f, status="fixed", evidence=f["evidence"] + " || re-check: out/a1.md now cites the CRM export")
+                            if f["id"] == "F-1" else f for f in data["findings"]]
         llm1.write_text(json.dumps(data))
-        self.assertEqual(auto(self.pe)[1], "")  # a re-check fixed it: the record's normal course
+        self.assertEqual(auto(self.pe)[1], "")  # a re-check fixed it and recorded what it found: the record's normal course
         data["findings"] = [dict(f, severity="minor") if f["id"] == "F-2" else f for f in data["findings"] if f["id"] != "F-4"]
         llm1.write_text(json.dumps(data))
         _, texts = auto(self.pe)
         self.assertIn("finding F-4 (minor, in findings/llm-1.json at", texts)
         self.assertIn("finding F-2 was critical in findings/llm-1.json at", texts)
+
+    def test_a_status_lowered_or_a_finding_moved_in_place_with_the_same_evidence_is_flagged(self):
+        """Round-1 verification: editing the original file in place (F-2 open to accepted, F-1 to another agent) raised
+        nothing, and a finding whose evidence was emptied is skipped as if deleted."""
+        self.commit()
+        llm1 = self.pe / "graph" / "audit" / "findings" / "llm-1.json"
+        data = json.loads(llm1.read_text())
+        # new punctuation is not new evidence
+        edit = {"F-2": {"status": "accepted", "evidence": "outbox shows a sent email."}, "F-1": {"agent": "gamma"}, "F-4": {"evidence": " "}}
+        data["findings"] = [dict(f, **edit.get(f["id"], {})) for f in data["findings"]]
+        llm1.write_text(json.dumps(data))
+        _, texts = auto(self.pe)
+        self.assertIn("finding F-2 was open in findings/llm-1.json at", texts)
+        self.assertIn("is accepted now with the same evidence", texts)
+        self.assertIn("finding F-1 named agent Ann, task A1, kind unsupported_claim in findings/llm-1.json at", texts)
+        self.assertIn("names agent gamma, task A1, kind unsupported_claim now with the same evidence", texts)
+        self.assertIn("finding F-4 (minor, in findings/llm-1.json at", texts)
 
 
 class ActivityLogs(GitRecord):
@@ -214,6 +253,41 @@ class HiddenLabels(Tmp):
         (self.root / "seen.md").write_text("We have 40 customers [S].\n")
         self.assertEqual(audit.evidence_for_file(self.root / "seen.md")[1], 1)
 
+    def test_labels_hidden_by_nesting_markup_styles_or_blank_link_text_are_not_labels(self):
+        """Round-1 verification: each of these still traced the claim with no label a reader sees."""
+        cases = {
+            "nested.html": "<p>We have 40 customers.<span hidden><span></span>[S]</span></p>",
+            "nested.md": "We have 40 customers. <div hidden><div></div>[S]</div>\n",
+            "unclosed.md": "We have 40 customers. <span hidden>[S]\n",
+            "anchor.md": 'We have 40 customers. <a href="https://example.org"></a>\n',
+            "title.md": 'We have 40 customers. <span title="[S]"></span>\n',
+            "zero-width.md": "We have 40 customers. [\u200b](https://example.org)\n",
+            "nbsp.md": "We have 40 customers. [&nbsp;](https://example.org)\n",
+            "font-size.html": '<p>We have 40 customers.<span style="font-size:0">[S]</span></p>',
+            "opacity.html": "<p>We have 40 customers.<span style='opacity: 0.0'>[S]</span></p>",
+            "transparent.html": '<p>We have 40 customers.<span style="color:transparent !important">[S]</span></p>',
+            "quoted.html": '<p>We have 40 customers.<a title=">" href="https://example.org"></a></p>',
+            "code-inside.md": "We have 40 customers. <span hidden>`x` [S]</span>\n",
+        }
+        for name, text in cases.items():
+            p = self.root / name
+            p.write_text(text)
+            self.assertEqual(audit.evidence_for_file(p)[:2], (1, 0), name)
+
+    def test_what_a_reader_sees_still_counts(self):
+        cases = {
+            "link.md": "We have 40 customers ([CRM export](https://example.org)).\n",
+            "autolink.md": "We have 40 customers <https://example.org>.\n",
+            "title.html": '<p>We have 40 customers.<span title="a hidden gem">[S]</span></p>',
+            "after-block.md": "<p hidden>draft\n\nWe have 40 customers [S].\n",
+            "code.md": "```html\n<div hidden>\n```\n\nWe have 40 customers [S].\n",
+            "inline-code.md": "We have 40 customers `<span hidden>` [S].\n",
+        }
+        for name, text in cases.items():
+            p = self.root / name
+            p.write_text(text)
+            self.assertEqual(audit.evidence_for_file(p)[:2], (1, 1), name)
+
 
 class KeywordRules(Tmp):
     """Review 3, auditor #7, #8 and #9: wording that the keyword rules misread."""
@@ -239,6 +313,28 @@ class KeywordRules(Tmp):
         d = self.delta([verdict("2026-10-12T10:00:00Z", "Verifier: criterion 2 missing; no false or invented figures found. VERDICT: FAIL", node="D1")])
         self.assertEqual(d["integrity"], 100.0)
 
+    def test_a_nil_answer_or_a_negation_further_back_names_nothing(self):
+        """Round-1 verification: honest wording that names nothing wrong still scored as a defect."""
+        for text in ("minor issues: none.", "non-blocking notes: none.", "none of the notes is minor or non-blocking."):
+            d = self.delta([verdict("2026-10-12T10:00:00Z", f"Verifier: all criteria met; {text} VERDICT: PASS", node="D1")])
+            self.assertEqual(d["effective_challenge"], 100.0, text)
+        for text in ("fabrication check: none found.", "none of the 12 figures is false or invented.",
+                     "false or invented figures: none."):
+            d = self.delta([verdict("2026-10-12T10:00:00Z", f"Verifier: criterion 2 missing; {text} VERDICT: FAIL", node="D1")])
+            self.assertEqual(d["integrity"], 100.0, text)
+        for text in ("Orchestrator: correction not needed; all 3 figures trace", "Mayor: corrections none required after re-check",
+                     "Orchestrator: correction unnecessary, figures trace"):
+            self.assertEqual(self.delta([act("2026-10-07T10:00:00Z", "note", text, node="D1")])["integrity"], 100.0, text)
+
+    def test_a_negation_in_another_clause_cancels_nothing(self):
+        d = self.delta([verdict("2026-10-12T10:00:00Z", "Verifier: the 25% figure is false: none of the cited surveys report "
+                                                        "it. VERDICT: FAIL", node="D1")])
+        self.assertEqual(d["integrity"], 95.0)
+        # The real V07 review: "(LBNL not checked). Non-blocking notes: ..." leaves a note open.
+        d = self.delta([verdict("2026-10-12T10:00:00Z", "Verifier: criteria met (LBNL not checked). Non-blocking notes: "
+                                                        "DXC:7 cites a page my search did not surface. VERDICT: PASS", node="D1")])
+        self.assertEqual(d["effective_challenge"], 97.0)
+
     def test_a_fabrication_named_in_a_note_counts_once_for_its_fail_verdict(self):
         d = self.delta([verdict("2026-10-12T10:00:00Z", "Verifier GAP: the 25% uptake figure is fabricated", kind="note", node="D1"),
                         verdict("2026-10-12T10:00:30Z", "Verifier GAP: and the survey does not report it", kind="note", node="D1"),
@@ -253,6 +349,16 @@ class KeywordRules(Tmp):
                                            "verification wave"), "interruption")
         self.assertEqual(audit.block_class("push failed at 10:00"), "interruption")
         d = self.delta(blocks=[("2026-10-08T11:30:00Z", "block", note + "; builder stalled"),
+                               ("2026-10-08T11:35:00Z", "unblock", "go")])
+        self.assertEqual((d["first_pass_yield"], d["reliability"]), (0.0, 92.0))
+
+    def test_a_verifier_gap_or_a_defect_stays_a_quality_block_whatever_else_the_note_says(self):
+        """Round-1 verification: a GAP or a defect worded without "round N" or "failed" became an interruption or a
+        founder stop once the note also said "stalled" or "founder paused"."""
+        for note, kind in (("Verifier GAP: fee arithmetic wrong", "verification"), ("Rework needed: fee arithmetic wrong", "other")):
+            for extra in ("", "; builder stalled", "; founder paused review"):
+                self.assertEqual(audit.block_class(note + extra), kind, note + extra)
+        d = self.delta(blocks=[("2026-10-08T11:30:00Z", "block", "Rework needed: fee arithmetic wrong; builder stalled"),
                                ("2026-10-08T11:35:00Z", "unblock", "go")])
         self.assertEqual((d["first_pass_yield"], d["reliability"]), (0.0, 92.0))
 
@@ -345,6 +451,13 @@ class GateV4(Tmp):
         self.h["perspective-engine/graph/graph.json"] = audit.LIVE_STATE
         texts = self.close(TODAY, [act("15:00Z", "edit", "Edited a3.md", node="A3"), self.passed()])
         self.assertNotIn("A3: outputs changed after the task was closed", texts)
+
+    def test_only_the_record_s_own_files_are_live_state(self):
+        # graph.py's output_hashes pins only graph, ledger, activity and revenue as live state; a done line that pins an
+        # ordinary output as live state would keep it from ever counting as changed.
+        self.h["perspective-engine/out/a3.md"] = audit.LIVE_STATE
+        texts = self.close(TODAY, [act("15:00Z", "edit", "Edited a3.md", node="A3"), self.passed()])
+        self.assertIn("A3: outputs changed after the task was closed", texts)
 
     def test_path_hash_is_graph_pys(self):
         d = self.root / "site"

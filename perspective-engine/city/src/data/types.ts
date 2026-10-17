@@ -34,9 +34,10 @@ export interface ActivityEvent {
   actor?: 'agent' | 'verifier'
   /** The tool call a transcript row came from (transcript + tool_use id): one call credited to several tasks shares it. */
   call?: string
-  /** Set when the row was credited from a transcript that covered several tasks: the call named this task's ID, or
-   * only one of its output paths. */
-  related?: 'id' | 'path'
+  /** How the call named this task: 'check' it logged the task's verifier check through graph.py (marked in every
+   * ingested transcript: the auditor's separation evidence); 'id' it named the task's ID, or 'path' only one of its
+   * output paths (set when the row was credited from a transcript that covered several tasks). */
+  related?: 'check' | 'id' | 'path'
 }
 
 /** Each task's replayed state at the point where the export had to cut the ledger (graph.py ledger_base). */

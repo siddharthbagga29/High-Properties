@@ -1,5 +1,5 @@
 import { BRIEF, reality } from './brief'
-import { agentFeed, agentStats, ago, clock, collapseFeed, fmtK, KIND_LABEL, ms, stalledNow, STATUS_LABEL, taskFeed, ventureStats, workingNow } from './model'
+import { agentFeed, agentStats, ago, clock, collapseFeed, fmtK, isVerifier, KIND_LABEL, ms, stalledNow, STATUS_LABEL, taskFeed, ventureStats, workingNow } from './model'
 import type { ActivityEvent, GraphState, Status } from './types'
 import type { Focus } from '../store'
 
@@ -15,7 +15,8 @@ export interface GuideReply {
 export const STARTER_CHIPS = ['What is this?', 'Who is working right now?', 'What changed recently?', 'What needs the founder?', 'Is this real data?', 'Request a pilot']
 
 const at = (t: number | null) => t ?? Date.now()
-const line = (e: ActivityEvent) => `${clock(e.t)} UTC ${KIND_LABEL[e.kind].toLowerCase()}: ${e.text}`
+/** One activity row in an answer. The verifier's rows say so: an agent's latest steps may include its checks. */
+const line = (e: ActivityEvent) => `${clock(e.t)} UTC ${isVerifier(e) ? 'the independent verifier ' : ''}${KIND_LABEL[e.kind].toLowerCase()}: ${e.text}`
 
 /** Narration for whatever is in focus. Short enough to be spoken. */
 export function narrate(state: GraphState, st: Map<string, Status>, focus: Focus, t: number | null): string {
