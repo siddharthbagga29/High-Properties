@@ -3,6 +3,7 @@
 ## Unreleased (engineering session 2, 2026-10-21)
 - **Portfolio backtester** (`lql/backtest/portfolio.py`): shared cash, several instruments, union calendar, explicit stale/missing-data handling (no forward fill, orders are never carried across a gap), fill-price clamp to the bar range, volume participation cap, cash reserved across same-day orders, risk engine sees the whole portfolio. Reproduces the single-instrument engine exactly when given one instrument (tested).
 - **Second strategy** `vol_scaled_trend` (trend filter plus volatility targeting) with explicit assumptions; strategy module is AST-tested to import nothing that can trade.
+- **Pre-registered walk-forward research** (`lql/research/`): frozen spec + data fingerprint, strictly chronological rolling folds, in-sample-only selection, separate in/out-of-sample reporting, paired block-bootstrap intervals, 2x-cost stress, selection stability, one-shot holdout with a contamination registry. CLI: `python3 -m lql.cli research run|holdout|show`.
 - Fixed the unclosed-file ResourceWarning in `tests/test_hermes.py`.
 
 ## 0.1.0 — 2026-10-21

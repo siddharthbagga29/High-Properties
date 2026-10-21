@@ -11,3 +11,4 @@ state/experiments/
 state/hermes.lock
 state/hermes_check.json
 state/*.tmp
+state/research/results/

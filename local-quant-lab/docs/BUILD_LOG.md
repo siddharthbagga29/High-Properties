@@ -26,3 +26,10 @@
   - No real market data yet.
   - The backtest covers a single instrument only.
   - The UI loading state has no automated test.
+
+## 2026-10-21 · Session 2 (engineering continuation, same container)
+- **Baseline:** 66 tests OK, `verify.py` 8 done_verified + H1 needs_human. The ResourceWarning at `tests/test_hermes.py:93` reproduced and was fixed (`with open`); `-W error::ResourceWarning` passes.
+- **Milestone A, portfolio backtester:** `lql/backtest/portfolio.py`, `tests/test_portfolio.py` (21 tests). Reproduces `engine.run` exactly for one instrument (equity, fills, costs). 95 tests OK with the second strategy.
+- **Milestone B, second strategy:** `vol_scaled_trend`, `tests/test_strategies.py` (8 tests).
+- **Milestone C, walk-forward:** `lql/research/`, `tests/test_walkforward.py` (14 tests). First synthetic default run (5 folds, 12 candidates): NOT_PROVEN (CI lower bound of Sharpe not above 0; synthetic; holdout not evaluated). Holdout left unspent.
+- Test-design note: two walk-forward tests use `lenient_spec` and seed 1, found by scanning seeds 1 to 11 for a series that reaches NOT_PROVEN so the holdout path can run. That tells us nothing about any strategy.

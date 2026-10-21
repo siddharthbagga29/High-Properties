@@ -1,0 +1,160 @@
+{
+  "bars": 1800,
+  "data_fingerprint": "5a3b84e8beeb4bf88685d2b8524f67608da8a2096097e6093e2d23aeec49cad4",
+  "first": "2019-01-02",
+  "frozen_at": "2026-10-21T02:24:45.584280Z",
+  "holdout_fingerprint": "897d5810b58dcda11a42ad7d4affc607da8b095c38529521de9ea41655d59589",
+  "last": "2025-11-25",
+  "pre_holdout_last": "2024-07-09",
+  "source": {
+    "adjusted": "n/a",
+    "content_sha256": "",
+    "description": "Deterministic synthetic daily bars (seed 7); not market data",
+    "kind": "DEMO_SYNTHETIC",
+    "provider": "synthetic",
+    "retrieved_at": "",
+    "terms": "Generated locally; no third-party data"
+  },
+  "spec": {
+    "acceptance": {
+      "benchmark_rule": "sharpe_diff_ci_lower > 0, or (max drawdown <= 75% of the benchmark's and net Sharpe >= 90% of the benchmark's)",
+      "holdout": {
+        "max_drawdown_floor": -0.2,
+        "min_exits": 1,
+        "min_return": 0.0,
+        "min_sharpe": 0.0
+      },
+      "min_folds": 3,
+      "min_oos_days": 252,
+      "min_oos_exits": 10,
+      "min_oos_net_sharpe": 0.0,
+      "min_oos_to_is_sharpe_ratio": 0.5,
+      "min_selection_stability": 0.4,
+      "min_sharpe_ci_lower": 0.0,
+      "suspicious_sharpe": 3.0
+    },
+    "benchmark": "equal-share buy-and-hold under the same caps, costs and risk engine",
+    "bootstrap": {
+      "block": 10,
+      "level": 0.95,
+      "n_boot": 1000,
+      "seed": 11
+    },
+    "candidates": [
+      {
+        "params": {
+          "fast": 20,
+          "slow": 100
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "fast": 20,
+          "slow": 150
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "fast": 20,
+          "slow": 200
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "fast": 50,
+          "slow": 100
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "fast": 50,
+          "slow": 150
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "fast": 50,
+          "slow": 200
+        },
+        "strategy": "sma_trend"
+      },
+      {
+        "params": {
+          "slow": 100,
+          "target_vol_pct": 10,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      },
+      {
+        "params": {
+          "slow": 100,
+          "target_vol_pct": 15,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      },
+      {
+        "params": {
+          "slow": 150,
+          "target_vol_pct": 10,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      },
+      {
+        "params": {
+          "slow": 150,
+          "target_vol_pct": 15,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      },
+      {
+        "params": {
+          "slow": 200,
+          "target_vol_pct": 10,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      },
+      {
+        "params": {
+          "slow": 200,
+          "target_vol_pct": 15,
+          "vol_lookback": 20
+        },
+        "strategy": "vol_scaled_trend"
+      }
+    ],
+    "costs": {
+      "base_multiplier": 1.0,
+      "stress_multiplier": 2.0
+    },
+    "name": "wf-default",
+    "selection": {
+      "metric": "in_sample_net_sharpe",
+      "min_in_sample_exits": 3,
+      "ties": "fewer fills, then candidate order"
+    },
+    "windows": {
+      "holdout_fraction": 0.2,
+      "step_bars": 126,
+      "test_bars": 126,
+      "train_bars": 504,
+      "warmup_bars": 250
+    }
+  },
+  "spec_hash": "fcc75a7c47052167",
+  "synthetic": true,
+  "universe": [
+    "DEMO-ETF-A",
+    "DEMO-ETF-B"
+  ],
+  "wf_version": "1.0.0"
+}

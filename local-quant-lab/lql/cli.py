@@ -31,6 +31,47 @@ SEED_TASKS = [
 ]
 
 
+def _research(lab, a):
+    import copy
+    from .data.providers import SyntheticProvider, SnapshotProvider
+    from .data.quality import validate
+    from .research import walkforward as wf
+    s = lab._need_settings()
+    directory = lab.state / "research"
+    names = [x.strip() for x in a.instruments.split(",") if x.strip()]
+    if a.source == "synthetic":
+        p = SyntheticProvider(n_days=a.days)
+        data, info = {i: p.bars(i) for i in names}, p.info()
+    else:
+        p = SnapshotProvider(lab.snapshot_dir) if lab.snapshot_dir else SnapshotProvider()
+        data = {i: p.bars(i) for i in names}
+        info = p.info(names[0])
+    for i, bars in data.items():
+        if not validate(bars, i).tradable:
+            raise SystemExit(f"data for {i} failed validation")
+    if a.action == "show":
+        return json.loads((directory / "results" / f"{a.spec}.json").read_text())
+    spec = copy.deepcopy(wf.DEFAULT_SPEC)
+    spec["name"] = a.name
+    reg = wf.freeze(spec, data, s, directory, info, lab.events) if a.action == "run" \
+        else wf.load_registration(directory, a.spec)
+    if a.action == "run":
+        rep = wf.run_walk_forward(reg, data, s, directory, lab.events)
+    else:
+        rep = wf.evaluate_holdout(reg, data, s, directory, lab.events)
+    keep = ("spec_hash", "verdict", "alpha_status", "reasons", "synthetic", "n_folds", "holdout_contaminated_by",
+            "holdout")
+    out = {k: rep.get(k) for k in keep}
+    out["checks"] = [(c["name"], c["passed"]) for c in rep.get("checks", [])]
+    oos = rep.get("out_of_sample")
+    if oos:
+        out["out_of_sample"] = {k: oos["metrics"].get(k) for k in ("total_return", "sharpe", "max_drawdown", "exits",
+                                                                  "avg_exposure", "turnover_annual", "costs")}
+        out["benchmark"] = {k: oos["benchmark"].get(k) for k in ("total_return", "sharpe", "max_drawdown")}
+        out["bootstrap"] = oos["bootstrap"]
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="lql", description="Local Quant Lab (SIMULATED only; no live trading exists)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -43,6 +84,13 @@ def main(argv=None):
     p.add_argument("--steps", type=int, default=50)
     p.add_argument("--instrument", default="DEMO-ETF-A")
     p.add_argument("--strategy", default="sma_trend")
+    rs = sub.add_parser("research", help="pre-registered walk-forward study (freeze, run) and the one-shot holdout")
+    rs.add_argument("action", choices=("run", "holdout", "show"))
+    rs.add_argument("--source", default="synthetic", choices=("synthetic", "snapshot"))
+    rs.add_argument("--instruments", default="DEMO-ETF-A,DEMO-ETF-B")
+    rs.add_argument("--days", type=int, default=1800, help="synthetic series length")
+    rs.add_argument("--name", default="wf-default")
+    rs.add_argument("--spec", help="spec hash (holdout/show)")
     k = sub.add_parser("kill")
     k.add_argument("--reason", required=True)
     r = sub.add_parser("release")
@@ -71,6 +119,8 @@ def main(argv=None):
                     "critic": rec["critic"]})
         elif a.cmd == "paper":
             _print(lab.paper_step(a.steps, a.instrument, a.strategy))
+        elif a.cmd == "research":
+            _print(_research(lab, a))
         elif a.cmd == "kill":
             _print({"cancelled": lab.kill(a.reason)})
         elif a.cmd == "release":
