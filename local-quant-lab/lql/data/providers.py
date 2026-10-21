@@ -11,7 +11,10 @@ import io
 import json
 import math
 import random
+import os
+import urllib.parse
 import urllib.request
+from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -85,9 +88,22 @@ def write_snapshot(instrument, bars, info, directory=SNAPSHOT_DIR):
                 "sha256": _sha256(path), "rows": len(bars),
                 "first": bars[0].event_date.isoformat() if bars else None,
                 "last": bars[-1].event_date.isoformat() if bars else None,
-                "adjusted": info.adjusted, "terms": info.terms}
+                "adjusted": info.adjusted, "adjustment_evidence": info.adjustment_evidence, "terms": info.terms}
     (directory / f"{instrument}.manifest.json").write_text(json.dumps(manifest, indent=2))
     return path, manifest
+
+
+def combine_info(infos):
+    """One SourceInfo for a multi-instrument study: verified only if EVERY instrument is verified."""
+    infos = list(infos)
+    if len(infos) == 1:
+        return infos[0]
+    if all(i.adjustment_verified for i in infos):
+        return replace(infos[0], adjustment_evidence=" | ".join(i.adjustment_evidence for i in infos),
+                       content_sha256=hashlib.sha256("".join(i.content_sha256 for i in infos).encode()).hexdigest())
+    weakest = next(i for i in infos if not i.adjustment_verified)
+    return replace(infos[0], adjusted=weakest.adjusted, adjustment_evidence="",
+                   content_sha256=hashlib.sha256("".join(i.content_sha256 for i in infos).encode()).hexdigest())
 
 
 class SnapshotProvider:
@@ -106,7 +122,8 @@ class SnapshotProvider:
         m = self.manifest(instrument)
         return SourceInfo(provider=m["provider"], kind="HISTORICAL_SNAPSHOT" if m["kind"] != "DEMO_SYNTHETIC" else m["kind"],
                           description=m["description"], retrieved_at=m["retrieved_at"], content_sha256=m["sha256"],
-                          adjusted=m.get("adjusted", "unknown"), terms=m.get("terms", ""))
+                          adjusted=m.get("adjusted", "unknown"), terms=m.get("terms", ""),
+                          adjustment_evidence=m.get("adjustment_evidence", ""))
 
     def bars(self, instrument):
         m = self.manifest(instrument)
@@ -129,26 +146,50 @@ def parse_csv(text, instrument, source, received_at=""):
 
 
 class StooqProvider:
-    """Optional free EOD source. Research-only; Stooq data may be adjusted and is not a contractual or live feed."""
+    """Optional Stooq end-of-day source. Research-only; not a live or contractual feed.
+
+    Access (as of the 2026-10-21 audit; the primary stooq.com pages could not be reached from the audit environment,
+    so this rests on secondary reports dated March/April 2026): Stooq now answers the plain CSV URL with an HTML page
+    asking for an API key, which a person obtains on the website (a CAPTCHA is reported), and applies a daily request
+    quota. This class never tries to obtain a key, solve a CAPTCHA, retry or work around a limit. The key is read from
+    the STOOQ_API_KEY environment variable, never stored, logged, written to a manifest or put in an error message.
+    The query-parameter name below is NOT verified against Stooq documentation; if Stooq rejects it the download fails
+    visibly. Adjustment status of the returned prices is unknown and is recorded as such."""
     name = "stooq"
     URL = "https://stooq.com/q/d/l/?s={sym}&i=d"
+    KEY_PARAM = "apikey"      # UNVERIFIED parameter name; confirm on stooq.com after obtaining a key
+    KEY_ENV = "STOOQ_API_KEY"
 
-    def __init__(self, timeout=20, opener=None):
+    def __init__(self, timeout=20, opener=None, api_key=None):
         self.timeout, self.opener = timeout, opener or urllib.request.urlopen
+        self.api_key = api_key if api_key is not None else os.environ.get(self.KEY_ENV, "")
+
+    def _url(self, sym):
+        url = self.URL.format(sym=sym)
+        return url + f"&{self.KEY_PARAM}={urllib.parse.quote(self.api_key)}" if self.api_key else url
 
     def fetch(self, instrument, symbol=None):
         sym = (symbol or f"{instrument.lower()}.us")
         try:
-            with self.opener(self.URL.format(sym=sym), timeout=self.timeout) as resp:
+            with self.opener(self._url(sym), timeout=self.timeout) as resp:
                 text = resp.read().decode("utf-8", "replace")
-        except Exception as e:  # network, proxy, rate limit: fail visibly
-            raise ProviderError(f"stooq download failed for {sym}: {e}")
-        if not text.lower().startswith("date"):
-            raise ProviderError(f"stooq returned no CSV for {sym} (first bytes: {text[:60]!r})")
+        except Exception as e:  # network, proxy, rate limit: fail visibly, never echo the URL (it may hold the key)
+            raise ProviderError(f"stooq download failed for {sym}: {type(e).__name__}")
+        head = text.lstrip()[:400].lower()
+        if "daily hits limit" in head or "exceeded" in head and "limit" in head:
+            raise ProviderError(f"stooq daily request limit reached for {sym}; stop and try again tomorrow. "
+                                "Do not retry in a loop.")
+        if not head.startswith("date"):
+            hint = ("Stooq returned a web page, not CSV. It now appears to require an API key (set "
+                    f"{self.KEY_ENV} after obtaining one yourself on stooq.com, or download the CSV by hand and use "
+                    "scripts/import_csv.py)." if not self.api_key else
+                    "Stooq returned a web page, not CSV: the key may be wrong or expired, the quota may be spent, or "
+                    "the parameter name changed. Nothing was written.")
+            raise ProviderError(f"stooq returned no CSV for {sym}. {hint}")
         retrieved = now_iso()
         bars = parse_csv(text, instrument, "stooq", retrieved)
         info = SourceInfo(provider="stooq", kind="HISTORICAL_DOWNLOADED",
                           description=f"Stooq daily CSV for {sym}; end-of-day, research-only, not live",
-                          retrieved_at=retrieved, adjusted="unknown (Stooq may split/dividend-adjust)",
-                          terms="Personal research use; check stooq.com terms before redistribution")
+                          retrieved_at=retrieved, adjusted="unknown",
+                          terms="Personal research use only; Stooq terms not verified in the audit; do not redistribute")
         return bars, info

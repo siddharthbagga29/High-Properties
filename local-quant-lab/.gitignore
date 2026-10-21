@@ -14,3 +14,11 @@ state/*.tmp
 state/research/results/
 state/forward/*/ledger.db*
 state/forward/*/run.lock
+
+# Raw vendor market data and everything derived row by row from it: never commit (public repository, vendor terms)
+data/snapshots/*.csv
+data/snapshots/*.manifest.json
+data/snapshots/archive/
+state/forward/
+# machine-specific reports (hardware inventory, paths)
+state/hermes_check.json

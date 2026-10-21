@@ -4,9 +4,11 @@
 # 2. run one idempotent forward-paper pass (SIMULATED; no broker exists).
 # Safe to run repeatedly: a pass with nothing new changes nothing. A non-zero exit means look at the log.
 set -eu
+# Consent is yours to give, not this script's: export LQL_STOOQ_TERMS_OK=yes only after reading Stooq's terms.
+[ "${LQL_STOOQ_TERMS_OK:-}" = "yes" ] || { echo "set LQL_STOOQ_TERMS_OK=yes after reading Stooq's terms (and STOOQ_API_KEY if Stooq requires one)"; exit 2; }
 cd "$(dirname "$0")/.."
 SYMS="${LQL_SYMBOLS:-SPY QQQ IWM TLT}"
-python3 scripts/snapshot_stooq.py $SYMS
+python3 scripts/snapshot_stooq.py --i-have-read-the-stooq-terms $SYMS
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "data/snapshots/archive/$STAMP"
 cp data/snapshots/*.csv data/snapshots/*.manifest.json "data/snapshots/archive/$STAMP/"

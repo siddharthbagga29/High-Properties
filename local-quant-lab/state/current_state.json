@@ -2,8 +2,8 @@
   "app_version": "0.1.0",
   "execution_mode": "SIMULATED",
   "last_checkpoint": {
-    "at": "2026-10-21T02:40:54.303551Z",
-    "note": "M10-forward-log -> done_verified"
+    "at": "2026-10-21T03:05:56.196120Z",
+    "note": "M11-data-audit -> done_verified"
   },
   "live_trading": "absent",
   "order": [
@@ -18,7 +18,8 @@
     "M7-security-audit",
     "M8-portfolio",
     "M9-walkforward",
-    "M10-forward-log"
+    "M10-forward-log",
+    "M11-data-audit"
   ],
   "schema": 1,
   "tasks": {
@@ -234,6 +235,68 @@
       ],
       "id": "M10-forward-log",
       "last_action": "execute M10-forward-log",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M11-data-audit": {
+      "acceptance": [
+        "python3 -m unittest tests.test_data_audit"
+      ],
+      "blocker": null,
+      "deps": [
+        "M9-walkforward",
+        "M10-forward-log"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T03:05:56.196080Z",
+          "command": "python3 -m unittest tests.test_data_audit",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_data_audit",
+              "exit_code": 0,
+              "tail": "...................\n----------------------------------------------------------------------\nRan 19 tests in 3.628s\n\nOK\n"
+            }
+          ],
+          "passed": 19,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Real-data workflow audit: vendor access, adjustment status, provisional labelling, repo hygiene",
+      "history": [
+        {
+          "at": "2026-10-21T03:05:52.427431Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T03:05:52.428382Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T03:05:52.430675Z",
+          "by": "worker",
+          "note": "execute M11-data-audit",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T03:05:56.196115Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_data_audit",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M11-data-audit",
+      "last_action": "execute M11-data-audit",
       "owner": "engineer",
       "retries": 0,
       "retry_budget": 3,

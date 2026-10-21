@@ -44,7 +44,7 @@ The log is rebuilt from the SQLite ledger (`ledger.db`, the source of truth). `r
 An exception injected after order creation, after acceptance, after decisions, before logging, before commit, after commit, after fills and after marking leaves a consistent ledger. The next pass finishes half-made orders (`ACCEPTED` -> `SUBMITTED`; `CREATED` -> re-run the risk check), cannot duplicate an order or a fill (order ids come from idempotency keys), regenerates missing log records, and ends with the same equity, fills and log as an uninterrupted run. A torn last log line is ignored. A second concurrent pass is refused with `RunnerBusy`. A power cut mid-write is covered by SQLite transactions and per-batch fsync, not by an extra test.
 
 ## Scheduling on the Mac (you do this; nothing here installs anything)
-`scripts/forward_daily.sh` refreshes the Stooq snapshots, keeps a dated copy in `data/snapshots/archive/`, and runs one pass. Example launchd job (save as `~/Library/LaunchAgents/com.localquantlab.forward.plist`, edit the path, then `launchctl load` it):
+`scripts/forward_daily.sh` (refuses to run unless `LQL_STOOQ_TERMS_OK=yes` is exported; needs a Stooq key if Stooq still requires one) refreshes the Stooq snapshots, keeps a dated copy in `data/snapshots/archive/`, and runs one pass. Example launchd job (save as `~/Library/LaunchAgents/com.localquantlab.forward.plist`, edit the path, then `launchctl load` it):
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -66,12 +66,15 @@ Local time on the Mac; 18:30 US Eastern is after the close in every season. A mi
 
 ## Operational limitations (read before trusting any number)
 - **A sleeping or off Mac skips runs.** Missed sessions are processed late. Anything older than 4 days relative to the run time is treated as stale: marked to market, but not traded, and its pending orders are cancelled. Gaps are visible as `stale_data` / `calendar_gap` events, not hidden.
-- **Stooq is a free, unofficial end-of-day source.** It can publish late, miss days, revise history (the adjustment status is `unknown`) or change format. Each refresh overwrites the CSV, so past bars can change under the ledger. That is why the script archives every snapshot, and why a hash mismatch is a visible `DATA_ERROR`.
+- **Stooq is a free, unofficial end-of-day source that reportedly now needs an API key and has a daily quota.** It can publish late, miss days, revise history (the adjustment status is `unknown`) or change format. Each refresh overwrites the CSV, so past bars can change under the ledger. That is why the script archives every snapshot, and why a hash mismatch is a visible `DATA_ERROR`.
 - **No holiday calendar.** A session exists if some instrument has a bar for that date. A real holiday looks like "no bar" and is simply skipped; a missing bar on a normal day looks the same. Only gaps above 5 calendar days are flagged.
 - **Fills are modelled.** Next-open market fills with linear costs. No partial fills, no queue position, no auction, no dividends or corporate actions beyond what the (possibly adjusted) data embeds, no taxes.
 - **Paper session rejects, the backtester shrinks.** If a gap up leaves too little cash at the open, the paper session rejects the order; the portfolio backtester buys what it can afford. The paper behaviour is the more conservative one. They are otherwise equivalent (tested on equity to six decimals when cash does not bind).
 - **One strategy and equal shares per log.** Changing the strategy, the universe, the mode or the data kind of an existing log is refused; start a new directory.
 - **Single machine, single operator.** No remote monitoring. You must read `forward report` and the `error` records. `scripts/forward_daily.sh` exits non-zero only on a crash, not on a `DATA_ERROR` summary: check `run_state.json`.
+
+## Price adjustment and the provisional flag
+If the data's split/dividend treatment is not verified (`docs/DATA_PROVENANCE.md`), the log records a `provisional_adjustment` data event and the report is marked provisional for good. A provisional log never meets the evidence criteria, whatever the session count. Verify first, then start a new log directory.
 
 ## When could this count as paper evidence?
 Mechanical criteria (in `forward.py`, shown by `forward report`): at least **60 `REAL_FORWARD` sessions**, at least **10 completed exits**, no `error` records, ledger reconciled. Meeting them only makes a human review worthwhile. `alpha_status` stays `unproven` until that review, and even then paper results over a few months say little about future returns. Nothing in this build can authorise a real order.

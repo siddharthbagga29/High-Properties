@@ -342,6 +342,11 @@ class ForwardRunner:
             raise ForwardConfigError(f"this forward log was started as {cfg}; it cannot continue as {want}. "
                                      "Start a new log directory instead of mixing configurations or data kinds.")
         cls = cfg["evidence_class"]
+        if info.is_provisional:   # sticky: once any pass saw unverified adjustment, the whole log stays provisional
+            if not ledger.get("provisional", False):
+                self.log.write(f"data:adjustment:{info.adjusted}", "data_event", cls, code="provisional_adjustment",
+                               adjusted=info.adjusted, detail="split/dividend treatment of the prices is unverified")
+            ledger.set("provisional", True)
         session = MultiPaperSession(s, ledger, create(self.strategy_key, **self.params), self.universe, self.events)
         session.fault = fault
         last_done = ledger.get("last_processed")
@@ -462,6 +467,17 @@ class ForwardRunner:
         finally:
             ledger.close()
 
+    @staticmethod
+    def _statement(cls, prov, met):
+        if cls != "REAL_FORWARD":
+            return f"Not forward paper evidence: {cls}. Synthetic or replayed data cannot support a claim."
+        if prov:
+            return ("PROVISIONAL: price adjustment is unverified, so even real forward sessions are not evidence. "
+                    "Verify the data (scripts/check_adjustment.py) and start a new log.")
+        if met:
+            return "Mechanical criteria met; a human review is still required before any status change."
+        return "REAL_FORWARD data, but the minimum sessions/exits/clean-run criteria are not met yet."
+
     # -- reporting -------------------------------------------------------------------------------------------------
     def report(self):
         ledger = Ledger(self.dir / "ledger.db", self.settings.initial_cash)
@@ -483,16 +499,15 @@ class ForwardRunner:
                 m = summarize([x["date"] for x in marks], [x["equity"] for x in marks])
                 rep["metrics"] = {k: m.get(k) for k in ("total_return", "sharpe", "max_drawdown")}
             real_fwd = sessions if cls == "REAL_FORWARD" else 0
-            met = (real_fwd >= PAPER_EVIDENCE_CRITERIA["min_real_forward_sessions"]
+            prov = bool(ledger.get("provisional", False)) and not cls.startswith("SYNTHETIC")
+            rep["provisional"] = prov
+            met = (not prov and real_fwd >= PAPER_EVIDENCE_CRITERIA["min_real_forward_sessions"]
                    and trips >= PAPER_EVIDENCE_CRITERIA["min_completed_round_trips"]
                    and not errors and bool(ledger.get("reconciled")))
             rep["paper_evidence"] = {
                 "criteria": PAPER_EVIDENCE_CRITERIA, "real_forward_sessions": real_fwd,
                 "mechanical_criteria_met": met, "alpha_status": "unproven",
-                "statement": ("Not forward paper evidence: " + cls + ". Synthetic or replayed data cannot support a "
-                              "claim.") if cls != "REAL_FORWARD" else
-                ("Mechanical criteria met; a human review is still required before any status change."
-                 if met else "REAL_FORWARD data, but the minimum sessions/exits/clean-run criteria are not met yet."),
+                "statement": self._statement(cls, prov, met),
             }
             return rep
         finally:

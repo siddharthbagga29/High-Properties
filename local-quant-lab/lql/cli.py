@@ -32,13 +32,15 @@ SEED_TASKS = [
      ["M8-portfolio", "M4-loop-hermes"], ["python3 -m unittest tests.test_walkforward"]),
     ("M10-forward-log", "Restartable paper-trading forward log with evidence classes", "engineer",
      ["M8-portfolio", "M3-risk-paper"], ["python3 -m unittest tests.test_forward"]),
+    ("M11-data-audit", "Real-data workflow audit: vendor access, adjustment status, provisional labelling, repo hygiene",
+     "engineer", ["M9-walkforward", "M10-forward-log"], ["python3 -m unittest tests.test_data_audit"]),
     ("H1-hermes-mac", "Install Hermes on the founder's Mac with a local 64K-context model and run "
      "scripts/hermes_check.py", "founder", ["M4-loop-hermes"], ["python3 scripts/hermes_check.py"]),
 ]
 
 
 def _forward(lab, a):
-    from .data.providers import SyntheticProvider, SnapshotProvider
+    from .data.providers import SyntheticProvider, SnapshotProvider, combine_info
     from .execution.forward import ForwardRunner, ForwardError
     s = lab._need_settings()
     names = [x.strip() for x in a.instruments.split(",") if x.strip()]
@@ -59,7 +61,7 @@ def _forward(lab, a):
                 p = SyntheticProvider(n_days=a.days)
                 return {i: p.bars(i) for i in names}, p.info()
             p = SnapshotProvider(lab.snapshot_dir) if lab.snapshot_dir else SnapshotProvider()
-            return {i: p.bars(i) for i in names}, p.info(names[0])
+            return {i: p.bars(i) for i in names}, combine_info([p.info(i) for i in names])
         return runner.run_once(loader)
     except ForwardError as e:
         raise SystemExit(f"forward: {e}")
@@ -67,7 +69,7 @@ def _forward(lab, a):
 
 def _research(lab, a):
     import copy
-    from .data.providers import SyntheticProvider, SnapshotProvider
+    from .data.providers import SyntheticProvider, SnapshotProvider, combine_info
     from .data.quality import validate
     from .research import walkforward as wf
     s = lab._need_settings()
@@ -79,7 +81,7 @@ def _research(lab, a):
     else:
         p = SnapshotProvider(lab.snapshot_dir) if lab.snapshot_dir else SnapshotProvider()
         data = {i: p.bars(i) for i in names}
-        info = p.info(names[0])
+        info = combine_info([p.info(i) for i in names])
     if a.start:
         data = {i: [b for b in bars if b.event_date.isoformat() >= a.start] for i, bars in data.items()}
     for i, bars in data.items():
@@ -97,7 +99,7 @@ def _research(lab, a):
         rep = wf.run_walk_forward(reg, data, s, directory, lab.events)
     else:
         rep = wf.evaluate_holdout(reg, data, s, directory, lab.events)
-    keep = ("spec_hash", "verdict", "alpha_status", "reasons", "synthetic", "n_folds", "holdout_contaminated_by",
+    keep = ("spec_hash", "evidence_label", "provisional", "verdict", "alpha_status", "reasons", "synthetic", "n_folds", "holdout_contaminated_by",
             "holdout")
     out = {k: rep.get(k) for k in keep}
     out["checks"] = [(c["name"], c["passed"]) for c in rep.get("checks", [])]

@@ -179,8 +179,9 @@ def warnings(rep, bars, meta, info):
     rt = rep["net"].get("round_trips") or 0
     if meta.key != "buy_hold" and rt < 10:
         w.append(f"only {rt} round trips: too few to judge any edge")
-    if info.adjusted not in ("adjusted", "n/a"):
-        w.append(f"price adjustment status: {info.adjusted}; splits/dividends may distort returns")
+    if info.is_provisional:
+        w.append(f"PROVISIONAL: price adjustment status is '{info.adjusted}' and not verified; splits and dividends "
+                 "may distort returns, so this result cannot count as evidence")
     sens = rep.get("cost_sensitivity") or []
     signs = {(s["sharpe"] or 0) > 0 for s in sens}
     if len(signs) > 1:

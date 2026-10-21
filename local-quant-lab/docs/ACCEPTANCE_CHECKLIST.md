@@ -20,7 +20,7 @@
 | 10 | Dashboard functional, grounded in data, responsive, with clear states | done_verified, with a gap | Chromium at 1440 and 390 px: no errors, no horizontal scroll. KPIs equal the backend report (test). Empty states have messages. Gap: no automated test for the loading state. Reduced motion uses a CSS media query; it was not tested in a browser. |
 | 11 | Orchestration persists, recovers, retries are bounded, evidence required | done_verified | `tests.test_orchestrator`, plus `scripts/verify.py` run to 8 done_verified tasks with recorded outputs in `state/current_state.json` |
 | 12 | Hermes acceptance (§5.1) | partial / needs_human | See the table below |
-| 13 | Unit, integration and smoke tests have run; critical issues fixed | done_verified | `python3 -m unittest discover -s tests -t .`: 137 tests OK, about 60 s (session 2). Bugs fixed are listed in BUILD_STATE §5. |
+| 13 | Unit, integration and smoke tests have run; critical issues fixed | done_verified | `python3 -m unittest discover -s tests -t .`: 156 tests OK, about 65 s (session 2 plus data audit). Bugs fixed are listed in BUILD_STATE §5. |
 | 14 | README covers install, run, test, architecture, data, limits, risks, troubleshooting | done_verified | `README.md` (reviewed by hand) |
 | 15 | Portable export generated and checked for secrets | done_verified | `python3 -m lql.cli export`: 15 files, 0 exclusions. `tests.test_export` plants secrets and checks that they are excluded. |
 | 16 | Living docs reflect actual results | done_verified | BUILD_STATE, DECISIONS, BUILD_LOG, RESEARCH_LEDGER and this file, written from the command outputs above |
@@ -42,6 +42,10 @@
 | Synthetic vs real distinguished | done_verified | evidence class per log; mixing refused; reports say "Not forward paper evidence" |
 | **Paper trading is complete (real forward evidence exists)** | **needs_human** | Not true and not claimed. Needs real data and at least 60 real forward sessions: `docs/MAC_NEXT_STEPS.md` |
 | Real-market-data walk-forward and holdout | needs_human | Not run: no real data in the container |
+| Unverified price adjustment cannot become evidence | done_verified | `tests.test_data_audit`: provisional logic, critic, walk-forward check, holdout refusal, forward-log flag, attestation only by independent-reference match |
+| Vendor access never bypassed; key never stored or echoed | done_verified | tests with a fake opener: single request, no retry, key absent from errors and manifests; scripts refuse without explicit terms consent |
+| Raw data and machine reports cannot be committed | done_verified | `git check-ignore` test over 12 paths, `scripts/check_staging.py` unit test, secret-scanner patterns. The checker was also exercised against planted fake files, which were removed afterwards |
+| Stooq terms, key parameter name, quota, adjustment policy | needs_human | Could not be read from the container; see DATA_PROVENANCE.md |
 | Learning loop still gated | done_verified | new forbidden-pattern tests for holdout/ledger/forward-log/prereg tampering; adapter isolation both ways (AST) |
 | Hermes failure cannot break simulator/risk | done_verified | all 137 tests pass with Hermes absent; trading modules do not import the agents package |
 

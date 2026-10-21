@@ -1,58 +1,67 @@
-# Next steps on your Mac — exact commands
+# Next steps on your Mac — safest order
 
-Nothing below was run in the cloud container; it needs your machine, your network, or your decision. Do them in order. Everything is free. No account, API key or subscription is involved.
+Updated after the pre-market-data audit (2026-10-21). Nothing below was run in the cloud container; it needs your machine, your network, or your decision. Everything is free; the only optional credential is a Stooq API key that you obtain yourself.
 
-## 0. Get the code and prove the baseline
-```
-git clone https://github.com/siddharthbagga29/High-Properties.git   # or: git pull
-cd High-Properties && git checkout claude/nice-fermat-510prv
-cd local-quant-lab
-python3 --version                         # needs 3.11 or newer
-python3 -m unittest discover -s tests -t .   # expect: OK (the count is in docs/BUILD_STATE.md)
-python3 scripts/verify.py                 # expect M0-M10 done_verified, H1 needs_human
-```
-If a test fails on macOS, stop and report the output: the code has only been run on Linux.
+**Rules for the whole session:** the repository is public. Never commit price data, forward logs, databases, `.env`, the Hermes hardware report, or a Stooq key. Before every commit run `python3 scripts/check_staging.py`; if it refuses, fix `.gitignore`, do not force. Do not run anything in step 5 or 6 until the earlier steps pass.
 
-## 1. Hermes (optional layer; the lab works without it)
-Follow `docs/HERMES_INTEGRATION.md` steps 1 to 8 exactly. The short version:
+## 0. Baseline
 ```
-python3 scripts/hermes_check.py                      # records chip, RAM, disk, uv, Ollama, Hermes in state/hermes_check.json
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash     # read the script first if you prefer
-hermes model                                         # choose Local models; confirm the context is >= 64K
-hermes memory status
-python3 scripts/hermes_check.py --memory-roundtrip   # writes a nonce in session 1, recalls it in session 2
-python3 -m lql.cli hermes                            # "source" should read hermes, not the fallback
+git clone https://github.com/siddharthbagga29/High-Properties.git && cd High-Properties   # or: git pull
+git checkout claude/nice-fermat-510prv && cd local-quant-lab
+python3 --version                                # 3.11 or newer
+python3 -m unittest discover -s tests -t .       # expect OK; the count is in docs/BUILD_STATE.md
+python3 scripts/verify.py                        # expect M0 to M10 done_verified, H1 needs_human
+python3 scripts/check_staging.py                 # expect: OK, nothing sensitive
 ```
-Decision for you: do not add Nous Portal or any hosted key. If no local model is fast enough, leave Hermes off. Then commit `state/hermes_check.json` and mark H1 done only if the round trip really recalled the nonce.
+If any test fails on macOS, stop and send me the output (the code has only run on Linux).
 
-## 2. Real daily data (free, research use only)
+## 1. Decide how to get the prices (your decision; I could not read Stooq's terms)
+1. Open `https://stooq.com` in your browser and read its terms. Decide whether your use (private research, no redistribution) is allowed.
+2. **Preferred, no automation:** download the daily CSV for SPY, QQQ, IWM and TLT in your browser (handle any login or CAPTCHA yourself), then:
 ```
-python3 scripts/snapshot_stooq.py SPY QQQ IWM TLT
+python3 scripts/import_csv.py SPY ~/Downloads/spy_us_d.csv --source "Stooq website, manual download <date>"
+python3 scripts/import_csv.py QQQ ... ; python3 scripts/import_csv.py IWM ... ; python3 scripts/import_csv.py TLT ...
 ```
-Read the printed quality summary for each symbol (rows, first/last date, `tradable`, issue counts). If any symbol says `tradable=False` or the fetch failed, do not continue: send me the output. Stooq's adjustment status is recorded as `unknown`; treat dividend and split effects as unresolved. Commit `data/snapshots/` only if you are comfortable with Stooq's terms for your use (the files are CSV plus a manifest with a SHA-256).
+3. **Alternative, scripted:** only if Stooq gives you an API key and you are comfortable with automated requests (reported key page: `https://stooq.com/q/d/?s=spy.us&get_apikey`; reported by third parties, unverified):
+```
+export STOOQ_API_KEY=...          # this shell only; never a file in git
+python3 scripts/snapshot_stooq.py --i-have-read-the-stooq-terms SPY QQQ IWM TLT
+```
+It stops at the first failure and never retries. If it says Stooq returned a web page, that is the key requirement; the parameter name (`apikey`) is unconfirmed, so it may need a code change, in which case send me the message, not the key.
+4. Read the printed line for each symbol: rows, first/last date, `tradable`, issue counts. Stop if `tradable=False`. Note any `split_suspect` count: that means the series may be unadjusted for splits.
+5. `python3 scripts/check_staging.py` again: the CSVs and manifests must not appear.
 
-## 3. Walk-forward on real data (spend the holdout once)
-Pick a common start so every ETF exists (TLT starts in 2002; for example 2005-01-03). Choose the name now; the spec cannot change afterwards without a new name and a new hash.
+## 2. Verify the price adjustment (the audit's key finding: it is unverified)
+Find, in an **independent source** (the ETF issuer's site or another data site, not Stooq), the raw closing price and the adjusted/total-return closing price for each symbol on **two old dates** (for example 2008-03-14 and 2012-06-01) where they differ by more than 2%. Then:
+```
+python3 scripts/check_adjustment.py SPY --ref 2008-03-14:<RAW>:<ADJ> --ref 2012-06-01:<RAW>:<ADJ>
+python3 scripts/check_adjustment.py SPY --ref ... --ref ... --write      # records the outcome in the manifest
+```
+Repeat for QQQ, IWM and TLT. Outcomes: `split_and_dividend_adjusted` (verified), `unadjusted` (prices exclude dividends: usable only as clearly price-only research), or `unknown`. Anything but verified stays **PROVISIONAL**. Do not edit manifests by hand.
+
+## 3. Hermes (independent of the data; do it any time)
+Follow `docs/HERMES_INTEGRATION.md`. In short: `python3 scripts/hermes_check.py`, install Hermes, `hermes model` (Local models, at least 64K context), `python3 scripts/hermes_check.py --memory-roundtrip`, `python3 -m lql.cli hermes`. `state/hermes_check.json` lists your hardware and paths: it is git-ignored now. **Do not commit it**; write only a summary (chip, RAM, whether the round trip passed) in BUILD_STATE.
+
+## 4. Pipeline smoke test on the real files (provisional is allowed here, evidence is not)
 ```
 python3 -m lql.cli research run --source snapshot --instruments SPY,QQQ,IWM,TLT --start 2005-01-03 --name wf-real-1
-git add state/research/prereg state/research/runs.jsonl && git commit -m "Pre-registration wf-real-1"   # audit trail, before reading the verdict
 ```
-Read the verdict, `checks` and `reasons`. If it is INSUFFICIENT, SUSPICIOUS or REJECTED, stop: that is the answer, and the holdout stays unspent. Only if it is NOT_PROVEN and you still want the final test:
-```
-python3 -m lql.cli research holdout --source snapshot --instruments SPY,QQQ,IWM,TLT --start 2005-01-03 --name wf-real-1 --spec <spec_hash>
-git add state/research/holdout_registry.json && git commit -m "Holdout spent for wf-real-1"
-```
-This can be run once per holdout data. CANDIDATE means "survived every pre-registered check, still a hypothesis". It does not mean profitable and it does not unlock any order. Do not rerun with a different name on the same data hoping for a better result: the registry will flag it as contaminated.
+Read `evidence_label` first. While any symbol is unverified it says PROVISIONAL, the check `price_adjustment_verified` fails, the verdict cannot be CANDIDATE, and `research holdout` refuses. The pre-registration it writes (`state/research/prereg/<hash>.json`) holds no prices and may be committed after `check_staging.py`.
+If you verified all four symbols in step 2, run the same command with a new `--name wf-real-2`: the attestation changes the study hash, so it is a separate pre-registration. Choose the name before you look at any result.
 
-## 4. Start the forward paper log (the only route to paper evidence)
+## 5. Spend the holdout once (only with verified data and a NOT_PROVEN walk-forward)
+```
+python3 -m lql.cli research holdout --source snapshot --instruments SPY,QQQ,IWM,TLT --start 2005-01-03 --name wf-real-2 --spec <spec_hash>
+```
+It cannot be repeated for the same data. A result of CANDIDATE means "survived every pre-registered check", still a hypothesis. Commit `state/research/holdout_registry.json` (no prices) after `check_staging.py`.
+
+## 6. Start the forward paper log (only after step 2 is verified for all four)
+Choose strategy and parameters now; they cannot change in an existing log.
 ```
 python3 -m lql.cli forward run --source snapshot --mode FORWARD --instruments SPY,QQQ,IWM,TLT   # day 0: warm-up only
 python3 -m lql.cli forward report --source snapshot --mode FORWARD --instruments SPY,QQQ,IWM,TLT
 ```
-Then schedule `scripts/forward_daily.sh` (launchd example in `docs/FORWARD_PAPER.md`). Check `state/forward/snapshot-forward/run_state.json` and the `error` records at least weekly. The log becomes reviewable after 60 sessions and 10 exits (about three months at least); until then `forward report` says so.
-Choose the strategy and parameters for this log before starting (default `sma_trend` 50/200). They cannot be changed in an existing log.
+A log started on provisional data is flagged PROVISIONAL permanently and can never meet the evidence criteria; start a new log after verification instead. To schedule `scripts/forward_daily.sh` (launchd example in `docs/FORWARD_PAPER.md`), export `LQL_STOOQ_TERMS_OK=yes` only after reading the terms, and note that it needs a working download route (a key) every day; if you only import by hand, run `forward run` yourself after each manual import. Logs live in `state/forward/` and are git-ignored.
 
-## 5. What you should decide, and what I will not do
-- Whether Stooq's terms suit you; whether to keep snapshots in git.
-- Whether to ever consider a paper broker: not built, not approved, needs the checklist in `docs/HERMES_INTEGRATION.md` "Future".
-- I will not enable live trading, add a broker adapter, add paid services, or lower a risk limit. Limits only get stricter through `config.tighten` or by your own edit of `config/settings.json`.
+## What I will not do
+Enable live trading, add a broker, add paid services, bypass Stooq's key, CAPTCHA or quota, or change a risk limit.

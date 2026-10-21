@@ -19,7 +19,7 @@ SYN = SyntheticProvider().info()
 # A fixture that is LABELLED like a real snapshot so the classification logic can be tested. The bars themselves are
 # still generated; this proves nothing about markets.
 REAL_LABEL = SourceInfo(provider="fixture", kind="HISTORICAL_SNAPSHOT", description="test fixture, not market data",
-                        adjusted="adjusted")
+                        adjusted="split_and_dividend_adjusted", adjustment_evidence="test fixture claim only")
 
 
 def data(n=420, insts=(A, B)):

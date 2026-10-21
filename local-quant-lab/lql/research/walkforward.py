@@ -30,6 +30,7 @@ from ..backtest.metrics import summarize
 from ..backtest.portfolio import run_portfolio, summarize_portfolio, benchmark_buy_hold, with_costs, prepare
 from ..events import now_iso, atomic_write_json
 from ..orchestrator.critic import leakage_probe
+from ..data.schema import ADJ_VERIFIED
 from ..strategies import create
 from . import stats
 
@@ -77,9 +78,21 @@ def fingerprint(data):
     return h.hexdigest()
 
 
-def _spec_hash(spec, settings, universe, data_fp):
+def _adjustment(source_info):
+    """What the registration says about price adjustment. None for synthetic data (keeps the hashes of studies frozen
+    before this field existed unchanged)."""
+    if source_info is not None and source_info.is_synthetic:
+        return None
+    if source_info is None:
+        return {"adjusted": "unknown", "evidence": ""}
+    return {"adjusted": source_info.adjusted, "evidence": source_info.adjustment_evidence}
+
+
+def _spec_hash(spec, settings, universe, data_fp, adjustment=None):
     payload = {"spec": spec, "wf": WF_VERSION, "universe": sorted(universe), "data": data_fp,
                "costs": asdict(settings.costs), "risk": asdict(settings.risk), "cash": settings.initial_cash}
+    if adjustment is not None:   # a changed attestation is a different study; it does NOT reset the holdout registry
+        payload["adjustment"] = adjustment
     return hashlib.sha256(json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
@@ -100,7 +113,10 @@ def freeze(spec, data, settings, directory, source_info=None, events=None):
     cutoff = dates[pre_n - 1]
     hold_data = {i: [b for b in bars if b.event_date > cutoff] for i, bars in data.items()}
     fp = fingerprint(data)
-    reg = {"spec": spec, "spec_hash": _spec_hash(spec, settings, list(data), fp), "data_fingerprint": fp,
+    adj = _adjustment(source_info)
+    reg = {"spec": spec, "spec_hash": _spec_hash(spec, settings, list(data), fp, adj), "data_fingerprint": fp,
+           "adjustment": adj, "provisional": bool(adj is not None and not (adj["adjusted"] == ADJ_VERIFIED and
+                                                                           adj["evidence"].strip())),
            "holdout_fingerprint": fingerprint(hold_data), "universe": sorted(data),
            "bars": len(dates), "first": dates[0].isoformat(), "last": dates[-1].isoformat(),
            "pre_holdout_last": cutoff.isoformat(), "wf_version": WF_VERSION,
@@ -127,7 +143,7 @@ def load_registration(directory, spec_hash):
 def _verify(reg, data, settings):
     if fingerprint(data) != reg["data_fingerprint"]:
         raise ResearchError("data differ from the pre-registered fingerprint: freeze a new spec for new data")
-    if _spec_hash(reg["spec"], settings, list(data), reg["data_fingerprint"]) != reg["spec_hash"]:
+    if _spec_hash(reg["spec"], settings, list(data), reg["data_fingerprint"], reg.get("adjustment")) != reg["spec_hash"]:
         raise ResearchError("spec, costs or risk limits differ from the registration")
 
 
@@ -195,7 +211,11 @@ def run_walk_forward(reg, data, settings, directory, events=None):
               "data_fingerprint": reg["data_fingerprint"], "synthetic": reg["synthetic"], "universe": reg["universe"],
               "pre_holdout": [ds[0], ds[-1]], "n_pre_bars": n_pre, "n_folds": len(folds),
               "candidates_evaluated": len(cands) * len(folds), "folds": [], "created_at": now_iso(),
-              "holdout": {"status": "NOT_EVALUATED"}, "checks": []}
+              "holdout": {"status": "NOT_EVALUATED"}, "checks": [],
+              "adjustment": reg.get("adjustment"), "provisional": bool(reg.get("provisional")),
+              "evidence_label": ("PROVISIONAL: price adjustment unverified; not evidence of profitability"
+                                 if reg.get("provisional") else
+                                 "SYNTHETIC: not market data" if reg["synthetic"] else "adjustment verified")}
     problems = []
 
     # integrity probe: no candidate family may look ahead
@@ -322,6 +342,8 @@ def run_walk_forward(reg, data, settings, directory, events=None):
     chk("beats_or_derisks_benchmark", (diff_lo is not None and diff_lo > 0) or dd_ok,
         {"sharpe_diff_ci_lower": diff_lo, "drawdown_rule": dd_ok}, acc["benchmark_rule"])
     chk("not_synthetic", not reg["synthetic"], reg["synthetic"], False)
+    chk("price_adjustment_verified", not reg.get("provisional") and not reg["synthetic"], reg.get("adjustment"),
+        "split_and_dividend_adjusted with recorded evidence")
     chk("holdout_uncontaminated", not contaminated, report["holdout_contaminated_by"], None)
     chk("holdout_passed", False, "not evaluated", "evaluate_holdout once, after this report")
 
@@ -382,6 +404,10 @@ def evaluate_holdout(reg, data, settings, directory, events=None):
     if not rpath.exists():
         raise ResearchError("run the walk-forward first; the holdout is evaluated after it, never before")
     report = json.loads(rpath.read_text())
+    if reg.get("provisional"):
+        raise ResearchError("price adjustment is unverified (PROVISIONAL): the single-use holdout is not spent on "
+                            "provisional data. Verify the adjustment (scripts/check_adjustment.py), then freeze a new "
+                            "study on the verified data")
     if report["verdict"] != "NOT_PROVEN":
         raise ResearchError(f"walk-forward verdict is {report['verdict']}: the holdout is not spent on a study that "
                             "already failed or lacks evidence")

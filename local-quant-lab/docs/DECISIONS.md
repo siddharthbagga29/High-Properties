@@ -64,6 +64,11 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - BROKER_PAPER raises `NotConnected`. No broker SDK is installed.
 - **Reverse if:** the founder explicitly opts in to a paper broker. See the checklist in docs/HERMES_INTEGRATION.md §Future and README §Live trading.
 
+## D-015 · 2026-10-21 · Real-data workflow: unverified adjustment is provisional, vendor data stays out of git
+- **Decision:** (1) A price series counts as verified only as `split_and_dividend_adjusted` with recorded evidence from an independent reference (two decisive old dates). Everything else is PROVISIONAL: no CANDIDATE, no holdout, no forward evidence. (2) The Stooq downloader is opt-in, key-from-environment, single-shot, and never circumvents access controls; manual CSV import is the preferred route. (3) The attestation is part of the study hash only for non-synthetic data, so existing registrations stay valid and a later attestation is a new study that cannot reset the holdout registry. (4) Raw prices, manifests, forward logs, databases and machine reports are git-ignored and `check_staging.py` blocks them (the repository is public).
+- **Why:** I could not read stooq.com or its terms from the audit environment; the adjustment status, key parameter name and quota are unverified. Treating that as provisional is the only honest default.
+- **Reverse if:** Stooq documents its adjustment and terms, or a verified source replaces it; then the vendor can be marked verified through the same check.
+
 ## D-011 · 2026-10-21 · Portfolio backtester conventions
 - **Decision:** one shared cash balance over the union of the instruments' session dates (`lql/backtest/portfolio.py`). No forward filling of bars. An order whose instrument has no bar on the next date is cancelled, not carried. Fills are clamped to the bar's low/high, quantity is capped at 10% of the bar's volume (remainder dropped and recorded), buys shrink to the cash left. Same-day orders reserve cash against each other; alphabetical priority is arbitrary but deterministic. The risk engine sees every position and every last price.
 - **Why:** these remove the cheapest ways to get unrealistic fills (a fill outside the day's range, trading more than the market, spending cash twice, filling days after a gap on stale information).

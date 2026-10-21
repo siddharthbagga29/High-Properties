@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
+SPLIT_RATIOS = (0.5, 1 / 3, 0.25, 0.2, 0.1, 2.0, 3.0, 4.0, 5.0, 10.0)
 BLOCKING = {"invalid_ohlc", "non_monotonic", "duplicate", "non_positive_price", "empty", "stale", "wrong_instrument"}
 
 
@@ -59,6 +60,11 @@ def validate(bars, instrument=None, as_of=None, max_age_days=None, gap_days=5, o
                                    "detail": f"{(b.event_date - prev.event_date).days} calendar days since previous bar"})
             if prev.close > 0 and abs(b.close / prev.close - 1) > outlier_ret:
                 rep.issues.append({"code": "outlier", "date": d, "detail": f"close-to-close {b.close / prev.close - 1:+.1%}"})
+                ratio = b.close / prev.close
+                if any(abs(ratio / r - 1) < 0.06 for r in SPLIT_RATIOS):
+                    rep.issues.append({"code": "split_suspect", "date": d,
+                                       "detail": f"close ratio {ratio:.3f} looks like a split; an unadjusted series "
+                                                 "would distort returns here"})
         prev = b
     if as_of is not None and max_age_days is not None:
         last = max(b.event_date for b in bars)

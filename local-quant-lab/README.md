@@ -43,7 +43,7 @@ Hermes adapter with deterministic fallback [lql/agents], skill learning with fro
 - **CLI:** `python3 -m lql.cli {backtest,paper,research,forward,kill,release,status,demo,export,seed-tasks,tasks,skills,hermes}`
 - **Portfolio research:** `python3 -m lql.cli research run --instruments SPY,QQQ,IWM,TLT --source snapshot --start YYYY-MM-DD --name my-study` freezes a walk-forward spec and runs it; `research holdout --spec HASH` spends the untouched holdout once. See `docs/MAC_NEXT_STEPS.md`.
 - **Paper forward log:** `python3 -m lql.cli forward run|report|kill|release`. See `docs/FORWARD_PAPER.md` for scheduling and limits.
-- **Real data (optional, on your machine):** run `python3 scripts/snapshot_stooq.py SPY QQQ`, then `python3 -m lql.cli backtest --source snapshot --instrument SPY`. See `docs/DATA_PROVENANCE.md`.
+- **Real data (optional, on your machine):** follow `docs/MAC_NEXT_STEPS.md`: import files you downloaded by hand with `scripts/import_csv.py` (Stooq reportedly needs an API key now), verify the price adjustment with `scripts/check_adjustment.py`, and run `scripts/check_staging.py` before every commit. Unverified data is labelled PROVISIONAL and cannot count as evidence. See `docs/DATA_PROVENANCE.md`.
 - **Hermes (optional):** see `docs/HERMES_INTEGRATION.md`. Local model only, no subscription. The app works fully without it.
 
 ## How results are judged

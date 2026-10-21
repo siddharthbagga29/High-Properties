@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased (engineering session 2, 2026-10-21)
+## Unreleased (pre-market-data audit, 2026-10-21)
+- **Stooq access:** the "no API key" assumption is reported outdated (March 2026 onward, secondary sources). The provider now reads `STOOQ_API_KEY` if you set one, never obtains one, never retries, stops at the first key/quota failure, and never writes or echoes the key. `snapshot_stooq.py` needs `--i-have-read-the-stooq-terms`; `forward_daily.sh` needs `LQL_STOOQ_TERMS_OK=yes`.
+- **Adjustment status:** new vocabulary and `PROVISIONAL` label. Unverified real data cannot yield a critic CANDIDATE, adds a failing `price_adjustment_verified` check to walk-forward, blocks the single-use holdout, and marks forward logs provisional for good. New `scripts/check_adjustment.py` (independent-reference verification) and `scripts/import_csv.py` (manual download route); `split_suspect` data-quality flag.
+- **Repository hygiene:** `.gitignore` now excludes vendor CSVs, manifests, snapshot archives, `state/forward/`, `state/hermes_check.json`; `scripts/check_staging.py` refuses a commit containing them; key patterns added to the secret scanner. MAC steps no longer tell you to commit the Hermes report or snapshots.
+- Frozen protocol untouched: the committed synthetic registration still verifies (tested); no holdout registry exists; no real-data study was run.
+
+## Engineering session 2, 2026-10-21
 - **Portfolio backtester** (`lql/backtest/portfolio.py`): shared cash, several instruments, union calendar, explicit stale/missing-data handling (no forward fill, orders are never carried across a gap), fill-price clamp to the bar range, volume participation cap, cash reserved across same-day orders, risk engine sees the whole portfolio. Reproduces the single-instrument engine exactly when given one instrument (tested).
 - **Second strategy** `vol_scaled_trend` (trend filter plus volatility targeting) with explicit assumptions; strategy module is AST-tested to import nothing that can trade.
 - **Pre-registered walk-forward research** (`lql/research/`): frozen spec + data fingerprint, strictly chronological rolling folds, in-sample-only selection, separate in/out-of-sample reporting, paired block-bootstrap intervals, 2x-cost stress, selection stability, one-shot holdout with a contamination registry. CLI: `python3 -m lql.cli research run|holdout|show`.

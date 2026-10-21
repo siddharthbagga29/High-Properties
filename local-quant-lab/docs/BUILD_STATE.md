@@ -1,6 +1,6 @@
 # Build State — Local Quant Lab (checkpoint)
 
-**Checkpoint:** 2026-10-21 (session 2). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
+**Checkpoint:** 2026-10-21 (pre-market-data audit after session 2). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
 
 **Milestone:** M0 to M10 are `done_verified` by the supervisor, using real test runs (`state/current_state.json`). M8 to M10 (portfolio backtester and second strategy, walk-forward research, paper forward log) were added in engineering session 2. H1 (Hermes on the Mac) is `needs_human`. Real-market-data validation and the real forward paper run are founder steps: `docs/MAC_NEXT_STEPS.md`.
 
@@ -55,9 +55,9 @@ research plane (async, advisory): orchestrator.TaskGraph/Supervisor, orchestrato
 - Nothing outside `local-quant-lab/` was changed. Perspective Engine is untouched; its last commit is 439ae24.
 
 ## 4. Test commands and results (actually executed, 2026-10-21, Linux x86_64, Python 3.13.16)
-- `python3 -m unittest discover -s tests -t .`: **Ran 137 tests in ~60 s, OK** (15 test files; also OK with `-W error::ResourceWarning`). Session 1 had 66 tests; session 2 added 71.
+- `python3 -m unittest discover -s tests -t .`: **Ran 156 tests in ~65 s, OK** (16 test files; also OK with `-W error::ResourceWarning`). Session 1 had 66 tests; session 2 added 71; the data audit added 19.
 - `python3 scripts/verify.py`:
-  - M0 4 passed, M1 5, M2 9, M3 18, M4 18, M5 5, M6 2, M7 5, M8 29, M9 14, M10 26. All `done_verified`.
+  - M0 4 passed, M1 5, M2 9, M3 18, M4 18, M5 5, M6 2, M7 5, M8 29, M9 14, M10 26, M11 19. All `done_verified`.
   - H1 `needs_human`.
 - `python3 -m lql.cli demo`: both demo experiments NOT_PROVEN / unproven (synthetic data, too few round trips). Paper replay reconciled.
 - `python3 -m lql.cli hermes`: `hermes executable not found on PATH`, so the deterministic fallback ran. `hermes_unavailable` and `fallback_used` were logged.
@@ -82,6 +82,7 @@ Session 2 additions are items 8 to 11 at the end.
 11. **A stuck `CREATED` order after a crash** was rejected as a duplicate by the risk engine on restart. Fixed: such orders are re-checked, not re-created.
 
 ## 6. Blockers and decisions
+- **Data access and adjustment (audit finding, founder action).** Stooq reportedly needs an API key since about March 2026 (secondary sources only; stooq.com was unreachable from the container, so its terms and its adjustment policy were NOT read). Real-data results are PROVISIONAL until `scripts/check_adjustment.py` verifies the adjustment against an independent source. Safest order: `docs/MAC_NEXT_STEPS.md`. Decision D-015.
 - **Hermes on the Mac (founder action).**
   - This container is not the MacBook Air M3. It is CPU-only, and Hermes plus a ≥64K-context local model cannot usefully run here.
   - Exact steps: `docs/HERMES_INTEGRATION.md`.
@@ -93,7 +94,8 @@ Session 2 additions are items 8 to 11 at the end.
 
 ## 7. Prioritised next steps (atomic)
 Engineer-owned items from the first checkpoint are done (items 3 to 5 there plus the research-ledger entry). What remains is founder-side, in this order (exact commands in `docs/MAC_NEXT_STEPS.md`):
-1. **Founder, Mac:** run the suite and `verify.py` on macOS; install Hermes and a local model; run `scripts/hermes_check.py --memory-roundtrip`; commit `state/hermes_check.json`; mark H1.
+0. **Founder, Mac (new):** read Stooq's terms; import the four CSVs (`scripts/import_csv.py`) or use a key; run `scripts/check_adjustment.py` against an independent source; run `scripts/check_staging.py` before every commit.
+1. **Founder, Mac:** run the suite and `verify.py` on macOS; install Hermes and a local model; run `scripts/hermes_check.py --memory-roundtrip`; commit a summary of the Hermes check (the JSON itself is git-ignored); mark H1.
 2. **Founder, Mac:** snapshot SPY/QQQ/IWM/TLT, read the quality output, then run the pre-registered walk-forward (`research run`), and only if it is NOT_PROVEN spend the holdout once.
 3. **Founder, Mac:** start the `REAL_FORWARD` paper log and schedule `scripts/forward_daily.sh`. Review after 60 sessions and 10 exits.
 4. **Engineer, later, only if real results justify it:** exchange-holiday calendar and corporate-action handling; intraday data; a human-approved paper-broker adapter (not started; needs your approval, see HERMES_INTEGRATION.md "Future"); a UI panel for walk-forward and forward-log results (CLI and JSON only today).
@@ -135,7 +137,7 @@ Read these, in this order, and nothing else first:
 Resume prompt:
 > Continue Local Quant Lab in `local-quant-lab/` on branch `claude/nice-fermat-510prv`.
 > 1. Read `docs/BUILD_STATE.md` and `docs/ACCEPTANCE_CHECKLIST.md`.
-> 2. Run `python3 -m unittest discover -s tests -t .` and confirm 137 pass.
+> 2. Run `python3 -m unittest discover -s tests -t .` and confirm 156 pass.
 > 3. Take the first open engineer item from BUILD_STATE §7 (all current items need the founder's Mac or approval first). Implement it with tests, then run `python3 scripts/verify.py`.
 > 4. Update BUILD_STATE, BUILD_LOG and CHANGELOG, then commit and push to the same branch. No PR.
 >

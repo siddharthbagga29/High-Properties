@@ -3,6 +3,10 @@ from dataclasses import dataclass, asdict
 from datetime import date
 
 
+ADJ_VERIFIED = "split_and_dividend_adjusted"   # total-return series, verified against an independent reference
+ADJ_STATUSES = (ADJ_VERIFIED, "adjusted_unspecified", "split_adjusted_only", "unadjusted", "unknown", "n/a")
+
+
 @dataclass(frozen=True)
 class Bar:
     instrument: str
@@ -29,9 +33,20 @@ class SourceInfo:
     description: str
     retrieved_at: str = ""
     content_sha256: str = ""
-    adjusted: str = "unknown"  # "adjusted" | "unadjusted" | "unknown"
+    adjusted: str = "unknown"  # ADJ_STATUSES; anything but ADJ_VERIFIED is provisional for real data
     terms: str = ""
+    adjustment_evidence: str = ""   # how a human verified the status (reference source, date, ratios); empty = none
 
     @property
     def is_synthetic(self):
         return self.kind == "DEMO_SYNTHETIC"
+
+    @property
+    def adjustment_verified(self):
+        return self.adjusted == ADJ_VERIFIED and bool(self.adjustment_evidence.strip())
+
+    @property
+    def is_provisional(self):
+        """Real data whose split/dividend treatment is not verified. Synthetic data is not 'provisional': it is
+        simply not market data."""
+        return not self.is_synthetic and not self.adjustment_verified

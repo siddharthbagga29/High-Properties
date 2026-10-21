@@ -29,6 +29,8 @@ SECRET_PATTERNS = [
     re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}"),
     re.compile(r"\bxox[abpr]-[A-Za-z0-9-]{10,}"),
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(r"STOOQ_API_KEY['\"]?\s*[:=]\s*['\"]?(?!<|\$|your|changeme|placeholder|example|none|null|\[REDACTED\])[A-Za-z0-9_\-]{6,}"),
+    re.compile(r"(?i)[?&]apikey=(?!<|\$|\[REDACTED\])[A-Za-z0-9_\-]{6,}"),
     re.compile(r"(?i)\b(api[_-]?key|secret[_-]?key|access[_-]?token|password)['\"]?\s*[:=]\s*['\"]?(?!<|\$\{|your|changeme|"
                r"placeholder|example|none|null|\[REDACTED\])[A-Za-z0-9_\-/+=]{12,}"),
 ]

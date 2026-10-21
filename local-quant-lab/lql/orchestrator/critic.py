@@ -53,6 +53,9 @@ def review(report, strategy=None, bars=None):
     synthetic = report.get("source", {}).get("kind") == "DEMO_SYNTHETIC"
     if synthetic:
         findings.append("synthetic data: no market claim is possible")
+    src = report.get("source", {})
+    if not synthetic and not (src.get("adjusted") == "split_and_dividend_adjusted" and src.get("adjustment_evidence")):
+        findings.append(f"PROVISIONAL: price adjustment '{src.get('adjusted')}' is not verified; no evidence value")
     rt = report.get("net", {}).get("round_trips") or 0
     if rt < MIN_ROUND_TRIPS:
         findings.append(f"{rt} round trips < {MIN_ROUND_TRIPS}: sample too small")
