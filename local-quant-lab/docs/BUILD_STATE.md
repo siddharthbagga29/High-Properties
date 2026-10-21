@@ -1,6 +1,6 @@
 # Build State — Local Quant Lab (checkpoint)
 
-**Checkpoint:** 2026-10-21 (pre-market-data audit after session 2). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
+**Checkpoint:** 2026-10-21 (Perspective Engine console redesign). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
 
 **Milestone:** M0 to M10 are `done_verified` by the supervisor, using real test runs (`state/current_state.json`). M8 to M10 (portfolio backtester and second strategy, walk-forward research, paper forward log) were added in engineering session 2. H1 (Hermes on the Mac) is `needs_human`. Real-market-data validation and the real forward paper run are founder steps: `docs/MAC_NEXT_STEPS.md`.
 
@@ -40,7 +40,8 @@ research plane (async, advisory): orchestrator.TaskGraph/Supervisor, orchestrato
 | Hermes adapter and fallback | `lql/agents/hermes_adapter.py` | tested with a fake runner; real Hermes not run (not installed here) |
 | Skill learning | `lql/learning/skills.py`, `agent_learning/` | tested: promote, reject bad/unsafe, rollback, frozen set |
 | App facade, CLI, server | `lql/lab.py`, `lql/cli.py`, `lql/server.py` | tested over real HTTP |
-| Control room UI | `web/index.html`, `app.js`, `style.css` | driven in headless Chromium at 1440 and 390 px; no console errors |
+| Console UI (Perspective Engine) | `web/index.html`, `web/js/**`, `web/css/*` | 10 node unit tests; `scripts/ui_check.mjs` 35/35 in headless Chromium at 1440 and 390 px |
+| Console read models and jobs | `lql/console.py`, `lql/jobs.py` | `tests/test_console.py` (11) |
 | Export | `lql/export.py` | tested: secrets, .env, db, private memory excluded |
 
 ## 3. Files created this session
@@ -55,9 +56,9 @@ research plane (async, advisory): orchestrator.TaskGraph/Supervisor, orchestrato
 - Nothing outside `local-quant-lab/` was changed. Perspective Engine is untouched; its last commit is 439ae24.
 
 ## 4. Test commands and results (actually executed, 2026-10-21, Linux x86_64, Python 3.13.16)
-- `python3 -m unittest discover -s tests -t .`: **Ran 156 tests in ~65 s, OK** (16 test files; also OK with `-W error::ResourceWarning`). Session 1 had 66 tests; session 2 added 71; the data audit added 19.
+- `python3 -m unittest discover -s tests -t .`: **Ran 167 tests in ~75 s, OK** (17 test files; also OK with `-W error::ResourceWarning`). Session 1 had 66 tests; session 2 added 71; the data audit added 19; the console added 11 (plus 10 node tests and 35 browser checks).
 - `python3 scripts/verify.py`:
-  - M0 4 passed, M1 5, M2 9, M3 18, M4 18, M5 5, M6 2, M7 5, M8 29, M9 14, M10 26, M11 19. All `done_verified`.
+  - M0 4 passed, M1 5, M2 9, M3 18, M4 18, M5 5, M6 2, M7 5, M8 29, M9 14, M10 26, M11 19, M12 11. All `done_verified`.
   - H1 `needs_human`.
 - `python3 -m lql.cli demo`: both demo experiments NOT_PROVEN / unproven (synthetic data, too few round trips). Paper replay reconciled.
 - `python3 -m lql.cli hermes`: `hermes executable not found on PATH`, so the deterministic fallback ran. `hermes_unavailable` and `fallback_used` were logged.
@@ -137,7 +138,7 @@ Read these, in this order, and nothing else first:
 Resume prompt:
 > Continue Local Quant Lab in `local-quant-lab/` on branch `claude/nice-fermat-510prv`.
 > 1. Read `docs/BUILD_STATE.md` and `docs/ACCEPTANCE_CHECKLIST.md`.
-> 2. Run `python3 -m unittest discover -s tests -t .` and confirm 156 pass.
+> 2. Run `python3 -m unittest discover -s tests -t .` and confirm 167 pass.
 > 3. Take the first open engineer item from BUILD_STATE §7 (all current items need the founder's Mac or approval first). Implement it with tests, then run `python3 scripts/verify.py`.
 > 4. Update BUILD_STATE, BUILD_LOG and CHANGELOG, then commit and push to the same branch. No PR.
 >

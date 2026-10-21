@@ -3,76 +3,70 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Local Quant Lab · Control Room</title>
-<link rel="stylesheet" href="/static/style.css">
+<meta name="color-scheme" content="dark">
+<title>Local Quant Lab · Perspective Engine</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="strip" role="status" aria-live="polite">
-  <span class="brand">LQL // CONTROL ROOM</span>
-  <span id="s-mode" class="chip">MODE …</span>
-  <span id="s-data" class="chip warn">DATA …</span>
-  <span id="s-broker" class="chip">BROKER …</span>
-  <span id="s-clock" class="chip">PAPER CLOCK …</span>
-  <span id="s-kill" class="chip">KILL …</span>
-  <span id="s-lock" class="chip">FEED …</span>
-  <span id="s-recon" class="chip">LEDGER …</span>
-  <span id="s-hermes" class="chip">HERMES …</span>
-  <span id="s-time" class="chip dim">…</span>
+<header class="ticker">
+  <a class="brand" href="#overview" aria-label="Local Quant Lab, overview">
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><defs><linearGradient id="bm" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#2bf0ff"/><stop offset="1" stop-color="#8b6bff"/></linearGradient></defs><ellipse cx="15" cy="17" rx="13" ry="6" fill="none" stroke="url(#bm)" stroke-width="1.5"/><ellipse cx="15" cy="17" rx="7.5" ry="3.4" fill="none" stroke="url(#bm)" stroke-width="1.2" opacity=".7"/><circle cx="15" cy="11" r="4.2" fill="url(#bm)"/><line x1="15" y1="15" x2="15" y2="17" stroke="#2bf0ff"/></svg>
+    <div><b>LOCAL QUANT LAB</b><span>PERSPECTIVE ENGINE · RESEARCH CONSOLE</span></div>
+  </a>
+  <div class="posture" id="posture" role="status" aria-label="Safety posture"></div>
+  <div class="tick-right">
+    <span id="conn" class="conn" role="status" aria-live="polite">CONNECTING</span>
+    <span id="jobs-chip" class="chip" title="Background jobs queued or running">0 JOBS</span>
+    <button id="b-cmd" class="btn ghost" type="button" aria-keyshortcuts="Control+K Meta+K" aria-haspopup="dialog"><span class="lbl">Commands</span> <kbd>⌘K</kbd></button>
+    <button id="b-activity" class="btn ghost" type="button" aria-expanded="false" aria-controls="activity"><span class="lbl">Activity</span> <b id="act-n" class="num">0</b></button>
+    <button id="b-sound" class="btn ghost" type="button" aria-pressed="false" title="Sound cues (off by default)"><span id="sound-lbl">Sound off</span></button>
+    <span id="utc" class="utc" aria-label="Server time, UTC">--:--:-- UTC</span>
+  </div>
 </header>
-<div class="banner" id="banner">DEMO / SYNTHETIC DATA — simulated results only. No live trading exists in this build. Nothing here is a profitability claim.</div>
-
-<main id="main">
-  <section class="panel controls" aria-labelledby="h-controls">
-    <h2 id="h-controls">Run</h2>
-    <form id="bt-form">
-      <label>Instrument <select id="f-inst"></select></label>
-      <label>Strategy <select id="f-strat"></select></label>
-      <label>Source <select id="f-src"><option value="synthetic">synthetic (DEMO)</option><option value="snapshot">csv snapshot</option></select></label>
-      <label>Fast <input id="f-fast" type="number" min="2" max="400" value="50"></label>
-      <label>Slow <input id="f-slow" type="number" min="3" max="400" value="200"></label>
-      <button type="submit">Run backtest</button>
-    </form>
-    <div class="row">
-      <label>Experiment <select id="f-exp"></select></label>
-      <a id="dl-csv" class="btn" href="#" download>Export CSV</a>
-      <a id="dl-json" class="btn" href="#" download>Export JSON</a>
-    </div>
-    <div class="row">
-      <label>Paper sessions <input id="f-steps" type="number" min="1" max="1300" value="20"></label>
-      <button id="b-step" type="button">Step paper</button>
-      <button id="b-corrupt" type="button" title="Feeds one deliberately corrupt bar to show the data lockout">Inject corrupt bar</button>
-      <button id="b-kill" type="button" class="danger">Kill switch</button>
-      <button id="b-release" type="button">Release…</button>
-    </div>
-    <p id="msg" class="msg" role="alert"></p>
-  </section>
-
-  <section class="panel kpis" aria-labelledby="h-kpi">
-    <h2 id="h-kpi">Experiment metrics <span id="kpi-sub" class="dim"></span></h2>
-    <div id="kpi-grid" class="kpi-grid"></div>
-    <div id="critic" class="critic"></div>
-  </section>
-
-  <section class="panel flow" aria-labelledby="h-flow">
-    <h2 id="h-flow">Event flow (live state)</h2>
-    <svg id="flow" viewBox="0 0 900 230" role="img" aria-label="Pipeline from data to dashboard with status of each stage"></svg>
-  </section>
-
-  <section class="panel chart" aria-labelledby="h-price"><h2 id="h-price">Price and fills</h2><svg id="c-price" class="c"></svg></section>
-  <section class="panel chart" aria-labelledby="h-eq"><h2 id="h-eq">Equity: net · gross · capped buy-and-hold</h2><svg id="c-eq" class="c"></svg></section>
-  <section class="panel chart half" aria-labelledby="h-dd"><h2 id="h-dd">Underwater (drawdown)</h2><svg id="c-dd" class="c"></svg></section>
-  <section class="panel chart half" aria-labelledby="h-exp"><h2 id="h-exp">Exposure</h2><svg id="c-exp" class="c"></svg></section>
-
-  <section class="panel half" aria-labelledby="h-sens"><h2 id="h-sens">Robustness</h2><div id="sens"></div></section>
-  <section class="panel half" aria-labelledby="h-q"><h2 id="h-q">Data quality and provenance</h2><div id="quality"></div></section>
-
-  <section class="panel" aria-labelledby="h-paper"><h2 id="h-paper">Paper ledger (SIMULATED)</h2><div id="paper"></div><svg id="c-paper" class="c small"></svg></section>
-  <section class="panel half" aria-labelledby="h-fills"><h2 id="h-fills">Backtest fills</h2><div id="fills" class="scroll"></div></section>
-  <section class="panel half" aria-labelledby="h-ev"><h2 id="h-ev">Risk and audit events</h2><div id="events" class="scroll"></div></section>
-  <section class="panel" aria-labelledby="h-tasks"><h2 id="h-tasks">Task ledger</h2><div id="tasks" class="scroll"></div></section>
-</main>
-<footer>Local research prototype · not compliance-certified · localhost only · v<span id="ver"></span></footer>
-<script src="/static/app.js"></script>
+<div class="banner" id="banner" role="note">DEMO / SYNTHETIC DATA — simulated results only. No live trading exists in this build. Nothing here is a profitability claim.</div>
+<div class="frame">
+  <nav class="rail" aria-label="Workspaces">
+    <a href="#overview" data-view="overview"><kbd>1</kbd><span>Overview</span></a>
+    <a href="#graph" data-view="graph"><kbd>2</kbd><span>Agent graph</span></a>
+    <a href="#data" data-view="data"><kbd>3</kbd><span>Data</span></a>
+    <a href="#research" data-view="research"><kbd>4</kbd><span>Research</span></a>
+    <a href="#paper" data-view="paper"><kbd>5</kbd><span>Paper</span></a>
+    <a href="#logs" data-view="logs"><kbd>6</kbd><span>Logs</span></a>
+    <a href="#system" data-view="system"><kbd>7</kbd><span>System</span></a>
+    <div class="rail-foot">SIMULATED ONLY<br>no broker · no live orders<br><span id="ver"></span></div>
+  </nav>
+  <main id="main" tabindex="-1">
+    <section id="v-overview" class="view" data-view="overview" aria-label="Overview" hidden></section>
+    <section id="v-graph" class="view" data-view="graph" aria-label="Agent graph" hidden></section>
+    <section id="v-data" class="view" data-view="data" aria-label="Data" hidden></section>
+    <section id="v-research" class="view" data-view="research" aria-label="Research" hidden></section>
+    <section id="v-paper" class="view" data-view="paper" aria-label="Paper" hidden></section>
+    <section id="v-logs" class="view" data-view="logs" aria-label="Logs" hidden></section>
+    <section id="v-system" class="view" data-view="system" aria-label="System" hidden></section>
+    <noscript><p class="panel">This console needs JavaScript. The CLI works without it: python3 -m lql.cli status</p></noscript>
+  </main>
+</div>
+<aside id="activity" class="drawer" hidden aria-label="Activity and notifications"></aside>
+<dialog id="dlg-cmd" class="palette" aria-label="Command palette">
+  <input id="cmd-input" type="text" placeholder="Type a command or workspace…" aria-label="Command" aria-controls="cmd-list" autocomplete="off">
+  <ul id="cmd-list" role="listbox" aria-label="Commands"></ul>
+</dialog>
+<dialog id="dlg-confirm">
+  <form method="dialog" id="confirm-form">
+    <h2 id="confirm-title">Confirm</h2>
+    <p id="confirm-body" class="muted"></p>
+    <label class="field" id="confirm-field" hidden><span id="confirm-label">Value</span><input id="confirm-input" type="text" autocomplete="off"></label>
+    <p style="display:flex;gap:8px;justify-content:flex-end;margin:16px 0 0">
+      <button class="btn ghost" value="cancel" type="submit">Cancel</button>
+      <button class="btn danger" id="confirm-ok" value="ok" type="submit">Confirm</button>
+    </p>
+  </form>
+</dialog>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<div id="announce" class="sr-only" aria-live="assertive"></div>
+<footer class="foot">Local research prototype · not compliance-certified · localhost only · every number comes from a local record; synthetic data is labelled.</footer>
+<script type="module" src="/static/js/main.js"></script>
 </body>
 </html>

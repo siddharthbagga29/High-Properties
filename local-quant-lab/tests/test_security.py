@@ -63,6 +63,11 @@ class SecurityAudit(unittest.TestCase):
         routes = set(re.findall(r'path == "(/api/[a-z/]+)"', src))
         self.assertEqual(routes, {"/api/backtest", "/api/paper/step", "/api/paper/archive", "/api/kill", "/api/release",
                                   "/api/status", "/api/dashboard", "/api/experiments", "/api/events", "/api/tasks",
-                                  "/api/paper"})
-        js = (ROOT / "web" / "app.js").read_text()
-        self.assertNotIn("/api/order", js)
+                                  "/api/paper", "/api/overview", "/api/graph", "/api/data", "/api/data/series",
+                                  "/api/research", "/api/forward", "/api/system", "/api/jobs", "/api/pulse",
+                                  "/api/jobs/cancel"})
+        for js in (ROOT / "web").rglob("*.js"):
+            src = js.read_text()
+            self.assertNotIn("/api/order", src, js)
+            self.assertNotIn("/api/holdout", src, js)
+            self.assertNotRegex(src, r"https?://(?!127\.0\.0\.1|localhost)", js)   # no remote calls or assets

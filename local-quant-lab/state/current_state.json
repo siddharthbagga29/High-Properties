@@ -2,8 +2,8 @@
   "app_version": "0.1.0",
   "execution_mode": "SIMULATED",
   "last_checkpoint": {
-    "at": "2026-10-21T03:05:56.196120Z",
-    "note": "M11-data-audit -> done_verified"
+    "at": "2026-10-21T20:09:26.640643Z",
+    "note": "M12-console -> done_verified"
   },
   "live_trading": "absent",
   "order": [
@@ -19,7 +19,8 @@
     "M8-portfolio",
     "M9-walkforward",
     "M10-forward-log",
-    "M11-data-audit"
+    "M11-data-audit",
+    "M12-console"
   ],
   "schema": 1,
   "tasks": {
@@ -297,6 +298,68 @@
       ],
       "id": "M11-data-audit",
       "last_action": "execute M11-data-audit",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M12-console": {
+      "acceptance": [
+        "python3 -m unittest tests.test_console"
+      ],
+      "blocker": null,
+      "deps": [
+        "M5-control-room",
+        "M11-data-audit"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T20:09:26.640594Z",
+          "command": "python3 -m unittest tests.test_console",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_console",
+              "exit_code": 0,
+              "tail": "...........\n----------------------------------------------------------------------\nRan 11 tests in 1.763s\n\nOK\n"
+            }
+          ],
+          "passed": 11,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Perspective Engine console: read models, bounded job runner, UI routes, front-end unit tests",
+      "history": [
+        {
+          "at": "2026-10-21T20:09:24.710463Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T20:09:24.711588Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T20:09:24.713298Z",
+          "by": "worker",
+          "note": "execute M12-console",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T20:09:26.640638Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_console",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M12-console",
+      "last_action": "execute M12-console",
       "owner": "engineer",
       "retries": 0,
       "retry_budget": 3,

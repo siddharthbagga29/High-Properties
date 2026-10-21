@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (Perspective Engine console, 2026-10-21)
+- **New console** replacing the single-page control room: ticker with safety posture, seven workspaces (Overview, Agent graph, Data, Research, Paper, Logs, System), command palette, activity drawer, toasts, confirmation dialogs. Plain ES modules and SVG; no dependencies, no build, no remote assets.
+- **Overview "command deck":** eight role cards (supervisor, engineer, reviewer, founder, critic, risk, data, Hermes) from real state; an orchestration dial that draws the real task graph on a perspective plane; human decisions; risk guards against limits; decision trace; the frozen research protocol with pass/fail marks.
+- **Agent graph:** layered DAG with zoom/pan, filters, search, keyboard navigation, upstream/downstream highlight and an inspector with evidence, history and job output.
+- **Background jobs** (`lql/jobs.py`): one worker, bounded queue; `recheck` (re-run a task's acceptance tests, never changes its status, failure = `acceptance_regression`) and `backtest`; cancel; audit events per transition.
+- **Read models** (`lql/console.py`) and routes `/api/overview|graph|data|data/series|research|forward|system|jobs|pulse`, `POST /api/jobs`, `/api/jobs/cancel`. Walk-forward, holdout and forward logs remain CLI-only.
+- **Motion and sound:** animation only for running jobs and new events; reduced motion (OS and setting); WebAudio cues off by default, rate-limited, optional hum.
+- Server `--state-dir`; cached Hermes health; honest data posture label; offline state greys stale values.
+- Tests: `tests/test_console.py`, `web/tests/units.test.mjs`, `scripts/ui_check.mjs` (35 browser checks + measurements). Docs in `docs/design/`.
+
 ## Unreleased (pre-market-data audit, 2026-10-21)
 - **Stooq access:** the "no API key" assumption is reported outdated (March 2026 onward, secondary sources). The provider now reads `STOOQ_API_KEY` if you set one, never obtains one, never retries, stops at the first key/quota failure, and never writes or echoes the key. `snapshot_stooq.py` needs `--i-have-read-the-stooq-terms`; `forward_daily.sh` needs `LQL_STOOQ_TERMS_OK=yes`.
 - **Adjustment status:** new vocabulary and `PROVISIONAL` label. Unverified real data cannot yield a critic CANDIDATE, adds a failing `price_adjustment_verified` check to walk-forward, blocks the single-use holdout, and marks forward logs provisional for good. New `scripts/check_adjustment.py` (independent-reference verification) and `scripts/import_csv.py` (manual download route); `split_suspect` data-quality flag.

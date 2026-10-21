@@ -40,6 +40,8 @@ Hermes adapter with deterministic fallback [lql/agents], skill learning with fro
   - Step the paper replay.
   - Inject a corrupt bar to see the data lockout.
   - Engage the kill switch; releasing it needs a named person.
+- **Console:** `make run`, then open http://127.0.0.1:8765. Keys 1–7 switch workspaces, ⌘K/Ctrl+K opens the command palette, S toggles sound (off by default), M toggles reduced motion. Use `python3 -m lql.server --state-dir /tmp/demo` to look around without touching `state/`. Design and verification: `docs/design/`.
+- **Front-end checks:** `make test-js` (node unit tests) and `make ui-check` (Playwright browser checks against a temp synthetic state).
 - **CLI:** `python3 -m lql.cli {backtest,paper,research,forward,kill,release,status,demo,export,seed-tasks,tasks,skills,hermes}`
 - **Portfolio research:** `python3 -m lql.cli research run --instruments SPY,QQQ,IWM,TLT --source snapshot --start YYYY-MM-DD --name my-study` freezes a walk-forward spec and runs it; `research holdout --spec HASH` spends the untouched holdout once. See `docs/MAC_NEXT_STEPS.md`.
 - **Paper forward log:** `python3 -m lql.cli forward run|report|kill|release`. See `docs/FORWARD_PAPER.md` for scheduling and limits.

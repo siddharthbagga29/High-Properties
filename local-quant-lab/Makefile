@@ -1,8 +1,12 @@
 PY ?= python3
 
-.PHONY: test run demo export verify status
+.PHONY: test test-js ui-check run demo export verify status
 test:      ## run the full offline test suite
 	$(PY) -m unittest discover -s tests -t . -v
+test-js:   ## front-end unit tests (node, no dependencies)
+	node --test web/tests/*.test.mjs
+ui-check:  ## browser checks + measurements against a temp synthetic state (needs Playwright + Chromium)
+	node scripts/ui_check.mjs
 run:       ## start the control room on http://127.0.0.1:8765
 	$(PY) -m lql.server
 demo:      ## two demo backtests + 300 paper sessions (synthetic)

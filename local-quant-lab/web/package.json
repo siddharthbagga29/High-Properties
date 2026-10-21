@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Console front end: plain ES modules, no build step, no dependencies. Unit tests: node --test web/tests/*.test.mjs"
+}

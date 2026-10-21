@@ -15,6 +15,8 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 from . import ROOT
+from . import console
+from .jobs import JobRunner, JobError
 from .lab import Lab, LabError
 
 WEB = ROOT / "web"
@@ -37,7 +39,7 @@ def experiment_csv(rec):
     return buf.getvalue()
 
 
-def make_handler(lab):
+def make_handler(lab, jobs):
     class Handler(BaseHTTPRequestHandler):
         server_version = "LocalQuantLab"
 
@@ -101,8 +103,30 @@ def make_handler(lab):
                     return self._send(200, lab.tasks.summary())
                 if u.path == "/api/paper":
                     return self._send(200, lab.paper_state())
+                if u.path == "/api/overview":
+                    return self._send(200, console.overview(lab, jobs))
+                if u.path == "/api/graph":
+                    return self._send(200, console.graph(lab, jobs))
+                if u.path == "/api/data":
+                    return self._send(200, console.data_sources(lab))
+                if u.path == "/api/data/series":
+                    return self._send(200, console.series(lab, q.get("source", ["synthetic"])[0],
+                                                          q.get("instrument", ["DEMO-ETF-A"])[0]))
+                if u.path == "/api/research":
+                    return self._send(200, console.research(lab))
+                if u.path == "/api/forward":
+                    return self._send(200, console.forward_logs(lab))
+                if u.path == "/api/system":
+                    return self._send(200, console.system(lab, jobs))
+                if u.path == "/api/jobs":
+                    return self._send(200, jobs.list())
+                if u.path == "/api/pulse":
+                    since = int(q.get("since", ["0"])[0] or 0)
+                    evts = lab.events.read()
+                    return self._send(200, {"events_total": len(evts), "events": evts[since:][-100:] if since else [],
+                                            "jobs": jobs.list()[:12], "status": lab.status()})
                 return self._err(404, "not found")
-            except LabError as e:
+            except (LabError, JobError, ValueError, console.ProviderError) as e:
                 return self._err(400, str(e))
 
         def do_POST(self):
@@ -140,6 +164,21 @@ def make_handler(lab):
                     if body.get("confirm") != "archive":
                         raise LabError('send {"confirm": "archive"} to archive the paper ledger')
                     return self._send(200, {"archived_to": lab.paper_archive()})
+                if path == "/api/jobs":
+                    kind = str(body.get("kind", ""))
+                    params = body.get("params") or {}
+                    if not isinstance(params, dict):
+                        raise LabError("params must be an object")
+                    if kind == "backtest":
+                        inner = params.get("params") or {}
+                        if not isinstance(inner, dict) or not all(isinstance(v, int) for v in inner.values()):
+                            raise LabError("params.params must be an object of integers")
+                        params = {"instrument": str(params.get("instrument", "DEMO-ETF-A")),
+                                  "strategy": str(params.get("strategy", "sma_trend")),
+                                  "source": str(params.get("source", "synthetic")), "params": inner}
+                    return self._send(200, jobs.submit(kind, body.get("target"), params))
+                if path == "/api/jobs/cancel":
+                    return self._send(200, jobs.cancel(str(body.get("id", ""))))
                 if path == "/api/kill":
                     return self._send(200, {"cancelled": lab.kill(str(body.get("reason", "operator")))})
                 if path == "/api/release":
@@ -149,7 +188,7 @@ def make_handler(lab):
                     lab.release(by)
                     return self._send(200, {"released_by": by})
                 return self._err(404, "not found")
-            except (LabError, KeyError, ValueError, TypeError) as e:
+            except (LabError, JobError, KeyError, ValueError, TypeError) as e:
                 return self._err(400, f"{type(e).__name__}: {e}")
 
         def _static(self, name):
@@ -166,7 +205,9 @@ def serve(host="127.0.0.1", port=8765, lab=None, allow_public=False):
     if host not in ("127.0.0.1", "localhost", "::1") and not allow_public:
         raise SystemExit(f"refusing to bind {host}: this server is localhost-only")
     lab = lab or Lab()
-    httpd = ThreadingHTTPServer((host, port), make_handler(lab))
+    jobs = JobRunner(lab)
+    httpd = ThreadingHTTPServer((host, port), make_handler(lab, jobs))
+    httpd.jobs = jobs
     lab.events.emit("server_start", f"control room on http://{host}:{httpd.server_address[1]}")
     return httpd
 
@@ -175,9 +216,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Local Quant Lab control room (localhost only)")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--state-dir", help="use another state directory (for demos and browser checks); default state/")
     ap.add_argument("--i-understand-public", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
-    httpd = serve(a.host, a.port, allow_public=a.i_understand_public)
+    lab = Lab(state_dir=a.state_dir) if a.state_dir else None
+    httpd = serve(a.host, a.port, lab=lab, allow_public=a.i_understand_public)
     print(f"Local Quant Lab on http://{a.host}:{httpd.server_address[1]}  (SIMULATED, no broker, Ctrl+C to stop)")
     try:
         httpd.serve_forever()

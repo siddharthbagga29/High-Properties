@@ -34,6 +34,8 @@ SEED_TASKS = [
      ["M8-portfolio", "M3-risk-paper"], ["python3 -m unittest tests.test_forward"]),
     ("M11-data-audit", "Real-data workflow audit: vendor access, adjustment status, provisional labelling, repo hygiene",
      "engineer", ["M9-walkforward", "M10-forward-log"], ["python3 -m unittest tests.test_data_audit"]),
+    ("M12-console", "Perspective Engine console: read models, bounded job runner, UI routes, front-end unit tests",
+     "engineer", ["M5-control-room", "M11-data-audit"], ["python3 -m unittest tests.test_console"]),
     ("H1-hermes-mac", "Install Hermes on the founder's Mac with a local 64K-context model and run "
      "scripts/hermes_check.py", "founder", ["M4-loop-hermes"], ["python3 scripts/hermes_check.py"]),
 ]

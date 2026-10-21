@@ -1,0 +1,416 @@
+"""Read models for the control room (the "Perspective Engine" console). Everything here reads existing state:
+the task graph file, the audit events, experiment records, research registrations and results, forward-log
+directories, snapshot manifests and the paper ledger. Nothing here computes a market number of its own, changes
+state, or reveals a credential (credentials are reported only as configured / not configured)."""
+import json
+import os
+import platform
+import resource
+import shutil
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+from . import ROOT, __version__
+from .backtest.engine import config_hash
+from .data.providers import SyntheticProvider, SnapshotProvider, ProviderError, SNAPSHOT_DIR
+from .data.quality import validate
+from .data.schema import ADJ_VERIFIED
+from .orchestrator import TaskGraph
+
+STARTED = time.time()
+_cache = {}
+
+
+def _cached(key, ttl, fn):
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < ttl:
+        return hit[1]
+    val = fn()
+    _cache[key] = (time.time(), val)
+    return val
+
+
+# -- task graph ----------------------------------------------------------------------------------------------------
+def graph(lab, jobs=None):
+    tg = TaskGraph(lab.tasks.path)          # re-read: verify.py may have written it since the server started
+    tasks = tg.tasks
+    order = [t for t in tg.state["order"] if t in tasks]
+    level = {}
+
+    def depth(tid, seen=()):
+        if tid in level:
+            return level[tid]
+        if tid in seen:
+            return 0
+        deps = [d for d in tasks[tid]["deps"] if d in tasks]
+        level[tid] = 0 if not deps else 1 + max(depth(d, seen + (tid,)) for d in deps)
+        return level[tid]
+
+    for tid in order:
+        depth(tid)
+    dependents = {tid: [] for tid in order}
+    for tid in order:
+        for d in tasks[tid]["deps"]:
+            if d in dependents:
+                dependents[d].append(tid)
+    job_list = jobs.list() if jobs else []
+    nodes = []
+    for tid in order:
+        t = tasks[tid]
+        ev = t["evidence"][-1] if t["evidence"] else None
+        tj = [j for j in job_list if j["kind"] == "recheck" and j["target"] == tid]
+        nodes.append({
+            "id": tid, "goal": t["goal"], "owner": t["owner"], "status": t["status"], "level": level[tid],
+            "deps": t["deps"], "dependents": dependents[tid], "retries": t["retries"],
+            "retry_budget": t["retry_budget"], "blocker": t["blocker"], "acceptance": t["acceptance"],
+            "evidence": ({k: ev.get(k) for k in ("command", "exit_code", "passed", "failed", "at")} if ev else None),
+            "evidence_count": len(t["evidence"]), "failures": t["failures"][-5:], "history": t["history"][-12:],
+            "last_action": t["last_action"],
+            "job": tj[0] if tj and tj[0]["status"] in ("queued", "running") else None,
+            "last_job": next((j for j in tj if j["status"] not in ("queued", "running")), None),
+            "recheckable": t["owner"] != "founder" and bool(t["acceptance"]),
+        })
+    edges = [{"from": d, "to": tid} for tid in order for d in tasks[tid]["deps"] if d in tasks]
+    owners = {}
+    for n in nodes:
+        o = owners.setdefault(n["owner"], {"owner": n["owner"], "tasks": 0, "by_status": {}})
+        o["tasks"] += 1
+        o["by_status"][n["status"]] = o["by_status"].get(n["status"], 0) + 1
+    return {"nodes": nodes, "edges": edges, "owners": list(owners.values()),
+            "last_checkpoint": tg.state.get("last_checkpoint"), "source": "state/current_state.json"}
+
+
+# -- data ----------------------------------------------------------------------------------------------------------
+def _synthetic_rows(lab):
+    def build():
+        p = SyntheticProvider()
+        out = []
+        for inst in lab.settings.risk.allowed_instruments if lab.settings else ():
+            if not inst.startswith("DEMO-"):
+                continue
+            bars = p.bars(inst)
+            q = validate(bars, inst)
+            out.append({"instrument": inst, "source": "synthetic", "kind": "DEMO_SYNTHETIC", "data_class": "synthetic",
+                        "provider": "synthetic", "description": p.info().description, "rows": q.rows,
+                        "first": q.first, "last": q.last, "tradable": q.tradable, "issues": q.counts(),
+                        "sha256": config_hash([b.to_dict() for b in bars]), "adjusted": "n/a",
+                        "adjustment_verified": None, "retrieved_at": None, "terms": p.info().terms})
+        return out
+    return _cached("synthetic", 3600, build)
+
+
+def _snapshot_rows(lab):
+    d = Path(lab.snapshot_dir or SNAPSHOT_DIR)
+    rows = []
+    for m in sorted(d.glob("*.manifest.json")):
+        inst = m.name[: -len(".manifest.json")]
+        key = ("snap", inst, m.stat().st_mtime, (d / f"{inst}.csv").stat().st_mtime if (d / f"{inst}.csv").exists() else 0)
+
+        def build(inst=inst):
+            p = SnapshotProvider(d)
+            try:
+                info, man = p.info(inst), p.manifest(inst)
+            except (ProviderError, json.JSONDecodeError, KeyError) as e:
+                return {"instrument": inst, "source": "snapshot", "error": str(e), "data_class": "invalid"}
+            row = {"instrument": inst, "source": "snapshot", "kind": info.kind, "provider": info.provider,
+                   "description": info.description, "retrieved_at": info.retrieved_at, "terms": info.terms,
+                   "adjusted": info.adjusted, "adjustment_verified": info.adjustment_verified,
+                   "adjustment_evidence": info.adjustment_evidence, "sha256": man.get("sha256", "")[:16],
+                   "data_class": "verified" if info.adjustment_verified else "provisional"}
+            try:
+                bars = p.bars(inst)
+                q = validate(bars, inst)
+                row.update(rows=q.rows, first=q.first, last=q.last, tradable=q.tradable, issues=q.counts(),
+                           hash_ok=True)
+            except ProviderError as e:
+                row.update(error=str(e), hash_ok=False, data_class="invalid")
+            return row
+        rows.append(_cached(key, 3600, build))
+    return rows
+
+
+def data_sources(lab):
+    return {"datasets": _synthetic_rows(lab) + _snapshot_rows(lab),
+            "providers": [
+                {"name": "synthetic", "status": "available", "detail": "generated locally, deterministic, not market data"},
+                {"name": "csv snapshot", "status": "available" if any(Path(lab.snapshot_dir or SNAPSHOT_DIR).glob("*.csv"))
+                 else "empty", "detail": "local files with a SHA-256 manifest; raw files are git-ignored"},
+                {"name": "stooq", "status": "key configured" if os.environ.get("STOOQ_API_KEY") else "not configured",
+                 "detail": "never called by the server; founder-run script only; terms and adjustment unverified"}],
+            "classes": {"synthetic": "generated fixture, not market data",
+                        "provisional": "imported real data, split/dividend adjustment NOT verified: no evidence value",
+                        "verified": "adjustment verified against an independent reference (still historical, not live)",
+                        "live": "not supported in this build"}}
+
+
+def series(lab, source, instrument):
+    import re
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,19}", instrument or ""):
+        raise ValueError("bad instrument name")
+    if source == "synthetic":
+        if not instrument.startswith("DEMO-"):
+            raise ValueError("synthetic series exist only for DEMO-* instruments")
+        bars = SyntheticProvider().bars(instrument)
+        cls = "synthetic"
+    elif source == "snapshot":
+        p = SnapshotProvider(lab.snapshot_dir or SNAPSHOT_DIR)
+        bars = p.bars(instrument)
+        cls = "verified" if p.info(instrument).adjustment_verified else "provisional"
+    else:
+        raise ValueError("source must be synthetic or snapshot")
+    q = validate(bars, instrument)
+    return {"instrument": instrument, "source": source, "data_class": cls,
+            "dates": [b.event_date.isoformat() for b in bars], "close": [b.close for b in bars],
+            "volume": [b.volume for b in bars],
+            "issues": [i for i in q.issues if i["code"] != "gap"][:40]}
+
+
+# -- research ------------------------------------------------------------------------------------------------------
+def research(lab):
+    rdir = lab.state / "research"
+    regs = []
+    for p in sorted((rdir / "prereg").glob("*.json")) if (rdir / "prereg").exists() else []:
+        try:
+            r = json.loads(p.read_text())
+        except json.JSONDecodeError:
+            continue
+        row = {"spec_hash": r["spec_hash"], "name": r["spec"]["name"], "frozen_at": r.get("frozen_at"),
+               "universe": r["universe"], "synthetic": r.get("synthetic"), "provisional": r.get("provisional", False),
+               "bars": r["bars"], "first": r["first"], "last": r["last"], "pre_holdout_last": r["pre_holdout_last"],
+               "candidates": len(r["spec"]["candidates"]), "windows": r["spec"]["windows"],
+               "acceptance": r["spec"]["acceptance"], "result": None}
+        res = rdir / "results" / f"{r['spec_hash']}.json"
+        if res.exists():
+            x = json.loads(res.read_text())
+            oos = (x.get("out_of_sample") or {}).get("metrics", {})
+            row["result"] = {"verdict": x["verdict"], "alpha_status": x["alpha_status"], "reasons": x["reasons"],
+                             "checks": x.get("checks", []), "n_folds": x.get("n_folds"),
+                             "evidence_label": x.get("evidence_label"), "holdout": x.get("holdout"),
+                             "oos": {k: oos.get(k) for k in ("total_return", "sharpe", "max_drawdown", "exits",
+                                                             "avg_exposure", "turnover_annual", "costs")},
+                             "created_at": x.get("created_at")}
+        regs.append(row)
+    hreg = rdir / "holdout_registry.json"
+    holdouts = json.loads(hreg.read_text()) if hreg.exists() else {}
+    from .strategies import catalog
+    return {"experiments": lab.experiments()[:100], "registrations": regs, "strategies": catalog(),
+            "instruments": list(lab.settings.risk.allowed_instruments) if lab.settings else [],
+            "holdout_registry": [{"fingerprint": k[:16], **v} for k, v in holdouts.items()],
+            "ui_policy": "Walk-forward studies and the single-use holdout are run from the CLI on purpose "
+                         "(python3 -m lql.cli research ...): the console shows them but cannot start or spend them."}
+
+
+# -- forward logs --------------------------------------------------------------------------------------------------
+def forward_logs(lab):
+    out = []
+    base = lab.state / "forward"
+    for d in sorted(base.iterdir()) if base.exists() else []:
+        st = d / "run_state.json"
+        if not d.is_dir() or not st.exists():
+            continue
+        try:
+            s = json.loads(st.read_text())
+        except json.JSONDecodeError:
+            continue
+        row = {"dir": d.name, "status": s.get("status"), "error": s.get("error"),
+               "evidence_class": s.get("evidence_class"), "last_processed": s.get("last_processed"),
+               "last_run_ended": s.get("last_run_ended"), "config": s.get("config")}
+        cfg = s.get("config") or {}
+        if (d / "ledger.db").exists() and cfg and lab.settings:
+            from .execution.forward import ForwardRunner
+            try:
+                rep = ForwardRunner(lab.settings, d, cfg["universe"], cfg["strategy"], cfg.get("params") or {},
+                                    cfg["mode"]).report()
+                row["report"] = {k: rep.get(k) for k in ("sessions", "fills", "exits", "risk_rejections",
+                                                         "data_events", "errors", "reconciled", "kill_switch",
+                                                         "provisional", "metrics", "paper_evidence")}
+            except Exception as e:  # show, never hide
+                row["report_error"] = f"{type(e).__name__}: {e}"
+        out.append(row)
+    return {"logs": out, "ui_policy": "Forward logs are started and advanced from the CLI (python3 -m lql.cli "
+                                      "forward ...); the console only reads them."}
+
+
+# -- system --------------------------------------------------------------------------------------------------------
+def _ollama():
+    def probe():
+        binary = shutil.which("ollama") is not None
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:11434/api/version", timeout=0.4) as r:
+                ver = json.loads(r.read().decode()).get("version")
+            return {"binary": binary, "endpoint": "reachable", "version": ver}
+        except Exception:
+            return {"binary": binary, "endpoint": "not reachable on 127.0.0.1:11434", "version": None}
+    return _cached("ollama", 30, probe)
+
+
+def system(lab, jobs=None):
+    usage = shutil.disk_usage(lab.state)
+    ru = resource.getrusage(resource.RUSAGE_SELF)
+    rss_mb = ru.ru_maxrss / (1024 * 1024 if sys.platform == "darwin" else 1024)
+    ev = lab.state / "events.jsonl"
+    h = lab.hermes().health()
+    try:
+        load = os.getloadavg()
+    except OSError:
+        load = None
+    return {"app_version": __version__, "python": platform.python_version(), "platform": platform.system(),
+            "machine": platform.machine(), "cpus": os.cpu_count(), "load_avg": load,
+            "server_uptime_s": round(time.time() - STARTED), "server_peak_rss_mb": round(rss_mb, 1),
+            "state_disk_free_gb": round(usage.free / 1e9, 1), "events_log_kb": round(ev.stat().st_size / 1024, 1)
+            if ev.exists() else 0,
+            "services": [
+                {"name": "control room server", "status": "up", "detail": "127.0.0.1 only; host and CSRF guards"},
+                {"name": "job runner", "status": "up" if jobs and jobs.thread and jobs.thread.is_alive() else "down",
+                 "detail": "1 worker, queue max 8, in-memory"},
+                {"name": "hermes agent", "status": "available" if h["available"] else "not found",
+                 "detail": h["detail"]},
+                {"name": "ollama", "status": _ollama()["endpoint"], "detail":
+                 ("binary on PATH" if _ollama()["binary"] else "binary not on PATH")
+                 + (f", version {_ollama()['version']}" if _ollama()["version"] else "")},
+                {"name": "broker", "status": "none", "detail": "no broker adapter exists; live trading absent"}],
+            "credentials": {"stooq api key (env)": "configured" if os.environ.get("STOOQ_API_KEY") else "not configured",
+                            "broker credentials": "not applicable (no adapter)"},
+            "execution_mode": lab.settings.execution_mode if lab.settings else "DISABLED",
+            "risk_limits": __import__("dataclasses").asdict(lab.settings.risk) if lab.settings else None,
+            "costs": __import__("dataclasses").asdict(lab.settings.costs) if lab.settings else None}
+
+
+# -- overview ------------------------------------------------------------------------------------------------------
+def _risk_guards(lab, paper):
+    if not lab.settings:
+        return []
+    L = lab.settings.risk
+    gross, conc, dd, day_loss = None, None, None, None
+    if paper and paper["equity"]:
+        eq = paper["equity"][-1]["equity"]
+        peak = max(e["equity"] for e in paper["equity"])
+        prev = paper["equity"][-2]["equity"] if len(paper["equity"]) > 1 else eq
+        gross = eq - paper["cash"]
+        conc = gross / eq if eq > 0 else None
+        dd = 1 - eq / peak if peak > 0 else None
+        day_loss = max(0.0, prev - eq)
+    rows = [("gross exposure", gross, L.max_gross_exposure, "money"),
+            ("concentration", conc, L.max_concentration, "pct"),
+            ("drawdown", dd, L.max_drawdown, "pct"),
+            ("daily loss", day_loss, L.max_daily_loss, "money")]
+    return [{"name": n, "value": v, "limit": lim, "unit": u, "ratio": (v / lim if v is not None and lim else None),
+             "source": "paper ledger (SIMULATED replay)" if v is not None else "no paper session"}
+            for n, v, lim, u in rows] + [
+        {"name": "max order notional", "value": None, "limit": L.max_order_notional, "unit": "money", "ratio": None,
+         "source": "checked per order"},
+        {"name": "orders per window", "value": None, "limit": L.max_orders_per_window, "unit": "count", "ratio": None,
+         "source": "checked per order"}]
+
+
+def overview(lab, jobs=None):
+    status = lab.status()
+    g = graph(lab, jobs)
+    data = data_sources(lab)
+    res = research(lab)
+    fwd = forward_logs(lab)
+    paper = lab.paper_state()
+    events = lab.events.read(limit=300)
+    exps = res["experiments"]
+    verdicts = {}
+    for e in exps:
+        verdicts[e["verdict"]] = verdicts.get(e["verdict"], 0) + 1
+    counts = {}
+    for n in g["nodes"]:
+        counts[n["status"]] = counts.get(n["status"], 0) + 1
+    snaps = [d for d in data["datasets"] if d["source"] == "snapshot"]
+    prov = [d for d in snaps if d.get("data_class") == "provisional"]
+    decisions = []
+    for n in g["nodes"]:
+        if n["status"] == "needs_human":
+            decisions.append({"kind": "task", "ref": n["id"], "title": n["goal"],
+                              "detail": (n["blocker"] or {}).get("question", ""), "severity": "warning"})
+    for d in prov:
+        decisions.append({"kind": "data", "ref": d["instrument"], "title": f"{d['instrument']}: price adjustment unverified",
+                          "detail": "Run scripts/check_adjustment.py against an independent reference "
+                                    "(docs/MAC_NEXT_STEPS.md step 2). Until then results are PROVISIONAL.",
+                          "severity": "warning"})
+    if not snaps:
+        decisions.append({"kind": "data", "ref": "snapshots", "title": "No real-market data imported",
+                          "detail": "Only synthetic data exists. Import CSVs on the Mac (docs/MAC_NEXT_STEPS.md step 1).",
+                          "severity": "info"})
+    if status["kill_switch"]:
+        decisions.append({"kind": "safety", "ref": "kill switch", "title": "Kill switch engaged",
+                          "detail": "Releasing it needs a named human operator.", "severity": "critical"})
+    if not status["reconciled"]:
+        decisions.append({"kind": "safety", "ref": "ledger", "title": "Paper ledger not reconciled",
+                          "detail": "Investigate before any further paper step.", "severity": "critical"})
+    for e in events[-100:]:
+        if e["kind"] == "acceptance_regression":
+            decisions.append({"kind": "regression", "ref": e.get("data", {}).get("task"), "title": e["message"],
+                              "detail": "A re-run of a verified task's tests failed.", "severity": "critical"})
+    job_list = jobs.list() if jobs else []
+    active = [j for j in job_list if j["status"] in ("queued", "running")]
+    hermes = status["hermes"]
+    fallbacks = sum(1 for e in events if e["kind"] in ("fallback_used", "hermes_unavailable"))
+    rejections = sum(1 for e in events if e["kind"] == "risk_rejected")
+    last_exp = exps[0] if exps else None
+
+    def last_of(*kinds):
+        for e in reversed(events):
+            if e["kind"] in kinds:
+                return e
+        return None
+
+    owner = lambda o: [n for n in g["nodes"] if n["owner"] == o]  # noqa: E731
+    running_task = next((j for j in active if j["status"] == "running"), None)
+    roles = []
+    for key, name, tag in (("engineer", "ENGINEER", "builds and tests modules"),
+                           ("reviewer", "REVIEWER", "security audit")):
+        ts = owner(key)
+        done = sum(1 for t in ts if t["status"] == "done_verified")
+        rj = running_task if running_task and running_task["kind"] == "recheck" and \
+            any(t["id"] == running_task["target"] for t in ts) else None
+        roles.append({"key": key, "name": name, "tagline": tag,
+                      "status": f"re-running {rj['target']}" if rj else "idle: no job running",
+                      "active": bool(rj), "metric": f"{done}/{len(ts)}", "metric_label": "verified",
+                      "level": done / len(ts) if ts else None})
+    sup_done = counts.get("done_verified", 0)
+    roles.insert(0, {"key": "supervisor", "name": "SUPERVISOR", "tagline": "closes tasks only with evidence",
+                     "status": ((g["last_checkpoint"] or {}).get("note") or "no checkpoint"), "active": False,
+                     "metric": f"{sup_done}/{len(g['nodes'])}", "metric_label": "done_verified",
+                     "level": sup_done / len(g["nodes"]) if g["nodes"] else None,
+                     "at": (g["last_checkpoint"] or {}).get("at")})
+    fd = owner("founder")
+    roles.append({"key": "founder", "name": "FOUNDER", "tagline": "the human gate",
+                  "status": f"{len(decisions)} decision(s) open" if decisions else "nothing waiting",
+                  "active": False, "metric": str(sum(1 for t in fd if t["status"] == "needs_human")),
+                  "metric_label": "tasks need you", "level": None, "attention": bool(decisions)})
+    roles.append({"key": "critic", "name": "CRITIC", "tagline": "rejects weak evidence",
+                  "status": (f"last: {last_exp['verdict']} on {last_exp['strategy']} {last_exp['instrument']}"
+                             if last_exp else "no experiment yet"), "active": False,
+                  "metric": str(verdicts.get("REJECTED", 0)), "metric_label": f"rejected of {len(exps)}",
+                  "level": verdicts.get("REJECTED", 0) / len(exps) if exps else None})
+    roles.append({"key": "risk", "name": "RISK", "tagline": "deterministic, final authority",
+                  "status": "KILL SWITCH ENGAGED" if status["kill_switch"] else "kill switch off",
+                  "active": False, "metric": str(rejections), "metric_label": "rejections logged",
+                  "level": None, "attention": status["kill_switch"]})
+    roles.append({"key": "data", "name": "DATA", "tagline": "provenance before prices",
+                  "status": (f"{len(prov)} provisional snapshot(s)" if prov else
+                             f"{len(snaps)} snapshot(s)" if snaps else "synthetic only"),
+                  "active": False, "metric": f"{len(data['datasets'])}", "metric_label": "datasets",
+                  "level": None, "attention": bool(prov) or status["data_lockout"]})
+    roles.append({"key": "hermes", "name": "HERMES", "tagline": "advisory memory layer",
+                  "status": "available (advisory only)" if hermes["available"] else "not found: deterministic fallback",
+                  "active": False, "metric": str(fallbacks), "metric_label": "fallbacks logged", "level": None})
+    return {"status": status, "roles": roles,
+            "task_counts": counts, "graph": g, "decisions": decisions, "jobs": job_list, "active_jobs": len(active),
+            "experiments": {"count": len(exps), "verdicts": verdicts, "latest": exps[:8]},
+            "research": {"registrations": len(res["registrations"]),
+                         "latest": res["registrations"][-1] if res["registrations"] else None,
+                         "holdouts_spent": len(res["holdout_registry"])},
+            "forward": {"logs": len(fwd["logs"]), "items": fwd["logs"][:4]},
+            "data": {"datasets": data["datasets"], "provisional": len(prov), "snapshots": len(snaps)},
+            "paper": ({k: paper[k] for k in ("instrument", "strategy", "last_processed", "cash", "positions",
+                                             "kill_switch", "reconciled", "data_lockout")}
+                      | {"equity": paper["equity"][-260:], "orders": len(paper["orders"]), "fills": len(paper["fills"])}
+                      if paper else None),
+            "risk_guards": _risk_guards(lab, paper), "events": events[-60:],
+            "last_job_event": last_of("job_finished", "job_failed", "job_cancelled", "job_started")}

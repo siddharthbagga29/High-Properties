@@ -1,0 +1,81 @@
+/* Perspective Engine / Quant Research System — design tokens.
+   Palette from perspective-engine/city (ink, cyan, violet, amber, rose, bone), tuned for dense data.
+   Semantic tokens are the only colours components use. No remote fonts: the stacks fall back to system faces. */
+:root {
+  color-scheme: dark;
+  /* surfaces (deep indigo graphite, darkest to lightest) */
+  --ink-0: #07051a;
+  --ink-1: #0c0a26;
+  --ink-2: #121035;
+  --ink-3: #1b1946;
+  --glass: rgba(14, 11, 44, 0.78);
+  --line: rgba(143, 230, 255, 0.13);
+  --line-2: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(143, 230, 255, 0.32);
+
+  /* text */
+  --text: #efeee8;
+  --text-2: #c2bfdc;
+  --text-3: #9592bb;
+
+  /* accents */
+  --cyan: #2bf0ff;
+  --cyan-2: #8fe6ff;
+  --violet: #8b6bff;
+  --violet-2: #c2adff;
+  --amber: #ffb547;
+  --rose: #ff7a9c;
+
+  /* semantics (never colour alone: every use carries a text label or glyph) */
+  --ok: #3ee6a0;
+  --warn: #ffb547;
+  --bad: #ff5d73;
+  --info: #8fe6ff;
+  --active: #2bf0ff;
+  --human: #ffb547;
+  --muted: #9592bb;
+  --synthetic: #c2adff;
+  --pos: #3ee6a0;
+  --neg: #ff5d73;
+
+  /* agent role hues */
+  --r-supervisor: #2bf0ff;
+  --r-engineer: #6ea8ff;
+  --r-reviewer: #c2adff;
+  --r-founder: #ffb547;
+  --r-critic: #ff7a9c;
+  --r-risk: #ff8a4c;
+  --r-data: #3ee6a0;
+  --r-hermes: #b48cff;
+
+  /* type */
+  --f-disp: "Archivo", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --fs-xs: 10.5px;
+  --fs-s: 12px;
+  --fs-m: 13.5px;
+  --fs-l: 16px;
+  --fs-xl: 22px;
+  --fs-hero: 34px;
+
+  /* space and geometry */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --radius: 4px;
+  --rail-w: 172px;
+  --ticker-h: 56px;
+
+  /* elevation */
+  --e1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --e2: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 18px 48px rgba(0, 0, 0, 0.55);
+  --glow: 0 0 0 1px rgba(43, 240, 255, 0.35), 0 0 18px rgba(43, 240, 255, 0.18);
+
+  /* motion */
+  --t-fast: 120ms;
+  --t-mid: 240ms;
+  --t-slow: 520ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}

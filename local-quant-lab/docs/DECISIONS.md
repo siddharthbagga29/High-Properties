@@ -64,6 +64,12 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - BROKER_PAPER raises `NotConnected`. No broker SDK is installed.
 - **Reverse if:** the founder explicitly opts in to a paper broker. See the checklist in docs/HERMES_INTEGRATION.md §Future and README §Live trading.
 
+## D-016 · 2026-10-21 · Console redesign stays on the existing stack
+- **Decision:** rebuild the UI as plain ES modules + SVG served by the existing stdlib server (D-003), not React/Vite/three.js. Long operations go through a single-worker, in-memory job runner. The console reads state and can start only two job kinds (recheck, backtest) plus the existing paper/kill/release actions.
+- **Why:** zero install on an 8 GB Mac, nothing to audit or pin, works offline, and the measured render costs (≤ 60 ms for a 300-task graph) do not justify a framework or WebGL. The Perspective Engine city's React/three.js stack was reviewed and rejected for this app on weight.
+- **Safety:** the console has no route to freeze or run a walk-forward study, spend a holdout, start a forward log, change limits or reach a broker; a recheck never changes a task's status.
+- **Reverse if:** the graph grows to thousands of nodes or interaction needs exceed what SVG handles; then consider a small canvas renderer before any framework.
+
 ## D-015 · 2026-10-21 · Real-data workflow: unverified adjustment is provisional, vendor data stays out of git
 - **Decision:** (1) A price series counts as verified only as `split_and_dividend_adjusted` with recorded evidence from an independent reference (two decisive old dates). Everything else is PROVISIONAL: no CANDIDATE, no holdout, no forward evidence. (2) The Stooq downloader is opt-in, key-from-environment, single-shot, and never circumvents access controls; manual CSV import is the preferred route. (3) The attestation is part of the study hash only for non-synthetic data, so existing registrations stay valid and a later attestation is a new study that cannot reset the holdout registry. (4) Raw prices, manifests, forward logs, databases and machine reports are git-ignored and `check_staging.py` blocks them (the repository is public).
 - **Why:** I could not read stooq.com or its terms from the audit environment; the adjustment status, key parameter name and quota are unverified. Treating that as provisional is the only honest default.

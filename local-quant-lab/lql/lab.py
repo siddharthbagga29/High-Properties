@@ -41,6 +41,7 @@ class Lab:
         self.tasks = TaskGraph(self.state / "current_state.json", self.events)
         self.exp_dir = self.state / "experiments"
         self._hermes = None
+        self._hermes_health = None
 
     def _need_settings(self):
         if self.settings is None:
@@ -197,13 +198,39 @@ class Lab:
             self._hermes = HermesAdapter(events=self.events)
         return self._hermes
 
+    def data_posture(self):
+        """Short, honest label for the data the lab can use. Never says live: no live feed exists."""
+        from .data.providers import SNAPSHOT_DIR
+        d = Path(self.snapshot_dir or SNAPSHOT_DIR)
+        snaps = sorted(d.glob("*.manifest.json")) if d.exists() else []
+        if not snaps:
+            return "synthetic only (not market data)"
+        prov = 0
+        for m in snaps:
+            try:
+                man = json.loads(m.read_text())
+            except (OSError, json.JSONDecodeError):
+                prov += 1
+                continue
+            if not (man.get("adjusted") == "split_and_dividend_adjusted" and man.get("adjustment_evidence")):
+                prov += 1
+        return (f"{len(snaps)} snapshot(s), {prov} provisional + synthetic" if prov
+                else f"{len(snaps)} verified snapshot(s) + synthetic; historical, not live")
+
+    def hermes_health(self, ttl=60):
+        """`hermes --version` spawns a process; cache it so polling the status never spawns one per request."""
+        now = time.time()
+        if self._hermes_health is None or now - self._hermes_health[0] > ttl:
+            self._hermes_health = (now, self.hermes().health())
+        return self._hermes_health[1]
+
     def status(self):
         paper = self.paper_state()
-        h = self.hermes().health()
+        h = self.hermes_health()
         return {"app_version": __version__, "engine_version": ENGINE_VERSION,
                 "execution_mode": self.settings.execution_mode if self.settings else "DISABLED (invalid settings)",
                 "live_trading": "absent from this build", "broker": "none connected",
-                "data_mode": "REPLAY of DEMO_SYNTHETIC data (not live, not market data)",
+                "data_mode": self.data_posture(),
                 "settings_ok": self.settings is not None, "settings_error": self.settings_error,
                 "kill_switch": bool(paper and paper["kill_switch"]),
                 "data_lockout": bool(paper and paper["data_lockout"]),
