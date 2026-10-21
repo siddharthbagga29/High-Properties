@@ -27,7 +27,10 @@ FORBIDDEN = [r"live[\s_-]*(order|trading|account)", r"place[_\s]*order", r"(disa
              r"(kill[\s_-]*switch|risk)", r"settings\.json", r"(raise|increase|loosen|weaken)\s+(the\s+)?(risk\s+)?limit",
              r"ignore\s+(all\s+)?(previous|prior)\s+instructions", r"curl[^\n|]*\|\s*(ba)?sh", r"rm\s+-rf",
              r"api[_\s-]?key", r"dangerously-skip-permissions", r"\bsudo\b", r"done_verified",
-             r"(edit|modify|rewrite|delete)\s+(the\s+)?(regression|evaluation|tests?)"]
+             r"(edit|modify|rewrite|delete)\s+(the\s+)?(regression|evaluation|tests?)",
+             r"(use|evaluate|reuse|spend|peek\s+at|tune\s+on)\s+(the\s+)?holdout",
+             r"(edit|modify|rewrite|delete|reset|backfill)\s+(the\s+)?(forward[\s_-]*log|ledger|pre-?registration|"
+             r"prereg|holdout[\s_-]*registry)", r"(re-?freeze|unfreeze|loosen)\s+(the\s+)?(spec|acceptance|criteria)"]
 
 
 class SkillError(Exception):

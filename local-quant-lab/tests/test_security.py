@@ -39,6 +39,25 @@ class SecurityAudit(unittest.TestCase):
         calls = {n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
         self.assertFalse(calls & {"open", "eval", "exec", "__import__"}, calls)
 
+    def test_hermes_adapter_and_trading_modules_are_isolated_from_each_other(self):
+        def imported(path):
+            tree = ast.parse(path.read_text())
+            mods = set()
+            for n in ast.walk(tree):
+                if isinstance(n, ast.ImportFrom):
+                    mods.add(((n.module or "") or "").split(".")[-1])
+                    mods |= {a.name for a in n.names}
+                elif isinstance(n, ast.Import):
+                    mods |= {a.name.split(".")[-1] for a in n.names}
+            return mods
+        adapter = imported(ROOT / "lql" / "agents" / "hermes_adapter.py")
+        self.assertFalse(adapter & {"walkforward", "forward", "freeze", "evaluate_holdout", "ForwardRunner", "portfolio",
+                                    "run_portfolio", "MultiPaperSession", "RiskEngine", "Ledger"}, adapter)
+        for rel in ("backtest/engine.py", "backtest/portfolio.py", "research/walkforward.py", "execution/forward.py",
+                    "execution/paper.py", "execution/ledger.py", "risk/__init__.py"):
+            mods = imported(ROOT / "lql" / rel)
+            self.assertFalse(mods & {"agents", "hermes_adapter", "HermesAdapter", "skills", "SkillLab"}, (rel, mods))
+
     def test_ui_has_no_order_submission_route(self):
         src = (ROOT / "lql" / "server.py").read_text()
         routes = set(re.findall(r'path == "(/api/[a-z/]+)"', src))

@@ -112,36 +112,43 @@ class PaperSession:
         return {"date": day, "equity": eq, "fills": fills, "decision": decision}
 
     def _fill_open_orders(self, bar):
-        done, costs = [], self.settings.costs
+        done = []
         for o in self.ledger.orders(status="SUBMITTED"):
             if o["instrument"] != bar.instrument or o["decision_date"] >= bar.event_date.isoformat():
                 continue
-            side, qty = o["side"], o["qty"]
-            if o["order_type"] == "MARKET":
-                ref = bar.open
-                px = fill_price(ref, side, costs)
-            else:
-                lim = o["limit_price"]
-                touched = bar.low <= lim if side == "BUY" else bar.high >= lim
-                if not touched:
-                    self.ledger.transition(o["id"], "CANCELLED", "day limit order expired unfilled")
-                    continue
-                ref = min(bar.open, lim) if side == "BUY" else max(bar.open, lim)
-                px = min(fill_price(ref, side, costs), lim) if side == "BUY" else max(fill_price(ref, side, costs), lim)
-            if side == "BUY" and qty * px + commission(qty, costs) > self.ledger.cash():
-                self.ledger.transition(o["id"], "REJECTED", "insufficient cash at fill (gap up); no borrowing")
-                self._emit("order_rejected", f"{o['id']} rejected at fill: insufficient cash", "warning")
-                continue
-            if side == "SELL":
-                qty = min(qty, self.ledger.positions().get(o["instrument"], 0))
-                if qty <= 0:
-                    self.ledger.transition(o["id"], "REJECTED", "nothing to sell at fill")
-                    continue
-            comm = commission(qty, costs)
-            self.ledger.record_fill(o["id"], bar.event_date.isoformat(), qty, px, comm, abs(px - ref) * qty)
-            self._emit("order_filled", f"{side} {qty} {o['instrument']} @ {px:.4f}", order=o["id"])
-            done.append(o["id"])
+            if self._fill_order(o, bar):
+                done.append(o["id"])
         return done
+
+    def _fill_order(self, o, bar):
+        """Try to fill one SUBMITTED order against `bar`. Returns True if filled; otherwise the order is moved to
+        CANCELLED or REJECTED with a reason."""
+        costs = self.settings.costs
+        side, qty = o["side"], o["qty"]
+        if o["order_type"] == "MARKET":
+            ref = bar.open
+            px = fill_price(ref, side, costs)
+        else:
+            lim = o["limit_price"]
+            touched = bar.low <= lim if side == "BUY" else bar.high >= lim
+            if not touched:
+                self.ledger.transition(o["id"], "CANCELLED", "day limit order expired unfilled")
+                return False
+            ref = min(bar.open, lim) if side == "BUY" else max(bar.open, lim)
+            px = min(fill_price(ref, side, costs), lim) if side == "BUY" else max(fill_price(ref, side, costs), lim)
+        if side == "BUY" and qty * px + commission(qty, costs) > self.ledger.cash():
+            self.ledger.transition(o["id"], "REJECTED", "insufficient cash at fill (gap up); no borrowing")
+            self._emit("order_rejected", f"{o['id']} rejected at fill: insufficient cash", "warning")
+            return False
+        if side == "SELL":
+            qty = min(qty, self.ledger.positions().get(o["instrument"], 0))
+            if qty <= 0:
+                self.ledger.transition(o["id"], "REJECTED", "nothing to sell at fill")
+                return False
+        comm = commission(qty, costs)
+        self.ledger.record_fill(o["id"], bar.event_date.isoformat(), qty, px, comm, abs(px - ref) * qty)
+        self._emit("order_filled", f"{side} {qty} {o['instrument']} @ {px:.4f}", order=o["id"])
+        return True
 
     def _decide(self, bar, eq, data_age_seconds):
         if self.strategy.meta.key in self.risk.disabled_strategies and not self.ledger.positions():

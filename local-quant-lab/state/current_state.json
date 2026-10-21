@@ -2,8 +2,8 @@
   "app_version": "0.1.0",
   "execution_mode": "SIMULATED",
   "last_checkpoint": {
-    "at": "2026-10-21T01:51:56.045916Z",
-    "note": "M7-security-audit -> done_verified"
+    "at": "2026-10-21T02:40:54.303551Z",
+    "note": "M10-forward-log -> done_verified"
   },
   "live_trading": "absent",
   "order": [
@@ -15,7 +15,10 @@
     "M5-control-room",
     "M6-handoff",
     "H1-hermes-mac",
-    "M7-security-audit"
+    "M7-security-audit",
+    "M8-portfolio",
+    "M9-walkforward",
+    "M10-forward-log"
   ],
   "schema": 1,
   "tasks": {
@@ -169,6 +172,68 @@
       ],
       "id": "M1-data",
       "last_action": "execute M1-data",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M10-forward-log": {
+      "acceptance": [
+        "python3 -m unittest tests.test_forward"
+      ],
+      "blocker": null,
+      "deps": [
+        "M8-portfolio",
+        "M3-risk-paper"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T02:40:54.303504Z",
+          "command": "python3 -m unittest tests.test_forward",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_forward",
+              "exit_code": 0,
+              "tail": "..........................\n----------------------------------------------------------------------\nRan 26 tests in 43.393s\n\nOK\n"
+            }
+          ],
+          "passed": 26,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Restartable paper-trading forward log with evidence classes",
+      "history": [
+        {
+          "at": "2026-10-21T02:40:02.528879Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T02:40:03.022731Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T02:40:10.814617Z",
+          "by": "worker",
+          "note": "execute M10-forward-log",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T02:40:54.303543Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_forward",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M10-forward-log",
+      "last_action": "execute M10-forward-log",
       "owner": "engineer",
       "retries": 0,
       "retry_budget": 3,
@@ -536,6 +601,129 @@
       "id": "M7-security-audit",
       "last_action": "execute M7-security-audit",
       "owner": "reviewer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M8-portfolio": {
+      "acceptance": [
+        "python3 -m unittest tests.test_portfolio tests.test_strategies"
+      ],
+      "blocker": null,
+      "deps": [
+        "M2-backtest"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T02:40:03.019365Z",
+          "command": "python3 -m unittest tests.test_portfolio tests.test_strategies",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_portfolio tests.test_strategies",
+              "exit_code": 0,
+              "tail": ".............................\n----------------------------------------------------------------------\nRan 29 tests in 0.360s\n\nOK\n"
+            }
+          ],
+          "passed": 29,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Multi-instrument portfolio backtester and second strategy",
+      "history": [
+        {
+          "at": "2026-10-21T02:40:02.526864Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T02:40:02.529555Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T02:40:02.532107Z",
+          "by": "worker",
+          "note": "execute M8-portfolio",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T02:40:03.019393Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_portfolio tests.test_strategies",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M8-portfolio",
+      "last_action": "execute M8-portfolio",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M9-walkforward": {
+      "acceptance": [
+        "python3 -m unittest tests.test_walkforward"
+      ],
+      "blocker": null,
+      "deps": [
+        "M8-portfolio",
+        "M4-loop-hermes"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T02:40:10.809762Z",
+          "command": "python3 -m unittest tests.test_walkforward",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_walkforward",
+              "exit_code": 0,
+              "tail": "..............\n----------------------------------------------------------------------\nRan 14 tests in 7.676s\n\nOK\n"
+            }
+          ],
+          "passed": 14,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Pre-registered walk-forward research with one-shot holdout",
+      "history": [
+        {
+          "at": "2026-10-21T02:40:02.527984Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T02:40:03.021406Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T02:40:03.023824Z",
+          "by": "worker",
+          "note": "execute M9-walkforward",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T02:40:10.812779Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_walkforward",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M9-walkforward",
+      "last_action": "execute M9-walkforward",
+      "owner": "engineer",
       "retries": 0,
       "retry_budget": 3,
       "status": "done_verified",

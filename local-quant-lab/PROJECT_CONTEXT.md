@@ -1,7 +1,7 @@
 # Portable Project Context — Local Quant Lab
 
 **Last updated:** 2026-10-21  
-**Status:** v0.1.0 implemented and tested offline (61 unit/integration tests passing in a Linux container). Hermes runtime on the Mac not yet installed (needs founder). Live state: `docs/BUILD_STATE.md`.  
+**Status:** v0.1.0 plus portfolio backtester, second strategy, pre-registered walk-forward and a restartable paper forward log, implemented and tested offline (see docs/BUILD_STATE.md for the current test count; Linux container). Hermes runtime on the Mac not yet installed (needs founder). Live state: `docs/BUILD_STATE.md`.  
 **Current project direction:** Build a local-first algorithmic trading research, backtesting, risk, and paper-trading system. This supersedes the earlier Perspective Engine startup as the active build objective. Keep Perspective Engine as reference material only unless the founder explicitly reactivates it.
 
 ## 1. The goal

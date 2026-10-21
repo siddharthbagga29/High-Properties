@@ -26,9 +26,43 @@ SEED_TASKS = [
      ["python3 -m unittest tests.test_export"]),
     ("M7-security-audit", "Secret scan, no broker endpoints, no live mode, strategy sandbox, no order route",
      "reviewer", ["M6-handoff"], ["python3 -m unittest tests.test_security"]),
+    ("M8-portfolio", "Multi-instrument portfolio backtester and second strategy", "engineer", ["M2-backtest"],
+     ["python3 -m unittest tests.test_portfolio tests.test_strategies"]),
+    ("M9-walkforward", "Pre-registered walk-forward research with one-shot holdout", "engineer",
+     ["M8-portfolio", "M4-loop-hermes"], ["python3 -m unittest tests.test_walkforward"]),
+    ("M10-forward-log", "Restartable paper-trading forward log with evidence classes", "engineer",
+     ["M8-portfolio", "M3-risk-paper"], ["python3 -m unittest tests.test_forward"]),
     ("H1-hermes-mac", "Install Hermes on the founder's Mac with a local 64K-context model and run "
      "scripts/hermes_check.py", "founder", ["M4-loop-hermes"], ["python3 scripts/hermes_check.py"]),
 ]
+
+
+def _forward(lab, a):
+    from .data.providers import SyntheticProvider, SnapshotProvider
+    from .execution.forward import ForwardRunner, ForwardError
+    s = lab._need_settings()
+    names = [x.strip() for x in a.instruments.split(",") if x.strip()]
+    params = {kv.split("=")[0]: int(kv.split("=")[1]) for kv in a.param}
+    directory = a.dir or lab.state / "forward" / f"{a.source}-{a.mode.lower()}"
+    runner = ForwardRunner(s, directory, names, a.strategy, params, a.mode, lab.events)
+    try:
+        if a.action == "report":
+            return runner.report()
+        if a.action == "kill":
+            return {"cancelled": runner.kill(a.reason or "operator")}
+        if a.action == "release":
+            runner.release(a.by)
+            return {"released_by": a.by}
+
+        def loader():
+            if a.source == "synthetic":
+                p = SyntheticProvider(n_days=a.days)
+                return {i: p.bars(i) for i in names}, p.info()
+            p = SnapshotProvider(lab.snapshot_dir) if lab.snapshot_dir else SnapshotProvider()
+            return {i: p.bars(i) for i in names}, p.info(names[0])
+        return runner.run_once(loader)
+    except ForwardError as e:
+        raise SystemExit(f"forward: {e}")
 
 
 def _research(lab, a):
@@ -46,7 +80,11 @@ def _research(lab, a):
         p = SnapshotProvider(lab.snapshot_dir) if lab.snapshot_dir else SnapshotProvider()
         data = {i: p.bars(i) for i in names}
         info = p.info(names[0])
+    if a.start:
+        data = {i: [b for b in bars if b.event_date.isoformat() >= a.start] for i, bars in data.items()}
     for i, bars in data.items():
+        if not bars:
+            raise SystemExit(f"no bars for {i} on or after {a.start}")
         if not validate(bars, i).tradable:
             raise SystemExit(f"data for {i} failed validation")
     if a.action == "show":
@@ -89,8 +127,20 @@ def main(argv=None):
     rs.add_argument("--source", default="synthetic", choices=("synthetic", "snapshot"))
     rs.add_argument("--instruments", default="DEMO-ETF-A,DEMO-ETF-B")
     rs.add_argument("--days", type=int, default=1800, help="synthetic series length")
+    rs.add_argument("--start", help="first session date YYYY-MM-DD; use a common start so every instrument exists")
     rs.add_argument("--name", default="wf-default")
     rs.add_argument("--spec", help="spec hash (holdout/show)")
+    fw = sub.add_parser("forward", help="restartable multi-instrument paper forward log (SIMULATED)")
+    fw.add_argument("action", choices=("run", "report", "kill", "release"))
+    fw.add_argument("--source", default="snapshot", choices=("synthetic", "snapshot"))
+    fw.add_argument("--mode", default="FORWARD", choices=("FORWARD", "REPLAY"))
+    fw.add_argument("--instruments", default="SPY,QQQ,IWM,TLT")
+    fw.add_argument("--strategy", default="sma_trend")
+    fw.add_argument("--param", action="append", default=[])
+    fw.add_argument("--days", type=int, default=800, help="synthetic series length")
+    fw.add_argument("--dir", help="log directory (default state/forward/<source>-<mode>)")
+    fw.add_argument("--reason", default="")
+    fw.add_argument("--by", default="")
     k = sub.add_parser("kill")
     k.add_argument("--reason", required=True)
     r = sub.add_parser("release")
@@ -119,6 +169,8 @@ def main(argv=None):
                     "critic": rec["critic"]})
         elif a.cmd == "paper":
             _print(lab.paper_step(a.steps, a.instrument, a.strategy))
+        elif a.cmd == "forward":
+            _print(_forward(lab, a))
         elif a.cmd == "research":
             _print(_research(lab, a))
         elif a.cmd == "kill":

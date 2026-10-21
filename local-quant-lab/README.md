@@ -40,7 +40,9 @@ Hermes adapter with deterministic fallback [lql/agents], skill learning with fro
   - Step the paper replay.
   - Inject a corrupt bar to see the data lockout.
   - Engage the kill switch; releasing it needs a named person.
-- **CLI:** `python3 -m lql.cli {backtest,paper,kill,release,status,demo,export,seed-tasks,tasks,skills,hermes}`
+- **CLI:** `python3 -m lql.cli {backtest,paper,research,forward,kill,release,status,demo,export,seed-tasks,tasks,skills,hermes}`
+- **Portfolio research:** `python3 -m lql.cli research run --instruments SPY,QQQ,IWM,TLT --source snapshot --start YYYY-MM-DD --name my-study` freezes a walk-forward spec and runs it; `research holdout --spec HASH` spends the untouched holdout once. See `docs/MAC_NEXT_STEPS.md`.
+- **Paper forward log:** `python3 -m lql.cli forward run|report|kill|release`. See `docs/FORWARD_PAPER.md` for scheduling and limits.
 - **Real data (optional, on your machine):** run `python3 scripts/snapshot_stooq.py SPY QQQ`, then `python3 -m lql.cli backtest --source snapshot --instrument SPY`. See `docs/DATA_PROVENANCE.md`.
 - **Hermes (optional):** see `docs/HERMES_INTEGRATION.md`. Local model only, no subscription. The app works fully without it.
 
@@ -62,7 +64,7 @@ Hermes adapter with deterministic fallback [lql/agents], skill learning with fro
 
 ## Risks and limitations
 - The data is synthetic until you add snapshots. Synthetic results say nothing about markets.
-- The backtest covers a single instrument. The universe is small daily ETFs; there is no HFT or market-making capability, and none is claimed.
+- `lql.cli backtest` is still single-instrument; portfolio backtests, walk-forward studies and the forward log work on several instruments (`lql/backtest/portfolio.py`, `lql/research/`, `lql/execution/forward.py`). The universe is small daily ETFs; there is no HFT or market-making capability, and none is claimed.
 - `BROKER_PAPER` is a placeholder that refuses to start. Live trading would need a separate review of broker agreements, market-access rules and explicit founder approval.
 
 ## Troubleshooting
@@ -73,7 +75,7 @@ Hermes adapter with deterministic fallback [lql/agents], skill learning with fro
 
 ## Project files
 - **Start here:** `PROJECT_CONTEXT.md` and `docs/BUILD_STATE.md`.
-- **Living docs:** `docs/{DECISIONS,BUILD_LOG,ACCEPTANCE_CHECKLIST,RESEARCH_LEDGER,DATA_PROVENANCE,HERMES_INTEGRATION}.md`, `CHANGELOG.md`, `agent_learning/README.md`.
+- **Living docs:** `docs/{DECISIONS,BUILD_LOG,ACCEPTANCE_CHECKLIST,RESEARCH_LEDGER,DATA_PROVENANCE,HERMES_INTEGRATION,FORWARD_PAPER,MAC_NEXT_STEPS}.md`, `CHANGELOG.md`, `agent_learning/README.md`.
 - **The brief:** `project-brief/`.
 
 ## Third-party notices

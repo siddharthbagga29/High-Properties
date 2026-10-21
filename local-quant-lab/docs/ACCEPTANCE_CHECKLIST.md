@@ -20,10 +20,30 @@
 | 10 | Dashboard functional, grounded in data, responsive, with clear states | done_verified, with a gap | Chromium at 1440 and 390 px: no errors, no horizontal scroll. KPIs equal the backend report (test). Empty states have messages. Gap: no automated test for the loading state. Reduced motion uses a CSS media query; it was not tested in a browser. |
 | 11 | Orchestration persists, recovers, retries are bounded, evidence required | done_verified | `tests.test_orchestrator`, plus `scripts/verify.py` run to 8 done_verified tasks with recorded outputs in `state/current_state.json` |
 | 12 | Hermes acceptance (§5.1) | partial / needs_human | See the table below |
-| 13 | Unit, integration and smoke tests have run; critical issues fixed | done_verified | `python3 -m unittest discover -s tests -t .`: 66 tests OK, about 9 s. Bugs fixed are listed in BUILD_STATE §5. |
+| 13 | Unit, integration and smoke tests have run; critical issues fixed | done_verified | `python3 -m unittest discover -s tests -t .`: 137 tests OK, about 60 s (session 2). Bugs fixed are listed in BUILD_STATE §5. |
 | 14 | README covers install, run, test, architecture, data, limits, risks, troubleshooting | done_verified | `README.md` (reviewed by hand) |
 | 15 | Portable export generated and checked for secrets | done_verified | `python3 -m lql.cli export`: 15 files, 0 exclusions. `tests.test_export` plants secrets and checks that they are excluded. |
 | 16 | Living docs reflect actual results | done_verified | BUILD_STATE, DECISIONS, BUILD_LOG, RESEARCH_LEDGER and this file, written from the command outputs above |
+
+## Session 2 engineering criteria (portfolio, strategy, walk-forward, forward log)
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| Portfolio backtest: shared cash, aligned timestamps, explicit missing/stale handling | done_verified | `tests.test_portfolio` (21): union calendar, no forward fill, orders cancelled across gaps, stale report |
+| Deterministic; no look-ahead, duplicate events or unrealistic fills | done_verified | determinism, "changing the future does not change the past", duplicate/out-of-order/NaN raise, fill clamp and volume cap tests |
+| Simultaneous signals, cash, exposure limits, accounting | done_verified | same-day buys, gap-up cash shrink, gross-exposure rejection, equity identity and journal replay |
+| Single-instrument behaviour retained | done_verified | `engine.run` untouched; portfolio run equals it for one instrument; all 66 earlier tests still pass |
+| Second strategy, registered, explicit assumptions, cannot bypass risk | done_verified | `tests.test_strategies` (8): warm-up, volatility scaling, leakage probe, AST import check, greedy-strategy cap test |
+| Walk-forward: frozen grid/windows/costs/benchmark/criteria; chronological; IS and OOS separate | done_verified | `tests.test_walkforward` (14): registration hash and tamper refusal, chronology, selection uses in-sample data only, holdout data cannot change the walk-forward |
+| Reject invalid, insufficient, suspicious results; no winner by return | done_verified | INSUFFICIENT and REJECTED paths tested; SUSPICIOUS path implemented but not exercised by a test (no data produced it); CANDIDATE needs real data plus a passed holdout |
+| Holdout single-use and contamination flag | done_verified | `HoldoutConsumed`, second study on the same data flagged |
+| Forward log: signals, decisions, fills, rejections, positions, equity, errors, restart state | done_verified | `tests.test_forward` (26) |
+| Idempotency, interruption recovery, data gaps, risk enforcement, kill switch | done_verified | 8 injected interruption points; gap, corrupt bar, stale, concurrent-pass and kill-switch tests |
+| Synthetic vs real distinguished | done_verified | evidence class per log; mixing refused; reports say "Not forward paper evidence" |
+| **Paper trading is complete (real forward evidence exists)** | **needs_human** | Not true and not claimed. Needs real data and at least 60 real forward sessions: `docs/MAC_NEXT_STEPS.md` |
+| Real-market-data walk-forward and holdout | needs_human | Not run: no real data in the container |
+| Learning loop still gated | done_verified | new forbidden-pattern tests for holdout/ledger/forward-log/prereg tampering; adapter isolation both ways (AST) |
+| Hermes failure cannot break simulator/risk | done_verified | all 137 tests pass with Hermes absent; trading modules do not import the agents package |
 
 ## Hermes spec acceptance tests
 

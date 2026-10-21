@@ -186,13 +186,24 @@ class Ledger:
         return rows[-limit:] if limit else rows
 
     def mark(self, date, prices):
+        """Value positions at the latest known price per instrument (today's prices override the stored ones).
+        A held instrument with no known price is an error, never a silent zero."""
+        last = dict(self.get("last_prices", {}))
+        last.update(prices)
         pos = self.positions()
-        pv = sum(q * prices[i] for i, q in pos.items())
+        missing = [i for i in pos if i not in last]
+        if missing:
+            raise LedgerError(f"no price to mark held positions: {missing}")
+        pv = sum(q * last[i] for i, q in pos.items())
         cash = self.cash()
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO marks(date, cash, equity, positions_value, prices) VALUES(?,?,?,?,?)",
                             (date, cash, cash + pv, pv, json.dumps(prices)))
+            self._set("last_prices", last)
         return cash + pv
+
+    def last_prices(self):
+        return dict(self.get("last_prices", {}))
 
     def marks(self):
         return [dict(r) for r in self.db.execute("SELECT * FROM marks ORDER BY date")]

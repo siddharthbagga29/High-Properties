@@ -63,3 +63,27 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - **Decision:** the paper session replays validated bars one session at a time and writes to a SQLite ledger. It uses the same risk engine and the same fill model as the backtest. It produces identical equity on the same bars, and a test enforces this.
 - BROKER_PAPER raises `NotConnected`. No broker SDK is installed.
 - **Reverse if:** the founder explicitly opts in to a paper broker. See the checklist in docs/HERMES_INTEGRATION.md §Future and README §Live trading.
+
+## D-011 · 2026-10-21 · Portfolio backtester conventions
+- **Decision:** one shared cash balance over the union of the instruments' session dates (`lql/backtest/portfolio.py`). No forward filling of bars. An order whose instrument has no bar on the next date is cancelled, not carried. Fills are clamped to the bar's low/high, quantity is capped at 10% of the bar's volume (remainder dropped and recorded), buys shrink to the cash left. Same-day orders reserve cash against each other; alphabetical priority is arbitrary but deterministic. The risk engine sees every position and every last price.
+- **Why:** these remove the cheapest ways to get unrealistic fills (a fill outside the day's range, trading more than the market, spending cash twice, filling days after a gap on stale information).
+- **Check:** for one instrument and with the clamp and volume cap off, it reproduces `engine.run` exactly (tested). The single-instrument engine stays untouched as the reference.
+- **Trade-off:** the paper session *rejects* a buy that no longer fits the cash at the open; the backtester *shrinks* it. Paper is more conservative (see FORWARD_PAPER.md).
+- **Reverse if:** a real calendar (exchange holidays) and a corporate-actions feed exist; then gaps could be classified instead of just reported.
+
+## D-012 · 2026-10-21 · Second strategy: volatility-scaled trend
+- **Decision:** `vol_scaled_trend` (long above SMA, weight = target volatility / realised volatility, capped at 1, 0.05 steps). Baselines: buy-and-hold and `sma_trend`. Its docstring states what it assumes and what breaks it.
+- **Why this one:** simple, explainable, the one the earlier plan named, and it addresses a known weakness of the plain trend rule (full exposure in violent markets). It is not claimed to work.
+- **Guards:** the strategy module is AST-tested to import nothing that trades; weights are clamped by the engine and sized by `size_order`, so even a strategy asking for 10x leverage gets a capped, risk-checked order (tested).
+
+## D-013 · 2026-10-21 · Walk-forward is pre-registered and the holdout is single-use
+- **Decision:** a study is frozen first (grid, windows, selection rule, costs, benchmark, acceptance criteria, data fingerprint, hash) in `state/research/prereg/`. Folds are rolling and strictly chronological; each fold selects by in-sample net Sharpe only and carries the choice unchanged into the next window. The last 20% of the data is evaluated once, after the walk-forward, by the rule fixed in the registration; `holdout_registry.json` records the holdout fingerprint, so a second evaluation is refused and any later study on the same data is flagged contaminated (cannot exceed NOT_PROVEN).
+- **Verdicts:** INSUFFICIENT (too few folds, days or exits), SUSPICIOUS (implausible Sharpe, zero costs), REJECTED (losing or Sharpe <= 0 out of sample, or a look-ahead probe failure), NOT_PROVEN, CANDIDATE (only with every check, real data and a passed holdout). Never `paper_supported`.
+- **Not done on purpose:** no search over strategies by return; no ranking of winners; no re-tuning after seeing the holdout.
+- **Known limits:** a 95% block-bootstrap interval is a lower bound on uncertainty; only about 20 to 60 candidate configurations are tried per study, but running further studies on the same data still inflates the chance of a lucky result, which is why the registry exists and why the number of candidates scored is printed.
+- **Reverse if:** the acceptance thresholds prove unusable on real data. Change them by freezing a NEW spec before looking at results, never by editing an old one.
+
+## D-014 · 2026-10-21 · Forward log is the ledger plus an append-only journal, and evidence is classified
+- **Decision:** `lql/execution/forward.py` runs idempotent passes over the SQLite ledger and writes `forward_log.jsonl` from the ledger, keyed by deterministic ids. Evidence class (`SYNTHETIC_REPLAY`, `SYNTHETIC_FORWARD`, `REAL_REPLAY`, `REAL_FORWARD`) is fixed at creation and cannot change. Only real data that arrives after the log started is `REAL_FORWARD`.
+- **Why:** a replay of history through the paper code path is a backtest, however it is described. The class makes that difference impossible to blur.
+- **Reverse if:** a different data source (broker paper account) is ever approved; the evidence classes would then need a new member, not a relaxed rule.

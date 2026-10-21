@@ -12,3 +12,5 @@ state/hermes.lock
 state/hermes_check.json
 state/*.tmp
 state/research/results/
+state/forward/*/ledger.db*
+state/forward/*/run.lock

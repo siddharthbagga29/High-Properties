@@ -4,6 +4,9 @@
 - **Portfolio backtester** (`lql/backtest/portfolio.py`): shared cash, several instruments, union calendar, explicit stale/missing-data handling (no forward fill, orders are never carried across a gap), fill-price clamp to the bar range, volume participation cap, cash reserved across same-day orders, risk engine sees the whole portfolio. Reproduces the single-instrument engine exactly when given one instrument (tested).
 - **Second strategy** `vol_scaled_trend` (trend filter plus volatility targeting) with explicit assumptions; strategy module is AST-tested to import nothing that can trade.
 - **Pre-registered walk-forward research** (`lql/research/`): frozen spec + data fingerprint, strictly chronological rolling folds, in-sample-only selection, separate in/out-of-sample reporting, paired block-bootstrap intervals, 2x-cost stress, selection stability, one-shot holdout with a contamination registry. CLI: `python3 -m lql.cli research run|holdout|show`.
+- **Paper forward log** (`lql/execution/forward.py`): multi-instrument, restartable, idempotent passes; append-only journal rebuilt from the ledger; evidence classes (synthetic/real x replay/forward) that cannot be mixed; per-instrument data lockout; stale-data and incomplete-session handling; kill switch; report with the paper-evidence criteria. CLI `forward run|report|kill|release`, `scripts/forward_daily.sh`, `docs/FORWARD_PAPER.md`.
+- Ledger marks use the last known price per instrument; skill safety gate also forbids tampering with the holdout, ledger, forward log, pre-registration and acceptance criteria.
+- New docs: `docs/FORWARD_PAPER.md`, `docs/MAC_NEXT_STEPS.md`; decisions D-011 to D-014; research-ledger entry H-002.
 - Fixed the unclosed-file ResourceWarning in `tests/test_hermes.py`.
 
 ## 0.1.0 — 2026-10-21

@@ -50,6 +50,16 @@ class LearningTests(unittest.TestCase):
         bad3 = make_skill(self.root, "1.2.2", {"execute_orders": True})
         self.assertEqual(self.lab.propose(bad3)["decision"], "rejected")
 
+    def test_skills_cannot_instruct_tampering_with_the_new_research_controls(self):
+        texts = ["Use the holdout to pick the final parameters.", "Evaluate holdout again until it passes.",
+                 "Rewrite the forward log so the gaps disappear.", "Reset the holdout registry first.",
+                 "Re-freeze the spec with looser acceptance criteria.", "Backfill the ledger with missing fills."]
+        for i, t in enumerate(texts):
+            rec = self.lab.propose(make_skill(self.root, f"3.0.{i}", extra_text="\n" + t + "\n"))
+            self.assertEqual(rec["decision"], "rejected", t)
+            self.assertTrue(any("forbidden" in r for r in rec["reasons"]), t)
+        self.assertEqual(self.lab.registry()["experiment-triage"]["current"], "1.0.0")
+
     def test_promote_then_rollback(self):
         good = make_skill(self.root, "1.0.1", extra_text="\nClarified wording.\n")
         rec = self.lab.propose(good)

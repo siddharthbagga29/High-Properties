@@ -204,7 +204,7 @@ class CliTests(unittest.TestCase):
         from lql.lab import Lab
         lab = Lab(state_dir=tmpdir())
         a = argparse.Namespace(action="run", source="synthetic", instruments="DEMO-ETF-A,DEMO-ETF-B", days=1500,
-                               name="cli-test", spec=None)
+                               name="cli-test", spec=None, start="2019-02-01")
         out = _research(lab, a)
         self.assertIn(out["verdict"], ("NOT_PROVEN", "REJECTED", "INSUFFICIENT"))
         self.assertTrue((lab.state / "research" / "prereg" / f"{out['spec_hash']}.json").exists())
