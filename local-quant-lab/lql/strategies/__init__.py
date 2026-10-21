@@ -1,5 +1,6 @@
 """Strategy interface and registry. Strategies receive only the bars up to the decision time (the engine slices the
 history), return a target portfolio weight in [0, 1] (long-only in v1), and declare their metadata."""
+import math
 from dataclasses import dataclass, field
 
 
@@ -59,7 +60,42 @@ class SMATrend(Strategy):
         return 1.0 if closes[-1] > s and f > s else 0.0
 
 
-REGISTRY = {"buy_hold": BuyAndHold, "sma_trend": SMATrend}
+class VolScaledTrend(Strategy):
+    """Trend filter with volatility targeting. Long only while the close is above its slow moving average; the
+    weight is target_vol / realised_vol (annualised, from the last `vol_lookback` daily close-to-close returns),
+    capped at 1 and rounded down to steps of 0.05 so the position does not churn on tiny volatility changes.
+
+    Why it might help: it stays out of downtrends and shrinks exposure when the market turns violent, which should
+    cut drawdowns relative to buy-and-hold. What it assumes: volatility clusters and trends persist for a while.
+    What breaks it: sharp reversals (whipsaw), gaps (volatility is measured on closes), a regime with no trend.
+    Baselines: buy-and-hold and the plain SMA trend rule. Not a claimed edge; the walk-forward process decides."""
+
+    def __init__(self, slow=150, vol_lookback=20, target_vol_pct=10):
+        if slow < 20 or not 5 <= vol_lookback <= slow or not 1 <= target_vol_pct <= 50:
+            raise ValueError("need slow >= 20, 5 <= vol_lookback <= slow, 1 <= target_vol_pct <= 50")
+        self.slow, self.vol_lookback, self.target = slow, vol_lookback, target_vol_pct / 100.0
+        self.meta = StrategyMeta(
+            "vol_scaled_trend", "Volatility-scaled trend", "1.0.0",
+            f"Long if close > SMA{slow}; weight = min(1, {target_vol_pct}% / realised {vol_lookback}-day vol), "
+            "in steps of 0.05.", warmup=max(slow, vol_lookback + 1),
+            params={"slow": slow, "vol_lookback": vol_lookback, "target_vol_pct": target_vol_pct})
+
+    def target_weight(self, history):
+        closes = [b.close for b in history]
+        s = sma(closes, self.slow)
+        if s is None or len(closes) < self.vol_lookback + 1 or closes[-1] <= s:
+            return 0.0
+        window = closes[-(self.vol_lookback + 1):]
+        rets = [window[i] / window[i - 1] - 1 for i in range(1, len(window))]
+        mean = sum(rets) / len(rets)
+        var = sum((r - mean) ** 2 for r in rets) / (len(rets) - 1)
+        vol = var ** 0.5 * 252 ** 0.5
+        if vol <= 1e-9:
+            return 1.0
+        return math.floor(min(1.0, self.target / vol) / 0.05) * 0.05
+
+
+REGISTRY = {"buy_hold": BuyAndHold, "sma_trend": SMATrend, "vol_scaled_trend": VolScaledTrend}
 
 
 def create(key, **params):

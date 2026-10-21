@@ -90,7 +90,8 @@ class HermesTests(unittest.TestCase):
     def test_hermes_has_no_order_or_risk_route(self):
         import ast
         import lql.agents.hermes_adapter as h
-        tree = ast.parse(open(h.__file__).read())
+        with open(h.__file__) as fh:
+            tree = ast.parse(fh.read())
         mods = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
         names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
         self.assertFalse(mods & {"risk", "execution", "config", "execution.ledger", "execution.paper"}, mods)

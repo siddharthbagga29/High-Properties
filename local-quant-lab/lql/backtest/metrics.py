@@ -61,8 +61,8 @@ def summarize(dates, equity, fills=None, exposure=None, costs=0.0):
     return out
 
 
-def round_trips(fills):
-    """Pair long entries and exits (FIFO, long-only) into round trips and report win statistics on net P&L."""
+def trip_pnls(fills):
+    """Pair long entries and exits (FIFO, long-only, ONE instrument) into round trips; returns net P&L per trip."""
     lots, trips = [], []
     for f in fills:
         if f["side"] == "BUY":
@@ -79,6 +79,10 @@ def round_trips(fills):
                 if lots[0][0] == 0:
                     lots.pop(0)
             trips.append(pnl)
+    return trips
+
+
+def trip_stats(trips):
     wins = [p for p in trips if p > 0]
     losses = [p for p in trips if p <= 0]
     return {"round_trips": len(trips),
@@ -86,6 +90,10 @@ def round_trips(fills):
             "avg_win": statistics.fmean(wins) if wins else None,
             "avg_loss": statistics.fmean(losses) if losses else None,
             "profit_factor": sum(wins) / -sum(losses) if losses and sum(losses) < 0 else None}
+
+
+def round_trips(fills):
+    return trip_stats(trip_pnls(fills))
 
 
 def monthly_returns(dates, equity):
