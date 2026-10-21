@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Quant Lab · Control Room</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="strip" role="status" aria-live="polite">
+  <span class="brand">LQL // CONTROL ROOM</span>
+  <span id="s-mode" class="chip">MODE …</span>
+  <span id="s-data" class="chip warn">DATA …</span>
+  <span id="s-broker" class="chip">BROKER …</span>
+  <span id="s-clock" class="chip">PAPER CLOCK …</span>
+  <span id="s-kill" class="chip">KILL …</span>
+  <span id="s-lock" class="chip">FEED …</span>
+  <span id="s-recon" class="chip">LEDGER …</span>
+  <span id="s-hermes" class="chip">HERMES …</span>
+  <span id="s-time" class="chip dim">…</span>
+</header>
+<div class="banner" id="banner">DEMO / SYNTHETIC DATA — simulated results only. No live trading exists in this build. Nothing here is a profitability claim.</div>
+
+<main id="main">
+  <section class="panel controls" aria-labelledby="h-controls">
+    <h2 id="h-controls">Run</h2>
+    <form id="bt-form">
+      <label>Instrument <select id="f-inst"></select></label>
+      <label>Strategy <select id="f-strat"></select></label>
+      <label>Source <select id="f-src"><option value="synthetic">synthetic (DEMO)</option><option value="snapshot">csv snapshot</option></select></label>
+      <label>Fast <input id="f-fast" type="number" min="2" max="400" value="50"></label>
+      <label>Slow <input id="f-slow" type="number" min="3" max="400" value="200"></label>
+      <button type="submit">Run backtest</button>
+    </form>
+    <div class="row">
+      <label>Experiment <select id="f-exp"></select></label>
+      <a id="dl-csv" class="btn" href="#" download>Export CSV</a>
+      <a id="dl-json" class="btn" href="#" download>Export JSON</a>
+    </div>
+    <div class="row">
+      <label>Paper sessions <input id="f-steps" type="number" min="1" max="1300" value="20"></label>
+      <button id="b-step" type="button">Step paper</button>
+      <button id="b-corrupt" type="button" title="Feeds one deliberately corrupt bar to show the data lockout">Inject corrupt bar</button>
+      <button id="b-kill" type="button" class="danger">Kill switch</button>
+      <button id="b-release" type="button">Release…</button>
+    </div>
+    <p id="msg" class="msg" role="alert"></p>
+  </section>
+
+  <section class="panel kpis" aria-labelledby="h-kpi">
+    <h2 id="h-kpi">Experiment metrics <span id="kpi-sub" class="dim"></span></h2>
+    <div id="kpi-grid" class="kpi-grid"></div>
+    <div id="critic" class="critic"></div>
+  </section>
+
+  <section class="panel flow" aria-labelledby="h-flow">
+    <h2 id="h-flow">Event flow (live state)</h2>
+    <svg id="flow" viewBox="0 0 900 230" role="img" aria-label="Pipeline from data to dashboard with status of each stage"></svg>
+  </section>
+
+  <section class="panel chart" aria-labelledby="h-price"><h2 id="h-price">Price and fills</h2><svg id="c-price" class="c"></svg></section>
+  <section class="panel chart" aria-labelledby="h-eq"><h2 id="h-eq">Equity: net · gross · capped buy-and-hold</h2><svg id="c-eq" class="c"></svg></section>
+  <section class="panel chart half" aria-labelledby="h-dd"><h2 id="h-dd">Underwater (drawdown)</h2><svg id="c-dd" class="c"></svg></section>
+  <section class="panel chart half" aria-labelledby="h-exp"><h2 id="h-exp">Exposure</h2><svg id="c-exp" class="c"></svg></section>
+
+  <section class="panel half" aria-labelledby="h-sens"><h2 id="h-sens">Robustness</h2><div id="sens"></div></section>
+  <section class="panel half" aria-labelledby="h-q"><h2 id="h-q">Data quality and provenance</h2><div id="quality"></div></section>
+
+  <section class="panel" aria-labelledby="h-paper"><h2 id="h-paper">Paper ledger (SIMULATED)</h2><div id="paper"></div><svg id="c-paper" class="c small"></svg></section>
+  <section class="panel half" aria-labelledby="h-fills"><h2 id="h-fills">Backtest fills</h2><div id="fills" class="scroll"></div></section>
+  <section class="panel half" aria-labelledby="h-ev"><h2 id="h-ev">Risk and audit events</h2><div id="events" class="scroll"></div></section>
+  <section class="panel" aria-labelledby="h-tasks"><h2 id="h-tasks">Task ledger</h2><div id="tasks" class="scroll"></div></section>
+</main>
+<footer>Local research prototype · not compliance-certified · localhost only · v<span id="ver"></span></footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

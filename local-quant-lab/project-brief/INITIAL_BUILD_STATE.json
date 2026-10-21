@@ -1,0 +1,61 @@
+{
+  "project": "Local Quant Lab",
+  "status": "specification_updated_hermes_integration_not_started",
+  "created_at": "2026-10-20",
+  "current_north_star": "Deliver a working local research, backtesting, risk-controlled simulation, and paper-trading system with a functional interface and auditable workflow; do not enable live trading.",
+  "active_direction_supersedes": "Perspective Engine startup roadmap",
+  "default_execution_mode": "DEMO_OR_SIMULATED_PAPER_ONLY",
+  "live_trading_enabled": false,
+  "paid_runtime_llm_required": false,
+  "company_formation_authorized": false,
+  "milestones": [
+    {
+      "id": "M0",
+      "name": "Repository inspection and runnable skeleton",
+      "status": "pending"
+    },
+    {
+      "id": "M1",
+      "name": "Data pipeline and deterministic research core",
+      "status": "pending"
+    },
+    {
+      "id": "M2",
+      "name": "Backtester and experiment reporting",
+      "status": "pending"
+    },
+    {
+      "id": "M3",
+      "name": "Risk engine and paper execution",
+      "status": "pending"
+    },
+    {
+      "id": "M4",
+      "name": "Research loop plus Hermes persistent memory and evaluated skills",
+      "status": "pending"
+    },
+    {
+      "id": "M5",
+      "name": "Functional visual control room",
+      "status": "pending"
+    },
+    {
+      "id": "M6",
+      "name": "Validation, documentation and portable handoff",
+      "status": "pending"
+    }
+  ],
+  "hard_gates": [
+    "No live trades in current deliverable",
+    "No company formation",
+    "No spending or account creation without explicit authorization",
+    "Never allow an LLM to bypass deterministic risk checks",
+    "Never label synthetic data as live",
+    "Do not claim strategy profitability without reproducible evidence",
+    "No new Hermes/LLM subscription or hosted memory provider by default",
+    "Hermes learning is measured, versioned, regression-tested, and reversible",
+    "Hermes cannot access live trading or modify deterministic risk controls",
+    "Portable project files remain the cross-model source of truth"
+  ],
+  "next_task": "Inspect the repository and Mac environment; read the current official Hermes Agent install, local-model, memory, and security documentation; select the smallest safe implementation path; then start M0 and record evidence. Do not download a large model until hardware, disk, license, and 64K context fit are verified."
+}

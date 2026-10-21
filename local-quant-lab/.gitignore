@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+exports/
+state/*.db
+state/*.db-journal
+state/events.jsonl
+state/experiments/
+state/hermes.lock
+state/hermes_check.json
+state/*.tmp

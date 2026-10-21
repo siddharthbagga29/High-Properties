@@ -1,0 +1,132 @@
+{
+ "frozen_at": "2026-10-21",
+ "purpose": "Frozen regression set for experiment_triage skills. Do not edit; add a new versioned file and re-freeze with a recorded decision instead.",
+ "cases": [
+  {
+   "id": "clean_real_strong",
+   "kind": "success",
+   "metrics": {
+    "round_trips": 45,
+    "test_return": 0.08
+   },
+   "expected": "ADVANCE",
+   "must": false
+  },
+  {
+   "id": "synthetic_strong",
+   "kind": "unsafe: synthetic result looks great",
+   "metrics": {
+    "round_trips": 60,
+    "test_return": 0.12,
+    "synthetic": true
+   },
+   "expected": "HOLD",
+   "must": true
+  },
+  {
+   "id": "too_few_trades",
+   "kind": "failure",
+   "metrics": {
+    "round_trips": 6,
+    "test_return": 0.05
+   },
+   "expected": "HOLD",
+   "must": false
+  },
+  {
+   "id": "losing_test_window",
+   "kind": "failure",
+   "metrics": {
+    "round_trips": 40,
+    "test_return": -0.03
+   },
+   "expected": "REJECT",
+   "must": true
+  },
+  {
+   "id": "flat_test_window",
+   "kind": "failure",
+   "metrics": {
+    "round_trips": 40,
+    "test_return": 0.0
+   },
+   "expected": "REJECT",
+   "must": true
+  },
+  {
+   "id": "same_bar_fill",
+   "kind": "unsafe: look-ahead fill timing",
+   "metrics": {
+    "round_trips": 50,
+    "test_return": 0.1,
+    "same_bar_fill": true
+   },
+   "expected": "REJECT",
+   "must": true
+  },
+  {
+   "id": "metric_mismatch",
+   "kind": "unsafe: reported metrics do not match equity series",
+   "metrics": {
+    "round_trips": 50,
+    "test_return": 0.1,
+    "metric_mismatch": true
+   },
+   "expected": "REJECT",
+   "must": true
+  },
+  {
+   "id": "fragile_params",
+   "kind": "failure",
+   "metrics": {
+    "round_trips": 50,
+    "test_return": 0.06,
+    "fragile": true
+   },
+   "expected": "HOLD",
+   "must": false
+  },
+  {
+   "id": "leakage_probe_failed",
+   "kind": "unsafe: decision moved when only future bars changed",
+   "metrics": {
+    "round_trips": 50,
+    "test_return": 0.09,
+    "leakage": true
+   },
+   "expected": "REJECT",
+   "must": true
+  },
+  {
+   "id": "borderline_sample",
+   "kind": "success",
+   "metrics": {
+    "round_trips": 30,
+    "test_return": 0.02
+   },
+   "expected": "ADVANCE",
+   "must": false
+  },
+  {
+   "id": "prior_run_demo_etf_a",
+   "kind": "prior project result: synthetic, 6 round trips",
+   "metrics": {
+    "round_trips": 6,
+    "test_return": 0.0678,
+    "synthetic": true
+   },
+   "expected": "HOLD",
+   "must": true
+  },
+  {
+   "id": "thin_sample_25",
+   "kind": "failure",
+   "metrics": {
+    "round_trips": 25,
+    "test_return": 0.04
+   },
+   "expected": "HOLD",
+   "must": false
+  }
+ ]
+}

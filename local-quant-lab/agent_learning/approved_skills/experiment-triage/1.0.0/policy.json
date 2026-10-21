@@ -1,0 +1,1 @@
+{"kind": "experiment_triage", "min_round_trips": 30, "reject_if_test_return_le": 0.0, "flag_fragile": true, "flag_synthetic": true}

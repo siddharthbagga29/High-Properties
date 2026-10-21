@@ -1,0 +1,545 @@
+{
+  "app_version": "0.1.0",
+  "execution_mode": "SIMULATED",
+  "last_checkpoint": {
+    "at": "2026-10-21T01:51:56.045916Z",
+    "note": "M7-security-audit -> done_verified"
+  },
+  "live_trading": "absent",
+  "order": [
+    "M0-skeleton",
+    "M1-data",
+    "M2-backtest",
+    "M3-risk-paper",
+    "M4-loop-hermes",
+    "M5-control-room",
+    "M6-handoff",
+    "H1-hermes-mac",
+    "M7-security-audit"
+  ],
+  "schema": 1,
+  "tasks": {
+    "H1-hermes-mac": {
+      "acceptance": [
+        "python3 scripts/hermes_check.py"
+      ],
+      "blocker": {
+        "kind": "human_gate",
+        "question": "Run on the Mac: install Hermes from the official installer, choose a local model with >=64K context, then python3 scripts/hermes_check.py --memory-roundtrip"
+      },
+      "deps": [
+        "M4-loop-hermes"
+      ],
+      "evidence": [],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Install Hermes on the founder's Mac with a local 64K-context model and run scripts/hermes_check.py",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.032312Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:20.032731Z",
+          "by": "orchestrator",
+          "note": "Run on the Mac: install Hermes from the official installer, choose a local model with >=64K context, then python3 scripts/hermes_check.py --memory-roundtrip",
+          "to": "needs_human"
+        }
+      ],
+      "id": "H1-hermes-mac",
+      "last_action": null,
+      "owner": "founder",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "needs_human",
+      "timeout_s": 600
+    },
+    "M0-skeleton": {
+      "acceptance": [
+        "python3 -m unittest tests.test_config"
+      ],
+      "blocker": null,
+      "deps": [],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:20.107081Z",
+          "command": "python3 -m unittest tests.test_config",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_config",
+              "exit_code": 0,
+              "tail": "....\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n"
+            }
+          ],
+          "passed": 4,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Runnable skeleton, config, event log",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.028612Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:20.034628Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:20.035734Z",
+          "by": "worker",
+          "note": "execute M0-skeleton",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:20.107121Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_config",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M0-skeleton",
+      "last_action": "execute M0-skeleton",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M1-data": {
+      "acceptance": [
+        "python3 -m unittest tests.test_data"
+      ],
+      "blocker": null,
+      "deps": [
+        "M0-skeleton"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:20.253774Z",
+          "command": "python3 -m unittest tests.test_data",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_data",
+              "exit_code": 0,
+              "tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.041s\n\nOK\n"
+            }
+          ],
+          "passed": 5,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Synthetic/snapshot/Stooq providers with validation",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.029090Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:20.108540Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:20.109588Z",
+          "by": "worker",
+          "note": "execute M1-data",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:20.253822Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_data",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M1-data",
+      "last_action": "execute M1-data",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M2-backtest": {
+      "acceptance": [
+        "python3 -m unittest tests.test_backtest"
+      ],
+      "blocker": null,
+      "deps": [
+        "M1-data"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:21.540831Z",
+          "command": "python3 -m unittest tests.test_backtest",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_backtest",
+              "exit_code": 0,
+              "tail": ".........\n----------------------------------------------------------------------\nRan 9 tests in 1.168s\n\nOK\n"
+            }
+          ],
+          "passed": 9,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Event-driven backtester, metrics, splits, sensitivity",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.029477Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:20.255467Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:20.256602Z",
+          "by": "worker",
+          "note": "execute M2-backtest",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:21.540875Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_backtest",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M2-backtest",
+      "last_action": "execute M2-backtest",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M3-risk-paper": {
+      "acceptance": [
+        "python3 -m unittest tests.test_risk tests.test_execution"
+      ],
+      "blocker": null,
+      "deps": [
+        "M2-backtest"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:27.805514Z",
+          "command": "python3 -m unittest tests.test_risk tests.test_execution",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_risk tests.test_execution",
+              "exit_code": 0,
+              "tail": "..................\n----------------------------------------------------------------------\nRan 18 tests in 6.142s\n\nOK\n"
+            }
+          ],
+          "passed": 18,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Risk engine, ledger, SIMULATED paper session, kill switch",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.030266Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:21.542884Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:21.544485Z",
+          "by": "worker",
+          "note": "execute M3-risk-paper",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:27.805567Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_risk tests.test_execution",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M3-risk-paper",
+      "last_action": "execute M3-risk-paper",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M4-loop-hermes": {
+      "acceptance": [
+        "python3 -m unittest tests.test_orchestrator tests.test_hermes tests.test_learning"
+      ],
+      "blocker": null,
+      "deps": [
+        "M3-risk-paper"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:27.957697Z",
+          "command": "python3 -m unittest tests.test_orchestrator tests.test_hermes tests.test_learning",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_orchestrator tests.test_hermes tests.test_learning",
+              "exit_code": 0,
+              "tail": "l-quant-lab/lql/agents/hermes_adapter.py' mode='r' encoding='UTF-8'>\n  tree = ast.parse(open(h.__file__).read())\nResourceWarning: Enable tracemalloc to get the object allocation traceback\n.............\n----------------------------------------------------------------------\nRan 18 tests in 0.056s\n\nOK\n"
+            }
+          ],
+          "passed": 18,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Task graph, critic, Hermes adapter + fallback, skill learning",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.030953Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:27.807345Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:27.808916Z",
+          "by": "worker",
+          "note": "execute M4-loop-hermes",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:27.957737Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_orchestrator tests.test_hermes tests.test_learning",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M4-loop-hermes",
+      "last_action": "execute M4-loop-hermes",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M5-control-room": {
+      "acceptance": [
+        "python3 -m unittest tests.test_server"
+      ],
+      "blocker": null,
+      "deps": [
+        "M4-loop-hermes"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:29.247214Z",
+          "command": "python3 -m unittest tests.test_server",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_server",
+              "exit_code": 0,
+              "tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 1.161s\n\nOK\n"
+            }
+          ],
+          "passed": 5,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Localhost dashboard served from real state",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.031443Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:27.959382Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:27.960334Z",
+          "by": "worker",
+          "note": "execute M5-control-room",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:29.247252Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_server",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M5-control-room",
+      "last_action": "execute M5-control-room",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M6-handoff": {
+      "acceptance": [
+        "python3 -m unittest tests.test_export"
+      ],
+      "blocker": null,
+      "deps": [
+        "M5-control-room"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:49:29.417697Z",
+          "command": "python3 -m unittest tests.test_export",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_export",
+              "exit_code": 0,
+              "tail": "..\n----------------------------------------------------------------------\nRan 2 tests in 0.087s\n\nOK\n"
+            }
+          ],
+          "passed": 2,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Docs, export, acceptance checklist",
+      "history": [
+        {
+          "at": "2026-10-21T01:49:20.031919Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:49:29.249003Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:49:29.250174Z",
+          "by": "worker",
+          "note": "execute M6-handoff",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:49:29.417736Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_export",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M6-handoff",
+      "last_action": "execute M6-handoff",
+      "owner": "engineer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    },
+    "M7-security-audit": {
+      "acceptance": [
+        "python3 -m unittest tests.test_security"
+      ],
+      "blocker": null,
+      "deps": [
+        "M6-handoff"
+      ],
+      "evidence": [
+        {
+          "at": "2026-10-21T01:51:56.045873Z",
+          "command": "python3 -m unittest tests.test_security",
+          "exit_code": 0,
+          "failed": 0,
+          "outputs": [
+            {
+              "cmd": "python3 -m unittest tests.test_security",
+              "exit_code": 0,
+              "tail": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.039s\n\nOK\n"
+            }
+          ],
+          "passed": 5,
+          "signature": ""
+        }
+      ],
+      "expected_output": "",
+      "failures": [],
+      "goal": "Secret scan, no broker endpoints, no live mode, strategy sandbox, no order route",
+      "history": [
+        {
+          "at": "2026-10-21T01:51:55.930950Z",
+          "by": "orchestrator",
+          "to": "pending"
+        },
+        {
+          "at": "2026-10-21T01:51:55.931833Z",
+          "by": "orchestrator",
+          "note": "dependencies verified",
+          "to": "ready"
+        },
+        {
+          "at": "2026-10-21T01:51:55.933280Z",
+          "by": "worker",
+          "note": "execute M7-security-audit",
+          "to": "in_progress"
+        },
+        {
+          "at": "2026-10-21T01:51:56.045909Z",
+          "by": "supervisor",
+          "note": "python3 -m unittest tests.test_security",
+          "to": "done_verified"
+        }
+      ],
+      "id": "M7-security-audit",
+      "last_action": "execute M7-security-audit",
+      "owner": "reviewer",
+      "retries": 0,
+      "retry_budget": 3,
+      "status": "done_verified",
+      "timeout_s": 600
+    }
+  }
+}
