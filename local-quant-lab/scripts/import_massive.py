@@ -32,7 +32,7 @@ def import_one(provider, symbol, start, end, directory):
         h = hashlib.sha256(page).hexdigest()
         (raw_dir / f"{symbol}-{info.retrieved_at[:10]}-{i}.json").write_bytes(page)
         raw_hashes.append(h)
-    q = validate(bars, symbol)
+    q = validate(bars, symbol, calendar="XNYS")      # US equity sessions: missing sessions and holiday bars flagged
     extra = {"request": request, "raw_sha256": raw_hashes, "importer_version": IMPORTER_VERSION,
              "validation": q.to_dict(), "frequency": "1 day", "currency": "USD",
              "calendar": "US equity sessions as returned by the vendor"}

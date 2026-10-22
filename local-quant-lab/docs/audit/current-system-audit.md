@@ -40,6 +40,7 @@ The prompt's historical figures (156 tests, 12 done_verified) predate the consol
 | F16 | "beatapi" key | No variable with that name, and no BEA/FRED/Massive/Alpaca key variable, exists in this container's environment (names checked, values never read). | BLOCKED (on the Mac) | `env` variable-name scan | The provider cannot be identified from here. | NEEDS_HUMAN: on the Mac, see which provider issued it. If it is a 36-character BEA UserID, store it as `BEA_API_USERID` (macro data only, never prices). |
 | F17 | Engines | NautilusTrader 1.231.0 matches an independent reference exactly for next-open fills, once open trades are supplied. OpenAlgo and LEAN were not installed. | VERIFIED (POC) / DEFER | `poc/nautilus/` | — | See `compatibility-matrix.md`. |
 | F18 | Ports | The app binds 127.0.0.1:8765. OpenAlgo reportedly uses 8765 for its WebSocket. No OpenAlgo process was started. | VERIFIED (app) / NOT VERIFIED (OpenAlgo) | `lql/server.py`; runbook port table | A port collision if both ever run. | Runbook port matrix: give OpenAlgo another port if it is ever evaluated. |
+| F20 | Exchange calendar | Validation used a 5-calendar-day gap heuristic. It could not tell a holiday from a missing session, or catch a bar dated on a holiday (a timezone error). | FIXED → VERIFIED | `lql/data/calendar.py`; `validate(..., calendar="XNYS")` in both importers | Missing vendor sessions or shifted timestamps would pass unnoticed. | Rule-based XNYS calendar (holidays, observed days, special closures since 2000). Closing test: `tests/test_sources.py::CalendarTests` (published session counts 251/250/252 for 2022–2024). Applied at the import boundary; existing pipelines and fixtures are unchanged. |
 | F19 | Performance on the Mac | Container frame rates (2–4 fps) come from the software renderer and say nothing about the M3 GPU. | NOT VERIFIED | `docs/design/verification.md` | Unknown frame rate at 1M or 2M neurons. | NEEDS_HUMAN: `make ui-check` on the Mac. |
 
 ## Root causes of the "motionless or disconnected" impression
@@ -51,4 +52,4 @@ The prompt's historical figures (156 tests, 12 done_verified) predate the consol
 
 ## Readiness score
 
-The weighted score is in `docs/engineering/acceptance-matrix.md`: 58/100 before this session, 80/100 after.
+The weighted score is in `docs/engineering/acceptance-matrix.md`: 58/100 before this session, 82/100 after.

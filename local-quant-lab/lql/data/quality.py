@@ -3,7 +3,8 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
 SPLIT_RATIOS = (0.5, 1 / 3, 0.25, 0.2, 0.1, 2.0, 3.0, 4.0, 5.0, 10.0)
-BLOCKING = {"invalid_ohlc", "non_monotonic", "duplicate", "non_positive_price", "empty", "stale", "wrong_instrument"}
+BLOCKING = {"invalid_ohlc", "non_monotonic", "duplicate", "non_positive_price", "empty", "stale", "wrong_instrument",
+            "non_session_bar"}
 
 
 @dataclass
@@ -36,8 +37,11 @@ class QualityReport:
                 "counts": self.counts(), "issues": self.issues[:50]}
 
 
-def validate(bars, instrument=None, as_of=None, max_age_days=None, gap_days=5, outlier_ret=0.15):
-    """Check schema, chronology, duplicates, OHLC validity, gaps, outliers and staleness."""
+def validate(bars, instrument=None, as_of=None, max_age_days=None, gap_days=5, outlier_ret=0.15, calendar=None):
+    """Check schema, chronology, duplicates, OHLC validity, gaps, outliers and staleness. With calendar="XNYS" (real
+    US equity data), also flag every exchange session with no bar (`missing_session`, a warning: the vendor's gap is
+    kept visible, never filled) and every bar on a weekend or exchange holiday (`non_session_bar`, blocking: usually a
+    timestamp or timezone error). Synthetic fixtures run on plain business days and are checked without a calendar."""
     inst = instrument or (bars[0].instrument if bars else "?")
     rep = QualityReport(inst, len(bars))
     if not bars:
@@ -73,6 +77,19 @@ def validate(bars, instrument=None, as_of=None, max_age_days=None, gap_days=5, o
                                        "detail": f"close ratio {ratio:.3f} looks like a split; an unadjusted series "
                                                  "would distort returns here"})
         prev = b
+    if calendar is not None:
+        if calendar != "XNYS":
+            raise ValueError(f"unknown calendar {calendar!r}; supported: XNYS")
+        from .calendar import holidays, sessions
+        have = {b.event_date for b in bars}
+        for d in sorted(have):
+            if d.weekday() >= 5 or d in holidays(d.year):
+                rep.issues.append({"code": "non_session_bar", "date": d.isoformat(),
+                                   "detail": holidays(d.year).get(d, "weekend") + ": the exchange was closed"})
+        for d in sessions(min(have), max(have)):
+            if d not in have:
+                rep.issues.append({"code": "missing_session", "date": d.isoformat(),
+                                   "detail": "XNYS session with no bar (left missing, not filled)"})
     if as_of is not None and max_age_days is not None:
         last = max(b.event_date for b in bars)
         ref = as_of.date() if isinstance(as_of, datetime) else as_of

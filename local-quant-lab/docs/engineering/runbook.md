@@ -25,7 +25,7 @@ Never expose any of these to the internet. For a future HP host, use a private n
 ## Smoke test: one synthetic experiment end to end (Gate A)
 
 ```bash
-make test                       # 190 Python tests
+make test                       # 192 Python tests
 make test-js                    # 17 node tests
 python3 scripts/verify.py       # 13 done_verified, H1 needs_human
 python3 -m lql.server --port 8766 --state-dir /tmp/lql-demo &   # throwaway state, separate port

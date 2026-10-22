@@ -11,6 +11,7 @@
   - `MassiveProvider` + `scripts/import_massive.py`: end-of-day, key in a header, 5 calls/min, raw pages hashed, PROVISIONAL.
   - FRED, BEA and SEC context clients with point-in-time helpers (`lql/data/context.py`).
   - All fixture-tested. Live use needs the founder's keys.
+- **Exchange calendar.** A rule-based XNYS session calendar checked at import: missing sessions are flagged and bars on holidays block (matches the published 2022–2024 session counts).
 - **Metrics.** Calmar; benchmark-relative excess return, information ratio and tracking error; hand-checked arithmetic tests.
 - **Monte Carlo.** Seeded circular block bootstrap of an experiment's net daily returns as a background job, with a cached artifact. It reports percentiles, drawdown probabilities, a fan and an ending distribution.
 - **Research charts from persisted artifacts.** Monthly heatmap, return distribution, rolling volatility and Sharpe, exposure, cost and parameter sensitivity, walk-forward folds (in-sample vs out-of-sample) with out-of-sample equity, Monte Carlo fan and distribution.
@@ -19,8 +20,8 @@
 - **Fixes.**
   - Line charts starting with gaps drew nothing.
   - A re-render reset typed form values, so a 500-path request ran as 1000.
-- **Docs.** `docs/audit/` (current-system audit, compatibility matrix, data-source review) and `docs/engineering/` (DAG, acceptance matrix with readiness score 58 → 80/100, runbook).
-- **Tests.** 190 Python, 17 node, 54/54 browser checks.
+- **Docs.** `docs/audit/` (current-system audit, compatibility matrix, data-source review) and `docs/engineering/` (DAG, acceptance matrix with readiness score 58 → 82/100, runbook).
+- **Tests.** 192 Python, 17 node, 54/54 browser checks.
 
 ## Unreleased (the trading floor, 2026-10-22)
 - **Overview centre rebuilt as a 3D trading floor** in the Perspective Engine city style (D-017).

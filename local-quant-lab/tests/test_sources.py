@@ -12,6 +12,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from lql import ROOT
+from lql.data import calendar as cal
 from lql.data import context as ctx
 from lql.data.providers import MassiveProvider, ProviderError, SnapshotProvider, SyntheticProvider
 from lql.data.quality import validate
@@ -43,8 +44,14 @@ def opener_for(bodies, seen):
 
 def massive_page(n=3, start_ms=1729569600000, adjusted=True, status="OK", next_url=None):
     # FIXTURE in the documented aggregates shape: t = Unix ms of the session window start (04:00 UTC = 00:00 New York)
+    # weekdays only, as a vendor sends them (start 2024-10-22, a Tuesday)
+    ts, t = [], start_ms
+    while len(ts) < n:
+        if date.fromtimestamp(t / 1000 - 4 * 3600).weekday() < 5:
+            ts.append(t)
+        t += 86_400_000
     res = [{"o": 100 + i, "h": 102 + i, "l": 99 + i, "c": 101 + i, "v": 1000 + i, "vw": 100.5 + i, "n": 10,
-            "t": start_ms + i * 86_400_000} for i in range(n)]
+            "t": ts[i]} for i in range(n)]
     b = {"ticker": "SPY", "adjusted": adjusted, "status": status, "resultsCount": n, "results": res, "request_id": "x"}
     if next_url:
         b["next_url"] = next_url
@@ -83,6 +90,37 @@ class DataStateTests(unittest.TestCase):
         self.assertEqual(dataset_state(ok, validate(bars)), VERIFIED_HISTORICAL)
         unhashed = SourceInfo("massive", "HISTORICAL_DOWNLOADED", "x")
         self.assertEqual(dataset_state(unhashed), IMPORTED_UNVERIFIED)
+
+
+class CalendarTests(unittest.TestCase):
+    def test_xnys_calendar_matches_published_session_counts_and_rules(self):
+        self.assertEqual([len(cal.sessions(date(y, 1, 1), date(y, 12, 31))) for y in (2022, 2023, 2024)], [251, 250, 252])
+        h24 = cal.holidays(2024)
+        self.assertEqual(sorted(h24), [date(2024, 1, 1), date(2024, 1, 15), date(2024, 2, 19), date(2024, 3, 29),
+                                       date(2024, 5, 27), date(2024, 6, 19), date(2024, 7, 4), date(2024, 9, 2),
+                                       date(2024, 11, 28), date(2024, 12, 25)])
+        self.assertIn(date(2022, 6, 20), cal.holidays(2022))             # Juneteenth on Sunday -> Monday
+        self.assertNotIn(date(2021, 6, 18), cal.holidays(2021))          # Juneteenth not observed before 2022
+        self.assertIn(date(2026, 7, 3), cal.holidays(2026))              # July 4 on Saturday -> Friday
+        self.assertNotIn(date(2021, 12, 31), cal.holidays(2021))         # New Year on Saturday is not moved back
+        self.assertIn(date(2025, 1, 9), cal.holidays(2025))              # special closure
+        self.assertEqual(cal.easter(2026), date(2026, 4, 5))
+        self.assertFalse(cal.is_session(date(2024, 11, 28)))
+        self.assertTrue(cal.is_session(date(2024, 11, 29)))              # early close is still a session
+
+    def test_validation_flags_missing_sessions_and_blocks_holiday_bars(self):
+        from lql.data.schema import Bar
+        mk = lambda d: Bar("SPY", d, 100, 101, 99, 100.5, 1000, "USD", "massive", "")  # noqa: E731
+        days = [date(2024, 7, 1), date(2024, 7, 2), date(2024, 7, 3), date(2024, 7, 8)]  # 5 July missing
+        q = validate([mk(d) for d in days], "SPY", calendar="XNYS")
+        self.assertTrue(q.passes_validation)
+        self.assertEqual([i["date"] for i in q.issues if i["code"] == "missing_session"], ["2024-07-05"])
+        bad = validate([mk(d) for d in days[:3] + [date(2024, 7, 4), date(2024, 7, 5)]], "SPY", calendar="XNYS")
+        self.assertFalse(bad.passes_validation)                          # a bar on Independence Day: timestamp error
+        self.assertEqual([i["date"] for i in bad.issues if i["code"] == "non_session_bar"], ["2024-07-04"])
+        self.assertTrue(validate(SyntheticProvider().bars("DEMO-ETF-A")).passes_validation)   # synthetic: no calendar
+        with self.assertRaises(ValueError):
+            validate([mk(days[0])], "SPY", calendar="XLON")
 
 
 class MassiveTests(unittest.TestCase):

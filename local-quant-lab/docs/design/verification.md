@@ -4,7 +4,7 @@ Environment: Linux x86_64 cloud container (4 vCPU, no GPU), Python 3.13.16, Node
 
 ## Update 2026-10-22, session 5: jobs, health, Monte Carlo, research core
 
-The commands and results are in `docs/engineering/acceptance-matrix.md`: 190 Python, 17 node, 54/54 browser checks, verify 13+1, staging OK. Measured here (container, 4 vCPU):
+The commands and results are in `docs/engineering/acceptance-matrix.md`: 192 Python, 17 node, 54/54 browser checks, verify 13+1, staging OK. Measured here (container, 4 vCPU):
 - **Monte Carlo:** 1,000 paths × 1,259 days take 0.32 s; 20,000 paths take 7.6 s, run in the worker while the UI keeps polling. Progress is persisted every 100 paths.
 - **Backtest job:** under 0.5 s end to end, with 4 recorded stages.
 - **NautilusTrader POC:** 0.9 s per run, about 500 MB peak RSS, against 0.001 s for the reference.

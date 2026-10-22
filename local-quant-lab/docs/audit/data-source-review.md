@@ -37,6 +37,11 @@ The Massive importer also records:
 - SHA-256 of each raw response page, with the raw pages kept separately in `data/snapshots/raw/` (git-ignored);
 - importer version, the validation report, and the data state computed after the hash exists.
 
+Both importers (`import_massive.py`, `import_csv.py`) validate against the US exchange calendar (`lql/data/calendar.py`, XNYS):
+- a session with no bar is flagged `missing_session` and left missing (never filled);
+- a bar dated on a weekend or exchange holiday is `non_session_bar` and blocks the dataset, since it is usually a timestamp or timezone error.
+`import_csv.py --no-calendar` skips the check for non-US data.
+
 ## Candidates
 
 | Source | Use here | Facts (founder's review, NOT VERIFIED here) | Adapter | Status | Limitations kept visible |

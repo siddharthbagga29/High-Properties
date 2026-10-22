@@ -79,4 +79,4 @@
   - Identify the "beatapi" key's provider.
   - Mac performance.
   - Choose a broker before any OpenAlgo-style evaluation.
-- **Final:** 190 Python OK, 17 node OK, ui_check 54/54, verify 13 + H1, staging OK. Readiness 58 → 80/100. Highest gate: B (A passed in the container).
+- **Final:** 192 Python OK, 17 node OK, ui_check 54/54, verify 13 + H1, staging OK. Readiness 58 → 82/100 (after the XNYS calendar check). Highest gate: B (A passed in the container).

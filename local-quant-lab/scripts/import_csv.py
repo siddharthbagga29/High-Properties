@@ -24,13 +24,14 @@ def main():
     ap.add_argument("--source", required=True, help="where the file came from and when (free text, recorded)")
     ap.add_argument("--adjusted", default="unknown", choices=[s for s in ADJ_STATUSES if s not in (ADJ_VERIFIED, "n/a")])
     ap.add_argument("--dir", default=str(SNAPSHOT_DIR))
+    ap.add_argument("--no-calendar", action="store_true", help="skip the US exchange (XNYS) session check (non-US data)")
     a = ap.parse_args()
     try:
         bars = parse_csv(Path(a.csv).read_text(), a.symbol, source="manual_csv", received_at=now_iso())
     except (ProviderError, OSError) as e:
         print(f"{a.symbol}: FAILED ({e})")
         return 1
-    q = validate(bars, a.symbol)
+    q = validate(bars, a.symbol, calendar=None if a.no_calendar else "XNYS")
     info = SourceInfo(provider="manual_csv", kind="HISTORICAL_DOWNLOADED", description=a.source,
                       retrieved_at=now_iso(), adjusted=a.adjusted, terms="Operator-supplied file; check the vendor's terms")
     path, m = write_snapshot(a.symbol, bars, info, a.dir)

@@ -7,17 +7,17 @@ This score measures **project readiness**: how much of the research system is bu
 | Category (max) | Before (048b63d) | After | Evidence for points earned | Missing (no points) / closing test |
 |---|---:|---:|---|---|
 | Background jobs and orchestration (15) | 6 | **13** | Durable job files with explicit states, timestamps, request hash, correlation id, measured progress, datasets and artifacts (`tests/test_jobs.py`). Restart recovery: interrupted → failed, never-started → re-queued (test). Separate worker/queue health (test plus ui). UI shows the lifecycle and survives refresh and restart (ui). | Worker in its own process (−2): the thread design is accepted in D-018; it would close with a separate worker process plus a crash test. |
-| Data integrity, provenance and eligibility (20) | 11 | **14** | Explicit data states with a backend eligibility table, where no state allows real orders (`tests/test_sources.py`). Existing gates keep synthetic and provisional data out of evidence (existing tests). Manifests with hashes, raw data kept separate, importer metadata (test). Quality checks (existing `tests/test_data.py`). | A verified real dataset with terms reviewed (−4, BLOCKED: key and network). Exchange-calendar-aware expected-session check (−2): closes with a calendar-based missing-session test. |
+| Data integrity, provenance and eligibility (20) | 11 | **16** | Explicit data states with a backend eligibility table, where no state allows real orders (`tests/test_sources.py`). Existing gates keep synthetic and provisional data out of evidence (existing tests). Manifests with hashes, raw data kept separate, importer metadata (test). Quality checks (existing `tests/test_data.py`). XNYS session calendar at the import boundary: missing sessions are flagged, bars on holidays or weekends block (`CalendarTests`, matching the published 2022–2024 session counts). | A verified real dataset with terms reviewed (−4, BLOCKED: key and network). |
 | Backtesting and simulation correctness (20) | 11 | **16** | Next-open timing, leakage probe, costs, cash and positions (existing tests). Hand-checked Sharpe, Sortino, CAGR, Calmar, excess return and information ratio, with nulls when undefined (`test_metrics`). Deterministic hashes (test). Independent engine parity with NautilusTrader: 41/41 fills, identical equity (`poc/nautilus`). | Baseline on verified historical data (Gate D, −4, BLOCKED by Gate C). |
 | Statistical validation and robustness (20) | 12 | **16** | Preregistered chronological walk-forward with in-sample and out-of-sample kept apart, single-use holdout, bootstrap CI, 2× cost stress, selection stability (existing tests). Seeded, cached, reproducible Monte Carlo block bootstrap (`MonteCarloTests`). Subperiod splits (existing). | Robustness on verified real data (Gate E, −4, BLOCKED). |
 | Safety and research controls (10) | 10 | **10** | No live mode or broker routes (`test_security`). Risk engine on every fill, kill switch, CSRF and Host guards, localhost-only bind (tests). Keys never logged and only reported as configured or not (tests). Holdout and preregistration unchanged (registration `fcc75a7c47052167` verifies). | — |
 | Observability and persistent evidence (10) | 4 | **7** | Append-only audit events for every job transition, including interrupted and recovered jobs. Persisted jobs and artifacts. `/api/health`. Task evidence ledger (`verify.py`). | Log rotation and retention policy (−1). Health history over time (−2). |
 | UI functionality, accessibility and performance (5) | 4 | **4** | All routes render. Every action is real or disabled with a reason. Keyboard, focus, reduced motion and phone checks (ui 54/54). Container measurements recorded. | Performance on the target Mac (−1, NEEDS_HUMAN). |
-| **Total (100)** | **58** | **80** | | |
+| **Total (100)** | **58** | **82** | | |
 
 Sub-scores after this session:
 - **Interface:** 86%. UI 4/5 plus the lifecycle shown in the UI, 2/2.
-- **Data:** 70% (14/20).
+- **Data:** 80% (16/20).
 - **Research engine:** 80% (32/40).
 - **Operational readiness:** 80% (20/25).
 - **Safety readiness:** 100% (10/10).
