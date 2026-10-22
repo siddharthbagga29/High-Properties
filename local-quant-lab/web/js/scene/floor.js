@@ -13,6 +13,8 @@ import * as THREE from "../../vendor/three/three.module.min.js";
 import { OrbitControls } from "../../vendor/three/OrbitControls.js";
 import { REGIONS, BRAIN_C, BRAIN_S, QUALITY, formedNeurons } from "./brain-geometry.js";
 import { buildBust, faceStage, toWorld, CORE, BUST_HALF_WIDTH } from "./bust-geometry.js";
+import { createCore } from "./blackhole.js";
+import { coreState } from "./core-state.js";
 import { SEATS, HUES, deskLayout, deskForJob, formedArray, sharesOf, grown, eventDesk } from "./floor-model.js";
 import { drawMain, drawMetrics, drawLog, drawTicker, drawSign } from "./monitors.js";
 
@@ -204,7 +206,6 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
   const podium = new THREE.Group(); scene.add(podium);
   podium.add(mesh(new THREE.CylinderGeometry(13.2, 14.4, 1.6, 96), dark("#120e3a"), 0, 0.8, 0));
   const podRing = mesh(new THREE.TorusGeometry(13.6, 0.14, 8, 128), glow(HUES.supervisor, 1.4), 0, 1.65, 0); podRing.rotation.x = Math.PI / 2; podium.add(podRing);
-  const emitter = mesh(new THREE.CylinderGeometry(9.5, 10.5, 0.25, 96), glow("#3a2bd0", 0.8), 0, 1.72, 0); podium.add(emitter);   // hologram base plate
   const bustData = buildBust(quality === "low" ? 60_000 : 110_000);
   const bustGeo = new THREE.BufferGeometry();
   bustGeo.setAttribute("position", new THREE.BufferAttribute(bustData.pos, 3));
@@ -222,6 +223,9 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
   const coreHalo = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.07, 6, 64), new THREE.MeshBasicMaterial({ color: HUES.supervisor, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
   coreHalo.position.copy(coreW); scene.add(coreHalo);
   const gyro = new THREE.Group(); gyro.position.set(...BRAIN_C); scene.add(gyro);
+  // the research core: event horizon on the podium, accretion disk around it (see blackhole.js for what moves and why)
+  const rcore = createCore(THREE, scene, { reduced, count: quality === "low" ? 16000 : 30000, pr: renderer.getPixelRatio() });
+  let lastCore = coreState([]);
   [[BRAIN_S * 1.5, 1.25, 0.25], [BRAIN_S * 1.62, 1.85, -0.35]].forEach(([r, rx, rz]) => { const t = mesh(new THREE.TorusGeometry(r, 0.05, 6, 180), glow("#8b6bff", 0.9), 0, 0, 0); t.rotation.set(rx, 0, rz); gyro.add(t); });
 
   // -------- desks and bots --------
@@ -375,6 +379,7 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
   function placeLabels() {
     const w = host.clientWidth, h = host.clientHeight;
     const hud = host.querySelector(".floor-hud"), hudBottom = hud ? hud.offsetTop + hud.offsetHeight + 6 : 12;
+    const coreBox = host.querySelector(".floor-core"), coreBottom = coreBox ? coreBox.offsetTop + coreBox.offsetHeight + 6 : 12;
     const toPx = (p) => { v3.copy(p).project(camera); return [((v3.x + 1) / 2) * w, ((1 - v3.y) / 2) * h, v3.z]; };
     const rects = zone.map((pts) => { const q = pts.map(toPx); return { x0: Math.min(...q.map((a) => a[0])), x1: Math.max(...q.map((a) => a[0])), y0: Math.min(...q.map((a) => a[1])), y1: Math.max(...q.map((a) => a[1])) }; });
     const cx = toPx(new THREE.Vector3(...BRAIN_C))[0];
@@ -392,7 +397,7 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
       // wide stage: callout columns at the edges (left bank left, right bank right), in anchor order, so the floor stays clear
       for (const side of [-1, 1]) {
         const col = items.filter((it) => !it.L.sup && (it.ax < cx ? -1 : 1) === side).sort((a, b) => a.ay - b.ay);
-        const top = side < 0 ? hudBottom : 12;     // the HUD sits top-left
+        const top = side < 0 ? hudBottom : coreBottom;     // the HUD sits top-left, the core status top-right
         let y = top;
         for (const it of col) { it.x = side < 0 ? 12 : w - it.w - 12; it.y = Math.max(y, it.ay - it.h / 2); y = it.y + it.h + 6; }
         const over = y - 6 - (h - 8);
@@ -491,13 +496,14 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
     face = faceStage(edgeRegion && edgeRegion.formed);
     bustMat.uniforms.uFace.value = face;
     // completion beams: once per job that finished after the floor opened (a job can start and finish between polls)
-    const ended = (j) => j.status === "done" || j.status === "failed";
+    const ended = (j) => j.status === "succeeded" || j.status === "failed";
     for (const j of d.jobs || []) {
       if (!ended(j) || beamed.has(j.id)) continue;
       beamed.add(j.id);
       if (firstData) continue;
+      rcore.pulse(j.status === "succeeded", clock);
       const k = deskForJob(j, owners);
-      if (k) beamUp(k, j.status === "done");
+      if (k) beamUp(k, j.status === "succeeded");
     }
     // brain growth
     const next = formedArray(d.brain);
@@ -518,6 +524,8 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
     for (const rec of d.desks || []) if (rec.active) { const ri = REGIONS.indexOf(rec.key); if (ri >= 0) glowU[ri] = 1; }
     if (d.active_jobs) glowU[0] = 1;
     neuronMat.uniforms.uFlow.value = d.active_jobs ? 1 : 0;
+    lastCore = coreState(d.jobs || [], Date.now());
+    rcore.set(lastCore);
     // wall ticker
     const th = evts.slice(-14).map((e) => e.t).join();
     if (th !== tickerHash) { tickerHash = th; drawTicker(tickCanvas.getContext("2d"), 4096, 64, evts); tickTex.needsUpdate = true; }
@@ -585,6 +593,8 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
     if (supActive && !reducedNow) coreHalo.rotation.set(clock * 1.1, clock * 0.7, 0);
     for (const d of desks.values()) if (d.beam) d.beam.material.uniforms.uTime.value = clock;
     if (anyActive && !reducedNow) { gyro.rotation.y += dt * 0.35; animating = true; }
+    for (const [k, dk] of desks) if (dk.bot && dk.bot.active && !reducedNow) rcore.feed(new THREE.Vector3(dk.L.x, 0, dk.L.z), hue(k), clock);
+    if (rcore.tick(clock, dt, reducedNow)) animating = true;
     neuronMat.uniforms.uTime.value = clock;
     if (!reducedNow) tickTex.offset.x = (clock * 0.006) % 1;
     controls.update();
@@ -606,7 +616,8 @@ export async function createFloor(host, { quality = "high", reduced = false, onS
     pause() { running = false; },
     resume() { running = true; lastT = performance.now(); dirty = true; resize(); },
     stats: () => ({ neurons: brainInfo.count, quality: brainInfo.quality, build_ms: brainInfo.ms, fps: Math.round(fps), formed: Array.from(formed), streams: streams.length, beams: beams.length,
-      formed_neurons: formedNeurons(brainInfo.counts, Array.from(target)), bust_points: bustData.count, face_stage: face, supervisor_active: supActive }),
+      formed_neurons: formedNeurons(brainInfo.counts, Array.from(target)), bust_points: bustData.count, face_stage: face, supervisor_active: supActive,
+      core: { state: lastCore.state, line: lastCore.line, ...rcore.stats() } }),
     dispose() { cancelAnimationFrame(raf); ro.disconnect(); controls.dispose(); renderer.dispose(); scene.traverse((o) => { o.geometry?.dispose?.(); }); renderer.domElement.remove(); labels.remove(); },
   };
 

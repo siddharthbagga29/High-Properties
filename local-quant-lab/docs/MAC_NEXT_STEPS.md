@@ -15,6 +15,14 @@ python3 scripts/check_staging.py                 # expect: OK, nothing sensitive
 ```
 If any test fails on macOS, stop and send me the output (the code has only run on Linux).
 
+## 0b. Run the current code and identify your keys (2026-10-22)
+1. Follow `docs/engineering/runbook.md` § "Run the current code on the Mac". Your screenshot showed the old 0.1.0 page.
+2. Your "beatapi" key: check where it was issued.
+   - If it is a 36-character BEA UserID, run `export BEA_API_USERID=…`. It gives macro statistics only, never prices.
+   - Otherwise store it under its provider's variable: `MASSIVE_API_KEY`, `FRED_API_KEY`, `ALPACA_PAPER_KEY_ID`, or `STOOQ_API_KEY`.
+   - Never put a key in a file in the repository. System › Health shows which variables are set.
+3. Preferred price source for a first test: Massive Basic end-of-day. See `docs/audit/data-source-review.md` § Founder checklist.
+
 ## 1. Decide how to get the prices (your decision; I could not read Stooq's terms)
 1. Open `https://stooq.com` in your browser and read its terms. Decide whether your use (private research, no redistribution) is allowed.
 2. **Preferred, no automation:** download the daily CSV for SPY, QQQ, IWM and TLT in your browser (handle any login or CAPTCHA yourself), then:

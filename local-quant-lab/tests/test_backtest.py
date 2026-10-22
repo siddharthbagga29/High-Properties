@@ -3,7 +3,7 @@ import unittest
 from dataclasses import replace
 
 from lql.backtest.engine import run, evaluate, fill_price, commission
-from lql.backtest.metrics import summarize, drawdown_series, round_trips
+from lql.backtest.metrics import summarize, drawdown_series, round_trips, relative
 from lql.data.providers import SyntheticProvider
 from lql.orchestrator.critic import leakage_probe, review
 from lql.strategies import create, SMATrend, BuyAndHold, sma, Strategy, StrategyMeta
@@ -75,6 +75,17 @@ class EngineTests(unittest.TestCase):
         m = summarize(["a", "b", "c", "d"], eq)
         self.assertAlmostEqual(m["total_return"], 0.2)
         self.assertIsNone(summarize(["a", "b"], [100, 100])["sharpe"])  # undefined -> None, not invented
+        # hand-checked arithmetic: 3 daily returns, 252-day year
+        r = [0.1, 99 / 110 - 1, 120 / 99 - 1]
+        mean, sd = sum(r) / 3, (sum((x - sum(r) / 3) ** 2 for x in r) / 2) ** 0.5
+        self.assertAlmostEqual(m["sharpe"], mean / sd * 252 ** 0.5)
+        self.assertAlmostEqual(m["sortino"], mean / ((r[1] ** 2) / 3) ** 0.5 * 252 ** 0.5)
+        self.assertAlmostEqual(m["cagr"], 1.2 ** (252 / 3) - 1)
+        self.assertAlmostEqual(m["calmar"], m["cagr"] / (1 - 99 / 110))
+        self.assertIsNone(summarize(["a", "b", "c"], [100, 101, 102])["calmar"])      # no drawdown: undefined
+        rel = relative([100, 110, 99, 120], [100, 105, 100, 110])
+        self.assertAlmostEqual(rel["excess_total_return"], 0.2 - 0.1)
+        self.assertIsNone(relative([100, 101], [100, 101, 102])["information_ratio"])
         rt = round_trips([{"side": "BUY", "qty": 10, "price": 10, "commission": 1},
                           {"side": "SELL", "qty": 10, "price": 12, "commission": 1}])
         self.assertEqual(rt["round_trips"], 1)

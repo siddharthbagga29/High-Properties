@@ -41,7 +41,7 @@ class JobRunnerTests(unittest.TestCase):
         j = r.submit("recheck", "M0-skeleton")
         self.assertIn(j["status"], ("queued", "running"))
         done = wait(r)[0]
-        self.assertEqual(done["status"], "done", done)
+        self.assertEqual(done["status"], "succeeded", done)
         self.assertGreater(done["result"]["passed"], 0)
         self.assertEqual(done["result"]["failed"], 0)
         self.assertIsNotNone(done["duration_s"])
@@ -111,7 +111,7 @@ class JobRunnerTests(unittest.TestCase):
         p = {"instrument": "DEMO-ETF-B", "strategy": "sma_trend", "source": "synthetic", "params": {"fast": 20, "slow": 100}}
         r.submit("backtest", None, p)
         first = wait(r)[0]
-        self.assertEqual(first["status"], "done")
+        self.assertEqual(first["status"], "succeeded")
         r.submit("backtest", None, p)
         second = wait(r)[0]
         self.assertTrue(second["result"]["cached"])
@@ -259,7 +259,7 @@ class ConsoleApiTests(unittest.TestCase):
                 st, body = self.req("GET", path)
                 self.assertNotIn("zzSECRETzz123", json.dumps(body))
             st, sysd = self.req("GET", "/api/system")
-            self.assertEqual(sysd["credentials"]["stooq api key (env)"], "configured")
+            self.assertEqual(sysd["credentials"]["stooq api key (STOOQ_API_KEY)"], "configured")
         finally:
             del os.environ["STOOQ_API_KEY"]
         self.assertEqual(sysd["execution_mode"], "SIMULATED")
@@ -275,7 +275,7 @@ class ConsoleApiTests(unittest.TestCase):
             if jobs[0]["status"] not in ("queued", "running"):
                 break
             time.sleep(0.1)
-        self.assertEqual(jobs[0]["status"], "done")
+        self.assertEqual(jobs[0]["status"], "succeeded")
         st, p = self.req("GET", f"/api/pulse?since={n0}")
         self.assertIn("job_finished", [e["kind"] for e in p["events"]])
         st, e = self.req("POST", "/api/jobs", {"kind": "recheck", "target": "H1-hermes-mac"})

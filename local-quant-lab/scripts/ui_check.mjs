@@ -57,6 +57,8 @@ results.perf.startup_to_overview_ms = Date.now() - t0;
 check("startup renders the overview with 10 role cards", (await page.locator("#v-overview .role").count()) === 10);
 check("safety posture visible", /SIMULATED/.test(await page.textContent("#posture")) && /NO BROKER/.test(await page.textContent("#posture")));
 check("synthetic banner visible", /SYNTHETIC/.test(await page.textContent("#banner")));
+await page.waitForFunction(() => /WORKER UP/.test(document.querySelector("#worker-chip").textContent), null, { timeout: 8000 }).catch(() => {});
+check("the worker is reported separately from the server", /SERVER UP/.test(await page.textContent("#conn")) && /WORKER UP/.test(await page.textContent("#worker-chip")));
 const nav = await page.evaluate(() => { const n = performance.getEntriesByType("navigation")[0]; return { dcl: n.domContentLoadedEventEnd, load: n.loadEventEnd, transfer: n.transferSize }; });
 results.perf.navigation = nav;
 
@@ -150,8 +152,8 @@ for (let i = 0; i < 120; i++) {
   await page.waitForTimeout(250);
 }
 results.perf.recheck_job_wall_ms = Date.now() - t0;
-check("recheck job finished through the UI", job && job.status === "done", job && JSON.stringify(job.result && job.result.summary));
-await page.waitForFunction(() => /done|job_finished/.test(document.querySelector("#toasts").textContent), null, { timeout: 8000 }).catch(() => {});
+check("recheck job finished through the UI", job && job.status === "succeeded", job && JSON.stringify(job.result && job.result.summary));
+await page.waitForFunction(() => /succeeded|failed|job_finished/.test(document.querySelector("#toasts").textContent), null, { timeout: 8000 }).catch(() => {});
 check("a toast reports the job result", /M0-skeleton|j\d/.test(await page.textContent("#toasts")));
 const evs = await (await fetch(URL + "api/events")).json();
 check("job transitions are in the audit log", ["job_queued", "job_started", "job_finished"].every((k) => evs.some((e) => e.kind === k)));
@@ -165,13 +167,37 @@ await fetch(URL + "api/jobs", { method: "POST", headers: { "Content-Type": "appl
 await page.waitForSelector(".floor-label.active", { timeout: 8000 }).catch(() => {});
 const busyDesk = await page.locator(".floor-label.active:not(.sup)").first().getAttribute("data-desk").catch(() => null);
 const supBusy = await page.evaluate(() => window.__lql._floor.stats().supervisor_active);
+const coreText = await page.textContent("#floor-core");
+check("the research core shows the running job with measured progress", /RUNNING/.test(coreText) && /\d+\/\d+ commands/.test(coreText), coreText.replace(/\s+/g, " ").slice(0, 90));
 check("only the assigned desk works while a real job runs", (await page.locator(".floor-label.active[data-desk]").count()) === 2 && busyDesk && supBusy && /dispatching/.test(await page.textContent("#floor-foot")), `desk ${busyDesk} + supervisor`);
 const activeRole = await page.locator(".role.active").count();
 check("the owning role card lights up during the job", activeRole === 1, `${activeRole} active`);
 results.perf.fps_overview_job_running_swiftshader = Math.round(await fps());
-for (let i = 0; i < 80; i++) { const j = (await (await fetch(URL + "api/jobs")).json())[0]; if (j.status === "done" || j.status === "failed") break; await page.waitForTimeout(250); }
+for (let i = 0; i < 80; i++) { const j = (await (await fetch(URL + "api/jobs")).json())[0]; if (j.status === "succeeded" || j.status === "failed") break; await page.waitForTimeout(250); }
 await page.waitForTimeout(3000);
 check("the floor returns to idle when no job runs", (await page.locator(".floor-label.active").count()) === 0 && /no job running/.test(await page.textContent("#floor-foot")));
+
+// 5b. a Monte Carlo run through the research form: persisted artifact, rendered, still there after a page refresh
+await page.keyboard.press("4");
+await page.waitForSelector("#mc-form", { timeout: 10000 }).catch(() => {});
+await page.fill("#mc-paths", "500");
+await page.click('[data-k="mc-go"]');
+let mcJob = null;
+for (let i = 0; i < 160; i++) {
+  mcJob = (await (await fetch(URL + "api/jobs")).json()).find((j) => j.kind === "montecarlo");
+  if (mcJob && (mcJob.status === "succeeded" || mcJob.status === "failed")) break;
+  await page.waitForTimeout(250);
+}
+check("a Monte Carlo job runs in the worker and persists its artifact", mcJob && mcJob.status === "succeeded" && mcJob.artifacts[0].kind === "montecarlo", mcJob && mcJob.result && mcJob.result.summary);
+await page.waitForFunction(() => document.querySelector("#mc-fan path"), null, { timeout: 10000 }).catch(() => {});
+check("the Monte Carlo fan and distribution are drawn from the artifact", (await page.locator("#mc-fan path").count()) > 2 && (await page.locator("#mc-hist rect").count()) > 5);
+await page.reload();
+await page.waitForSelector("#v-overview .role, #v-research .panel", { timeout: 15000 }).catch(() => {});
+await page.keyboard.press("4");
+await page.waitForSelector("#mc-fan path", { timeout: 15000 }).catch(() => {});
+const rText = (await page.textContent("#v-research")) || "", fanPaths = await page.locator("#mc-fan path").count();
+check("results are still there after a browser refresh", fanPaths > 2 && /500 paths/.test(rText), `${fanPaths} fan paths; runs listed: ${(rText.match(/\d+ paths · block \d+/g) || []).join(", ")}; view ${await page.evaluate(() => window.__lql.view)}`);
+await page.keyboard.press("1");
 
 // 6. command palette
 await page.keyboard.press("Control+k");
@@ -216,6 +242,9 @@ await page.screenshot({ path: join(OUT, "disconnected-1440.jpg"), type: "jpeg", 
 await startServer();
 await page.waitForFunction(() => /SERVER UP/.test(document.querySelector("#conn").textContent), null, { timeout: 10000 }).catch(() => {});
 check("reconnects automatically", /SERVER UP/.test(await page.textContent("#conn")) && !(await page.evaluate(() => document.body.classList.contains("offline"))));
+const afterRestart = await (await fetch(URL + "api/jobs")).json();
+check("job history and artifacts survive a server restart", mcJob && afterRestart.some((j) => j.id === mcJob.id && j.status === "succeeded")
+  && (await fetch(URL + "api/montecarlo/" + mcJob.artifacts[0].id)).ok, `${afterRestart.length} jobs reloaded from state/jobs`);
 
 // 11. repeated navigation: heap growth (Chromium only)
 const heap = async () => page.evaluate(() => (performance.memory ? performance.memory.usedJSHeapSize : null));

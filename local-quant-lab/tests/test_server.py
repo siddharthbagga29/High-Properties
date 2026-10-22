@@ -1,5 +1,6 @@
 import http.client
 import json
+import time
 import threading
 import unittest
 
@@ -50,6 +51,10 @@ class ServerTests(unittest.TestCase):
         st, data, _ = self.req("POST", "/api/backtest", body)
         self.assertEqual(st, 200, data)
         rec = json.loads(data)
+        self.assertTrue(rec["job"].startswith("j"))                          # computed by the worker, not the HTTP thread
+        st, data, _ = self.req("GET", f"/api/jobs/{rec['job']}")
+        job = json.loads(data)
+        self.assertEqual((job["status"], job["artifacts"][0]["id"]), ("succeeded", rec["id"]))
         st, data, _ = self.req("POST", "/api/backtest", body)
         again = json.loads(data)
         self.assertTrue(again["cached"])
@@ -62,6 +67,33 @@ class ServerTests(unittest.TestCase):
         st, data, _ = self.req("GET", f"/api/dashboard?experiment={rec['id']}")
         d = json.loads(data)
         self.assertEqual(d["experiment"]["report"]["net"], rec["report"]["net"])  # dashboard shows backend numbers
+
+    def test_health_and_monte_carlo_via_api(self):
+        st, data, _ = self.req("GET", "/api/health")
+        h = json.loads(data)
+        for k in ("http", "api", "worker", "queue", "research_engine", "data_sources", "model_provider"):
+            self.assertIn(k, h)
+        self.assertIn(h["worker"]["state"], ("up", "busy"))
+        self.assertEqual(h["data_sources"]["external"]["massive api key"], "not configured")
+        body = {"instrument": "DEMO-ETF-A", "strategy": "sma_trend", "params": {"fast": 25, "slow": 110}}
+        rec = json.loads(self.req("POST", "/api/backtest", body)[1])
+        st, data, _ = self.req("POST", "/api/jobs", {"kind": "montecarlo", "params": {"experiment": rec["id"], "paths": 200}})
+        self.assertEqual(st, 200, data)
+        jid = json.loads(data)["id"]
+        for _ in range(200):
+            job = json.loads(self.req("GET", f"/api/jobs/{jid}")[1])
+            if job["status"] in ("succeeded", "failed"):
+                break
+            time.sleep(0.05)
+        self.assertEqual(job["status"], "succeeded", job)
+        mid = job["artifacts"][0]["id"]
+        st, data, _ = self.req("GET", f"/api/montecarlo/{mid}")
+        self.assertEqual(json.loads(data)["paths"], 200)
+        self.assertIn(mid, [r["id"] for r in json.loads(self.req("GET", "/api/montecarlo")[1])])
+        st, _, _ = self.req("POST", "/api/jobs", {"kind": "montecarlo", "params": {"experiment": rec["id"], "paths": 10}})
+        self.assertEqual(st, 400)
+        st, _, _ = self.req("GET", "/api/montecarlo/..%2Fsecrets")
+        self.assertEqual(st, 400)
 
     def test_paper_and_kill_switch_via_api(self):
         st, data, _ = self.req("POST", "/api/paper/step", {"steps": 30})

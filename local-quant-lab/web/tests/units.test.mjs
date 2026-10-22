@@ -9,6 +9,8 @@ import { Limiter, Sound, CUES } from "../js/sound.js";
 import * as B from "../js/scene/brain-geometry.js";
 import * as M from "../js/scene/floor-model.js";
 import * as U from "../js/scene/bust-geometry.js";
+import * as R from "../js/research-model.js";
+import * as C from "../js/scene/core-state.js";
 
 test("format: undefined and non-finite values are N/A, never a number", () => {
   for (const v of [null, undefined, NaN, Infinity, "x"]) {
@@ -246,4 +248,48 @@ test("bust: deterministic hologram around the brain; the face is drawn only as d
   assert.ok(U.BUST_TOP > B.BRAIN_C[1] + 0.9 * B.BRAIN_S);                              // the cranium encloses the brain
   assert.deepEqual([0, -0.1, 1e-9, 0.49, 0.5, 0.89, 0.9, 1].map(U.faceStage), [0, 0, 1, 1, 2, 2, 3, 3]);
   assert.equal(U.faceStage(undefined), 0);
+});
+
+test("research model: rolling windows, histogram, monthly grid and parameter matrix use only the given data", () => {
+  const eq = [100, 110, 99, 120, 120];
+  const r = R.returns(eq);
+  assert.equal(r.length, 4); assert.ok(Math.abs(r[0] - 0.1) < 1e-12); assert.equal(r[3], 0);
+  const v = R.rollingVol(r, 3);
+  assert.deepEqual(v.slice(0, 2), [null, null]);
+  const w = r.slice(0, 3), m = w.reduce((a, b) => a + b) / 3, sd = Math.sqrt(w.reduce((a, b) => a + (b - m) ** 2, 0) / 2);
+  assert.ok(Math.abs(v[2] - sd * Math.sqrt(252)) < 1e-12);
+  assert.equal(R.rollingSharpe([0, 0, 0], 3)[2], null);                         // zero volatility: undefined, not 0
+  const h = R.histogram([0, 1, 2, 3, 4, NaN], 4);
+  assert.equal(h.counts.reduce((a, b) => a + b), 5); assert.equal(h.lo, 0); assert.equal(h.width, 1);
+  assert.deepEqual(R.histogram([], 5).counts, []);
+  const g = R.monthlyGrid({ "2024-01": 0.01, "2024-03": -0.02, "2025-12": 0.03 });
+  assert.deepEqual(g.years, ["2024", "2025"]);
+  assert.deepEqual([g.rows[0][0], g.rows[0][1], g.rows[0][2], g.rows[1][11]], [0.01, null, -0.02, 0.03]);
+  const pm = R.paramMatrix([{ fast: 20, slow: 100, sharpe: 0.1 }, { fast: 50, slow: 100, sharpe: -0.2 }, { fast: 20, slow: 200, sharpe: 0.3 }]);
+  assert.deepEqual(pm.rows, [20, 50]); assert.deepEqual(pm.cols, [100, 200]);
+  assert.deepEqual(pm.values, [[0.1, 0.3], [-0.2, null]]);
+  assert.equal(R.diverging(null, 1), "transparent");
+  assert.ok(R.diverging(0.5, 1).startsWith("rgba(62")); assert.ok(R.diverging(-0.5, 1).startsWith("rgba(255"));
+  assert.deepEqual(R.normalise([50, 100]), [1, 2]);
+});
+
+test("research core: state comes only from persisted jobs and never invents progress", () => {
+  const now = Date.parse("2026-10-22T12:00:00Z");
+  assert.equal(C.coreState([], now).state, "IDLE");
+  assert.equal(C.coreState([], now).line, "NO ACTIVE JOBS");
+  const q = { id: "j3", kind: "backtest", status: "queued", stage: "waiting for the worker" };
+  const s1 = C.coreState([q, { ...q, id: "j2" }], now);
+  assert.equal(s1.state, "QUEUED"); assert.equal(s1.queued, 2); assert.equal(s1.job.id, "j2");   // oldest runs next
+  const run = { id: "j4", kind: "montecarlo", status: "running", stage: "simulating paths", progress: { done: 300, total: 1000, unit: "paths" } };
+  assert.ok(C.coreState([run, q], now).line.includes("300/1000 paths"));
+  assert.equal(C.progressText({ id: "x", status: "running" }), "PROGRESS NOT MEASURED");
+  assert.equal(C.progressText({ progress: { done: 0, total: 0, unit: "x" } }), "PROGRESS NOT MEASURED");
+  const ok = { id: "j5", kind: "backtest", status: "succeeded", finished_at: "2026-10-22T11:59:55Z", artifacts: [{ kind: "experiment", id: "abc" }] };
+  const s2 = C.coreState([ok], now);
+  assert.equal(s2.state, "SUCCEEDED"); assert.equal(s2.artifact.id, "abc");
+  assert.equal(C.coreState([ok], now + C.RECENT_MS + 1).state, "IDLE");          // a success is shown once, then idle
+  const bad = { id: "j6", kind: "backtest", status: "failed", finished_at: "2026-10-22T11:59:58Z", error: "boom" };
+  assert.equal(C.coreState([bad, ok], now).state, "FAILED");
+  assert.equal(C.coreState([{ ...bad, finished_at: null }], now).state, "IDLE");
+  assert.equal(M.deskForJob({ kind: "montecarlo" }), "research");
 });

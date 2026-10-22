@@ -2,8 +2,9 @@
 
 - SyntheticProvider: deterministic seeded random walk on business days. Always labelled DEMO_SYNTHETIC.
 - SnapshotProvider: reads a local CSV snapshot and its manifest (source, retrieval time, SHA-256).
-- StooqProvider: optional free end-of-day CSV download (no key). Research-only, not a live or contractual feed.
-  Downloads are written as snapshots so every run is reproducible offline.
+- StooqProvider: optional end-of-day CSV download (key from STOOQ_API_KEY). Research-only, not a live feed.
+- MassiveProvider: optional end-of-day aggregates from Massive (formerly Polygon.io), key from MASSIVE_API_KEY.
+  Research-only, end-of-day, not live. Downloads are written as snapshots so every run is reproducible offline.
 """
 import csv
 import hashlib
@@ -12,6 +13,7 @@ import json
 import math
 import random
 import os
+import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import replace
@@ -74,7 +76,7 @@ def _sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def write_snapshot(instrument, bars, info, directory=SNAPSHOT_DIR):
+def write_snapshot(instrument, bars, info, directory=SNAPSHOT_DIR, extra=None):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{instrument}.csv"
@@ -89,6 +91,7 @@ def write_snapshot(instrument, bars, info, directory=SNAPSHOT_DIR):
                 "first": bars[0].event_date.isoformat() if bars else None,
                 "last": bars[-1].event_date.isoformat() if bars else None,
                 "adjusted": info.adjusted, "adjustment_evidence": info.adjustment_evidence, "terms": info.terms}
+    manifest.update({k: v for k, v in (extra or {}).items() if k not in manifest})
     (directory / f"{instrument}.manifest.json").write_text(json.dumps(manifest, indent=2))
     return path, manifest
 
@@ -193,3 +196,108 @@ class StooqProvider:
                           retrieved_at=retrieved, adjusted="unknown",
                           terms="Personal research use only; Stooq terms not verified in the audit; do not redistribute")
         return bars, info
+
+
+class MassiveProvider:
+    """Optional end-of-day daily bars from Massive (formerly Polygon.io): GET /v2/aggs/ticker/{T}/range/1/day/{from}/{to}.
+
+    What is and is not verified (see docs/audit/data-source-review.md). The Basic (free) plan is reported as all US
+    tickers, 2 years of history, end-of-day data and 5 API calls per minute. The official pages could not be fetched from
+    the build environment, so the founder must confirm the plan, terms and response shape before relying on it.
+    `adjusted=true` is understood to mean SPLIT-adjusted only (no dividends): imports are recorded as
+    `split_adjusted_only`, which keeps every dataset PROVISIONAL until scripts/check_adjustment.py verifies a
+    split-and-dividend-adjusted series against an independent reference.
+
+    Safety: the key is read from MASSIVE_API_KEY, sent in an Authorization header (never in the URL), and never stored,
+    logged, written to a manifest or put in an error. Calls are spaced to stay under 5 per minute; HTTP 429 or a quota
+    message stops the import with no retry. Current-day bars are never requested (end-of-day only, previous sessions)."""
+    name = "massive"
+    BASE = "https://api.massive.com"
+    KEY_ENV = "MASSIVE_API_KEY"
+    MIN_INTERVAL_S = 12.5          # 5 calls/minute with margin
+    MAX_PAGES = 4
+
+    def __init__(self, timeout=30, opener=None, api_key=None, sleep=None, clock=None):
+        import time as _t
+        self.timeout, self.opener = timeout, opener or urllib.request.urlopen
+        self.api_key = api_key if api_key is not None else os.environ.get(self.KEY_ENV, "")
+        self.sleep, self.clock = sleep or _t.sleep, clock or _t.monotonic
+        self._last = None
+        self.calls = 0
+
+    def _get(self, url):
+        if not self.api_key:
+            raise ProviderError(f"no Massive key: set {self.KEY_ENV} in your shell (never in a file in the repository)")
+        if self._last is not None:
+            wait = self.MIN_INTERVAL_S - (self.clock() - self._last)
+            if wait > 0:
+                self.sleep(wait)
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.api_key}",
+                                                   "User-Agent": "LocalQuantLab/0.1 (personal research)"})
+        self._last = self.clock()
+        self.calls += 1
+        try:
+            with self.opener(req, timeout=self.timeout) as resp:
+                raw = resp.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                raise ProviderError("Massive rate limit reached (HTTP 429): stop and wait; the import does not retry")
+            if e.code in (401, 403):
+                raise ProviderError(f"Massive refused the request (HTTP {e.code}): key missing, wrong or not entitled")
+            raise ProviderError(f"Massive request failed: HTTP {e.code}")
+        except Exception as e:     # never echo the request: it carries the key in a header
+            raise ProviderError(f"Massive request failed: {type(e).__name__}")
+        try:
+            return raw, json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            raise ProviderError("Massive returned something that is not JSON; nothing was written")
+
+    def fetch(self, instrument, start, end, symbol=None):
+        """Daily split-adjusted bars for [start, end] (ISO dates; end must be before today). Returns (bars, info, raw
+        pages as bytes, request description)."""
+        from datetime import datetime, timezone
+        from zoneinfo import ZoneInfo
+        sym = (symbol or instrument).upper()
+        if date.fromisoformat(end) >= date.today():
+            raise ProviderError("end must be a past session: end-of-day data only, never the current day")
+        path = f"/v2/aggs/ticker/{urllib.parse.quote(sym)}/range/1/day/{start}/{end}"
+        url = f"{self.BASE}{path}?adjusted=true&sort=asc&limit=50000"
+        ny = ZoneInfo("America/New_York")
+        pages, results = [], []
+        for _ in range(self.MAX_PAGES):
+            raw, body = self._get(url)
+            pages.append(raw)
+            status = str(body.get("status", ""))
+            if status not in ("OK", "DELAYED"):
+                raise ProviderError(f"Massive returned status {status or 'missing'} for {sym}: "
+                                    f"{str(body.get('error') or body.get('message') or '')[:160]}")
+            if body.get("adjusted") is not True:
+                raise ProviderError(f"Massive did not confirm adjusted=true for {sym}; refusing to label the series")
+            results.extend(body.get("results") or [])
+            nxt = body.get("next_url")
+            if not nxt:
+                break
+            if not str(nxt).startswith(self.BASE + "/"):
+                raise ProviderError("Massive pagination pointed to another host; stopped")
+            url = nxt
+        else:
+            raise ProviderError(f"more than {self.MAX_PAGES} pages for {sym}; narrow the date range")
+        if not results:
+            raise ProviderError(f"Massive returned no bars for {sym} {start}..{end}")
+        bars, retrieved = [], now_iso()
+        for r in results:
+            try:
+                d = datetime.fromtimestamp(int(r["t"]) / 1000, tz=timezone.utc).astimezone(ny).date()
+                bars.append(Bar(instrument, d, float(r["o"]), float(r["h"]), float(r["l"]), float(r["c"]),
+                                float(r.get("v") or 0), "USD", "massive", retrieved))
+            except (KeyError, TypeError, ValueError) as e:
+                raise ProviderError(f"unparseable Massive bar for {sym}: {e}")
+        info = SourceInfo(provider="massive", kind="HISTORICAL_DOWNLOADED",
+                          description=f"Massive daily aggregates for {sym} {start}..{end}; end-of-day, research-only, not live",
+                          retrieved_at=retrieved, adjusted="split_adjusted_only",
+                          terms="Massive Basic plan: individual/personal research use as reported; terms not verified "
+                                "from the build environment; do not redistribute")
+        request = {"endpoint": path, "query": "adjusted=true&sort=asc&limit=50000", "pages": len(pages),
+                   "timestamp_convention": "bar t = start of the session window in Unix ms; converted to the "
+                                           "America/New_York calendar date", "symbol": sym}
+        return bars, info, pages, request

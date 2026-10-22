@@ -1,6 +1,8 @@
 """Performance metrics. Conventions: daily simple returns, 252 trading days per year, risk-free rate 0, Sharpe =
-mean/std * sqrt(252) with sample std, Sortino uses the root-mean-square of negative daily returns as downside deviation.
-Returns None (shown as N/A) where a metric is undefined, never a made-up number."""
+mean/std * sqrt(252) with sample std, Sortino uses the root-mean-square of negative daily returns (over all days) as
+downside deviation, CAGR compounds over len(returns)/252 years, Calmar = CAGR / |max drawdown|. Relative metrics use
+daily active returns (strategy minus benchmark on the same dates): information ratio = mean/std * sqrt(252), tracking
+error = std * sqrt(252). Returns None (shown as N/A) where a metric is undefined, never a made-up number."""
 import math
 import statistics
 
@@ -43,12 +45,15 @@ def summarize(dates, equity, fills=None, exposure=None, costs=0.0):
         "sharpe": mean / sd * math.sqrt(DAYS) if sd > 0 else None,
         "sortino": mean / downside * math.sqrt(DAYS) if downside > 0 else None,
         "max_drawdown": min(dd),
+        "calmar": None,
         "worst_day": sorted_r[0] if sorted_r else None,
         "best_day": sorted_r[-1] if sorted_r else None,
         "var_95_daily": var5,
         "cvar_95_daily": statistics.fmean(tail) if tail else None,
         "costs": costs,
     }
+    if out["cagr"] is not None and out["max_drawdown"] < 0:
+        out["calmar"] = out["cagr"] / abs(out["max_drawdown"])
     if exposure is not None:
         out["avg_exposure"] = statistics.fmean(exposure) if exposure else 0.0
         out["time_in_market"] = sum(1 for x in exposure if x > 1e-9) / len(exposure)
@@ -107,3 +112,18 @@ def monthly_returns(dates, equity):
         prev = e
     out[cur] = prev / start_eq - 1
     return out
+
+
+def relative(equity, bench_equity):
+    """Strategy versus benchmark on the same dates. None where undefined (different lengths, flat active returns)."""
+    if len(equity) != len(bench_equity) or len(equity) < 3:
+        return {"excess_total_return": None, "information_ratio": None, "tracking_error": None, "note": "not comparable"}
+    a, b = daily_returns(equity), daily_returns(bench_equity)
+    if len(a) != len(b):
+        return {"excess_total_return": None, "information_ratio": None, "tracking_error": None, "note": "not comparable"}
+    active = [x - y for x, y in zip(a, b)]
+    sd = statistics.stdev(active) if len(active) > 1 else 0.0
+    return {"excess_total_return": (equity[-1] / equity[0]) - (bench_equity[-1] / bench_equity[0]),
+            "information_ratio": statistics.fmean(active) / sd * math.sqrt(DAYS) if sd > 0 else None,
+            "tracking_error": sd * math.sqrt(DAYS) if len(active) > 1 else None,
+            "note": "daily active returns versus buy-and-hold of the same instrument, same costs and caps"}

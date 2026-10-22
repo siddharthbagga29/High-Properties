@@ -143,10 +143,20 @@ async function reload(view) {
     if (!app.cache[view]) el.innerHTML = `<div class="panel"><b>Could not load ${esc(v.title)}</b><p class="muted">${esc(e.message)}. The server may be stopped: start it with <code>make run</code>.</p></div>`;
   }
 }
+// A re-render (new events, a finished job) must not wipe what the user is typing: form controls the user changed are
+// carried over by their data-k key.
+const edited = (f) => (f.type === "checkbox" ? f.checked !== f.defaultChecked
+  : f.tagName === "SELECT" ? [...f.options].some((o) => o.selected !== o.defaultSelected) : f.value !== f.defaultValue);
 function render(view) {
   const el = $("v-" + view);
   const focusKey = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.k : null;
+  const kept = [...el.querySelectorAll("input[data-k], select[data-k], textarea[data-k]")].filter(edited)
+    .map((f) => [f.dataset.k, f.type === "checkbox" ? f.checked : f.value]);
   VIEWS[view].render(app, el, app.cache[view]);
+  for (const [k, v] of kept) {
+    const f = el.querySelector(`[data-k="${CSS.escape(k)}"]`);
+    if (f) { if (f.type === "checkbox") f.checked = v; else f.value = v; }
+  }
   if (focusKey) { const f = el.querySelector(`[data-k="${CSS.escape(focusKey)}"]`); if (f) f.focus({ preventScroll: true }); }
 }
 app.rerender = () => app.view && app.cache[app.view] && render(app.view);
@@ -186,6 +196,8 @@ onConn((c) => {
   document.body.classList.toggle("offline", !c.up);
   if (!c.up) {
     $("posture").insertAdjacentHTML("afterbegin", `<span class="chip stale">STALE: LAST KNOWN VALUES</span>`);
+    $("worker-chip").textContent = "WORKER UNKNOWN"; $("worker-chip").className = "chip bad";
+    $("worker-chip").title = "The server is unreachable, so the worker state is unknown";
     $("banner").className = "banner down";
     $("banner").textContent = `Server unreachable (${c.lastError}). Numbers on screen are the last values received; nothing is being updated. Start it with: make run`;
     measure();
@@ -207,6 +219,11 @@ async function pulse(force = false) {
     const active = p.jobs.filter((j) => j.status === "queued" || j.status === "running");
     $("jobs-chip").textContent = `${active.length} JOB${active.length === 1 ? "" : "S"}`;
     $("jobs-chip").className = "chip " + (active.some((j) => j.status === "running") ? "active" : "");
+    const w = (p.health && p.health.worker) || { state: "unknown" };
+    app.health = p.health || null;
+    $("worker-chip").textContent = `WORKER ${String(w.state).toUpperCase()}`;
+    $("worker-chip").className = "chip " + (w.state === "up" ? "ok" : w.state === "busy" ? "active" : "bad");
+    $("worker-chip").title = w.state === "down" ? "The job worker is not running: queued jobs wait and nothing computes" : `Job worker ${w.state}; heartbeat ${w.heartbeat_age_s ?? "–"}s ago`;
     const fresh = app.eventsTotal ? p.events : [];
     const first = !app.eventsTotal;
     app.eventsTotal = p.events_total;

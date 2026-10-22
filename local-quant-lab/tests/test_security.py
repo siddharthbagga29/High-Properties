@@ -72,7 +72,7 @@ class SecurityAudit(unittest.TestCase):
                                   "/api/status", "/api/dashboard", "/api/experiments", "/api/events", "/api/tasks",
                                   "/api/paper", "/api/overview", "/api/graph", "/api/data", "/api/data/series",
                                   "/api/research", "/api/forward", "/api/system", "/api/jobs", "/api/pulse",
-                                  "/api/jobs/cancel"})
+                                  "/api/jobs/cancel", "/api/health", "/api/montecarlo"})
         for js in (ROOT / "web").rglob("*.js"):
             src = js.read_text()
             self.assertNotIn("/api/order", src, js)

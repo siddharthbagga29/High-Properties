@@ -16,6 +16,7 @@ from urllib.parse import urlparse, parse_qs
 
 from . import ROOT
 from . import console
+from .research import montecarlo
 from .jobs import JobRunner, JobError
 from .lab import Lab, LabError
 
@@ -120,11 +121,20 @@ def make_handler(lab, jobs):
                     return self._send(200, console.system(lab, jobs))
                 if u.path == "/api/jobs":
                     return self._send(200, jobs.list())
+                if u.path.startswith("/api/jobs/"):
+                    return self._send(200, jobs.get(u.path.rsplit("/", 1)[1]))
+                if u.path == "/api/health":
+                    return self._send(200, console.health(lab, jobs))
+                if u.path == "/api/montecarlo":
+                    return self._send(200, montecarlo.list_runs(lab))
+                if u.path.startswith("/api/montecarlo/"):
+                    return self._send(200, montecarlo.get_run(lab, u.path.rsplit("/", 1)[1]))
                 if u.path == "/api/pulse":
                     since = int(q.get("since", ["0"])[0] or 0)
                     evts = lab.events.read()
                     return self._send(200, {"events_total": len(evts), "events": evts[since:][-100:] if since else [],
-                                            "jobs": jobs.list()[:12], "status": lab.status()})
+                                            "jobs": jobs.list()[:12], "status": lab.status(),
+                                            "health": console.health(lab, jobs, light=True)})
                 return self._err(404, "not found")
             except (LabError, JobError, ValueError, console.ProviderError) as e:
                 return self._err(400, str(e))
@@ -146,13 +156,21 @@ def make_handler(lab, jobs):
                 return self._err(400, f"bad JSON: {e}")
             path = urlparse(self.path).path
             try:
-                if path == "/api/backtest":
+                if path == "/api/backtest":   # kept for scripts: runs through the worker like every UI backtest
                     params = body.get("params") or {}
                     if not isinstance(params, dict) or not all(isinstance(v, int) for v in params.values()):
                         raise LabError("params must be an object of integers")
-                    return self._send(200, lab.experiment(str(body.get("instrument", "DEMO-ETF-A")),
-                                                          str(body.get("strategy", "sma_trend")), params,
-                                                          str(body.get("source", "synthetic"))))
+                    job = jobs.submit("backtest", None, {"instrument": str(body.get("instrument", "DEMO-ETF-A")),
+                                                         "strategy": str(body.get("strategy", "sma_trend")),
+                                                         "source": str(body.get("source", "synthetic")), "params": params})
+                    job = jobs.wait(job["id"], timeout=120)
+                    if job["status"] == "succeeded":
+                        rec = lab.get_experiment(job["result"]["experiment"])
+                        rec["cached"], rec["job"] = job["result"]["cached"], job["id"]
+                        return self._send(200, rec)
+                    if job["status"] == "failed":
+                        raise LabError(job["error"] or "backtest failed")
+                    return self._send(202, {"job": job})
                 if path == "/api/paper/step":
                     steps = int(body.get("steps", 20))
                     if not 1 <= steps <= 1300:

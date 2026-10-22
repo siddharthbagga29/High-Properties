@@ -8,10 +8,11 @@ import fnmatch
 import subprocess
 import sys
 
-FORBIDDEN = ["*/data/snapshots/*.csv", "data/snapshots/*.csv", "*.manifest.json", "*/data/snapshots/archive/*",
+FORBIDDEN = ["*/data/snapshots/*.csv", "data/snapshots/*.csv", "*.manifest.json", "*/data/snapshots/archive/*", "*/data/snapshots/raw/*", "data/snapshots/raw/*", "*/data/context/*", "data/context/*",
              "data/snapshots/archive/*", "*/state/forward/*", "state/forward/*", "*hermes_check.json", "*.db",
              "*.db-journal", "*.zip", "*events.jsonl", "*/state/experiments/*", "state/experiments/*",
-             "*/state/research/results/*", "state/research/results/*", "*.env", "*/.env", ".env", ".env.*",
+             "*/state/research/results/*", "state/research/results/*", "*/state/jobs/*", "state/jobs/*",
+             "*/state/montecarlo/*", "state/montecarlo/*", "*.env", "*/.env", ".env", ".env.*",
              "*MEMORY.md", "*USER.md", "*/.hermes/*", "*/exports/*", "exports/*"]
 ALLOWED = ["*.env.example", ".env.example", "*/.env.example"]
 

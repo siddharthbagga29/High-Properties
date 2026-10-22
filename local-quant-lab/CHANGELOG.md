@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased (CTO recovery: durable jobs, data states, Monte Carlo, research core, 2026-10-22)
+- **Durable jobs (D-018).**
+  - Every job persists in `state/jobs/` with explicit states (queued, running, succeeded, failed, cancelled), request hash, measured progress, dataset hashes and artifact links.
+  - On restart a running job is marked failed (interrupted) and a never-started one is re-queued.
+  - `/api/backtest` now runs through the worker. New routes: `/api/jobs/<id>`, `/api/health`, `/api/montecarlo[/<id>]`.
+- **Separate health states.** Web server, API, worker heartbeat, queue, research engine, data sources, model providers and last runs are each reported. A WORKER chip sits next to SERVER; System has a health table.
+- **Data states (D-019).** SYNTHETIC, IMPORTED_UNVERIFIED, PROVISIONAL, VERIFIED_HISTORICAL, LIVE_FEED (unsupported) and REJECTED, with a backend eligibility table. No state allows real orders. `tradable` became `passes_validation`.
+- **Data adapters.**
+  - `MassiveProvider` + `scripts/import_massive.py`: end-of-day, key in a header, 5 calls/min, raw pages hashed, PROVISIONAL.
+  - FRED, BEA and SEC context clients with point-in-time helpers (`lql/data/context.py`).
+  - All fixture-tested. Live use needs the founder's keys.
+- **Metrics.** Calmar; benchmark-relative excess return, information ratio and tracking error; hand-checked arithmetic tests.
+- **Monte Carlo.** Seeded circular block bootstrap of an experiment's net daily returns as a background job, with a cached artifact. It reports percentiles, drawdown probabilities, a fan and an ending distribution.
+- **Research charts from persisted artifacts.** Monthly heatmap, return distribution, rolling volatility and Sharpe, exposure, cost and parameter sensitivity, walk-forward folds (in-sample vs out-of-sample) with out-of-sample equity, Monte Carlo fan and distribution.
+- **Research core (D-021).** A black hole on the floor whose states come only from persisted jobs. The HUD shows its state with measured progress, NEEDS HUMAN blockers and operational counters.
+- **NautilusTrader POC (D-020).** Exact parity with an independent reference given open trades. Decision: DEFER. OpenAlgo and LEAN deferred.
+- **Fixes.**
+  - Line charts starting with gaps drew nothing.
+  - A re-render reset typed form values, so a 500-path request ran as 1000.
+- **Docs.** `docs/audit/` (current-system audit, compatibility matrix, data-source review) and `docs/engineering/` (DAG, acceptance matrix with readiness score 58 → 80/100, runbook).
+- **Tests.** 190 Python, 17 node, 54/54 browser checks.
+
 ## Unreleased (the trading floor, 2026-10-22)
 - **Overview centre rebuilt as a 3D trading floor** in the Perspective Engine city style (D-017).
   - The supervisor is a holographic bust on the central podium with the brain inside its head. Its chest core dispatches the real job queue to nine trading desks: engineer, reviewer, critic, research and data on the left; risk, paper, Hermes and the founder's human seat on the right.

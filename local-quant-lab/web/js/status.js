@@ -13,7 +13,7 @@ export const TASK = {
 export const JOB = {
   queued: { label: "queued", tone: "info", glyph: "◇" },
   running: { label: "running", tone: "active", glyph: "◉" },
-  done: { label: "done", tone: "ok", glyph: "✓" },
+  succeeded: { label: "succeeded", tone: "ok", glyph: "✓" },
   failed: { label: "failed", tone: "bad", glyph: "✕" },
   cancelled: { label: "cancelled", tone: "muted", glyph: "⊘" },
 };

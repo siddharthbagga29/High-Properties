@@ -1,6 +1,6 @@
 # Build State — Local Quant Lab (checkpoint)
 
-**Checkpoint:** 2026-10-22 (Overview trading floor: hologram supervisor, brain of up to 2M neurons, nine desks; D-017). Previous: 2026-10-21 (Perspective Engine console redesign). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
+**Checkpoint:** 2026-10-22, session 5: durable jobs, health states, data states, Monte Carlo, research core, NautilusTrader POC (D-018 to D-021). Readiness 80/100; highest gate B. See `docs/engineering/acceptance-matrix.md`. Earlier on 2026-10-22: Overview trading floor (D-017). Branch `claude/nice-fermat-510prv`, directory `local-quant-lab/`. Version 0.1.0, engine 1.0.0.
 
 **Milestone:** M0 to M10 are `done_verified` by the supervisor, using real test runs (`state/current_state.json`). M8 to M10 (portfolio backtester and second strategy, walk-forward research, paper forward log) were added in engineering session 2. H1 (Hermes on the Mac) is `needs_human`. Real-market-data validation and the real forward paper run are founder steps: `docs/MAC_NEXT_STEPS.md`.
 

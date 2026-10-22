@@ -33,5 +33,5 @@
 ## Remaining blockers and limits
 - Mac-side measurements, Safari, and behaviour with a real Hermes/Ollama endpoint: needs the founder's machine.
 - The HP Envy host is not hardware-verified or connected; the console only probes localhost.
-- Jobs are in memory: a server restart forgets the queue (audit events remain).
+- Jobs were in memory until 2026-10-22; they are now persisted and recovered (D-018, `docs/engineering/acceptance-matrix.md`).
 - No automated accessibility audit tool was available; review was manual plus scripted keyboard checks.

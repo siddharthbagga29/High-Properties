@@ -2,6 +2,24 @@
 // policy ("what moves and why").
 import { esc, money, pct, duration } from "../format.js";
 
+const tone = (st) => (/^(up|available|ok|busy)/.test(st) ? "ok" : /^(down|failed|full|disabled|degraded)/.test(st) ? "bad" : "warn");
+function health(h) {
+  if (!h) return `<p class="empty">No health report.</p>`;
+  const rows = [
+    ["web server", h.http.state, h.http.detail], ["API", h.api.state, h.api.detail],
+    ["job worker", h.worker.state, `thread ${h.worker.thread_alive ? "alive" : "not running"} · heartbeat ${h.worker.heartbeat_age_s ?? "–"}s ago${h.worker.running_job ? ` · running ${h.worker.running_job}` : ""}`],
+    ["queue", h.queue.state, `${h.queue.depth}/${h.queue.max} waiting · persisted in ${h.queue.persisted_in}`],
+    ["research engine", h.research_engine.state, `engine ${h.research_engine.engine_version} · monte carlo ${h.research_engine.montecarlo_method} · walk-forward ${h.research_engine.walk_forward}`],
+    ["data: synthetic", h.data_sources.synthetic.state, h.data_sources.synthetic.class],
+    ["data: snapshots", h.data_sources.snapshots.state, "all datasets by state: " + (Object.entries(h.data_sources.snapshots.states || {}).map(([k, v]) => `${k} ${v}`).join(" · ") || "none")],
+    ...Object.entries(h.data_sources.external).map(([k, v]) => [k, v.startsWith("key") ? "configured" : "not configured", v]),
+    ["model: hermes", h.model_provider.hermes, "optional advisory layer"], ["model: ollama", h.model_provider.ollama, "optional local model"],
+    ["last successful job", h.last_successful_job ? "ok" : "none yet", h.last_successful_job ? `${h.last_successful_job.id} ${h.last_successful_job.label} · ${h.last_successful_job.finished_at}` : "no job has succeeded on this state directory"],
+    ["last research run", h.last_research_run ? "ok" : "none yet", h.last_research_run ? `${h.last_research_run.strategy} ${h.last_research_run.instrument} (${h.last_research_run.source}) · ${h.last_research_run.verdict} · ${h.last_research_run.at}` : "no experiment recorded"],
+  ];
+  return `<table><tbody>${rows.map(([n, st, det]) => `<tr><td><b>${esc(n)}</b></td><td><span class="tag ${tone(String(st))}">${esc(String(st))}</span></td><td>${esc(det || "")}</td></tr>`).join("")}</tbody></table>`;
+}
+
 export default {
   title: "System",
   load: (app) => app.api("/api/system"),
@@ -12,6 +30,8 @@ export default {
     <div class="view-head"><h1>System</h1><p>Local services and safety settings. Credentials are never shown, only whether they are configured.</p></div>
     <div class="grid">
       <div class="two">
+        <section class="panel"><header><h2>Health</h2><span class="src">/api/health · separate states: the server answering says nothing about the worker, data or models</span></header>
+          ${health(s.health)}</section>
         <section class="panel"><header><h2>Services</h2><span class="src">probed by the server</span></header>
           <table><tbody>${s.services.map((x) => `<tr><td><b>${esc(x.name)}</b></td><td><span class="tag ${/^(up|available|reachable)/.test(x.status) ? "ok" : x.status === "none" ? "muted" : "warn"}">${esc(x.status)}</span></td><td>${esc(x.detail)}</td></tr>`).join("")}</tbody></table>
           <p class="muted" style="font-size:var(--fs-xs)">Hermes and Ollama are optional. The intended HP host for local models is not configured from here; nothing listens beyond 127.0.0.1.</p></section>
@@ -50,7 +70,10 @@ export default {
           <tr><td>Workspace fade-in, camera flights on the floor</td><td>navigation, a click on a desk or the brain</td><td>your input</td></tr>
           <tr><td>Floor: the supervisor hologram's chest core and body brighten</td><td>any job is queued or running</td><td>/api/jobs</td></tr>
           <tr><td>Floor: the hologram's face gains eyes, then brow and nose, then a mouth</td><td>the brain's EDGE region forms (a proven edge); a blank mask until then</td><td>/api/overview → brain (EDGE region)</td></tr>
-          <tr><td>Ambient, not data: the neurons' slow shimmer and drift, the hologram's scanlines, the wall ticker scrolling</td><td>always while the floor is visible; stopped under reduced motion</td><td>decoration</td></tr>
+          <tr><td>Research core: the accretion disk brightens and turns faster; particles spiral in from a desk</td><td>a job assigned to that desk is running (state RUNNING, with its measured progress or "PROGRESS NOT MEASURED")</td><td>/api/jobs (persisted in state/jobs)</td></tr>
+          <tr><td>Research core: amber markers on the rim</td><td>one per persisted queued job (QUEUED)</td><td>/api/jobs</td></tr>
+          <tr><td>Research core: one green or red ring pulse; the photon ring turns green or red for 12 s</td><td>a real terminal event: SUCCEEDED (with a link to its artifact) or FAILED (with its error)</td><td>/api/jobs</td></tr>
+          <tr><td>Ambient, not data: the neurons' slow shimmer and drift, the hologram's scanlines, the accretion disk's slow idle turn, the wall ticker scrolling</td><td>always while the floor is visible; stopped under reduced motion</td><td>decoration</td></tr>
           <tr><td>Nothing else</td><td>idle bots sit still; the EDGE core stays dark until a proven edge exists</td><td>—</td></tr>
         </tbody></table></section>
     </div>`;

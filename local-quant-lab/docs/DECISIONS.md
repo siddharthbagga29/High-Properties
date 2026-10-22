@@ -64,6 +64,44 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - BROKER_PAPER raises `NotConnected`. No broker SDK is installed.
 - **Reverse if:** the founder explicitly opts in to a paper broker. See the checklist in docs/HERMES_INTEGRATION.md §Future and README §Live trading.
 
+## D-018 · 2026-10-22 · Durable jobs in one local process; separate health states
+- **Decision:** jobs are persisted as `state/jobs/<id>.json`, written atomically on every state or stage change. States are queued, running, succeeded, failed and cancelled. Each job records:
+  - timestamps, request hash and correlation id;
+  - measured progress (stages, commands or paths), or none if nothing can be measured;
+  - datasets with their data state and hash, artifact links, and the error and log tail.
+- **Restart recovery:** on restart, a job found running is marked failed with `interrupted: true` (never successful), and a never-started job is re-queued. That is safe because both kinds are idempotent: a recheck only reads, and a backtest or Monte Carlo is cached by its input hash.
+- **Health:** web server, API, worker (heartbeat), queue, research engine, data sources, model providers, last successful job and last research run are reported separately (`/api/health`, plus a WORKER chip next to SERVER).
+- **Alternatives:**
+  - Redis or another broker: unnecessary for one local user.
+  - SQLite job table: a fine fit too, but per-job JSON files can be inspected and need no migration.
+  - A separate worker process: more robust to server crashes, but two processes to manage on the Mac.
+- **Reverse if:** jobs run for more than a few minutes, or more than one machine works the queue. Then split the worker into its own process reading the same files.
+
+## D-019 · 2026-10-22 · Explicit data states; end-of-day imports stay provisional
+- **Decision:**
+  - **States and eligibility:** data carries one of SYNTHETIC, IMPORTED_UNVERIFIED, PROVISIONAL, VERIFIED_HISTORICAL, LIVE_FEED (unsupported) or REJECTED. An eligibility table names the allowed uses; no state allows real orders.
+  - **Field rename:** the API field `tradable` became `passes_validation`.
+  - **Massive importer:** fetches end-of-day aggregates, records them as `split_adjusted_only`, and therefore keeps them PROVISIONAL until a total-return series is verified independently.
+  - **Context data:** FRED, BEA and SEC adapters are separate context datasets, never price data, with point-in-time helpers (ALFRED vintages; SEC filing dates).
+- **Why:** a label must never upgrade data. The verified-history gate stays the human-run `check_adjustment.py`.
+- **Not verified:** provider terms and response shapes could not be fetched from the build environment. Adapters are tested against fixtures in the documented shapes and must be confirmed on the Mac (`docs/audit/data-source-review.md`).
+
+## D-020 · 2026-10-22 · NautilusTrader: parity proven, adoption deferred; OpenAlgo and LEAN deferred
+- **Decision:** NautilusTrader 1.231.0 (stable; release candidates excluded) was run in an isolated venv against an independent reference. With a trade at each session open, fills and equity matched exactly; with bars alone it fills at the next bar's close (a semantic difference).
+- **Why defer:** the daily engine has no gap that NautilusTrader closes today. The costs would be 936 MB installed, about 500 MB per run on an 8 GB Mac, numpy/pandas/pyarrow, LGPL obligations and a pending 2.x API change.
+- **OpenAlgo** is an execution layer with no proven US equity/ETF broker, under AGPL, with a WebSocket on port 8765. **LEAN** needs Docker and has no concrete gap to close. Both are deferred.
+- **Reverse if:** intraday, order-book or multi-venue simulation is needed, or a paper adapter for a chosen broker. `poc/nautilus/` is the starting parity test.
+
+## D-021 · 2026-10-22 · The research core (black hole) is driven by persisted jobs only
+- **Decision:** an event horizon and accretion disk on the floor's podium shows the job system's state:
+  - IDLE: "NO ACTIVE JOBS", slow labelled ambient turn;
+  - QUEUED: one amber marker per persisted queued job;
+  - RUNNING: the job id, stage and measured progress, or "PROGRESS NOT MEASURED", with particles spiralling in from the assigned desk;
+  - SUCCEEDED: an outward green pulse and a link to the artifact;
+  - FAILED: a red pulse and the error;
+  - NEEDS HUMAN blockers are listed, never animated.
+- **Brain counter kept:** the neurons counter is a defined, persisted quantity (D-017). Operational counters (jobs, artifacts) now sit next to it.
+
 ## D-017 · 2026-10-22 · The Overview becomes a 3D trading floor; three.js is vendored for it alone
 - **Decision:** the Overview's centre is a WebGL scene. The supervisor is a holographic bust on the central podium, after the Perspective Engine city's Jarvis (`perspective-engine/city/src/scene/bust.ts`), with the brain inside its head. Its chest core dispatches the real job queue to bots at nine trading desks (engineer, reviewer, critic, research, data, risk, paper, Hermes, and the founder's empty human seat). Each desk's monitors draw that role's real task, three metrics and last result from `/api/overview` (`desks`). Above the podium, a brain of 150k to 2M neurons is built in a Web Worker. Its neurons light only from recorded, verified work: `formed(region) = 1 - exp(-units / k)` over counts from the task file, experiments, the research registry, the paper ledger, datasets and the audit log (`lql/console.py`, `brain_model`). The EDGE core is 20% of the neurons and stays dark until a CANDIDATE on verified real data or verified real forward sessions exist. The bust's body is an outline (decoration). Its face is data: it stays a blank mask until the EDGE region forms, then gains eyes (first proven edge), brow and nose (EDGE 50%), and a mouth (EDGE 90%). A six-stage "path to Ultron" (`brain_stage`) runs SEED, FORMING, LEARNING, SKILLED, PROVEN EDGE, ULTRON. The first four come from verified work, and the last two only from a proven edge, so synthetic or engineering work can never reach them. three.js r180 (MIT) is vendored under `web/vendor/three/` with pinned SHA-256s, loaded only by the Overview, through dynamic `import()`. When WebGL is missing, the old SVG dial is shown.
 - **Alternatives:** keep the SVG dial (it was rejected by the founder: "not what I want"); load three.js from a CDN (forbidden by the CSP and by local-first use); WebGPU (not yet available in every Safari version the Mac may run); a canvas-2D pseudo-3D brain (cannot draw a million points at interactive rates).

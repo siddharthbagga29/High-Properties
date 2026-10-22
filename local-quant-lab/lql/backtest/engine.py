@@ -15,7 +15,7 @@ import math
 from dataclasses import asdict, replace
 
 from ..risk import RiskEngine, OrderIntent, PortfolioView, size_order
-from .metrics import summarize, drawdown_series, monthly_returns
+from .metrics import summarize, drawdown_series, monthly_returns, relative
 
 ENGINE_VERSION = "1.0.0"
 
@@ -135,6 +135,7 @@ def evaluate(bars, strategy, settings, source_info, seed=None, sensitivity=True)
         "net": summarize(net["dates"], net["equity"], net["fills"], net["exposure"], net["costs"]),
         "gross": summarize(gross["dates"], gross["equity"], gross["fills"], gross["exposure"], 0.0),
         "benchmark": summarize(bench["dates"], bench["equity"], bench["fills"], bench["exposure"], bench["costs"]),
+        "relative": relative(net["equity"], bench["equity"]),
         "splits": {"bounds": {k: [net["dates"][a], net["dates"][z - 1]] for k, (a, z) in bounds.items() if z > a},
                    "net": segment_metrics(net, bounds), "benchmark": segment_metrics(bench, bounds),
                    "note": "fixed parameters; nothing is fitted, so train/validation/test are evaluation windows. "

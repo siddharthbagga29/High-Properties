@@ -2,6 +2,14 @@
 
 Environment: Linux x86_64 cloud container (4 vCPU, no GPU), Python 3.13.16, Node 22.22.0, Playwright 1.56.1 with Chromium 141 (headless, software rendering). **Not** the MacBook Air M3: numbers below are from this container and must be re-measured on the Mac (`make ui-check`).
 
+## Update 2026-10-22, session 5: jobs, health, Monte Carlo, research core
+
+The commands and results are in `docs/engineering/acceptance-matrix.md`: 190 Python, 17 node, 54/54 browser checks, verify 13+1, staging OK. Measured here (container, 4 vCPU):
+- **Monte Carlo:** 1,000 paths × 1,259 days take 0.32 s; 20,000 paths take 7.6 s, run in the worker while the UI keeps polling. Progress is persisted every 100 paths.
+- **Backtest job:** under 0.5 s end to end, with 4 recorded stages.
+- **NautilusTrader POC:** 0.9 s per run, about 500 MB peak RSS, against 0.001 s for the reference.
+- **The research core** adds 16k (low) to 30k particles. Under SwiftShader the frame rate stays at 2–4 fps, which says nothing about a GPU.
+
 ## Update 2026-10-22: the trading floor (same container, Chromium 141 headless with SwiftShader WebGL)
 | Command | Result |
 |---|---|

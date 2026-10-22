@@ -1,0 +1,163 @@
+{
+ "run_at": "2026-10-22",
+ "python": "3.13.16",
+ "os": "Linux x86_64 (build container, 4 vCPU)",
+ "nautilus_trader": "1.231.0 (PyPI wheel, isolated venv; 2.0.0rc7 not used)",
+ "results": [
+  {
+   "variant": "daily bars only",
+   "input": {
+    "instrument": "DEMO-ETF-A (SYNTHETIC)",
+    "bars": 1260,
+    "first": "2019-01-02",
+    "last": "2023-10-31",
+    "prices_rounded_to": 0.01,
+    "strategy": "SMA 10/30, 100 shares, long/flat, no costs"
+   },
+   "reference": {
+    "fills": 41,
+    "final_equity": 98756.0,
+    "max_drawdown": -0.0232,
+    "seconds": 0.001
+   },
+   "nautilus": {
+    "version": "1.231.0",
+    "fills": 41,
+    "final_equity_rebuilt": 99052.0,
+    "account_cash_after_run": 94076.0,
+    "max_drawdown": -0.020721,
+    "seconds": 0.957
+   },
+   "fills_identical": false,
+   "first_difference": [
+    [
+     "2019-02-13",
+     "BUY",
+     100,
+     89.65
+    ],
+    [
+     "2019-02-13",
+     "BUY",
+     100,
+     89.09
+    ]
+   ],
+   "equity_max_abs_diff": 453.0,
+   "first_fills": {
+    "reference": [
+     [
+      "2019-02-13",
+      "BUY",
+      100,
+      89.65
+     ],
+     [
+      "2019-02-28",
+      "SELL",
+      100,
+      85.04
+     ],
+     [
+      "2019-03-22",
+      "BUY",
+      100,
+      89.35
+     ]
+    ],
+    "nautilus": [
+     [
+      "2019-02-13",
+      "BUY",
+      100,
+      89.09
+     ],
+     [
+      "2019-02-28",
+      "SELL",
+      100,
+      84.4
+     ],
+     [
+      "2019-03-22",
+      "BUY",
+      100,
+      89.1
+     ]
+    ]
+   },
+   "peak_rss_mb": 502.7
+  },
+  {
+   "variant": "bars + a trade tick at each open",
+   "input": {
+    "instrument": "DEMO-ETF-A (SYNTHETIC)",
+    "bars": 1260,
+    "first": "2019-01-02",
+    "last": "2023-10-31",
+    "prices_rounded_to": 0.01,
+    "strategy": "SMA 10/30, 100 shares, long/flat, no costs"
+   },
+   "reference": {
+    "fills": 41,
+    "final_equity": 98756.0,
+    "max_drawdown": -0.0232,
+    "seconds": 0.001
+   },
+   "nautilus": {
+    "version": "1.231.0",
+    "fills": 41,
+    "final_equity_rebuilt": 98756.0,
+    "account_cash_after_run": 93780.0,
+    "max_drawdown": -0.0232,
+    "seconds": 0.888
+   },
+   "fills_identical": true,
+   "first_difference": null,
+   "equity_max_abs_diff": 0.0,
+   "first_fills": {
+    "reference": [
+     [
+      "2019-02-13",
+      "BUY",
+      100,
+      89.65
+     ],
+     [
+      "2019-02-28",
+      "SELL",
+      100,
+      85.04
+     ],
+     [
+      "2019-03-22",
+      "BUY",
+      100,
+      89.35
+     ]
+    ],
+    "nautilus": [
+     [
+      "2019-02-13",
+      "BUY",
+      100,
+      89.65
+     ],
+     [
+      "2019-02-28",
+      "SELL",
+      100,
+      85.04
+     ],
+     [
+      "2019-03-22",
+      "BUY",
+      100,
+      89.35
+     ]
+    ]
+   },
+   "peak_rss_mb": 505.8
+  }
+ ]
+}

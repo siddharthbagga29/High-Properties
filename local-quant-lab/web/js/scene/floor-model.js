@@ -30,7 +30,7 @@ export function deskForJob(job, owners = {}) {
     const o = owners[job.target] || "engineer";
     return o === "founder" ? null : o;
   }
-  if (job.kind === "backtest") return "research";
+  if (job.kind === "backtest" || job.kind === "montecarlo") return "research";
   return null;
 }
 

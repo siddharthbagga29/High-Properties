@@ -10,6 +10,7 @@ from . import ROOT, __version__, config
 from .agents.hermes_adapter import HermesAdapter
 from .backtest.engine import evaluate, ENGINE_VERSION, config_hash
 from .data.providers import SyntheticProvider, SnapshotProvider, ProviderError
+from .data.schema import dataset_state
 from .data.quality import validate
 from .events import EventLog, atomic_write_json, now_iso
 from .execution.ledger import Ledger
@@ -70,9 +71,13 @@ class Lab:
         return bars, info, q
 
     # -- research -------------------------------------------------------------------------------------------------
-    def experiment(self, instrument, strategy="sma_trend", params=None, source="synthetic"):
+    def experiment(self, instrument, strategy="sma_trend", params=None, source="synthetic", on_stage=None):
+        """One deterministic experiment. `on_stage(name)` (optional) is told when each real stage begins: loading
+        data, running engine, critic review, writing artifact (lql.jobs.BACKTEST_STAGES)."""
+        stage = on_stage or (lambda name: None)
         s = self._need_settings()
         params = params or {}
+        stage("loading data")
         bars, info, q = self.load(instrument, source)
         if not q.tradable:
             raise LabError(f"data failed validation: {q.counts()}")
@@ -88,12 +93,18 @@ class Lab:
             rec["cached"] = True
             return rec
         t0 = time.time()
+        stage("running engine")
         rep = evaluate(bars, strat, s, info, seed=7 if source == "synthetic" else None)
+        stage("critic review")
         verdict = review(rep, create(strategy, **params), bars)
         rep["alpha_status"] = verdict["alpha_status"]
         rec = {"id": key, "created_at": now_iso(), "instrument": instrument, "source": source,
                "strategy": strategy, "params": strat.meta.params, "elapsed_s": round(time.time() - t0, 3),
-               "quality": q.to_dict(), "report": rep, "critic": verdict}
+               "quality": q.to_dict(), "report": rep, "critic": verdict,
+               "dataset": {"instrument": instrument, "source": source, "sha256": data_sha,
+                           "data_state": dataset_state(info, q), "rows": len(bars),
+                           "first": bars[0].event_date.isoformat(), "last": bars[-1].event_date.isoformat()}}
+        stage("writing artifact")
         atomic_write_json(path, rec)
         with open(self.state / "research_runs.jsonl", "a") as f:
             f.write(json.dumps(self._index_row(rec), sort_keys=True) + "\n")

@@ -18,6 +18,11 @@ class QualityReport:
     def tradable(self):
         return not any(i["code"] in BLOCKING for i in self.issues)
 
+    @property
+    def passes_validation(self):
+        """No blocking issue. This says nothing about trading eligibility: see lql.data.schema.eligible()."""
+        return self.tradable
+
     def counts(self):
         c = {}
         for i in self.issues:
@@ -26,7 +31,9 @@ class QualityReport:
 
     def to_dict(self):
         return {"instrument": self.instrument, "rows": self.rows, "first": self.first, "last": self.last,
-                "tradable": self.tradable, "counts": self.counts(), "issues": self.issues[:50]}
+                "passes_validation": self.tradable,
+                "tradable": self.tradable,   # legacy key: means "passes blocking validation", NOT eligible to trade
+                "counts": self.counts(), "issues": self.issues[:50]}
 
 
 def validate(bars, instrument=None, as_of=None, max_age_days=None, gap_days=5, outlier_ret=0.15):

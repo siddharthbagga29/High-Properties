@@ -17,7 +17,7 @@ lql/server.py (stdlib ThreadingHTTPServer, 127.0.0.1 only, Host + CSRF guards, 6
   POST /api/backtest /paper/step /paper/archive /kill /release                          (unchanged)
         │
         ├── lql/console.py   read models over existing state (no new computation, no writes, credentials as status only)
-        ├── lql/jobs.py      JobRunner: 1 worker thread, queue ≤ 8, in-memory, audit events per transition
+        ├── lql/jobs.py      JobRunner: 1 worker thread, queue ≤ 8, every job persisted in state/jobs/, audit events per transition
         └── lql/lab.py       existing facade (experiments, paper, kill switch, status; Hermes health cached 60 s)
                 │
                 ▼  state/: current_state.json (task graph), events.jsonl, experiments/, paper.db,
@@ -26,7 +26,7 @@ lql/server.py (stdlib ThreadingHTTPServer, 127.0.0.1 only, Host + CSRF guards, 6
 
 ## Data flow
 - **Pulse:** every 2.5 s while the tab is visible the client calls `/api/pulse?since=<n>`: server status, the last 12 jobs and the audit events after index `n`. New events or job changes re-load the current workspace and trigger toasts, sound cues and one-shot animations. A full reload of the current view also happens every 20 s. Nothing else polls.
-- **Jobs:** the only long operations started from the UI. `recheck` runs a task's acceptance commands (`python3 -m unittest …` only, validated by regex) in a subprocess with the task's timeout, records passed/failed, wall time and child CPU time, and **never changes the task's status** (the task graph only lets the supervisor close a task). A failure emits `acceptance_regression`. `backtest` calls `Lab.experiment` (deterministic, cached). Queued jobs can be cancelled; a running recheck is terminated on cancel; a running backtest is reported as not cancellable.
+- **Jobs:** the only long operations started from the UI. `recheck` runs a task's acceptance commands (`python3 -m unittest …` only, validated by regex) in a subprocess with the task's timeout, records passed/failed, wall time and child CPU time, and **never changes the task's status** (the task graph only lets the supervisor close a task). A failure emits `acceptance_regression`. `backtest` calls `Lab.experiment` (deterministic, cached) and reports its real stages. `montecarlo` runs a seeded block bootstrap of an experiment (`lql/research/montecarlo.py`). Queued jobs can be cancelled; a running recheck is terminated on cancel; a running Monte Carlo stops at the next 100 paths and saves nothing; a running backtest is reported as not cancellable. Every job is persisted (`state/jobs/<id>.json`); on restart a running job becomes `failed` with `interrupted: true` and a never-started one is re-queued. `/api/health` reports the web server, API, worker (heartbeat), queue, research engine, data and model providers separately (D-018).
 - **What the console cannot do, by design:** start or spend a walk-forward study or the holdout, start or advance a forward log, change risk limits, import data, release the kill switch without a named person, or reach a broker. Those stay in the CLI or do not exist.
 
 ## The trading floor (Overview)

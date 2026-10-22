@@ -4,6 +4,7 @@ import { esc, pct, num, money, clock, int } from "../format.js";
 import { task as taskS, dataClass, verdictTone, severityTone } from "../status.js";
 import { dial } from "../graph-model.js";
 import { spark, guards } from "../charts.js";
+import { coreState } from "../scene/core-state.js";
 
 const ICON = { supervisor: "◎", engineer: "⚙", reviewer: "⌕", founder: "⚑", critic: "⊘", risk: "⛨", data: "≋", hermes: "✦", research: "∿", paper: "▤" };
 const STATUS_COLOR = { done_verified: "var(--ok)", needs_human: "var(--human)", in_progress: "var(--active)", ready: "var(--info)",
@@ -66,7 +67,7 @@ function modules(app, d) {
     <div class="m-row"><span>datasets</span><b class="num">${ds.length}</b></div>
     <div class="m-row"><span>synthetic · snapshot</span><b class="num">${synth.length} · ${snaps}</b></div>
     <div class="m-row"><span>provisional (unverified)</span><b class="num ${prov ? "neg" : ""}">${prov}</b></div>
-    <div class="m-row"><span>tradable</span><b class="num">${ds.filter((x) => x.tradable).length}/${ds.length}</b></div>
+    <div class="m-row"><span>pass validation</span><b class="num">${ds.filter((x) => x.passes_validation).length}/${ds.length}</b></div>
   </section>
   <section class="panel mod" data-go="research" tabindex="0" data-k="mod-research" aria-label="Research: open the research workspace">
     <header><h3>02 · Research</h3><span class="src">critic verdicts</span></header>
@@ -196,6 +197,20 @@ function paintHud(app, el, d) {
       <b>Stage ${sg.index + 1}/${sg.of} · ${esc(sg.name)}</b></div>
     ${sg.next ? `<div class="hud-sub">next: ${esc(sg.next.name)}: ${esc(sg.next.needs)}</div>` : ""}
     <div class="hud-sub ${edge && edge.formed ? "pos" : "neg"}">EDGE core ${edge && edge.formed ? (edge.formed * 100).toFixed(1) + "% formed" : "dark: no proven trading edge · face: blank mask"}</div>`;
+  paintCore(app, el, d);
+}
+
+/** The research core's state, from persisted jobs only; blockers that need a human are shown, never animated. */
+function paintCore(app, el, d) {
+  const box = el.querySelector("#floor-core");
+  if (!box) return;
+  const cs = coreState(d.jobs || []);
+  const a = cs.artifact;
+  const open = a ? `<button class="btn small" data-fl="${a.kind === "montecarlo" ? "go-mc" : "go-exp"}" data-id="${esc(a.id)}" data-exp="${esc((cs.job.params || {}).experiment || a.id)}" data-k="fl-core-open">Open result</button>` : "";
+  const h = (d.decisions || [])[0];
+  box.className = `floor-core ${cs.state.toLowerCase()}`;
+  box.innerHTML = `<div class="core-k">RESEARCH CORE</div><div class="core-s"><i></i>${esc(cs.state)}</div><div class="core-l">${esc(cs.line)}</div>${open}
+    ${h ? `<div class="core-h" title="${esc(h.detail)}">NEEDS HUMAN · ${esc(h.ref)}: ${esc(h.title)}</div>` : ""}`;
 }
 
 export default {
@@ -222,7 +237,7 @@ export default {
         <header><h2>The floor</h2><span class="src" id="floor-src"></span>
           <span class="floor-tools"><label class="field" style="text-transform:none">Neurons <select id="fl-quality" data-k="fl-quality" aria-label="Neurons drawn">${["auto", "low", "medium", "high", "ultra"].map((q) => `<option value="${q}" ${app.prefs.neurons === q ? "selected" : ""}>${{ auto: "auto", low: "150k", medium: "400k", high: "1M", ultra: "2M" }[q]}</option>`).join("")}</select></label>
           <button class="btn small" data-fl="home" data-k="fl-home-top">Reset view</button></span></header>
-        <div class="floor-stage" id="floor-stage"><div class="floor-hud" id="floor-hud" aria-live="polite"></div><aside class="floor-insp" id="floor-insp" hidden aria-label="Selection details"></aside></div>
+        <div class="floor-stage" id="floor-stage"><div class="floor-hud" id="floor-hud" aria-live="polite"></div><div class="floor-core" id="floor-core" role="status" aria-live="polite"></div><aside class="floor-insp" id="floor-insp" hidden aria-label="Selection details"></aside></div>
         <div class="floor-foot" id="floor-foot"></div>
       </section>
       <div class="roles" id="ov-roles"></div>
@@ -257,6 +272,8 @@ export default {
         else if (a === "go-graph-h1") app.go("graph", { task: "H1-hermes-mac" });
         else if (a === "go-paper") app.go("paper");
         else if (a === "go-data") app.go("data");
+        else if (a === "go-exp") app.go("research", { experiment: b.dataset.exp });
+        else if (a === "go-mc") app.go("research", { experiment: b.dataset.exp, montecarlo: b.dataset.id });
       });
       el.addEventListener("keydown", (e) => { if (e.key === "Escape" && FLOOR.sel) { select(app, null); e.stopPropagation(); } });
       if (FLOOR.inst) { FLOOR.inst.dispose(); FLOOR.inst = null; }
@@ -266,7 +283,8 @@ export default {
     el.querySelector("#floor-src").textContent = `${d.graph.nodes.length} tasks · ${d.desks.length} desks · ${d.active_jobs} job${d.active_jobs === 1 ? "" : "s"} active`;
     el.querySelector("#floor-foot").innerHTML = `<span class="chip ${busy ? "active" : "muted"}">${busy ? `◉ dispatching: ${esc(running.label)} · ${running.elapsed_s ?? 0}s` : "○ no job running · bots idle"}</span>
       <span class="chip muted">neurons = verified work, not trading skill</span><span class="chip muted">beams = real jobs · green done · rose failed</span>
-      <span class="chip muted">drag to orbit · wheel to zoom · click a desk or the brain</span>`;
+      <span class="chip muted">drag to orbit · wheel to zoom · click a desk or the brain</span>
+      <span class="chip muted" title="${esc(d.ops.note)}">ops: ${d.ops.jobs_succeeded} jobs succeeded · ${d.ops.jobs_failed} failed${d.ops.jobs_interrupted ? ` (${d.ops.jobs_interrupted} interrupted)` : ""} · ${d.ops.experiments} experiments · ${d.ops.montecarlo_runs} Monte Carlo · ${d.ops.walkforward_results} walk-forward</span>`;
     const insp = el.querySelector("#floor-insp");
     insp.hidden = !FLOOR.sel;
     insp.innerHTML = inspector(app, d, FLOOR.sel);

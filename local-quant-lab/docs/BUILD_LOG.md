@@ -63,3 +63,20 @@
   - The reduced-motion check had to wait for the media-query event under software WebGL.
 - **Honesty:** neurons count verified work, not trading skill. On the synthetic demo state the brain is at stage 3/6 (LEARNING), the EDGE core is dark and the face is a blank mask. A dev-only visual check forced the face stage in the served file in memory (never written to disk) to confirm that the eyes, brow, nose and mouth render.
 
+
+## 2026-10-22 · Session 5 (CTO recovery master prompt)
+- **Baseline (before changes):** 172 Python OK, 15 node OK, verify 13 + H1, staging OK.
+- **Findings:** `docs/audit/current-system-audit.md`. The founder's screenshot showed the 0.1.0 page, so the Mac ran stale code. Jobs were in memory. Health was one chip. `tradable` was ambiguous. There was no Monte Carlo and the research charts were thin.
+- **Built:** durable jobs and recovery, health contract, data states and eligibility, Massive/FRED/BEA/SEC adapters, Calmar and relative metrics, Monte Carlo job, research charts, research core, NautilusTrader parity POC.
+- **Found while checking:**
+  - The SVG path bug (charts blank after gaps).
+  - Form values lost on re-render.
+  - A stale "done" job-state regex in ui_check.
+  - The reduced-motion check's timing.
+  - A fresh import is IMPORTED_UNVERIFIED until it is hashed into a snapshot.
+- **Not done (needs the founder):**
+  - A real data import and terms review (provider hosts unreachable here).
+  - Identify the "beatapi" key's provider.
+  - Mac performance.
+  - Choose a broker before any OpenAlgo-style evaluation.
+- **Final:** 190 Python OK, 17 node OK, ui_check 54/54, verify 13 + H1, staging OK. Readiness 58 → 80/100. Highest gate: B (A passed in the container).

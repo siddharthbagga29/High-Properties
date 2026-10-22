@@ -22,7 +22,7 @@ export default {
       const issues = Object.entries(x.issues || {}).map(([a, b]) => `${a}:${b}`).join(" ") || (x.error ? "error" : "none");
       return `<tr tabindex="0" class="${k === d.key ? "sel" : ""}" data-ds="${esc(k)}" data-k="ds-${esc(k)}" aria-selected="${k === d.key}">
         <td><b>${esc(x.instrument)}</b></td><td>${esc(x.source)}</td><td><span class="tag ${c.tone}">${c.glyph} ${esc(c.label)}</span></td>
-        <td class="r num">${int(x.rows)}</td><td>${esc(x.first || "–")} → ${esc(x.last || "–")}</td><td>${x.tradable ? "yes" : `<span class="neg">NO</span>`}</td>
+        <td class="r num">${int(x.rows)}</td><td>${esc(x.first || "–")} → ${esc(x.last || "–")}</td><td>${x.passes_validation ? "passes" : `<span class="neg">FAILS</span>`}</td><td class="mono" title="${esc(Object.entries(x.eligibility || {}).filter(([, v]) => v).map(([k]) => k).join(", ") || "no use allowed")}">${esc(x.data_state || "–")}</td>
         <td>${esc(x.adjusted)}</td><td class="mono">${esc((x.sha256 || "").slice(0, 12))}</td><td>${esc(issues)}</td></tr>`;
     }).join("");
     const x = d.datasets.find((r) => `${r.source}:${r.instrument}` === d.key);
@@ -31,7 +31,7 @@ export default {
     <div class="view-head"><h1>Data</h1><p>Provenance before prices. No live feed exists; nothing here is described as live.</p></div>
     <div class="grid">
       <section class="panel"><header><h2>Datasets</h2><span class="src">synthetic provider + data/snapshots manifests</span></header>
-        <div class="scroll"><table><thead><tr><th>instrument</th><th>source</th><th>class</th><th class="r">rows</th><th>range</th><th>tradable</th><th>adjusted</th><th>sha256</th><th>quality issues</th></tr></thead><tbody>${rows || `<tr><td colspan="9" class="empty">No datasets.</td></tr>`}</tbody></table></div></section>
+        <div class="scroll"><table><thead><tr><th>instrument</th><th>source</th><th>class</th><th class="r">rows</th><th>range</th><th>validation</th><th>state</th><th>adjusted</th><th>sha256</th><th>quality issues</th></tr></thead><tbody>${rows || `<tr><td colspan="10" class="empty">No datasets.</td></tr>`}</tbody></table></div></section>
       ${x ? `<div class="two">
         <section class="panel"><header><h2>${esc(x.instrument)} close</h2><span class="tag ${c.tone}">${c.glyph} ${esc(c.label)}</span></header>
           ${d.series ? `<svg id="d-chart" class="c" role="img" aria-label="${esc(x.instrument)} close, ${esc(c.label)}"></svg><p class="muted" style="font-size:var(--fs-xs)">${esc(c.note)}</p>` : `<p class="empty">${esc(d.err || "No series.")}</p>`}</section>

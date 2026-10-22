@@ -16,7 +16,7 @@ from . import ROOT, __version__
 from .backtest.engine import config_hash
 from .data.providers import SyntheticProvider, SnapshotProvider, ProviderError, SNAPSHOT_DIR
 from .data.quality import validate
-from .data.schema import ADJ_VERIFIED
+from .data.schema import ADJ_VERIFIED, REJECTED, dataset_state, eligibility, DATA_STATES, USES
 from .orchestrator import TaskGraph
 
 STARTED = time.time()
@@ -94,8 +94,9 @@ def _synthetic_rows(lab):
             q = validate(bars, inst)
             out.append({"instrument": inst, "source": "synthetic", "kind": "DEMO_SYNTHETIC", "data_class": "synthetic",
                         "provider": "synthetic", "description": p.info().description, "rows": q.rows,
-                        "first": q.first, "last": q.last, "tradable": q.tradable, "issues": q.counts(),
-                        "sha256": config_hash([b.to_dict() for b in bars]), "adjusted": "n/a",
+                        "first": q.first, "last": q.last, "passes_validation": q.passes_validation,
+                        "data_state": dataset_state(p.info(), q), "eligibility": eligibility(dataset_state(p.info(), q)),
+                        "issues": q.counts(), "sha256": config_hash([b.to_dict() for b in bars]), "adjusted": "n/a",
                         "adjustment_verified": None, "retrieved_at": None, "terms": p.info().terms})
         return out
     return _cached("synthetic", 3600, build)
@@ -113,7 +114,8 @@ def _snapshot_rows(lab):
             try:
                 info, man = p.info(inst), p.manifest(inst)
             except (ProviderError, json.JSONDecodeError, KeyError) as e:
-                return {"instrument": inst, "source": "snapshot", "error": str(e), "data_class": "invalid"}
+                return {"instrument": inst, "source": "snapshot", "error": str(e), "data_class": "invalid",
+                        "data_state": REJECTED, "eligibility": eligibility(REJECTED), "passes_validation": False}
             row = {"instrument": inst, "source": "snapshot", "kind": info.kind, "provider": info.provider,
                    "description": info.description, "retrieved_at": info.retrieved_at, "terms": info.terms,
                    "adjusted": info.adjusted, "adjustment_verified": info.adjustment_verified,
@@ -122,10 +124,12 @@ def _snapshot_rows(lab):
             try:
                 bars = p.bars(inst)
                 q = validate(bars, inst)
-                row.update(rows=q.rows, first=q.first, last=q.last, tradable=q.tradable, issues=q.counts(),
-                           hash_ok=True)
+                st = dataset_state(info, q)
+                row.update(rows=q.rows, first=q.first, last=q.last, passes_validation=q.passes_validation,
+                           issues=q.counts(), hash_ok=True, data_state=st, eligibility=eligibility(st))
             except ProviderError as e:
-                row.update(error=str(e), hash_ok=False, data_class="invalid")
+                row.update(error=str(e), hash_ok=False, data_class="invalid", data_state=REJECTED,
+                           eligibility=eligibility(REJECTED), passes_validation=False)
             return row
         rows.append(_cached(key, 3600, build))
     return rows
@@ -142,7 +146,13 @@ def data_sources(lab):
             "classes": {"synthetic": "generated fixture, not market data",
                         "provisional": "imported real data, split/dividend adjustment NOT verified: no evidence value",
                         "verified": "adjustment verified against an independent reference (still historical, not live)",
-                        "live": "not supported in this build"}}
+                        "live": "not supported in this build"},
+            "states": {"SYNTHETIC": "generated fixture: software tests, simulated replay and research runs only",
+                       "IMPORTED_UNVERIFIED": "imported, validation not run or not passed: unusable",
+                       "PROVISIONAL": "real data, passes validation, adjustment unverified: runs allowed, no evidence value",
+                       "VERIFIED_HISTORICAL": "real data, adjustment verified with evidence: research evidence and holdout allowed",
+                       "LIVE_FEED": "not supported in this build", "REJECTED": "failed validation or its hash check"},
+            "uses": list(USES), "eligibility": {st: eligibility(st) for st in DATA_STATES}}
 
 
 def series(lab, source, instrument):
@@ -190,7 +200,15 @@ def research(lab):
                              "evidence_label": x.get("evidence_label"), "holdout": x.get("holdout"),
                              "oos": {k: oos.get(k) for k in ("total_return", "sharpe", "max_drawdown", "exits",
                                                              "avg_exposure", "turnover_annual", "costs")},
-                             "created_at": x.get("created_at")}
+                             "created_at": x.get("created_at"),
+                             "folds": [{"fold": f["fold"], "train": f["train"], "test": f["test"], "selected": f["selected"],
+                                        "is_sharpe": (f.get("selected_in_sample") or {}).get("sharpe"),
+                                        "oos_sharpe": (f.get("test_metrics") or {}).get("sharpe"),
+                                        "oos_return": (f.get("test_metrics") or {}).get("total_return"),
+                                        "oos_max_drawdown": (f.get("test_metrics") or {}).get("max_drawdown")}
+                                       for f in x.get("folds", [])],
+                             "in_sample_note": (x.get("in_sample") or {}).get("note"),
+                             "oos_series": x.get("series") if isinstance(x.get("series"), dict) else None}
         regs.append(row)
     hreg = rdir / "holdout_registry.json"
     holdouts = json.loads(hreg.read_text()) if hreg.exists() else {}
@@ -263,19 +281,64 @@ def system(lab, jobs=None):
             if ev.exists() else 0,
             "services": [
                 {"name": "control room server", "status": "up", "detail": "127.0.0.1 only; host and CSRF guards"},
-                {"name": "job runner", "status": "up" if jobs and jobs.thread and jobs.thread.is_alive() else "down",
-                 "detail": "1 worker, queue max 8, in-memory"},
+                {"name": "job worker", "status": (jobs.health()["worker"]["state"] if jobs else "down"),
+                 "detail": "1 worker thread, queue max 8; jobs persisted in state/jobs/"},
                 {"name": "hermes agent", "status": "available" if h["available"] else "not found",
                  "detail": h["detail"]},
                 {"name": "ollama", "status": _ollama()["endpoint"], "detail":
                  ("binary on PATH" if _ollama()["binary"] else "binary not on PATH")
                  + (f", version {_ollama()['version']}" if _ollama()["version"] else "")},
                 {"name": "broker", "status": "none", "detail": "no broker adapter exists; live trading absent"}],
-            "credentials": {"stooq api key (env)": "configured" if os.environ.get("STOOQ_API_KEY") else "not configured",
-                            "broker credentials": "not applicable (no adapter)"},
+            "credentials": {f"{name} ({var})": ("configured" if os.environ.get(var) else "not configured")
+                            for name, var in PROVIDER_ENV.items()} | {"broker credentials": "not applicable (no adapter)"},
+            "health": health(lab, jobs),
             "execution_mode": lab.settings.execution_mode if lab.settings else "DISABLED",
             "risk_limits": __import__("dataclasses").asdict(lab.settings.risk) if lab.settings else None,
             "costs": __import__("dataclasses").asdict(lab.settings.costs) if lab.settings else None}
+
+
+# Credentials are read from these environment variables only (never from files in the repository); the API reports
+# whether each is set, never its value. A key's provider is known only by the variable it is stored in.
+PROVIDER_ENV = {"stooq api key": "STOOQ_API_KEY", "massive api key": "MASSIVE_API_KEY", "fred api key": "FRED_API_KEY",
+                "bea api userid": "BEA_API_USERID", "alpaca paper key id": "ALPACA_PAPER_KEY_ID",
+                "sec edgar user-agent": "SEC_USER_AGENT"}
+
+
+def health(lab, jobs, light=False):
+    """Separate health states. The web server answering says nothing about the worker, the data or the models."""
+    from .backtest.engine import ENGINE_VERSION
+    from .research.montecarlo import METHOD_VERSION
+    from .strategies import catalog
+    jh = jobs.health() if jobs else {"worker": {"state": "down", "thread_alive": False}, "queue": {"state": "unknown"},
+                                     "last_successful_job": None}
+    out = {
+        "http": {"state": "up", "detail": "this response came from the control-room server (127.0.0.1 only)"},
+        "api": {"state": "up" if lab.settings else "degraded",
+                "detail": "settings valid" if lab.settings else f"settings rejected: {lab.settings_error}"},
+        "worker": jh["worker"], "queue": jh["queue"], "last_successful_job": jh["last_successful_job"],
+        "research_engine": {"state": "available" if lab.settings else "disabled", "engine_version": ENGINE_VERSION,
+                            "montecarlo_method": METHOD_VERSION, "walk_forward": "CLI only (python3 -m lql.cli research)"},
+    }
+    if light:
+        return out
+    exps = lab.experiments()
+    data = _cached("health-data", 30, lambda: data_sources(lab))
+    states = {}
+    for d in data["datasets"]:
+        states[d.get("data_state", "UNKNOWN")] = states.get(d.get("data_state", "UNKNOWN"), 0) + 1
+    h = lab.hermes().health()
+    out.update({
+        "data_sources": {"synthetic": {"state": "available", "class": "SYNTHETIC"},
+                         "snapshots": {"state": f"{sum(1 for d in data['datasets'] if d['source'] == 'snapshot')} "
+                                                f"dataset(s)", "states": states},
+                         "external": {name: ("key configured (not verified from here)" if os.environ.get(var)
+                                             else "not configured") for name, var in PROVIDER_ENV.items()}},
+        "model_provider": {"hermes": "available" if h["available"] else "not found", "ollama": _ollama()["endpoint"]},
+        "last_research_run": ({k: exps[0][k] for k in ("id", "at", "strategy", "instrument", "source", "verdict")}
+                              if exps else None),
+        "strategies": [m["key"] for m in catalog()] if callable(catalog) else None,
+    })
+    return out
 
 
 # -- overview ------------------------------------------------------------------------------------------------------
@@ -343,7 +406,7 @@ def brain_model(g, exps, reg_rows, fwd_logs, paper, datasets, all_events):
         "reviewer": passed("reviewer"),
         "critic": len(exps),
         "research": sum((r.get("result") or {}).get("n_folds") or 0 for r in reg_rows) + len(reg_rows),
-        "data": sum(1 for d in datasets if d.get("tradable")) + 3 * sum(1 for d in datasets if d.get("data_class") == "verified"),
+        "data": sum(1 for d in datasets if d.get("passes_validation")) + 3 * sum(1 for d in datasets if d.get("data_class") == "verified"),
         "risk": len(paper["orders"]) if paper else 0,
         "paper": (len(paper["equity"]) if paper else 0) + fwd_sessions,
         "hermes": sum(1 for e in all_events if e["kind"] == "hermes_result"),
@@ -411,7 +474,7 @@ def desks(roles, g, exps, reg_rows, paper, fwd_logs, datasets, jobs_list, status
     owner_of = {n["id"]: n["owner"] for n in g["nodes"]}
 
     def job_desk(j):
-        return owner_of.get(j["target"], "engineer") if j["kind"] == "recheck" else "research"
+        return owner_of.get(j["target"], "engineer") if j["kind"] == "recheck" else "research"   # backtest, montecarlo
 
     def assigned(key):
         return next((j for j in running if job_desk(j) == key), None) or next((j for j in queued if job_desk(j) == key), None)
@@ -435,7 +498,7 @@ def desks(roles, g, exps, reg_rows, paper, fwd_logs, datasets, jobs_list, status
             task, detail = j["label"], f"{j['id']} {j['status']}" + (f" · {j.get('elapsed_s')}s" if j.get("elapsed_s") is not None else "")
         if lj and not j:
             result, tone = f"{lj['id']} {lj['status']}: {(lj.get('result') or {}).get('summary') or lj.get('error') or ''}", \
-                ("ok" if lj["status"] == "done" else "bad" if lj["status"] == "failed" else "muted")
+                ("ok" if lj["status"] == "succeeded" else "bad" if lj["status"] == "failed" else "muted")
         out.append({"key": key, "name": r.get("name", key.upper()), "title": title, "status": r.get("status", ""),
                     "active": bool(j and j["status"] == "running"), "queued": bool(j and j["status"] == "queued"),
                     "job": j, "task": task, "detail": detail, "metrics": metrics, "result": result, "tone": tone,
@@ -471,10 +534,10 @@ def desks(roles, g, exps, reg_rows, paper, fwd_logs, datasets, jobs_list, status
         rr.get("verdict", "not run"), {"CANDIDATE": "ok", "NOT_PROVEN": "warn", "REJECTED": "bad"}.get(rr.get("verdict"), "muted"))
     ds = datasets
     add("data", "Provenance and validation", f"{len(ds)} datasets", status["data_mode"],
-        [["tradable", f"{sum(1 for d in ds if d.get('tradable'))}/{len(ds)}"],
+        [["pass validation", f"{sum(1 for d in ds if d.get('passes_validation'))}/{len(ds)}"],
          ["provisional", str(sum(1 for d in ds if d.get("data_class") == "provisional"))],
          ["verified", str(sum(1 for d in ds if d.get("data_class") == "verified"))]],
-        "feed locked out" if status["data_lockout"] else "all datasets validated" if all(d.get("tradable") for d in ds) else "issues found",
+        "feed locked out" if status["data_lockout"] else "all datasets validated" if all(d.get("passes_validation") for d in ds) else "issues found",
         "bad" if status["data_lockout"] else "ok")
     orders = paper["orders"] if paper else 0
     rej = sum(1 for e in events if e["kind"] == "risk_rejected")
@@ -498,6 +561,19 @@ def desks(roles, g, exps, reg_rows, paper, fwd_logs, datasets, jobs_list, status
                                                        ["live trading", "absent"]],
         "waiting on you" if decisions else "clear", "warn" if decisions else "ok")
     return out
+
+
+def _ops(lab, job_list):
+    """Operational counters, all from persisted records: jobs by terminal state (state/jobs), artifacts on disk."""
+    by = {}
+    for j in job_list:
+        by[j["status"]] = by.get(j["status"], 0) + 1
+    count = lambda d: sum(1 for _ in (lab.state / d).glob("*.json")) if (lab.state / d).exists() else 0  # noqa: E731
+    return {"jobs_succeeded": by.get("succeeded", 0), "jobs_failed": by.get("failed", 0),
+            "jobs_interrupted": sum(1 for j in job_list if j.get("interrupted")), "jobs_cancelled": by.get("cancelled", 0),
+            "experiments": count("experiments"), "montecarlo_runs": count("montecarlo"),
+            "walkforward_results": count("research/results"),
+            "note": "job counts cover the last 200 persisted jobs"}
 
 
 def overview(lab, jobs=None):
@@ -623,4 +699,5 @@ def overview(lab, jobs=None):
                       | {"equity": paper["equity"][-260:], "orders": len(paper["orders"]), "fills": len(paper["fills"])}
                       if paper else None),
             "risk_guards": _risk_guards(lab, paper), "events": events[-60:], "brain": brain, "desks": desk_list,
+            "ops": _ops(lab, job_list),
             "last_job_event": last_of("job_finished", "job_failed", "job_cancelled", "job_started")}
