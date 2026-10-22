@@ -8,8 +8,9 @@ import json
 import sys
 import unittest
 import urllib.error
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from lql import ROOT
 from lql.data import calendar as cal
@@ -42,14 +43,30 @@ def opener_for(bodies, seen):
     return op
 
 
+NY = ZoneInfo("America/New_York")
+
+
+def ny_session_ms(d):
+    """Unix ms of 00:00 New York on date d: the documented start of a daily aggregate window."""
+    return int(datetime(d.year, d.month, d.day, tzinfo=NY).timestamp() * 1000)
+
+
 def massive_page(n=3, start_ms=1729569600000, adjusted=True, status="OK", next_url=None):
-    # FIXTURE in the documented aggregates shape: t = Unix ms of the session window start (04:00 UTC = 00:00 New York)
-    # weekdays only, as a vendor sends them (start 2024-10-22, a Tuesday)
-    ts, t = [], start_ms
-    while len(ts) < n:
-        if date.fromtimestamp(t / 1000 - 4 * 3600).weekday() < 5:
-            ts.append(t)
-        t += 86_400_000
+    # FIXTURE in the documented aggregates shape: t = Unix ms of the session window start (00:00 New York).
+    # Dates are computed in an explicit timezone (never the machine's local zone) and only weekdays are emitted, as a
+    # vendor sends them. This fixture window (October 2024) has no exchange holidays; the production calendar is not
+    # consulted here so that the import test still exercises it independently.
+    start = datetime.fromtimestamp(start_ms / 1000, tz=NY)
+    assert (start.hour, start.minute, start.second) == (0, 0, 0), "start_ms must be 00:00 New York"
+    d = start.date()
+    days = []
+    while len(days) < n:
+        if d.weekday() < 5:
+            days.append(d)
+        d += timedelta(days=1)
+    assert all(date(2024, 10, 1) <= x <= date(2024, 10, 31) for x in days), "fixture window is October 2024 (no holidays)"
+    ts = [ny_session_ms(x) for x in days]
+    assert [datetime.fromtimestamp(t / 1000, tz=NY).date() for t in ts] == days
     res = [{"o": 100 + i, "h": 102 + i, "l": 99 + i, "c": 101 + i, "v": 1000 + i, "vw": 100.5 + i, "n": 10,
             "t": ts[i]} for i in range(n)]
     b = {"ticker": "SPY", "adjusted": adjusted, "status": status, "resultsCount": n, "results": res, "request_id": "x"}

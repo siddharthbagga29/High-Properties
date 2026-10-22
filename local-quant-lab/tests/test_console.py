@@ -307,9 +307,10 @@ class FrontEndUnitTests(unittest.TestCase):
         if not node:
             self.skipTest("node is not installed; run: node --test web/tests/*.test.mjs")
         files = sorted(str(p) for p in (ROOT / "web" / "tests").glob("*.test.mjs"))
-        r = subprocess.run([node, "--test", *files], cwd=ROOT, capture_output=True, text=True, timeout=120)
+        r = subprocess.run([node, "--test", "--test-reporter=tap", *files], cwd=ROOT, capture_output=True, text=True,
+                           timeout=120)   # TAP explicitly: newer Node defaults to the "spec" reporter
         self.assertEqual(r.returncode, 0, r.stdout[-3000:] + r.stderr[-2000:])
-        self.assertIn("# fail 0", r.stdout)
+        self.assertIn("# fail 0", r.stdout, r.stdout[-3000:] + r.stderr[-2000:])
 
 
 if __name__ == "__main__":
