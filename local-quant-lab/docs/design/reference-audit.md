@@ -12,6 +12,8 @@ Date: 2026-10-21. Method: `ffprobe` for metadata, `ffmpeg` frame extraction at 1
 | R4 | `local-quant-lab/reference_materials/dashboard_visual_reference.png` | still, 2048×1280 | yes | A Threads post: "POLYMARKET BOT" dashboard with a central particle torus (third-party). |
 | R5 | `perspective-engine/city/` (source, README, `styles.css`, `audio/sound.ts`) | code | yes | The Perspective Engine "city": a brain/orchestrator at the centre of a dial, agents as districts, tasks as towers; strict "what is real" rules. No screenshots exist in the repo. |
 | — | Recordings around 2:00–2:30 PM other than R1/R2 | — | not found | Only the three files above were uploaded to this session. No other recordings or Perspective Engine images exist in the repository. |
+| R6 | `7bedfe9d-b3e568c8308d48fcb4caddd74cfeb91b_2.mp4` (uploaded 2026-10-22) | video | yes | "Scalp City" by @nickafischer (third-party): a neon 3D city of worker towers with green/red beams to a central vault dome, then desk interiors with robots at monitors (a signal scanner, a leaderboard, a worker heatmap). |
+| R7 | Screenshot of the founder's Perspective Engine City (uploaded 2026-10-22) | still | yes | A neuron-cloud brain inside a holographic bust at the centre, district labels around it, a Jarvis panel. The founder's stated target: "the center … should look exactly like perspective engine city". |
 
 No two recordings were duplicates.
 
@@ -45,13 +47,21 @@ No two recordings were duplicates.
 - Concept: one orchestrator at the centre of a dial; every surrounding element is a real agent or task; clicking anything opens its record. A written **"What is real"** table separates data-driven motion from ambient decoration.
 - Sound: WebAudio-generated cues (`audio/sound.ts`), no audio files.
 
+### R6 — Scalp City (third-party video)
+- **Take:** the institutional floor: bots at desks, each with monitors showing its own task, metrics and results. Beams that show work dispatched and returned (green success, red failure). A dark city with lit windows as a backdrop.
+- **Leave:** fabricated workers, a leaderboard of invented P&L, and a heatmap of activity that does not exist. In this lab, every bot is a real role from the task file, and an idle bot sits still.
+
+### R7 — Perspective Engine City (founder's screenshot)
+- **Take:** the brain as the hero, a dense neuron cloud that grows by region and hemisphere, district labels, and the violet/cyan palette already in `tokens.css`.
+- **Built as (2026-10-22, D-017):** the Overview's 3D floor. One supervisor assigns real jobs to nine desks under a brain of 150k to 2M neurons. Neurons form only from recorded, verified work. The EDGE core stays dark until a proven edge exists.
+
 ## Unified direction: "Perspective Engine / Quant Research System"
 1. **Shell** (from R2/R4): a top ticker with the product mark, safety posture chips (SIMULATED, data class, broker none, kill switch), live job counter, UTC clock; a left rail of workspaces with keyboard numbers.
 2. **Role cards** (from R1, but with real roles): Supervisor, Engineer, Reviewer, Founder (human gate), Critic, Risk engine, Data, Hermes. Each shows its real status line and one measured metric with a level bar. Hue identifies the role; a text label gives the state.
-3. **Central dial** (from Perspective Engine and R2): the actual task DAG drawn as rings around the supervisor core on a plane tilted in perspective in the overview, with the eight role cards around it. It is flat and precise in the Graph workspace. Rings and edges animate only when a real job runs or a task changes state.
+3. **Central dial** (from Perspective Engine and R2): the actual task DAG drawn as rings around the supervisor core on a plane tilted in perspective in the overview, with the eight role cards around it. It is flat and precise in the Graph workspace. Rings and edges animate only when a real job runs or a task changes state. *(2026-10-22: in the overview this is replaced by the 3D trading floor after R6/R7. The dial remains the fallback without WebGL, and the flat graph stays in the Graph workspace.)*
 4. **Guards against limits** (from R2): risk limits as bars, with the current paper exposure where it exists.
 5. **Rules panel** (from R1): the frozen research protocol (acceptance criteria) and data gates shown as a code-like list with pass/fail marks from real reports.
 6. **Decision trace** (from R2): the audit event stream in monospace, with severity tags.
 7. **Honesty legend** (from Perspective Engine): every view carries its data class; a "What moves and why" table is in Settings.
 
-Rejected for all references: decorative avatars or robots, perpetual 3D meshes, saturated full-page frames, any balance or P&L headline that is not from a real record, and motion that runs while nothing happens.
+Rejected for all references: saturated full-page frames, any balance or P&L headline that is not from a real record, and motion that runs while nothing happens. (Robots and a 3D scene were rejected on 2026-10-21 and adopted on 2026-10-22 after R6/R7, but only as stand-ins for real roles and real jobs; see D-017.)

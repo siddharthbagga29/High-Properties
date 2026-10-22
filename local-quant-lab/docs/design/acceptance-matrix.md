@@ -26,6 +26,9 @@
 | Engineering | accessibility reviewed | partial | keyboard, labels, focus, live regions, reduced motion checked; no automated axe/contrast tool run (none available offline) |
 | Engineering | docs sufficient to run and maintain | done | README, `architecture.md`, this folder |
 | Integrity | every node has evidence; blockers explicit | done | `implementation-plan.md`; blockers below |
+| Floor (2026-10-22) | centre looks like the Perspective Engine city: one agent assigning work to bots with tasks, metrics, results; brain grows from finished work | done | hologram supervisor with the brain in its head; 9 desks with real monitors and callouts; growth after a real job (ui_check); D-017 |
+| Floor | "millions of neurons" | done (container: 150k/400k rendered) / needs_human (Mac at 1M/2M) | presets up to 2M; auto picks 1M on 8 cores and 8 GB; frame rate on the Mac not yet measured |
+| Floor | no fabricated activity; no fake skill | done | bots move only for running jobs; neurons from records; EDGE dark, face blank, stage < PROVEN EDGE on synthetic data (tests + ui_check) |
 
 ## Remaining blockers and limits
 - Mac-side measurements, Safari, and behaviour with a real Hermes/Ollama endpoint: needs the founder's machine.

@@ -305,6 +305,201 @@ def _risk_guards(lab, paper):
          "source": "checked per order"}]
 
 
+# -- the brain: neurons formed only by verified work ------------------------------------------------------------------
+# Each region grows with one kind of real, recorded evidence. formed = 1 - exp(-units / k): every new piece of evidence
+# adds neurons, ever more slowly, and no region is ever "complete". This measures verified work, NOT trading skill:
+# the EDGE region grows only from evidence that could indicate a real edge (a CANDIDATE on verified real data, or real
+# forward paper sessions on verified data), and stays dark otherwise.
+BRAIN_REGIONS = [
+    # key, label, unit description, k, share of the brain's neurons
+    ("supervisor", "SUPERVISOR · orchestration", "tasks closed with recorded evidence", 24, 0.10),
+    ("engineer", "ENGINEER · build", "unit tests passed in verified engineer tasks", 180, 0.14),
+    ("reviewer", "REVIEWER · security", "tests passed in the verified security audit", 12, 0.05),
+    ("critic", "CRITIC · evidence", "experiments reviewed by the critic (any verdict)", 24, 0.10),
+    ("research", "RESEARCH · walk-forward", "out-of-sample folds evaluated + studies frozen", 24, 0.10),
+    ("data", "DATA · provenance", "datasets that passed validation (+3 per verified adjustment)", 12, 0.07),
+    ("risk", "RISK · control", "orders checked by the risk engine in the paper ledger", 150, 0.09),
+    ("paper", "PAPER · simulation", "simulated paper sessions processed", 1500, 0.09),
+    ("hermes", "HERMES · memory", "Hermes results accepted after schema checks", 20, 0.06),
+    ("edge", "EDGE · proven trading edge", "CANDIDATE verdicts on verified real data x10 + verified real forward sessions",
+     60, 0.20),
+]
+
+
+def brain_model(g, exps, reg_rows, fwd_logs, paper, datasets, all_events):
+    import math
+    nodes = g["nodes"]
+    passed = lambda owner: sum((n["evidence"] or {}).get("passed") or 0 for n in nodes  # noqa: E731
+                               if n["owner"] == owner and n["status"] == "done_verified")
+    real_candidates = sum(1 for e in exps if e["verdict"] == "CANDIDATE" and e.get("source") != "synthetic")
+    real_candidates += sum(1 for r in reg_rows if r.get("result") and r["result"]["verdict"] == "CANDIDATE"
+                           and not r.get("synthetic") and not r.get("provisional"))
+    real_fwd = sum((f.get("report") or {}).get("sessions") or 0 for f in fwd_logs
+                   if f.get("evidence_class") == "REAL_FORWARD" and not (f.get("report") or {}).get("provisional"))
+    fwd_sessions = sum((f.get("report") or {}).get("sessions") or 0 for f in fwd_logs)
+    units = {
+        "supervisor": sum(1 for n in nodes if n["status"] == "done_verified"),
+        "engineer": passed("engineer"),
+        "reviewer": passed("reviewer"),
+        "critic": len(exps),
+        "research": sum((r.get("result") or {}).get("n_folds") or 0 for r in reg_rows) + len(reg_rows),
+        "data": sum(1 for d in datasets if d.get("tradable")) + 3 * sum(1 for d in datasets if d.get("data_class") == "verified"),
+        "risk": len(paper["orders"]) if paper else 0,
+        "paper": (len(paper["equity"]) if paper else 0) + fwd_sessions,
+        "hermes": sum(1 for e in all_events if e["kind"] == "hermes_result"),
+        "edge": 10 * real_candidates + real_fwd,
+    }
+    regions = []
+    for key, label, unit, k, share in BRAIN_REGIONS:
+        u = units[key]
+        regions.append({"key": key, "label": label, "unit": unit, "units": u, "k": k, "share": share,
+                        "formed": 1 - math.exp(-u / k)})
+    total = sum(r["share"] * r["formed"] for r in regions)
+    region_of = {"experiment": "critic", "research_walkforward": "research", "research_frozen": "research",
+                 "risk_rejected": "risk", "hermes_result": "hermes", "data_lockout": "data", "data_recovered": "data",
+                 "order_filled": "paper"}
+    growth = []
+    for e in all_events[-400:]:
+        k = e["kind"]
+        d = e.get("data") or {}
+        if k == "task_transition" and d.get("status") == "done_verified":
+            growth.append({"t": e["t"], "region": "supervisor", "message": e["message"]})
+        elif k == "job_finished" and d.get("job_kind") == "recheck":
+            growth.append({"t": e["t"], "region": "engineer", "message": e["message"], "strengthen": True})
+        elif k in region_of:
+            growth.append({"t": e["t"], "region": region_of[k], "message": e["message"]})
+    return {"regions": regions, "formed": total, "growth": growth[-24:], "stage": brain_stage(regions),
+            "formula": "formed(region) = 1 - exp(-units / k); a region's neurons = its share of the brain",
+            "meaning": "Neurons form only from recorded, verified work. They do not measure trading skill: the "
+                       "EDGE region stays dark until a CANDIDATE on verified real data or verified real forward "
+                       "sessions exist. alpha_status stays unproven."}
+
+
+# The path to "Ultron": stages of the brain. The first four come from verified work of any kind; the last two only from
+# a proven edge (the EDGE region), so synthetic or engineering work can never reach them.
+BRAIN_STAGES = [
+    ("SEED", "no verified work yet"),
+    ("FORMING", "work regions at least 5% formed"),
+    ("LEARNING", "work regions at least 20% formed"),
+    ("SKILLED", "work regions at least 45% formed"),
+    ("PROVEN EDGE", "EDGE core forming: a CANDIDATE on verified real data or verified real forward sessions"),
+    ("ULTRON", "EDGE core and every region at least 90% formed"),
+]
+
+
+def brain_stage(regions):
+    work = [r for r in regions if r["key"] != "edge"]
+    edge = next(r["formed"] for r in regions if r["key"] == "edge")
+    core = sum(r["share"] * r["formed"] for r in work) / (sum(r["share"] for r in work) or 1)
+    met = [True, core >= 0.05, core >= 0.20, core >= 0.45, edge > 0,
+           edge >= 0.9 and all(r["formed"] >= 0.9 for r in work)]
+    index = 0
+    while index + 1 < len(met) and met[index + 1]:
+        index += 1
+    nxt = BRAIN_STAGES[index + 1] if index + 1 < len(BRAIN_STAGES) else None
+    return {"index": index, "of": len(BRAIN_STAGES), "name": BRAIN_STAGES[index][0], "work_formed": core,
+            "next": {"name": nxt[0], "needs": nxt[1]} if nxt else None,
+            "stages": [{"name": n, "rule": rule, "met": m} for (n, rule), m in zip(BRAIN_STAGES, met)],
+            "face": "eyes form at the first proven edge, brow and nose at EDGE 50%, the mouth at EDGE 90%"}
+
+
+def desks(roles, g, exps, reg_rows, paper, fwd_logs, datasets, jobs_list, status, decisions, events):
+    """One desk per bot on the trading floor: its current or last task, three metrics and its last result."""
+    by = {r["key"]: r for r in roles}
+    running = [j for j in jobs_list if j["status"] == "running"]
+    queued = [j for j in jobs_list if j["status"] == "queued"]
+    owner_of = {n["id"]: n["owner"] for n in g["nodes"]}
+
+    def job_desk(j):
+        return owner_of.get(j["target"], "engineer") if j["kind"] == "recheck" else "research"
+
+    def assigned(key):
+        return next((j for j in running if job_desk(j) == key), None) or next((j for j in queued if job_desk(j) == key), None)
+
+    def last_job(key):
+        return next((j for j in jobs_list if j["status"] not in ("queued", "running") and job_desk(j) == key), None)
+
+    nodes = g["nodes"]
+    done = [n for n in nodes if n["status"] == "done_verified"]
+    last_closed = max(done, key=lambda n: (n["evidence"] or {}).get("at") or "", default=None)
+    exp0 = exps[0] if exps else None
+    reg = reg_rows[-1] if reg_rows else None
+    eq = paper["equity"] if paper else []
+    out = []
+
+    def add(key, title, task, detail, metrics, result, tone):
+        r = by.get(key, {})
+        j = assigned(key)
+        lj = last_job(key)
+        if j:
+            task, detail = j["label"], f"{j['id']} {j['status']}" + (f" · {j.get('elapsed_s')}s" if j.get("elapsed_s") is not None else "")
+        if lj and not j:
+            result, tone = f"{lj['id']} {lj['status']}: {(lj.get('result') or {}).get('summary') or lj.get('error') or ''}", \
+                ("ok" if lj["status"] == "done" else "bad" if lj["status"] == "failed" else "muted")
+        out.append({"key": key, "name": r.get("name", key.upper()), "title": title, "status": r.get("status", ""),
+                    "active": bool(j and j["status"] == "running"), "queued": bool(j and j["status"] == "queued"),
+                    "job": j, "task": task, "detail": detail, "metrics": metrics, "result": result, "tone": tone,
+                    "attention": bool(r.get("attention"))})
+
+    add("supervisor", "Orchestrator · assigns and verifies", "Supervisor loop", (g["last_checkpoint"] or {}).get("note", ""),
+        [["verified", f"{len(done)}/{len(nodes)}"], ["needs human", str(sum(1 for n in nodes if n["status"] == "needs_human"))],
+         ["jobs queued", str(len(queued))]],
+        f"last closed: {last_closed['id']}" if last_closed else "nothing closed yet", "ok" if last_closed else "muted")
+    for key, title in (("engineer", "Builds and tests modules"), ("reviewer", "Security audit")):
+        ts = [n for n in nodes if n["owner"] == key]
+        tests = sum((n["evidence"] or {}).get("passed") or 0 for n in ts if n["status"] == "done_verified")
+        last = max((n for n in ts if n["evidence"]), key=lambda n: n["evidence"].get("at") or "", default=None)
+        add(key, title, last["id"] if last else "no task", (last or {}).get("goal", ""),
+            [["tasks", f"{sum(1 for n in ts if n['status'] == 'done_verified')}/{len(ts)}"], ["tests passed", str(tests)],
+             ["retries", str(sum(n["retries"] for n in ts))]],
+            f"{last['id']}: {last['evidence']['passed']} passed, exit {last['evidence']['exit_code']}" if last else "no evidence yet",
+            "ok" if last and last["evidence"].get("exit_code") == 0 else "muted")
+    verdicts = {}
+    for e in exps:
+        verdicts[e["verdict"]] = verdicts.get(e["verdict"], 0) + 1
+    add("critic", "Reviews every experiment", f"{exp0['strategy']} on {exp0['instrument']}" if exp0 else "no experiment",
+        exp0["source"] if exp0 else "", [["reviewed", str(len(exps))], ["candidate", str(verdicts.get("CANDIDATE", 0))],
+                                          ["rejected", str(verdicts.get("REJECTED", 0))]],
+        f"{exp0['verdict']} · sharpe {exp0['sharpe']:.2f}" if exp0 and exp0.get("sharpe") is not None else
+        (exp0["verdict"] if exp0 else "nothing reviewed"),
+        {"CANDIDATE": "ok", "NOT_PROVEN": "warn", "REJECTED": "bad"}.get(exp0["verdict"], "muted") if exp0 else "muted")
+    rr = (reg or {}).get("result") or {}
+    add("research", "Backtests and walk-forward studies", reg["name"] if reg else "no study frozen",
+        f"{reg['candidates']} candidates · frozen {reg['spec_hash']}" if reg else "studies run from the CLI",
+        [["studies", str(len(reg_rows))], ["folds", str(rr.get("n_folds") or 0)],
+         ["oos sharpe", f"{rr['oos']['sharpe']:.2f}" if rr.get("oos") and rr["oos"].get("sharpe") is not None else "N/A"]],
+        rr.get("verdict", "not run"), {"CANDIDATE": "ok", "NOT_PROVEN": "warn", "REJECTED": "bad"}.get(rr.get("verdict"), "muted"))
+    ds = datasets
+    add("data", "Provenance and validation", f"{len(ds)} datasets", status["data_mode"],
+        [["tradable", f"{sum(1 for d in ds if d.get('tradable'))}/{len(ds)}"],
+         ["provisional", str(sum(1 for d in ds if d.get("data_class") == "provisional"))],
+         ["verified", str(sum(1 for d in ds if d.get("data_class") == "verified"))]],
+        "feed locked out" if status["data_lockout"] else "all datasets validated" if all(d.get("tradable") for d in ds) else "issues found",
+        "bad" if status["data_lockout"] else "ok")
+    orders = paper["orders"] if paper else 0
+    rej = sum(1 for e in events if e["kind"] == "risk_rejected")
+    add("risk", "Deterministic pre-trade checks", "Every order passes the risk engine",
+        "kill switch ENGAGED" if status["kill_switch"] else "kill switch off",
+        [["orders checked", str(orders)], ["rejections", str(rej)], ["kill switch", "ON" if status["kill_switch"] else "off"]],
+        "kill switch engaged" if status["kill_switch"] else "limits holding", "bad" if status["kill_switch"] else "ok")
+    add("paper", "Simulated paper trading", f"{paper['strategy']} on {paper['instrument']}" if paper else "no paper session",
+        f"paper clock {paper['last_processed']}" if paper else "step the replay from the Paper workspace",
+        [["sessions", str(len(eq))], ["fills", str(paper["fills"] if paper else 0)],
+         ["equity", f"{eq[-1]['equity']:,.0f}" if eq else "N/A"]],
+        ("ledger reconciled" if paper["reconciled"] else "LEDGER MISMATCH") if paper else "idle",
+        ("ok" if paper["reconciled"] else "bad") if paper else "muted")
+    h = by.get("hermes", {})
+    add("hermes", "Advisory memory (optional)", "advice only: no route to orders", h.get("status", ""),
+        [["accepted", str(sum(1 for e in events if e["kind"] == "hermes_result"))], ["fallbacks", h.get("metric", "0")],
+         ["mode", "advisory"]], h.get("status", ""), "ok" if "available" in h.get("status", "") else "warn")
+    add("founder", "The human gate", decisions[0]["title"] if decisions else "nothing waiting",
+        decisions[0]["detail"] if decisions else "", [["decisions", str(len(decisions))],
+                                                       ["tasks need you", by.get("founder", {}).get("metric", "0")],
+                                                       ["live trading", "absent"]],
+        "waiting on you" if decisions else "clear", "warn" if decisions else "ok")
+    return out
+
+
 def overview(lab, jobs=None):
     status = lab.status()
     g = graph(lab, jobs)
@@ -312,7 +507,8 @@ def overview(lab, jobs=None):
     res = research(lab)
     fwd = forward_logs(lab)
     paper = lab.paper_state()
-    events = lab.events.read(limit=300)
+    all_events = lab.events.read()
+    events = all_events[-300:]
     exps = res["experiments"]
     verdicts = {}
     for e in exps:
@@ -400,6 +596,20 @@ def overview(lab, jobs=None):
     roles.append({"key": "hermes", "name": "HERMES", "tagline": "advisory memory layer",
                   "status": "available (advisory only)" if hermes["available"] else "not found: deterministic fallback",
                   "active": False, "metric": str(fallbacks), "metric_label": "fallbacks logged", "level": None})
+    regs = res["registrations"]
+    bt = running_task if running_task and running_task["kind"] == "backtest" else None
+    roles.insert(5, {"key": "research", "name": "RESEARCH", "tagline": "backtests and walk-forward",
+                     "status": f"running {bt['label']}" if bt else (f"latest study: {regs[-1]['name']}" if regs else "no study frozen"),
+                     "active": bool(bt), "metric": str(len(regs)), "metric_label": "studies frozen", "level": None})
+    roles.append({"key": "paper", "name": "PAPER", "tagline": "simulated execution",
+                  "status": (f"clock {paper['last_processed']}" if paper else "no paper session"),
+                  "active": False, "metric": str(len(paper["equity"]) if paper else 0), "metric_label": "sessions simulated",
+                  "level": None, "attention": bool(paper and (paper["kill_switch"] or not paper["reconciled"]))})
+    datasets = data["datasets"]
+    brain = brain_model(g, exps, regs, fwd["logs"], paper, datasets, all_events)
+    desk_list = desks(roles, g, exps, regs, ({**paper, "orders": len(paper["orders"]), "fills": len(paper["fills"])}
+                                             if paper else None), fwd["logs"], datasets, job_list, status, decisions,
+                      all_events)
     return {"status": status, "roles": roles,
             "task_counts": counts, "graph": g, "decisions": decisions, "jobs": job_list, "active_jobs": len(active),
             "experiments": {"count": len(exps), "verdicts": verdicts, "latest": exps[:8]},
@@ -412,5 +622,5 @@ def overview(lab, jobs=None):
                                              "kill_switch", "reconciled", "data_lockout")}
                       | {"equity": paper["equity"][-260:], "orders": len(paper["orders"]), "fills": len(paper["fills"])}
                       if paper else None),
-            "risk_guards": _risk_guards(lab, paper), "events": events[-60:],
+            "risk_guards": _risk_guards(lab, paper), "events": events[-60:], "brain": brain, "desks": desk_list,
             "last_job_event": last_of("job_finished", "job_failed", "job_cancelled", "job_started")}

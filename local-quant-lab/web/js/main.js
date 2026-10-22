@@ -45,6 +45,7 @@ app.setPref = (k, v) => {
 };
 function applyPrefs() {
   document.body.classList.toggle("reduced", app.reduced());
+  if (app._floor) app._floor.setReduced(app.reduced());
   app.sound.setVolume(app.prefs.volume);
   const on = app.prefs.sound && app.sound.enabled;
   $("b-sound").setAttribute("aria-pressed", String(on));
@@ -122,13 +123,15 @@ app.go = (view, sel) => {
 };
 async function show(view, { quiet = false } = {}) {
   const changed = app.view !== view;
+  if (changed && app.view && VIEWS[app.view].leave) VIEWS[app.view].leave(app);
   app.view = view;
+  if (changed && VIEWS[view].enter) VIEWS[view].enter(app);
   app.setPref("view", view);
   document.querySelectorAll(".rail a").forEach((a) => (a.dataset.view === view ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
   document.querySelectorAll(".view").forEach((s) => (s.hidden = s.dataset.view !== view));
   const el = $("v-" + view);
   if (changed) { document.title = `${VIEWS[view].title} · Local Quant Lab`; if (!quiet) $("main").focus({ preventScroll: true }); }
-  if (changed && !app.cache[view]) el.innerHTML = `<p class="empty">Loading ${esc(VIEWS[view].title)}…</p>`;
+  if (changed && !app.cache[view] && !el.childElementCount) el.innerHTML = `<p class="empty">Loading ${esc(VIEWS[view].title)}…</p>`;
   await reload(view);
 }
 async function reload(view) {
@@ -319,7 +322,10 @@ document.addEventListener("keydown", (e) => {
   else if (e.key.toLowerCase() === "s") app.enableSound(!(app.prefs.sound && app.sound.enabled));
   else if (e.key.toLowerCase() === "m") app.setPref("motion", app.reduced() ? "full" : "reduced");
 });
-document.addEventListener("visibilitychange", () => { if (!document.hidden) pulse(true); });
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) pulse(true);
+  if (app._floor) (document.hidden || app.view !== "overview" ? app._floor.pause() : app._floor.resume());
+});
 if (mq.addEventListener) mq.addEventListener("change", applyPrefs);
 window.__lql = app;   // for the browser checks in scripts/ui_check.mjs
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Browser verification of the console against a REAL local server with a throwaway SYNTHETIC demo state.
-// Exercises navigation, the graph, a real job, the command palette, sound and motion preferences, persistence,
-// disconnection/reconnection and responsive layout, and measures timings, frame rate, long tasks and heap.
+// Exercises the 3D trading floor (brain, desks, growth after a real job, WebGL fallback), navigation, the graph, a real
+// job, the command palette, sound and motion preferences, persistence, disconnection/reconnection and responsive
+// layout, and measures timings, frame rate, long tasks and heap. Headless Chromium renders WebGL in software
+// (SwiftShader), so its frame rates say nothing about a real GPU.
 //
 //   node scripts/ui_check.mjs [outDir]          (needs Playwright; uses the preinstalled Chromium if present)
 //
@@ -35,13 +37,14 @@ const results = { checks: [], perf: {}, errors: [], conditions: {} };
 const check = (name, ok, detail = "") => { results.checks.push({ name, ok: !!ok, detail }); console.log(`${ok ? "PASS" : "FAIL"} ${name}${detail ? " — " + detail : ""}`); };
 
 await startServer();
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 results.conditions = { chromium: browser.version(), viewport: "1440x900", host: `${process.platform} ${process.arch}`, node: process.version, data: "synthetic demo state (temp dir)" };
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => results.errors.push(String(e)));
 page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|ERR_CONNECTION_REFUSED/.test(m.text())) results.errors.push(m.text()); });
 await page.addInitScript(() => {
+  try { if (!localStorage.getItem("lql.prefs.v1")) localStorage.setItem("lql.prefs.v1", JSON.stringify({ neurons: "low" })); } catch { /* storage blocked */ }
   window.__long = [];
   try { new PerformanceObserver((l) => l.getEntries().forEach((e) => window.__long.push(e.duration))).observe({ type: "longtask", buffered: true }); } catch { /* not supported */ }
 });
@@ -51,12 +54,56 @@ let t0 = Date.now();
 await page.goto(URL);
 await page.waitForSelector("#v-overview .role");
 results.perf.startup_to_overview_ms = Date.now() - t0;
-check("startup renders the overview with 8 role cards", (await page.locator("#v-overview .role").count()) === 8);
+check("startup renders the overview with 10 role cards", (await page.locator("#v-overview .role").count()) === 10);
 check("safety posture visible", /SIMULATED/.test(await page.textContent("#posture")) && /NO BROKER/.test(await page.textContent("#posture")));
 check("synthetic banner visible", /SYNTHETIC/.test(await page.textContent("#banner")));
 const nav = await page.evaluate(() => { const n = performance.getEntriesByType("navigation")[0]; return { dcl: n.domContentLoadedEventEnd, load: n.loadEventEnd, transfer: n.transferSize }; });
 results.perf.navigation = nav;
+
+// 1b. the 3D floor: brain, supervisor and desks, all drawn from /api/overview
+t0 = Date.now();
+await page.waitForFunction(() => window.__lql && window.__lql._floor && window.__lql._floor.stats().neurons > 0, null, { timeout: 30000 }).catch(() => {});
+results.perf.floor_ready_ms = Date.now() - t0;
+const floorStats = () => page.evaluate(() => (window.__lql._floor ? window.__lql._floor.stats() : null));
+const st0 = await floorStats();
+results.perf.brain_build_ms_150k = st0 && st0.build_ms;
+check("the 3D floor renders a 150k-neuron brain with WebGL", !!st0 && st0.neurons === 150000 && (await page.locator("#floor-stage canvas").count()) === 1, st0 ? `built in ${st0.build_ms} ms (worker)` : "no floor");
+check("the supervisor and 9 desks are labelled", (await page.locator(".floor-label[data-desk]").count()) === 10);
+let ov = await (await fetch(URL + "api/overview")).json();
+const expected = await page.evaluate(async (brain) => {
+  const B = await import("/static/js/scene/brain-geometry.js"), M = await import("/static/js/scene/floor-model.js");
+  return B.formedNeurons(B.regionCounts(150000, M.sharesOf(brain)), M.formedArray(brain));
+}, ov.brain);
+await page.waitForFunction((n) => document.querySelector("#floor-hud").textContent.includes(n), expected.toLocaleString("en-US"), { timeout: 5000 }).catch(() => {});
+const hud = await page.textContent("#floor-hud");
+check("formed neurons = the server's brain model (recorded evidence only)", st0 && st0.formed_neurons === expected && expected > 0 && hud.includes(expected.toLocaleString("en-US")), `${expected} of 150,000`);
+check("EDGE core stays dark on synthetic data", /dark: no proven trading edge/i.test(hud) && ov.brain.regions.find((r) => r.key === "edge").formed === 0);
+check("the supervisor is a hologram bust whose face stays a blank mask without a proven edge", st0 && st0.bust_points > 0 && st0.face_stage === 0 && /blank mask/i.test(hud));
+check("the HUD shows the brain's stage on the path to Ultron", hud.includes(`Stage ${ov.brain.stage.index + 1}/6`) && ov.brain.stage.index < 4, ov.brain.stage.name);
 await page.screenshot({ path: join(OUT, "overview-1440.jpg"), type: "jpeg", quality: 82, fullPage: true });
+await page.click('.floor-label[data-desk="critic"]');
+await page.waitForSelector("#floor-insp:not([hidden])", { timeout: 5000 }).catch(() => {});
+const critic = ov.desks.find((x) => x.key === "critic");
+const inspText = (await page.textContent("#floor-insp")) || "";
+check("clicking a desk shows its real task, metrics and result", inspText.includes(critic.task) && inspText.includes(critic.result) && inspText.includes(critic.metrics[0][1]), critic.task);
+await page.waitForTimeout(7000);   // the camera flight runs on scene time, which crawls under software WebGL
+await page.screenshot({ path: join(OUT, "floor-desk-1440.jpg"), type: "jpeg", quality: 82 });
+await page.keyboard.press("Escape");
+check("Esc closes the desk inspector", (await page.locator("#floor-insp[hidden]").count()) === 1);
+// a real backtest finishes: the critic and research regions grow, a completion beam and a neuron stream are drawn
+const before = (await floorStats()).formed_neurons;
+await fetch(URL + "api/jobs", { method: "POST", headers: { "Content-Type": "application/json", "X-LQL-Request": "1" }, body: JSON.stringify({ kind: "backtest", params: { instrument: "DEMO-ETF-B", strategy: "vol_scaled_trend", source: "synthetic" } }) });
+let sawBeam = false, sawStream = false, grew = 0;
+for (let i = 0; i < 150 && !(grew && sawBeam && sawStream); i++) {
+  const st = await floorStats();
+  sawBeam ||= st.beams > 0; sawStream ||= st.streams > 0;
+  if (st.formed_neurons > before) grew = st.formed_neurons - before;
+  await page.waitForTimeout(100);
+}
+check("a finished backtest grows the brain", grew > 0, `+${grew} neurons`);
+check("its completion beam and neuron stream are drawn", sawBeam && sawStream);
+ov = await (await fetch(URL + "api/overview")).json();
+check("the floor never claims an edge from synthetic work", ov.brain.regions.find((r) => r.key === "edge").formed === 0);
 
 // 2. every workspace by keyboard, with timing and no horizontal scroll
 const views = ["overview", "graph", "data", "research", "paper", "logs", "system"];
@@ -112,18 +159,19 @@ check("job transitions are in the audit log", ["job_queued", "job_started", "job
 // 5. idle vs running frame rate on the overview (bounded, 3 s each)
 const fps = async () => page.evaluate(() => new Promise((res) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 3000) requestAnimationFrame(f); else res(n / ((performance.now() - t) / 1000)); }; requestAnimationFrame(f); }));
 await page.keyboard.press("1");
-await page.waitForSelector("#v-overview .dial-plane");
-results.perf.fps_idle_overview = Math.round(await fps());
+await page.waitForSelector("#v-overview #floor-stage canvas");
+results.perf.fps_idle_overview_swiftshader = Math.round(await fps());
 await fetch(URL + "api/jobs", { method: "POST", headers: { "Content-Type": "application/json", "X-LQL-Request": "1" }, body: JSON.stringify({ kind: "recheck", target: "M3-risk-paper" }) });
-await page.waitForSelector(".hero.busy", { timeout: 8000 }).catch(() => {});
-const busy = await page.locator(".hero.busy").count();
-check("dial shows activity only while a real job runs", busy === 1);
+await page.waitForSelector(".floor-label.active", { timeout: 8000 }).catch(() => {});
+const busyDesk = await page.locator(".floor-label.active:not(.sup)").first().getAttribute("data-desk").catch(() => null);
+const supBusy = await page.evaluate(() => window.__lql._floor.stats().supervisor_active);
+check("only the assigned desk works while a real job runs", (await page.locator(".floor-label.active[data-desk]").count()) === 2 && busyDesk && supBusy && /dispatching/.test(await page.textContent("#floor-foot")), `desk ${busyDesk} + supervisor`);
 const activeRole = await page.locator(".role.active").count();
 check("the owning role card lights up during the job", activeRole === 1, `${activeRole} active`);
-results.perf.fps_overview_job_running = Math.round(await fps());
+results.perf.fps_overview_job_running_swiftshader = Math.round(await fps());
 for (let i = 0; i < 80; i++) { const j = (await (await fetch(URL + "api/jobs")).json())[0]; if (j.status === "done" || j.status === "failed") break; await page.waitForTimeout(250); }
 await page.waitForTimeout(3000);
-check("dial returns to still when no job runs", (await page.locator(".hero.busy").count()) === 0);
+check("the floor returns to idle when no job runs", (await page.locator(".floor-label.active").count()) === 0 && /no job running/.test(await page.textContent("#floor-foot")));
 
 // 6. command palette
 await page.keyboard.press("Control+k");
@@ -143,7 +191,7 @@ check("sound turns off", (await page.getAttribute("#b-sound", "aria-pressed")) =
 
 // 8. reduced motion: OS setting and in-app preference, persisted across reload
 await page.emulateMedia({ reducedMotion: "reduce" });
-await page.waitForTimeout(100);
+await page.waitForFunction(() => document.body.classList.contains("reduced"), null, { timeout: 5000 }).catch(() => {});   // software WebGL can delay the media-query event
 check("OS reduced-motion is honoured", await page.evaluate(() => document.body.classList.contains("reduced")));
 await page.emulateMedia({ reducedMotion: "no-preference" });
 await page.keyboard.press("7");
@@ -208,6 +256,16 @@ for (const v of ["overview", "graph", "research"]) {
 }
 await phone.goto(URL + "#overview"); await phone.waitForSelector("#v-overview .role");
 await phone.screenshot({ path: join(OUT, "overview-390.jpg"), type: "jpeg", quality: 80, fullPage: true });
+
+check("phone 390 px: the floor fits the screen", await phone.evaluate(() => { const r = document.querySelector("#floor-stage").getBoundingClientRect(); return r.width > 0 && r.right <= innerWidth + 1; }));
+
+// 14. no WebGL: the overview falls back to the flat task dial, everything else still works
+const fb = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+fb.on("pageerror", (e) => results.errors.push("no-webgl: " + e));
+await fb.addInitScript(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return /webgl/.test(t) ? null : g.call(this, t, ...a); }; });
+await fb.goto(URL + "#overview");
+await fb.waitForSelector(".floor-fallback .dial-plane", { timeout: 10000 }).catch(() => {});
+check("without WebGL the overview falls back to the flat task dial", (await fb.locator(".floor-fallback .dial-plane").count()) === 1 && (await fb.locator("#v-overview .role").count()) === 10);
 
 check("no page or console errors", results.errors.length === 0, results.errors.slice(0, 3).join(" | "));
 await browser.close();

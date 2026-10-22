@@ -40,12 +40,18 @@ export default {
       </div>
       <section class="panel"><header><h2>What moves and why</h2><span class="src">motion policy</span></header>
         <table><thead><tr><th>on screen</th><th>trigger</th><th>source</th></tr></thead><tbody>
-          <tr><td>Dial node halo, graph node glow, role card glow</td><td>a job is running for that task or role</td><td>/api/jobs (job runner)</td></tr>
-          <tr><td>Scan arc around the dial core</td><td>any job is running; stops when none is</td><td>/api/jobs</td></tr>
+          <tr><td>Floor: a bot typing, its desk edge and monitors lit, the supervisor's dispatch beam to it, its brain region glowing</td><td>a job assigned to that desk is running (recheck → the task owner's desk, backtest → research); the podium rings turn while any job is queued or running</td><td>/api/jobs (job runner)</td></tr>
+          <tr><td>Floor: a beam rising from a desk (green done, rose failed)</td><td>once, when that desk's job ended</td><td>/api/jobs</td></tr>
+          <tr><td>Floor: particles flying from a desk into the brain, new neurons flashing as they form</td><td>once, when the brain model grew: more recorded, verified work</td><td>/api/overview → brain (task file, experiments, research registry, ledger, datasets, audit log)</td></tr>
+          <tr><td>Floor: desk monitors and the wall ticker change text</td><td>the record behind them changed / a new audit event</td><td>/api/overview → desks, events</td></tr>
+          <tr><td>Flat dial (no WebGL), graph node glow, role card glow</td><td>a job is running for that task or role</td><td>/api/jobs (job runner)</td></tr>
           <tr><td>Edge sweep from a task to its dependents</td><td>once, when a job for that task finished</td><td>job_finished / job_failed events</td></tr>
           <tr><td>New rows flash in the decision trace</td><td>a new audit event arrived</td><td>state/events.jsonl</td></tr>
-          <tr><td>Workspace fade-in</td><td>navigation</td><td>your input</td></tr>
-          <tr><td>Nothing else</td><td>an idle system is drawn still</td><td>—</td></tr>
+          <tr><td>Workspace fade-in, camera flights on the floor</td><td>navigation, a click on a desk or the brain</td><td>your input</td></tr>
+          <tr><td>Floor: the supervisor hologram's chest core and body brighten</td><td>any job is queued or running</td><td>/api/jobs</td></tr>
+          <tr><td>Floor: the hologram's face gains eyes, then brow and nose, then a mouth</td><td>the brain's EDGE region forms (a proven edge); a blank mask until then</td><td>/api/overview → brain (EDGE region)</td></tr>
+          <tr><td>Ambient, not data: the neurons' slow shimmer and drift, the hologram's scanlines, the wall ticker scrolling</td><td>always while the floor is visible; stopped under reduced motion</td><td>decoration</td></tr>
+          <tr><td>Nothing else</td><td>idle bots sit still; the EDGE core stays dark until a proven edge exists</td><td>—</td></tr>
         </tbody></table></section>
     </div>`;
     el.querySelector("#pf-sound").addEventListener("click", () => { app.enableSound(!(app.prefs.sound && app.sound.enabled)); app.rerender(); });

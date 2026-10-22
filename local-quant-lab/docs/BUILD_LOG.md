@@ -44,3 +44,22 @@
 - **References:** three uploaded recordings (two third-party agent dashboards and the current app) and the Perspective Engine city source audited with ffmpeg frames: `docs/design/reference-audit.md`.
 - **Built:** new console (`web/`), read models (`lql/console.py`), job runner (`lql/jobs.py`), routes, `--state-dir`, cached Hermes health, data posture label. Old `web/app.js` and `web/style.css` removed.
 - **Verified:** 167 Python tests, 10 node tests, verify 13 + H1, `ui_check.mjs` 35/35. Measurements in `docs/design/verification.md`. Five repairs found by the checks are listed in `docs/design/implementation-plan.md`.
+
+## 2026-10-22 · Session 4 (the trading floor)
+- **Founder feedback:** the SVG dial was "not what I want". The centre should look like the Perspective Engine city: one agent assigning work to bots with defined tasks, metrics and results in an institutional office, and a brain of millions of neurons that grows after each finished task, "making it an Ultron at trading piece by piece". Reference: the founder's City screenshot and the third-party "Scalp City" video (`docs/design/reference-audit.md` R6/R7).
+- **Built:**
+  - Vendored three.js r180 (D-017).
+  - New modules: `web/js/scene/` (floor, brain and bust geometry, worker, floor model, monitors).
+  - `lql/console.py`: `brain_model`, `brain_stage` and `desks`.
+  - Overview skeleton that keeps the WebGL canvas across polls; `enter`/`leave` hooks; the "Neurons" preference.
+- **Found and fixed while checking:**
+  - A null `shares` crashed the worker; the fallback dial covered it, which proved the fallback works.
+  - The first layout hid the brain behind the back desks, so the desks were rearranged into two banks.
+  - The wall ticker read mirrored from inside the room.
+  - Labels buried the desks, so they moved into callout columns with leader lines.
+  - The near-side wall posts blocked the view; the near wall is now cut away.
+  - Phone overview scrolled sideways by 46 px.
+  - A fast job could finish between two polls without its completion beam.
+  - The reduced-motion check had to wait for the media-query event under software WebGL.
+- **Honesty:** neurons count verified work, not trading skill. On the synthetic demo state the brain is at stage 3/6 (LEARNING), the EDGE core is dark and the face is a blank mask. A dev-only visual check forced the face stage in the served file in memory (never written to disk) to confirm that the eyes, brow, nose and mouth render.
+

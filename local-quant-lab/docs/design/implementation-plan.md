@@ -24,6 +24,7 @@ H was built before F/G rendered (the UI needed real read models first): `lql/con
 | D | Design tokens | done | `web/css/tokens.css`, `design-system.md` | semantic tokens only in components |
 | E | Shell | done | `web/index.html`, `web/js/main.js`, `web/css/app.css` | ui_check: 7 workspaces by keys 1–7, palette, posture chips, connection state |
 | F | Overview | done | `web/js/views/overview.js`, `lql/console.py` | 8 role cards from real roles; dial = real task DAG; decisions; guards; trace; protocol |
+| F2 | Overview: 3D trading floor (2026-10-22, D-017) | done | `web/js/scene/*`, `web/vendor/three/`, `lql/console.py` (`brain_model`, `desks`) | supervisor + 9 desks from real jobs and records; brain of 150k to 2M neurons formed only from verified work; EDGE core dark; SVG dial as the fallback; 10 role cards |
 | G | Agent graph | done | `web/js/views/graph.js`, `web/js/graph-model.js` | select, inspector, arrows, filters, search, zoom/pan; unit tests for layout/closures/filter/neighbours |
 | H | Integration | done | `lql/console.py`, `lql/jobs.py`, `lql/server.py`, `lql/lab.py` | `tests/test_console.py` (11); jobs emit audit events; recheck never changes task status |
 | I | Interaction validation | done | views | every control calls a backend route or changes a local preference; disabled states explain why |

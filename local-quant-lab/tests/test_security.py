@@ -1,4 +1,5 @@
 import ast
+import hashlib
 import re
 import unittest
 
@@ -8,6 +9,12 @@ from lql.export import find_secret
 CODE_DIRS = ("lql", "web", "config", "scripts", "agent_learning", "docs")
 BROKER = re.compile(r"(?i)(api\.alpaca\.markets|paper-api\.alpaca|interactivebrokers\.com/v1|/v2/orders|"
                     r"tradier\.com|oanda\.com/v3|place_order\s*\()")
+VENDOR = ROOT / "web" / "vendor" / "three"
+VENDOR_SHA256 = {   # three@0.180.0 (MIT); see web/vendor/three/VENDOR.md
+    "three.core.min.js": "61ba0df005b05991361d040d8ff670e1aadfd0ce7aeebd1fdb0725957a8957de",
+    "three.module.min.js": "e2b5ee6bccd38fd6d8a2428546b83c5f2426d84b152ef82be8055556e3b40eb6",
+    "OrbitControls.js": "6c860c6b342200f8aef65493319c12bfb2d652107355b1d25eb2154371128391",
+}
 
 
 def files():
@@ -70,4 +77,21 @@ class SecurityAudit(unittest.TestCase):
             src = js.read_text()
             self.assertNotIn("/api/order", src, js)
             self.assertNotIn("/api/holdout", src, js)
+            if VENDOR in js.parents:     # third-party code: pinned by hash below; its only URL is an XML namespace
+                self.assertEqual(set(re.findall(r"https?://[\w./-]+", src)) - {"http://www.w3.org/1999/xhtml"}, set(), js)
+                continue
             self.assertNotRegex(src, r"https?://(?!127\.0\.0\.1|localhost)", js)   # no remote calls or assets
+
+    def test_vendored_three_js_is_pinned(self):
+        files = {p.name for p in VENDOR.iterdir()}
+        self.assertEqual(files, set(VENDOR_SHA256) | {"LICENSE", "VENDOR.md"})
+        for name, digest in VENDOR_SHA256.items():
+            self.assertEqual(hashlib.sha256((VENDOR / name).read_bytes()).hexdigest(), digest, name)
+        notes = (VENDOR / "VENDOR.md").read_text()
+        for name, digest in VENDOR_SHA256.items():
+            self.assertIn(f"{digest}  {name}", notes)
+        self.assertIn("MIT License", (VENDOR / "LICENSE").read_text())
+        # loaded from the local copy only, never a CDN
+        self.assertIn("from './three.module.min.js'", (VENDOR / "OrbitControls.js").read_text())
+        floor = (ROOT / "web" / "js" / "scene" / "floor.js").read_text()
+        self.assertIn('from "../../vendor/three/three.module.min.js"', floor)

@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased (the trading floor, 2026-10-22)
+- **Overview centre rebuilt as a 3D trading floor** in the Perspective Engine city style (D-017).
+  - The supervisor is a holographic bust on the central podium with the brain inside its head. Its chest core dispatches the real job queue to nine trading desks: engineer, reviewer, critic, research and data on the left; risk, paper, Hermes and the founder's human seat on the right.
+  - Each desk has a bot, three monitors drawn from real records (task and result, metrics, activity log), privacy glass, a keyboard and a nameplate.
+  - Desk callouts at the stage edges show each desk's task, two metrics and last result, with leader lines to the desk.
+- **Brain of 150k to 2M neurons** (Web Worker build; "auto" picks 1M on an 8-core, 8 GB Mac). Neurons form only from recorded, verified work (`brain_model`: `formed = 1 - exp(-units/k)` per region).
+  - A finished job streams particles from its desk into its region, and the new neurons flash.
+  - The EDGE core (20%) stays dark without a proven edge.
+- **Path to Ultron:**
+  - The brain has six stages: SEED, FORMING, LEARNING, SKILLED, PROVEN EDGE, ULTRON. The last two are gated on a proven edge.
+  - The hologram's face is a blank mask until then. It gains eyes, then brow and nose, then a mouth, as the EDGE region forms.
+- **Motion is tied to real events.** Dispatch beams, typing bots, completion beams (green done, rose failed) and neuron streams are driven by real jobs and records. Ambient shimmer, scanlines and ticker scroll are labelled in System › What moves and why. Without WebGL the flat SVG dial is shown.
+- **three.js r180 vendored** in `web/vendor/three/` (MIT, SHA-256 pinned and tested, loaded only by the Overview). `/api/overview` gains `brain` and `desks`, and the role set gains research and paper.
+- **Fixes:** the 3D wall ticker no longer reads mirrored; phone overview no longer scrolls sideways (footer chips and module rows wrap).
+- **Tests:**
+  - Python: brain model, stages, desks, job-to-desk assignment and the vendored-file pin.
+  - Node: brain, bust and floor geometry; growth detection; preferences.
+  - `ui_check` now runs 48 browser checks: floor, desks, growth after a real backtest, the face stays blank, the stage HUD and the no-WebGL fallback.
+
 ## Unreleased (Perspective Engine console, 2026-10-21)
 - **New console** replacing the single-page control room: ticker with safety posture, seven workspaces (Overview, Agent graph, Data, Research, Paper, Logs, System), command palette, activity drawer, toasts, confirmation dialogs. Plain ES modules and SVG; no dependencies, no build, no remote assets.
 - **Overview "command deck":** eight role cards (supervisor, engineer, reviewer, founder, critic, risk, data, Hermes) from real state; an orchestration dial that draws the real task graph on a perspective plane; human decisions; risk guards against limits; decision trace; the frozen research protocol with pass/fail marks.

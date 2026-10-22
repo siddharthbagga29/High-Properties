@@ -5,7 +5,7 @@ import { task as taskS, dataClass, verdictTone, severityTone } from "../status.j
 import { dial } from "../graph-model.js";
 import { spark, guards } from "../charts.js";
 
-const ICON = { supervisor: "◎", engineer: "⚙", reviewer: "⌕", founder: "⚑", critic: "⊘", risk: "⛨", data: "≋", hermes: "✦" };
+const ICON = { supervisor: "◎", engineer: "⚙", reviewer: "⌕", founder: "⚑", critic: "⊘", risk: "⛨", data: "≋", hermes: "✦", research: "∿", paper: "▤" };
 const STATUS_COLOR = { done_verified: "var(--ok)", needs_human: "var(--human)", in_progress: "var(--active)", ready: "var(--info)",
   pending: "var(--muted)", failed: "var(--bad)", rejected_by_critic: "var(--bad)", blocked_external: "var(--warn)" };
 
@@ -112,13 +112,99 @@ function rules(d) {
   </div>`;
 }
 
+const FLOOR = { inst: null, loading: false, error: null, sel: null };
+
+function brainTable(d) {
+  const b = d.brain;
+  return `<table class="nowrap"><thead><tr><th>region</th><th class="r">evidence</th><th class="r">formed</th></tr></thead><tbody>${b.regions.map((r) => `<tr title="${esc(r.unit)}"><td><span class="dot" style="background:var(--r-${esc(r.key)}, #fff)"></span>${esc(r.label)}</td><td class="r num">${esc(r.units)}</td><td class="r num ${r.key === "edge" && !r.formed ? "neg" : ""}">${(r.formed * 100).toFixed(1)}%</td></tr>`).join("")}</tbody></table>
+    <p class="muted" style="font-size:var(--fs-xs);margin:6px 0 0">${esc(b.formula)}. ${esc(b.meaning)}</p>`;
+}
+
+function inspector(app, d, sel) {
+  if (!sel) return "";
+  if (sel.kind === "brain") {
+    const b = d.brain;
+    const st = FLOOR.inst ? FLOOR.inst.stats() : null;
+    return `<header><span class="kicker">The brain</span><button class="btn small" data-fl="close" data-k="fl-close">Close <kbd>Esc</kbd></button></header>
+      <h3>${st ? st.formed_neurons.toLocaleString("en-US") : "–"} <span class="muted">of ${st ? st.neurons.toLocaleString("en-US") : "–"} neurons formed</span></h3>
+      <p class="muted">Each region grows only from one kind of recorded, verified work. Rendering quality changes how many neurons are drawn, not the evidence.</p>
+      <div class="kicker" style="margin-top:8px">Path to Ultron · stage ${b.stage.index + 1} of ${b.stage.of}</div>
+      <ol class="ladder">${b.stage.stages.map((x, i) => `<li class="${x.met ? "met" : ""} ${i === b.stage.index ? "now" : ""}"><b>${esc(x.name)}</b><span>${esc(x.rule)}</span></li>`).join("")}</ol>
+      <p class="muted" style="font-size:var(--fs-xs)">The supervisor's face is data too: ${esc(b.stage.face)}. Work regions formed: ${(b.stage.work_formed * 100).toFixed(1)}%.</p>
+      ${brainTable(d)}
+      <div class="kicker" style="margin-top:10px">Recent growth</div>
+      <div class="trace" style="max-height:160px">${b.growth.slice().reverse().map((g) => `<div class="tr"><span>${esc(clock(g.t))}</span><span class="k">${esc(g.region)}${g.strengthen ? " ↺" : ""}</span><span class="m">${esc(g.message)}</span></div>`).join("") || `<p class="empty">No growth events yet.</p>`}</div>`;
+  }
+  const x = (d.desks || []).find((k) => k.key === sel.key);
+  if (!x) return "";
+  const act = x.key === "research" ? `<button class="btn primary" data-fl="go-research" data-k="fl-research">Queue a backtest…</button>`
+    : (x.key === "engineer" || x.key === "reviewer") ? `<button class="btn" data-fl="go-graph" data-k="fl-graph">Open tasks in the agent graph</button>`
+    : x.key === "paper" ? `<button class="btn" data-fl="go-paper" data-k="fl-paper">Open the paper ledger</button>`
+    : x.key === "data" ? `<button class="btn" data-fl="go-data" data-k="fl-data">Open datasets</button>`
+    : x.key === "founder" ? `<button class="btn" data-fl="go-graph-h1" data-k="fl-h1">Open the human gate</button>` : "";
+  return `<header><span class="kicker" style="color:var(--r-${esc(x.key)})">${esc(x.name)} · ${esc(x.title)}</span><button class="btn small" data-fl="close" data-k="fl-close">Close <kbd>Esc</kbd></button></header>
+    <div class="kicker" style="margin-top:6px">${x.active ? "Working on" : x.queued ? "Queued" : "Task"}</div><h3>${esc(x.task)}</h3><p class="muted">${esc(x.detail)}</p>
+    <div class="kpis">${x.metrics.map(([k, v]) => `<div class="kpi"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("")}</div>
+    <div class="kicker" style="margin-top:10px">Result</div><p class="${x.tone === "bad" ? "neg" : x.tone === "ok" ? "pos" : ""}">${esc(x.result)}</p>
+    ${x.job ? `<p class="mono" style="font-size:var(--fs-s)">${esc(x.job.id)} · ${esc(x.job.status)} · ${esc(x.job.label)}</p>` : ""}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${act}<button class="btn ghost" data-fl="home" data-k="fl-home">Back to the floor</button></div>`;
+}
+
+async function mountFloor(app, el, d) {
+  const stage = el.querySelector("#floor-stage");
+  if (FLOOR.inst || FLOOR.loading) return;
+  const fail = (why) => {
+    FLOOR.error = why;
+    stage.innerHTML = `<div class="floor-fallback"><p class="muted">3D floor unavailable here (${esc(why)}). Showing the flat task dial instead.</p><div class="dial-stage">${dialSvg(app, d.graph)}</div></div>`;
+  };
+  FLOOR.loading = true;
+  try {
+    const mod = await import("../scene/floor.js");
+    if (!mod.webglAvailable()) { fail("WebGL is not available"); return; }
+    const geo = await import("../scene/brain-geometry.js");
+    const q = app.prefs.neurons === "auto" ? geo.autoQuality({ cores: navigator.hardwareConcurrency || 4, memory: navigator.deviceMemory ?? null, mobile: matchMedia("(max-width: 700px)").matches }) : app.prefs.neurons;
+    FLOOR.inst = await mod.createFloor(stage, { quality: q, reduced: app.reduced(), onSelect: (s) => select(app, s) });
+    if (app.view !== "overview") FLOOR.inst.pause();
+    if (app.cache.overview) FLOOR.inst.update(app.cache.overview);
+    app._floor = FLOOR.inst;
+    paintHud(app, el, app.cache.overview || d);
+  } catch (e) {
+    fail(e.message || String(e));
+  } finally {
+    FLOOR.loading = false;
+  }
+}
+
+function select(app, s) {
+  FLOOR.sel = s;
+  if (FLOOR.inst) FLOOR.inst.focus(s ? (s.kind === "brain" ? "brain" : s.key) : null);
+  app.rerender();
+  // keyboard users land in the inspector (the callout they clicked is hidden while a desk is in focus)
+  if (s) setTimeout(() => document.querySelector('#floor-insp [data-fl="close"]')?.focus({ preventScroll: true }), 0);
+}
+
+function paintHud(app, el, d) {
+  const hud = el.querySelector("#floor-hud");
+  if (!hud) return;
+  const st = FLOOR.inst ? FLOOR.inst.stats() : null;
+  const edge = d.brain.regions.find((r) => r.key === "edge");
+  const sg = d.brain.stage;
+  hud.innerHTML = `<div class="hud-big num">${st ? st.formed_neurons.toLocaleString("en-US") : "–"}</div>
+    <div class="hud-sub">neurons formed of ${st ? st.neurons.toLocaleString("en-US") : "–"} · ${(d.brain.formed * 100).toFixed(1)}% of the brain</div>
+    <div class="hud-stage" title="${esc(sg.stages.map((x) => `${x.met ? "✓" : "·"} ${x.name}: ${x.rule}`).join("\n"))}">
+      <span class="segs">${sg.stages.map((x, i) => `<i class="${i <= sg.index ? "on" : ""} ${i >= 4 ? "edge" : ""}"></i>`).join("")}</span>
+      <b>Stage ${sg.index + 1}/${sg.of} · ${esc(sg.name)}</b></div>
+    ${sg.next ? `<div class="hud-sub">next: ${esc(sg.next.name)}: ${esc(sg.next.needs)}</div>` : ""}
+    <div class="hud-sub ${edge && edge.formed ? "pos" : "neg"}">EDGE core ${edge && edge.formed ? (edge.formed * 100).toFixed(1) + "% formed" : "dark: no proven trading edge · face: blank mask"}</div>`;
+}
+
 export default {
   title: "Overview",
   load: (app) => app.api("/api/overview"),
+  enter() { if (FLOOR.inst) FLOOR.inst.resume(); },
+  leave() { if (FLOOR.inst) FLOOR.inst.pause(); },
   render(app, el, d) {
-    const g = d.graph;
     const busy = d.jobs.some((j) => j.status === "running");
-    const verified = d.task_counts.done_verified || 0;
     const running = d.jobs.find((j) => j.status === "running");
     const decisions = d.decisions.length ? d.decisions.map((x) => `<div class="decision ${x.severity === "critical" ? "bad" : x.severity === "info" ? "info" : ""}"><b>${x.severity === "critical" ? "✕" : "⚑"} ${esc(x.title)}</b><p>${esc(x.detail)}</p></div>`).join("")
       : `<p class="empty">No open decisions.</p>`;
@@ -126,67 +212,85 @@ export default {
       text: r.value === null ? `limit ${r.unit === "pct" ? pct(r.limit, 0) : int(r.limit)}` : `${r.unit === "pct" ? pct(r.value, 1) : money(r.value)} / ${r.unit === "pct" ? pct(r.limit, 0) : money(r.limit)}` }));
     const evts = d.events.slice(-22).reverse();
     const lastSeen = app._lastTrace || 0;
-    const trace = evts.map((e, i) => `<div class="tr ${severityTone(e.severity)} ${Date.parse(e.t) > lastSeen && lastSeen ? "new" : ""}"><span>${esc(clock(e.t))}</span><span class="k">${esc(e.kind)}</span><span class="m">${esc(e.message)}</span></div>`).join("");
+    const trace = evts.map((e) => `<div class="tr ${severityTone(e.severity)} ${Date.parse(e.t) > lastSeen && lastSeen ? "new" : ""}"><span>${esc(clock(e.t))}</span><span class="k">${esc(e.kind)}</span><span class="m">${esc(e.message)}</span></div>`).join("");
     app._lastTrace = evts.length ? Date.parse(evts[0].t) : lastSeen;
     const exps = d.experiments.latest.map((e) => `<tr tabindex="0" data-exp="${esc(e.id)}" data-k="exp-${esc(e.id)}"><td title="${esc(e.at)}">${esc(e.strategy)}</td><td>${esc(e.instrument)}</td><td><span class="tag ${verdictTone(e.verdict)}">${esc(e.verdict)}</span></td></tr>`).join("");
-    el.innerHTML = `
-    <div class="view-head"><h1>Command deck</h1><p>Every figure below is read from local records. Motion means a real job or state change.</p></div>
-    <div class="roles">${d.roles.map(roleCard).join("")}</div>
-    <div class="ov-mid">
-      <div class="ov-col">${modules(app, d)}</div>
-      <section class="panel hero ${busy ? "busy" : ""}" aria-label="Orchestration dial">
-        <header><h2>Orchestration dial</h2><span class="src">${esc(g.source)} · ${g.nodes.length} tasks · ${g.edges.length} dependencies</span></header>
-        <div class="hero-core" aria-hidden="true"><b class="num">${verified}<span style="font-size:18px;color:var(--text-3)">/${g.nodes.length}</span></b><span>supervisor · tasks verified with evidence</span></div>
-        <div class="shadow"></div>
-        <div class="dial-stage">${dialSvg(app, g)}</div>
-        <div class="dial-labels" aria-hidden="true"></div>
-        <div class="hero-foot">
-          ${Object.entries(d.task_counts).map(([s, n]) => { const t = taskS(s); return `<span class="chip ${t.tone}">${t.glyph} ${esc(t.label)} ${n}</span>`; }).join("")}
-          <span class="chip ${busy ? "active" : "muted"}">${busy ? `◉ ${esc(running.label)} · ${running.elapsed_s ?? 0}s` : "○ no job running · dial is still"}</span>
-        </div>
+    if (!el.querySelector("#floor-stage")) {
+      el.innerHTML = `
+      <div class="view-head"><h1>Command deck</h1><p>Every figure below is read from local records. Motion means a real job or state change; ambient shimmer is labelled.</p></div>
+      <section class="panel floor" aria-label="Trading floor: the brain, the supervisor and the bots">
+        <header><h2>The floor</h2><span class="src" id="floor-src"></span>
+          <span class="floor-tools"><label class="field" style="text-transform:none">Neurons <select id="fl-quality" data-k="fl-quality" aria-label="Neurons drawn">${["auto", "low", "medium", "high", "ultra"].map((q) => `<option value="${q}" ${app.prefs.neurons === q ? "selected" : ""}>${{ auto: "auto", low: "150k", medium: "400k", high: "1M", ultra: "2M" }[q]}</option>`).join("")}</select></label>
+          <button class="btn small" data-fl="home" data-k="fl-home-top">Reset view</button></span></header>
+        <div class="floor-stage" id="floor-stage"><div class="floor-hud" id="floor-hud" aria-live="polite"></div><aside class="floor-insp" id="floor-insp" hidden aria-label="Selection details"></aside></div>
+        <div class="floor-foot" id="floor-foot"></div>
       </section>
-      <div class="ov-col">
-        <section class="panel ${d.decisions.length ? "attn" : ""}"><header><h3>Waiting on a human</h3><span class="src">${d.decisions.length} open</span></header>${decisions}</section>
-        <section class="panel"><header><h3>Risk guards</h3><span class="src">config/settings.json</span></header>${guards(gr)}
-          <p class="muted" style="font-size:var(--fs-xs);margin:6px 0 0">Bars show the simulated paper ledger against each hard limit. Limits are read-only here; only a human edits the file.</p></section>
+      <div class="roles" id="ov-roles"></div>
+      <div class="ov-mods" id="ov-mods"></div>
+      <div class="ov-mid2">
+        <section class="panel" id="ov-brain"></section>
+        <section class="panel" id="ov-decisions"></section>
+        <section class="panel" id="ov-guards"></section>
       </div>
-    </div>
-    <div class="ov-bot">
-      <section class="panel"><header><h3>Decision trace</h3><span class="src">state/events.jsonl · last ${evts.length}</span></header><div class="trace">${trace || `<p class="empty">No events yet.</p>`}</div></section>
-      <section class="panel"><header><h3>Experiments</h3><span class="src">${d.experiments.count} recorded</span></header>${exps ? `<div class="scroll"><table class="nowrap"><thead><tr><th>strategy</th><th>inst</th><th>critic</th></tr></thead><tbody>${exps}</tbody></table></div>` : `<p class="empty">No experiment yet. Run a backtest from Research.</p>`}</section>
-      <section class="panel"><header><h3>research_protocol.py</h3><span class="src">every number the critic believes</span></header>${rules(d)}</section>
-    </div>`;
-    el.querySelectorAll("[data-go]").forEach((m) => {
+      <div class="ov-bot">
+        <section class="panel" id="ov-trace"></section>
+        <section class="panel" id="ov-exps"></section>
+        <section class="panel" id="ov-rules"></section>
+      </div>`;
+      el.querySelector("#fl-quality").addEventListener("change", async (e) => {
+        app.setPref("neurons", e.target.value);
+        if (FLOOR.inst) {
+          const geo = await import("../scene/brain-geometry.js");
+          const q = e.target.value === "auto" ? geo.autoQuality({ cores: navigator.hardwareConcurrency || 4, memory: navigator.deviceMemory ?? null }) : e.target.value;
+          await FLOOR.inst.setQuality(q, app.cache.overview.brain);
+          FLOOR.inst.update(app.cache.overview);
+          paintHud(app, el, app.cache.overview);
+        }
+      });
+      el.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-fl]");
+        if (!b) return;
+        const a = b.dataset.fl;
+        if (a === "close" || a === "home") select(app, null);
+        else if (a === "go-research") app.go("research");
+        else if (a === "go-graph") app.go("graph");
+        else if (a === "go-graph-h1") app.go("graph", { task: "H1-hermes-mac" });
+        else if (a === "go-paper") app.go("paper");
+        else if (a === "go-data") app.go("data");
+      });
+      el.addEventListener("keydown", (e) => { if (e.key === "Escape" && FLOOR.sel) { select(app, null); e.stopPropagation(); } });
+      if (FLOOR.inst) { FLOOR.inst.dispose(); FLOOR.inst = null; }
+      mountFloor(app, el, d);
+    }
+    el.querySelector("#ov-roles").innerHTML = d.roles.map(roleCard).join("");
+    el.querySelector("#floor-src").textContent = `${d.graph.nodes.length} tasks · ${d.desks.length} desks · ${d.active_jobs} job${d.active_jobs === 1 ? "" : "s"} active`;
+    el.querySelector("#floor-foot").innerHTML = `<span class="chip ${busy ? "active" : "muted"}">${busy ? `◉ dispatching: ${esc(running.label)} · ${running.elapsed_s ?? 0}s` : "○ no job running · bots idle"}</span>
+      <span class="chip muted">neurons = verified work, not trading skill</span><span class="chip muted">beams = real jobs · green done · rose failed</span>
+      <span class="chip muted">drag to orbit · wheel to zoom · click a desk or the brain</span>`;
+    const insp = el.querySelector("#floor-insp");
+    insp.hidden = !FLOOR.sel;
+    insp.innerHTML = inspector(app, d, FLOOR.sel);
+    el.querySelector("#ov-mods").innerHTML = modules(app, d);
+    el.querySelector("#ov-brain").innerHTML = `<header><h3>Brain composition</h3><span class="src">verified evidence per region</span></header>${brainTable(d)}`;
+    el.querySelector("#ov-decisions").className = "panel " + (d.decisions.length ? "attn" : "");
+    el.querySelector("#ov-decisions").innerHTML = `<header><h3>Waiting on a human</h3><span class="src">${d.decisions.length} open</span></header>${decisions}`;
+    el.querySelector("#ov-guards").innerHTML = `<header><h3>Risk guards</h3><span class="src">config/settings.json</span></header>${guards(gr)}
+      <p class="muted" style="font-size:var(--fs-xs);margin:6px 0 0">Bars show the simulated paper ledger against each hard limit. Limits are read-only here; only a human edits the file.</p>`;
+    el.querySelector("#ov-trace").innerHTML = `<header><h3>Decision trace</h3><span class="src">state/events.jsonl · last ${evts.length}</span></header><div class="trace">${trace || `<p class="empty">No events yet.</p>`}</div>`;
+    el.querySelector("#ov-exps").innerHTML = `<header><h3>Experiments</h3><span class="src">${d.experiments.count} recorded</span></header>${exps ? `<div class="scroll"><table class="nowrap"><thead><tr><th>strategy</th><th>inst</th><th>critic</th></tr></thead><tbody>${exps}</tbody></table></div>` : `<p class="empty">No experiment yet. Run a backtest from Research.</p>`}`;
+    el.querySelector("#ov-rules").innerHTML = `<header><h3>research_protocol.py</h3><span class="src">every number the critic believes</span></header>${rules(d)}`;
+    el.querySelectorAll("#ov-mods [data-go]").forEach((m) => {
       const go = () => app.go(m.dataset.go);
       m.addEventListener("click", go);
       m.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-    });
-    el.querySelectorAll("[data-task]").forEach((n) => {
-      const go = () => app.go("graph", { task: n.dataset.task });
-      n.addEventListener("click", go);
-      n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
     });
     el.querySelectorAll("[data-exp]").forEach((r) => {
       const go = () => app.go("research", { experiment: r.dataset.exp });
       r.addEventListener("click", go);
       r.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
     });
-    if ([...app.flash.values()].some((t) => t > Date.now())) setTimeout(() => app.rerender(), 2300);
-    placeLabels(el, g);
+    if (FLOOR.inst) { FLOOR.inst.update(d); FLOOR.inst.setReduced(app.reduced()); paintHud(app, el, d); }
+    else if (FLOOR.error) { const fb = el.querySelector(".floor-fallback .dial-stage"); if (fb) fb.innerHTML = dialSvg(app, d.graph); }
   },
 };
 
-// Flat, readable labels for nodes on the tilted plane: the plane is 3D-transformed, the text is not.
-function placeLabels(el, g) {
-  const box = el.querySelector(".dial-labels"), hero = el.querySelector(".hero");
-  if (!box || !hero) return;
-  requestAnimationFrame(() => {
-    const hr = hero.getBoundingClientRect();
-    const byId = new Map(g.nodes.map((n) => [n.id, n]));
-    box.innerHTML = [...el.querySelectorAll(".dial-plane .node")].map((node) => {
-      const r = node.getBoundingClientRect(), n = byId.get(node.dataset.task);
-      const cls = n.job && n.job.status === "running" ? "active" : n.status === "needs_human" ? "human" : "";
-      return `<span class="${cls}" style="left:${(r.left + r.width / 2 - hr.left).toFixed(0)}px;top:${(r.top - hr.top).toFixed(0)}px">${esc(n.id.replace(/-.*/, ""))}</span>`;
-    }).join("");
-  });
-}

@@ -6,6 +6,9 @@ import * as S from "../js/status.js";
 import * as G from "../js/graph-model.js";
 import * as P from "../js/prefs.js";
 import { Limiter, Sound, CUES } from "../js/sound.js";
+import * as B from "../js/scene/brain-geometry.js";
+import * as M from "../js/scene/floor-model.js";
+import * as U from "../js/scene/bust-geometry.js";
 
 test("format: undefined and non-finite values are N/A, never a number", () => {
   for (const v of [null, undefined, NaN, Infinity, "x"]) {
@@ -98,6 +101,9 @@ test("prefs: defaults, sanitising and broken storage", () => {
   assert.equal(P.reducedMotion("system", true), true);
   assert.equal(P.reducedMotion("full", true), false);
   assert.equal(P.reducedMotion("reduced", false), true);
+  assert.equal(P.DEFAULTS.neurons, "auto");
+  P.save(store, { neurons: "ultra" }); assert.equal(P.load(store).neurons, "ultra");
+  P.save(store, { neurons: "9000000" }); assert.equal(P.load(store).neurons, "auto");   // only the presets
 });
 
 test("sound: limiter allows one cue per kind per interval and caps bursts", () => {
@@ -133,4 +139,111 @@ test("sound: silent until enabled, rate-limited, texture only when enabled", () 
   assert.deepEqual(Object.keys(CUES).sort(), ["complete", "critical", "start", "warning"]);
   const bad = new Sound({ makeContext: () => { throw new Error("no audio"); } });
   assert.equal(bad.enable(true), false);                   // no AudioContext: stays off, does not throw
+});
+
+test("brain: the cloud is deterministic, every point is placed and region counts follow the shares", () => {
+  const a = B.buildBrain(20_000, { seed: 3 }), b = B.buildBrain(20_000, { seed: 3 });
+  assert.deepEqual(a.pos, b.pos); assert.deepEqual(a.info, b.info);
+  assert.equal(a.pos.length, 60_000); assert.equal(a.info.length, 80_000);
+  assert.ok(a.pos.every(Number.isFinite));
+  const counts = B.regionCounts(20_000);
+  assert.equal(counts.reduce((x, y) => x + y, 0), Math.round(20_000 * B.NEURON_SHARE));
+  assert.deepEqual(a.counts, counts);
+  // neurons (kind 0) carry their region and an order in [0, 1) that rises inside each region
+  const seen = new Array(B.REGIONS.length).fill(0);
+  let lastOrder = -1, lastRegion = -1;
+  for (let i = 0; i < a.count; i++) {
+    const [region, order, kind] = [a.info[i * 4], a.info[i * 4 + 1], a.info[i * 4 + 2]];
+    if (kind !== 0) continue;
+    assert.ok(order >= 0 && order < 1);
+    if (region === lastRegion) assert.ok(order > lastOrder);
+    lastRegion = region; lastOrder = order; seen[region]++;
+  }
+  assert.deepEqual(seen, counts);
+  // points sit around the brain's centre, inside its outer shell
+  for (let i = 0; i < a.count; i += 97) {
+    const d = Math.hypot(a.pos[i * 3] - B.BRAIN_C[0], a.pos[i * 3 + 1] - B.BRAIN_C[1], a.pos[i * 3 + 2] - B.BRAIN_C[2]);
+    assert.ok(d < B.BRAIN_S * 2.2, d);
+  }
+  // shares from the server change the split, and null falls back to the defaults
+  const c2 = B.regionCounts(10_000, { ...B.SHARES, edge: 0 });
+  assert.equal(c2[B.REGIONS.indexOf("edge")], 0);
+  assert.deepEqual(B.regionCounts(10_000, null), B.regionCounts(10_000));
+});
+
+test("brain: formed neurons follow the formed fractions; nothing is lit without evidence", () => {
+  const counts = B.regionCounts(100_000);
+  assert.equal(B.formedNeurons(counts, new Array(10).fill(0)), 0);
+  assert.equal(B.formedNeurons(counts, new Array(10).fill(1)), counts.reduce((x, y) => x + y, 0));
+  assert.equal(B.formedNeurons(counts, [2, -1, NaN]), counts[0]);   // clamped; junk counts as zero
+  assert.deepEqual(Object.keys(B.QUALITY), ["low", "medium", "high", "ultra"]);
+  assert.equal(B.QUALITY.ultra, 2_000_000);
+  assert.equal(B.autoQuality({ mobile: true, cores: 16, memory: 32 }), "low");
+  assert.equal(B.autoQuality({ cores: 10, memory: 16 }), "high");
+  assert.equal(B.autoQuality({ cores: 4, memory: 4 }), "medium");
+  assert.equal(B.autoQuality({ cores: 2, memory: 2 }), "low");
+});
+
+test("floor: two banks of desks flank the brain and jobs go to the right desk", () => {
+  const L = M.deskLayout();
+  assert.deepEqual(L.map((d) => d.key), M.SEATS);
+  for (const d of L) assert.ok(Math.abs(Math.hypot(d.x, d.z) - M.R_DESKS) < 1e-9);
+  const left = L.filter((d) => d.x < 0), right = L.filter((d) => d.x > 0);
+  assert.equal(left.length, 5); assert.equal(right.length, 4);
+  for (const d of L) assert.ok(Math.abs(d.x) > 15, d.key);               // nothing stands in front of or behind the brain
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++)
+    assert.ok(Math.hypot(L[i].x - L[j].x, L[i].z - L[j].z) > 10, `${L[i].key}/${L[j].key}`);
+  const owners = { "M7-security-audit": "reviewer", "H1-hermes-mac": "founder" };
+  assert.equal(M.deskForJob({ kind: "recheck", target: "M7-security-audit" }, owners), "reviewer");
+  assert.equal(M.deskForJob({ kind: "recheck", target: "unknown" }, owners), "engineer");
+  assert.equal(M.deskForJob({ kind: "recheck", target: "H1-hermes-mac" }, owners), null);   // no bot does human work
+  assert.equal(M.deskForJob({ kind: "backtest" }, owners), "research");
+  assert.equal(M.deskForJob(null), null);
+  assert.equal(M.eventDesk({ kind: "job_started", data: { job_kind: "backtest" } }), "research");
+  assert.equal(M.eventDesk({ kind: "experiment" }), "critic");
+  assert.equal(M.eventDesk({ kind: "risk_rejected" }), "risk");
+  assert.equal(M.eventDesk({ kind: "acceptance_regression", data: { task: "M7-security-audit" } }, owners), "reviewer");
+  assert.equal(M.eventDesk({ kind: "server_start" }), null);
+});
+
+test("floor: growth is detected only when a region's formed fraction rises", () => {
+  const brain = { regions: [{ key: "engineer", formed: 0.5, share: 0.14 }, { key: "edge", formed: 0, share: 0.2 }] };
+  const f = M.formedArray(brain);
+  assert.equal(f.length, B.REGIONS.length);
+  assert.equal(f[B.REGIONS.indexOf("engineer")], 0.5);
+  assert.equal(f[B.REGIONS.indexOf("edge")], 0);
+  assert.deepEqual(M.formedArray(null), new Array(B.REGIONS.length).fill(0));
+  assert.deepEqual(M.sharesOf(brain), { engineer: 0.14, edge: 0.2 });
+  assert.equal(M.sharesOf({}), null);
+  assert.deepEqual(M.grown([0.1, 0.2], [0.1, 0.2]), []);
+  assert.deepEqual(M.grown([0.1, 0.2], [0.1 + 1e-9, 0.3]), [1]);
+  assert.deepEqual(M.grown([0.5], [0.4]), []);                           // nothing ever "grows" downwards
+  assert.equal(M.deskState({ key: "critic", active: true, task: "backtest x" }), "working: backtest x");
+  assert.equal(M.deskState({ key: "founder", attention: true }), "waiting on you");
+  assert.equal(M.deskState({ key: "risk", status: "kill switch off" }), "kill switch off");
+  const w = M.wrap("alpha beta gamma delta epsilon", 11, 2);
+  assert.equal(w.length, 2); assert.ok(w.every((l) => l.length <= 11)); assert.ok(w[1].endsWith("…"));
+  assert.deepEqual(M.wrap("", 10), []);
+});
+
+test("bust: deterministic hologram around the brain; the face is drawn only as data", () => {
+  const a = U.buildBust(30_000), b = U.buildBust(30_000);
+  assert.deepEqual(a.pos, b.pos); assert.deepEqual(a.info, b.info);
+  assert.equal(a.perKind.reduce((x, y) => x + y, 0), 30_000);
+  for (const k of [U.KIND.body, U.KIND.mask, U.KIND.eyes, U.KIND.browNose, U.KIND.mouth]) assert.ok(a.perKind[k] > 300, `kind ${k}`);
+  const floorY = B.BRAIN_C[1] + U.BASE * B.BRAIN_S - 1e-6;
+  let eyeY = 0, mouthY = 0, ne = 0, nm = 0;
+  for (let i = 0; i < a.count; i++) {
+    const y = a.pos[i * 3 + 1], kind = a.info[i * 2];
+    assert.ok(y >= floorY && Number.isFinite(a.pos[i * 3]));                          // stands on the podium
+    if (kind >= U.KIND.eyes) {                                                          // features sit on the front of the face
+      const lx = (a.pos[i * 3] - B.BRAIN_C[0]) / B.BRAIN_S, ly = (y - B.BRAIN_C[1]) / B.BRAIN_S, lz = (a.pos[i * 3 + 2] - B.BRAIN_C[2]) / B.BRAIN_S;
+      assert.ok(lz > 0.6 && U.maskR(lx, ly) < 1.05, `${lx},${ly},${lz}`);
+      if (kind === U.KIND.eyes) { eyeY += ly; ne++; } if (kind === U.KIND.mouth) { mouthY += ly; nm++; }
+    }
+  }
+  assert.ok(eyeY / ne > mouthY / nm + 0.4);
+  assert.ok(U.BUST_TOP > B.BRAIN_C[1] + 0.9 * B.BRAIN_S);                              // the cranium encloses the brain
+  assert.deepEqual([0, -0.1, 1e-9, 0.49, 0.5, 0.89, 0.9, 1].map(U.faceStage), [0, 0, 1, 1, 2, 2, 3, 3]);
+  assert.equal(U.faceStage(undefined), 0);
 });

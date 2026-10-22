@@ -1,9 +1,10 @@
 // Per-viewer preferences in localStorage (sound off by default). Storage may be unavailable (private window): every
 // access is guarded and the defaults always work.
-export const DEFAULTS = Object.freeze({ sound: false, volume: 0.35, texture: false, motion: "system", view: "overview" });
+export const DEFAULTS = Object.freeze({ sound: false, volume: 0.35, texture: false, motion: "system", view: "overview", neurons: "auto" });
 const KEY = "lql.prefs.v1";
 const MOTIONS = ["system", "full", "reduced"];
 const VIEWS = ["overview", "graph", "data", "research", "paper", "logs", "system"];
+const NEURONS = ["auto", "low", "medium", "high", "ultra"];
 
 export function sanitize(p) {
   const o = { ...DEFAULTS };
@@ -13,6 +14,7 @@ export function sanitize(p) {
   if (Number.isFinite(p.volume)) o.volume = Math.min(1, Math.max(0, p.volume));
   if (MOTIONS.includes(p.motion)) o.motion = p.motion;
   if (VIEWS.includes(p.view)) o.view = p.view;
+  if (NEURONS.includes(p.neurons)) o.neurons = p.neurons;
   return o;
 }
 export function load(storage) {

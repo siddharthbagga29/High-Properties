@@ -2,7 +2,34 @@
 
 Environment: Linux x86_64 cloud container (4 vCPU, no GPU), Python 3.13.16, Node 22.22.0, Playwright 1.56.1 with Chromium 141 (headless, software rendering). **Not** the MacBook Air M3: numbers below are from this container and must be re-measured on the Mac (`make ui-check`).
 
-## Commands and results
+## Update 2026-10-22: the trading floor (same container, Chromium 141 headless with SwiftShader WebGL)
+| Command | Result |
+|---|---|
+| `python3 -W error::ResourceWarning -m unittest discover -s tests -t .` | 172 tests OK (~85 s) |
+| `node --test web/tests/*.test.mjs` | 15 tests, 0 failures |
+| `python3 scripts/verify.py` | 13 done_verified, H1 needs_human |
+| `python3 scripts/check_staging.py` | OK |
+| `node scripts/ui_check.mjs` | 48/48 checks passed |
+
+New browser checks:
+- **Rendering:** a 150k-neuron brain is rendered with WebGL from a worker (90 to 150 ms build), with the supervisor and 9 desks labelled.
+- **Honest numbers:** formed neurons equal the server's brain model, recomputed independently in the page.
+- **Edge-gated displays:** the EDGE core is dark, the face is a blank mask, and the stage is below PROVEN EDGE on synthetic data.
+- **Desk inspector:** clicking a desk shows its real task, metrics and result; Esc closes it, and focus moves into it.
+- **Growth from a real job:** a real backtest grows the brain, and its completion beam and neuron stream are drawn. The floor never claims an edge from synthetic work.
+- **Assignment:** during a real recheck only the assigned desk and the supervisor are active, and the floor returns to idle afterwards.
+- **Layout and fallback:** the floor fits a 390 px phone without page scroll, and without WebGL the flat dial is shown.
+
+Measurements, all from the container:
+- Frame rate is **2 to 4 fps under software WebGL**. This measures the container, not a GPU, and must be re-measured on the Mac (`make ui-check`, then set "Neurons" to 1M and 2M).
+- Floor ready: 0.5 to 4.2 s after the overview. Long tasks: 1 per run, at most 424 ms (shader compilation).
+- Heap: stable across 28 workspace switches.
+- Vendored three.js is about 750 KB, fetched only by the Overview.
+
+Screenshots: `screenshots/overview-1440.jpg` (floor home view) and `screenshots/floor-desk-1440.jpg` (desk close-up with its inspector).
+- A dev-only check forced the face stage in a copy of `floor.js` served from memory (never written to disk), to confirm the eyes, brow, nose and mouth render. The product shows a blank mask until the EDGE region forms.
+
+## Commands and results (2026-10-21 console redesign)
 | Command | Result |
 |---|---|
 | `python3 -W error::ResourceWarning -m unittest discover -s tests -t .` | 167 tests OK (~75 s); baseline before the work: 156 OK |

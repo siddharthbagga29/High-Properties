@@ -33,7 +33,9 @@ Implemented in `web/css/tokens.css` (tokens) and `web/css/app.css` (components).
 | Safety posture chips | ticker | mode, data class, no broker/no live, kill switch, ledger, feed, Hermes; struck through and marked STALE when the server is down |
 | Rail | left (top strip on phones) | 7 workspaces with number keys |
 | Role card | overview | from reference R1, with real roles; hue bar, icon, tagline, status line, one metric, optional level bar; glows only while a real job runs for that role |
-| Orchestration dial | overview | the real task DAG on rings by dependency depth, on a plane tilted with CSS perspective; labels are projected flat so no text is ever tilted |
+| Trading floor (3D) | overview | WebGL scene in the Perspective Engine city style. The supervisor is a holographic bust (head, neck, shoulders, chest; rim-lit points with scanlines) on the central podium, with the brain inside its head and a dispatch core in its chest. Nine desks stand in two banks (engineer, reviewer, critic, research, data on the left; risk, paper, Hermes, and the founder's empty human seat on the right). Each desk has three monitors (task/result, metrics, activity log), a bot and a hue. Desk callouts (name, task, two metrics, last result) stand in columns at the stage edges with dashed leader lines to their desks, so the floor stays clear. On narrow stages they sit at the desks and avoid the hologram and each other. A HUD shows neurons formed, the share of the brain, the stage on the path to Ultron (6 segments; the last two are edge-gated) and the EDGE core / face status. Clicking a desk or the brain flies the camera there and opens an inspector with the real record and its actions. "Neurons" quality menu, "Reset view" |
+| Brain | overview floor | a neuron point cloud (150k to 2M) with two hemispheres, lobes, deep nuclei, white-matter tracts and an EDGE core. Unformed neurons draw a faint violet outline. Formed neurons glow in their region's hue. New ones flash white |
+| Orchestration dial | overview fallback | the real task DAG on rings by dependency depth, on a plane tilted with CSS perspective; shown when WebGL is unavailable |
 | Module panel | overview | numbered (01 DATA … 04 FORWARD LOG) like reference R2, click to open the workspace |
 | Risk guards | overview | bars against hard limits (reference R2) |
 | research_protocol.py | overview | frozen acceptance criteria with ✓/✗ from the latest study (reference R1's thresholds.py) |
@@ -46,6 +48,9 @@ Implemented in `web/css/tokens.css` (tokens) and `web/css/app.css` (components).
 
 ## Motion
 Only these animate, and only for the stated reason (also shown in System → "What moves and why"):
+- floor: bot typing, the dispatch beam from the supervisor, desk edge and the brain region's glow: a job assigned to that desk is running; podium rings: any job is queued or running;
+- floor: completion beam (green/rose): once when a desk's job ends; neuron stream into the brain and the white flash of new neurons: once when the server's brain model grew;
+- floor ambient (labelled as decoration): neuron shimmer and slow drift, the wall ticker's scroll. Both stop under reduced motion; the render loop then draws only on change;
 - dial node halo, graph node glow and role glow: a job is running for that task or role;
 - scan arc around the dial core: any job is running;
 - edge sweep from a task to its dependents: once, after a job for that task finished;
@@ -60,4 +65,5 @@ WebAudio oscillators, no files, no network. **Off by default**, enabled only fro
 Skip link; landmarks; `aria-current` on the rail; `aria-live` for status, toasts and announcements; every interactive SVG node is focusable with `role="button"` and a label; arrow keys move between graph tasks; visible focus ring (cyan); confirmations for consequential actions; text alternatives for charts (`role="img"` + label). Contrast: body text ≥ 12:1, secondary text ≈ 5:1 on the page background.
 
 ## Rejected
-Decorative avatars and floating robots (R1, R2), permanent 3D meshes (R2, R4), saturated full-page frames (R1), headline P&L numbers that are not from a record, idle "ambient" motion.
+Saturated full-page frames (R1), headline P&L numbers that are not from a record, leaderboards or heatmaps of fabricated workers (R6), and bots that move while no job runs.
+Revised on 2026-10-22 at the founder's request (D-017): robots and a 3D scene are now used, but only as stand-ins for real roles with real jobs. Each bot is a role in the task file, each beam is a real job transition, and each neuron is counted from recorded evidence.

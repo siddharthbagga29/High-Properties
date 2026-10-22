@@ -1,6 +1,7 @@
 """Console (Perspective Engine UI) back end: read models, job runner and the routes the UI uses."""
 import http.client
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -8,7 +9,8 @@ import threading
 import time
 import unittest
 
-from lql import ROOT
+from lql import ROOT, console
+from lql.console import BRAIN_REGIONS
 from lql.jobs import JobRunner, JobError, MAX_QUEUE
 from lql.lab import Lab
 from lql.orchestrator import TaskGraph
@@ -151,10 +153,76 @@ class ConsoleApiTests(unittest.TestCase):
         self.assertIn("synthetic only", s["data_mode"])
         self.assertNotIn("live", s["data_mode"].replace("not live", ""))
         self.assertEqual({r["key"] for r in o["roles"]},
-                         {"supervisor", "engineer", "reviewer", "founder", "critic", "risk", "data", "hermes"})
+                         {"supervisor", "engineer", "reviewer", "founder", "critic", "research", "risk", "data", "hermes",
+                          "paper"})
         self.assertTrue(any(d["ref"] == "H1-hermes-mac" for d in o["decisions"]))   # human gate stays open
         self.assertTrue(any(d["ref"] == "snapshots" for d in o["decisions"]))
         self.assertTrue(all(not r["active"] for r in o["roles"]))                   # nothing runs: nothing glows
+
+    def test_brain_forms_only_from_recorded_work_and_edge_stays_dark(self):
+        st, o = self.req("GET", "/api/overview")
+        b = o["brain"]
+        self.assertEqual([r["key"] for r in b["regions"]], [k for k, *_ in BRAIN_REGIONS])
+        self.assertAlmostEqual(sum(r["share"] for r in b["regions"]), 1.0)
+        for r in b["regions"]:
+            self.assertGreaterEqual(r["units"], 0)
+            self.assertAlmostEqual(r["formed"], 1 - math.exp(-r["units"] / r["k"]))
+            self.assertLess(r["formed"], 1.0)
+        by = {r["key"]: r for r in b["regions"]}
+        self.assertEqual(by["edge"]["units"], 0)          # synthetic data only: no proven edge, the core stays dark
+        self.assertEqual(by["edge"]["formed"], 0)
+        self.assertGreater(by["engineer"]["units"], 0)   # verified tasks with recorded test evidence
+        self.assertIn("not measure trading skill", b["meaning"])
+        self.assertEqual(b["stage"]["name"], b["stage"]["stages"][b["stage"]["index"]]["name"])
+        self.assertLess(b["stage"]["index"], 4)          # PROVEN EDGE and ULTRON need a proven edge
+        self.assertTrue(set(g["region"] for g in b["growth"]) <= set(by))
+
+    def test_brain_stages_need_a_proven_edge_beyond_skilled(self):
+        def regions(work, edge):
+            return [{"key": k, "share": share, "formed": edge if k == "edge" else work} for k, _l, _u, _k, share in BRAIN_REGIONS]
+        self.assertEqual(console.brain_stage(regions(0, 0))["name"], "SEED")
+        self.assertEqual(console.brain_stage(regions(0.3, 0))["name"], "LEARNING")
+        full = console.brain_stage(regions(1.0, 0))
+        self.assertEqual(full["name"], "SKILLED")          # all work, no edge: never past SKILLED
+        self.assertEqual(full["next"]["name"], "PROVEN EDGE")
+        self.assertEqual(console.brain_stage(regions(0.5, 0.01))["name"], "PROVEN EDGE")
+        self.assertEqual(console.brain_stage(regions(0.89, 0.95))["name"], "PROVEN EDGE")
+        top = console.brain_stage(regions(0.95, 0.95))
+        self.assertEqual((top["name"], top["index"], top["next"]), ("ULTRON", 5, None))
+
+    def test_desks_show_real_tasks_metrics_and_results(self):
+        st, o = self.req("GET", "/api/overview")
+        keys = [d["key"] for d in o["desks"]]
+        self.assertEqual(keys, ["supervisor", "engineer", "reviewer", "critic", "research", "data", "risk", "paper",
+                                "hermes", "founder"])
+        for d in o["desks"]:
+            self.assertEqual(len(d["metrics"]), 3, d["key"])
+            self.assertTrue(d["task"] and d["result"], d["key"])
+            self.assertFalse(d["active"] or d["queued"] or d["job"], d["key"])   # no job: every bot idle
+        by = {d["key"]: d for d in o["desks"]}
+        nodes = o["graph"]["nodes"]
+        done = sum(1 for n in nodes if n["status"] == "done_verified")
+        self.assertEqual(by["supervisor"]["metrics"][0], ["verified", f"{done}/{len(nodes)}"])
+        self.assertEqual(by["founder"]["result"], "waiting on you")
+        self.assertEqual(by["risk"]["metrics"][2], ["kill switch", "off"])
+        self.assertEqual(by["founder"]["metrics"][2], ["live trading", "absent"])
+
+    def test_desks_are_assigned_from_real_jobs(self):
+        class Jobs:
+            thread = None
+
+            @staticmethod
+            def list():
+                return [{"id": "j2", "kind": "backtest", "target": None, "status": "queued", "label": "backtest x"},
+                        {"id": "j1", "kind": "recheck", "target": "M7-security-audit", "status": "running",
+                         "label": "recheck M7-security-audit", "elapsed_s": 1.5}]
+        o = console.overview(self.lab, Jobs())
+        by = {d["key"]: d for d in o["desks"]}
+        self.assertTrue(by["reviewer"]["active"])                 # the recheck goes to the task owner's desk
+        self.assertEqual(by["reviewer"]["task"], "recheck M7-security-audit")
+        self.assertTrue(by["research"]["queued"] and not by["research"]["active"])   # a backtest goes to research
+        self.assertFalse(any(by[k]["active"] for k in by if k != "reviewer"))
+        self.assertEqual(o["active_jobs"], 2)
 
     def test_graph_matches_the_task_file(self):
         st, g = self.req("GET", "/api/graph")
