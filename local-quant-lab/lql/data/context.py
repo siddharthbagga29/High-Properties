@@ -58,6 +58,7 @@ class _Client:
             with self.opener(urllib.request.Request(url, headers=headers or {}), timeout=self.timeout) as r:
                 raw = r.read()
         except urllib.error.HTTPError as e:
+            e.close()      # the error carries the server's response: release the connection now
             if e.code == 429:
                 raise ContextError(f"{self.NAME} rate limit reached (HTTP 429): stop and wait; no retry")
             raise ContextError(f"{self.NAME} request failed: HTTP {e.code}")

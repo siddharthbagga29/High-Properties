@@ -240,6 +240,7 @@ class MassiveProvider:
             with self.opener(req, timeout=self.timeout) as resp:
                 raw = resp.read()
         except urllib.error.HTTPError as e:
+            e.close()      # the error carries the server's response: release the connection now
             if e.code == 429:
                 raise ProviderError("Massive rate limit reached (HTTP 429): stop and wait; the import does not retry")
             if e.code in (401, 403):

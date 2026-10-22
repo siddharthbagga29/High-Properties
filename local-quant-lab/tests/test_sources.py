@@ -206,6 +206,18 @@ class MassiveTests(unittest.TestCase):
         self.assertEqual(dataset_state(sp.info("SPY"), validate(sp.bars("SPY"))), PROVISIONAL)
         self.assertEqual(im.main(["SPY", "--from", "2024-10-01", "--to", "2024-10-02", "--dir", str(d)]), 2)  # terms flag
 
+    def test_http_errors_stop_without_retry_and_close_the_response(self):
+        # An HTTPError carries the server's response; left open it holds the connection until garbage collection
+        # (Python 3.14 reports it as a ResourceWarning). Rate limits still stop the import on the first 429.
+        for code in (429, 403, 500):
+            err = urllib.error.HTTPError("u", code, "x", {}, io.BytesIO(b"{}"))
+            seen = []
+            p, _ = self.provider([err, massive_page()], seen)
+            with self.assertRaises(ProviderError):
+                p.fetch("SPY", "2024-10-01", "2024-10-31")
+            self.assertEqual(len(seen), 1, f"HTTP {code} must not be retried")
+            self.assertTrue(err.fp.closed, f"HTTP {code} response left open")
+
 
 class ContextTests(unittest.TestCase):
     def test_fred_vintages_give_point_in_time_values(self):
@@ -269,6 +281,17 @@ class ContextTests(unittest.TestCase):
         self.assertEqual(rec["data_state"], "CONTEXT")
         with self.assertRaises(ctx.ContextError):
             ctx.save("sec", "../escape", rows, meta, raw, directory=tmpdir())
+
+    def test_http_errors_stop_without_retry_and_close_the_response(self):
+        for code in (429, 500):
+            err = urllib.error.HTTPError("u", code, "x", {}, io.BytesIO(b"{}"))
+            seen = []
+            c = ctx.FredClient(opener=opener_for([err, {}], seen), api_key="fredKEY999", sleep=lambda s: None)
+            with self.assertRaises(ctx.ContextError) as cm:
+                c.observations("UNRATE")
+            self.assertEqual(len(seen), 1, f"HTTP {code} must not be retried")
+            self.assertTrue(err.fp.closed, f"HTTP {code} response left open")
+            self.assertNotIn("fredKEY999", str(cm.exception))
 
 
 if __name__ == "__main__":

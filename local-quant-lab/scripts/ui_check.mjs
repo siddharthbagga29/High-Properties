@@ -28,6 +28,7 @@ execSync(`python3 -c "from lql.lab import Lab; lab=Lab(state_dir='${STATE}'); la
 const PORT = 8790 + Math.floor(Math.random() * 100);
 const URL = `http://127.0.0.1:${PORT}/`;
 let server;
+process.on("exit", () => server && server.kill("SIGTERM"));     // never leave a server behind if a check throws
 const startServer = async () => {
   server = spawn("python3", ["-m", "lql.server", "--port", String(PORT), "--state-dir", STATE], { cwd: ROOT, stdio: "ignore" });
   for (let i = 0; i < 50; i++) { try { await fetch(URL + "api/status"); return; } catch { await new Promise((r) => setTimeout(r, 100)); } }
@@ -37,7 +38,9 @@ const results = { checks: [], perf: {}, errors: [], conditions: {} };
 const check = (name, ok, detail = "") => { results.checks.push({ name, ok: !!ok, detail }); console.log(`${ok ? "PASS" : "FAIL"} ${name}${detail ? " — " + detail : ""}`); };
 
 await startServer();
-const browser = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+// LQL_CHROMIUM: optional path to a Chromium binary, for machines whose preinstalled browser is not the revision this
+// Playwright version downloads. Unset (the default), Playwright uses its own pinned browser.
+const browser = await chromium.launch({ executablePath: process.env.LQL_CHROMIUM || undefined, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 results.conditions = { chromium: browser.version(), viewport: "1440x900", host: `${process.platform} ${process.arch}`, node: process.version, data: "synthetic demo state (temp dir)" };
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
@@ -162,6 +165,7 @@ check("job transitions are in the audit log", ["job_queued", "job_started", "job
 const fps = async () => page.evaluate(() => new Promise((res) => { let n = 0; const t = performance.now(); const f = () => { n++; if (performance.now() - t < 3000) requestAnimationFrame(f); else res(n / ((performance.now() - t) / 1000)); }; requestAnimationFrame(f); }));
 await page.keyboard.press("1");
 await page.waitForSelector("#v-overview #floor-stage canvas");
+results.conditions.webgl_renderer = await page.evaluate(() => { const gl = document.createElement("canvas").getContext("webgl2"); const x = gl && gl.getExtension("WEBGL_debug_renderer_info"); return gl ? (x ? gl.getParameter(x.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)) : null; });
 results.perf.fps_idle_overview_swiftshader = Math.round(await fps());
 await fetch(URL + "api/jobs", { method: "POST", headers: { "Content-Type": "application/json", "X-LQL-Request": "1" }, body: JSON.stringify({ kind: "recheck", target: "M3-risk-paper" }) });
 await page.waitForSelector(".floor-label.active", { timeout: 8000 }).catch(() => {});
