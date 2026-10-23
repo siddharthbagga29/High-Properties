@@ -28,6 +28,7 @@ Never expose any of these to the internet. For a future HP host, use a private n
 make test                       # 192 Python tests
 make test-js                    # 17 node tests
 python3 scripts/verify.py       # 13 done_verified, H1 needs_human
+make runtime-check              # server/worker lifecycle, clean restart, hard-kill recovery (temp state, free port)
 python3 -m lql.server --port 8766 --state-dir /tmp/lql-demo &   # throwaway state, separate port
 H='-H Host:127.0.0.1:8766 -H Content-Type:application/json -H X-LQL-Request:1'
 curl -s $H -d '{"kind":"backtest","params":{"instrument":"DEMO-ETF-A","strategy":"sma_trend","source":"synthetic","params":{}}}' http://127.0.0.1:8766/api/jobs
