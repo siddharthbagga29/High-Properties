@@ -1,6 +1,6 @@
 PY ?= python3
 
-.PHONY: test test-js ui-check gpu-fps runtime-check run demo export verify status
+.PHONY: test test-js ui-check gpu-fps runtime-check daily run demo export verify status
 test:      ## run the full offline test suite
 	$(PY) -m unittest discover -s tests -t . -v
 test-js:   ## front-end unit tests (node, no dependencies)
@@ -11,6 +11,8 @@ gpu-fps:   ## frame rate on this machine's GPU (visible browser; labels software
 	node scripts/gpu_fps.mjs
 runtime-check: ## server + worker lifecycle, restart and crash recovery on a free port and a temp state (synthetic)
 	$(PY) scripts/runtime_check.py
+daily:     ## one scheduled pass now: research jobs + report (add ARGS="--refresh-data --forward" once data is set up)
+	$(PY) scripts/daily_run.py $(ARGS)
 run:       ## start the control room on http://127.0.0.1:8765
 	$(PY) -m lql.server
 demo:      ## two demo backtests + 300 paper sessions (synthetic)

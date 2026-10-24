@@ -43,7 +43,7 @@ export default {
           ${d.series && d.series.issues.length ? `<div class="kicker" style="margin-top:10px">Flagged bars</div><div class="scroll" style="max-height:140px"><table><tbody>${d.series.issues.map((i) => `<tr><td>${esc(i.date)}</td><td>${esc(i.code)}</td><td>${esc(i.detail)}</td></tr>`).join("")}</tbody></table></div>` : ""}</section></div>` : ""}
       <div class="two">
         <section class="panel"><header><h2>Providers</h2><span class="src">credentials shown as configured / not configured only</span></header>
-          <table><tbody>${d.providers.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td><span class="tag ${p.status === "available" ? "ok" : "muted"}">${esc(p.status)}</span></td><td>${esc(p.detail)}</td></tr>`).join("")}</tbody></table></section>
+          <table><tbody>${d.providers.map((p) => `<tr><td><b>${esc(p.name)}</b></td><td><span class="tag ${p.status === "available" || p.status === "key configured" ? "ok" : p.name === "massive" ? "warn" : "muted"}">${esc(p.status)}</span></td><td>${esc(p.detail)}</td></tr>`).join("")}</tbody></table></section>
         <section class="panel"><header><h2>Data classes</h2><span class="src">never merged into one "online" light</span></header>
           <table><tbody>${Object.entries(d.classes).map(([k, v]) => { const cc = dataClass(k); return `<tr><td><span class="tag ${cc.tone}">${cc.glyph} ${esc(cc.label)}</span></td><td>${esc(v)}</td></tr>`; }).join("")}</tbody></table></section>
       </div>

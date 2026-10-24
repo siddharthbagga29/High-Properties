@@ -210,7 +210,7 @@ function paintCore(app, el, d) {
   const h = (d.decisions || [])[0];
   box.className = `floor-core ${cs.state.toLowerCase()}`;
   box.innerHTML = `<div class="core-k">RESEARCH CORE</div><div class="core-s"><i></i>${esc(cs.state)}</div><div class="core-l">${esc(cs.line)}</div>${open}
-    ${h ? `<div class="core-h" title="${esc(h.detail)}">NEEDS HUMAN · ${esc(h.ref)}: ${esc(h.title)}</div>` : ""}`;
+    ${h ? `<div class="core-h${h.kind === "deferred" ? " muted" : ""}" title="${esc(h.detail)}">${h.kind === "deferred" ? "DEFERRED" : "NEEDS HUMAN"} · ${esc(h.ref)}: ${esc(h.title)}</div>` : ""}`;
 }
 
 export default {
@@ -284,7 +284,8 @@ export default {
     el.querySelector("#floor-foot").innerHTML = `<span class="chip ${busy ? "active" : "muted"}">${busy ? `◉ dispatching: ${esc(running.label)} · ${running.elapsed_s ?? 0}s` : "○ no job running · bots idle"}</span>
       <span class="chip muted">neurons = verified work, not trading skill</span><span class="chip muted">beams = real jobs · green done · rose failed</span>
       <span class="chip muted">drag to orbit · wheel to zoom · click a desk or the brain</span>
-      <span class="chip muted" title="${esc(d.ops.note)}">ops: ${d.ops.jobs_succeeded} jobs succeeded · ${d.ops.jobs_failed} failed${d.ops.jobs_interrupted ? ` (${d.ops.jobs_interrupted} interrupted)` : ""} · ${d.ops.experiments} experiments · ${d.ops.montecarlo_runs} Monte Carlo · ${d.ops.walkforward_results} walk-forward</span>`;
+      <span class="chip muted" title="${esc(d.ops.note)}">ops: ${d.ops.jobs_succeeded} jobs succeeded · ${d.ops.jobs_failed} failed${d.ops.jobs_interrupted ? ` (${d.ops.jobs_interrupted} interrupted)` : ""} · ${d.ops.experiments} experiments · ${d.ops.montecarlo_runs} Monte Carlo · ${d.ops.walkforward_results} walk-forward</span>
+      <span class="chip ${d.scheduled && d.scheduled.state === "failed" ? "bad" : "muted"}" title="${esc(d.scheduled ? d.scheduled.detail : "")}">scheduled pass: ${d.scheduled && d.scheduled.date ? `${esc(d.scheduled.date)} ${esc(d.scheduled.state)}` : "never run"}</span>`;
     const insp = el.querySelector("#floor-insp");
     insp.hidden = !FLOOR.sel;
     insp.innerHTML = inspector(app, d, FLOOR.sel);

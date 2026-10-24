@@ -36,10 +36,18 @@ def run_acceptance(tid, _evidence):
 graph = TaskGraph(ROOT / "state" / "current_state.json", EventLog())
 for tid, goal, owner, deps, acc in SEED_TASKS:
     graph.add(tid, goal, owner, deps, acc)
+# D-022: the founder deferred Hermes. The task stays open (never closed without evidence); the question says why.
+HERMES_GATE = ("Deferred by the founder on 2026-10-24 (D-022): Hermes v0.22.2 requires at least 64K tokens of "
+               "context, more than an 8 GB Mac holds without swapping at Ollama's default cache. The lab runs without "
+               "it. To re-open: on a 16 GB+ Mac, or with a q4_0 KV cache measured not to swap, run "
+               "python3 scripts/hermes_check.py --memory-roundtrip and check memory_roundtrip.ok in "
+               "state/hermes_check.json")
 for tid, _g, owner, _d, _a in SEED_TASKS:
-    if owner == "founder" and graph.get(tid)["status"] not in ("needs_human", "done_verified"):
-        graph.needs_human(tid, "Run on the Mac: install Hermes from the official installer, choose a local model "
-                               "with >=64K context, then python3 scripts/hermes_check.py --memory-roundtrip")
+    t = graph.get(tid)
+    if owner == "founder" and t["status"] != "done_verified" and (
+            t["status"] != "needs_human" or (t["blocker"] or {}).get("question") != HERMES_GATE
+            or (t["blocker"] or {}).get("kind") != "deferred"):
+        graph.needs_human(tid, HERMES_GATE, deferred=True)
 sup = Supervisor(graph)
 for _ in range(20):
     tid = sup.cycle(lambda t: {}, run_acceptance, lambda t, e: [])

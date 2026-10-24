@@ -177,7 +177,9 @@ function posture(s) {
     [s.kill_switch ? "KILL SWITCH ON" : "KILL OFF", s.kill_switch ? "bad" : "ok", "Paper kill switch"],
     [s.reconciled ? "LEDGER OK" : "LEDGER MISMATCH", s.reconciled ? "ok" : "bad", "Paper ledger reconciled against its fill journal"],
     [s.data_lockout ? "FEED LOCKED" : "FEED OK", s.data_lockout ? "bad" : "ok", "Paper replay data validation"],
-    [`HERMES: ${s.hermes.available ? "ADVISORY" : "FALLBACK"}`, s.hermes.available ? "info" : "warn", s.hermes.detail],
+    s.hermes.available ? ["HERMES: ADVISORY", "info", s.hermes.detail]
+      : s.hermes.deferred ? ["HERMES: OFF", "muted", "Deferred by the founder (D-022); the lab runs without it"]
+      : ["HERMES: FALLBACK", "warn", s.hermes.detail],
   ];
   $("posture").innerHTML = p.map(([t, c, title]) => `<span class="chip ${c}" title="${esc(title)}">${esc(t)}</span>`).join("");
   measure();

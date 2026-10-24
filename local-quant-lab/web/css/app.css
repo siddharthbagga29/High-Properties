@@ -256,6 +256,7 @@ td.r, th.r { text-align: right; }
 .floor-core .core-s i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: currentColor; vertical-align: middle; }
 .floor-core .core-l { font: 400 var(--fs-xs) var(--f-mono); color: var(--text-2); overflow-wrap: anywhere; }
 .floor-core .core-h { font: 500 var(--fs-xs) var(--f-mono); color: var(--human); margin-top: 4px; }
+.floor-core .core-h.muted { color: var(--text-3); }
 .floor-core.running .core-s { color: var(--cyan); } .floor-core.queued .core-s { color: var(--amber); }
 .floor-core.succeeded .core-s { color: var(--ok); } .floor-core.failed .core-s { color: var(--bad); } .floor-core.idle .core-s { color: var(--text-2); }
 .floor-insp { position: absolute; z-index: 3; right: 10px; top: 10px; bottom: 10px; width: min(380px, calc(100% - 20px)); overflow: auto;
@@ -308,6 +309,8 @@ td.r, th.r { text-align: right; }
 .form { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: end; }
 .field { display: grid; gap: 3px; font: 500 var(--fs-xs) var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .field input[type="number"] { width: 84px; }
+.field[hidden] { display: none; }
+.health td:first-child { white-space: nowrap; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 6px; }
 .kpi { background: var(--ink-1); border: 1px solid var(--line-2); border-radius: var(--radius); padding: 6px 8px; }
 .kpi .k { font: 500 var(--fs-xs) var(--f-mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }

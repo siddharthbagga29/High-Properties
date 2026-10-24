@@ -228,6 +228,11 @@ class Lab:
         return (f"{len(snaps)} snapshot(s), {prov} provisional + synthetic" if prov
                 else f"{len(snaps)} verified snapshot(s) + synthetic; historical, not live")
 
+    def hermes_deferred(self):
+        """True when the founder deferred the Hermes gate (D-022): Hermes is off by decision, not broken."""
+        t = self.tasks.tasks.get("H1-hermes-mac")
+        return bool(t and t["status"] == "needs_human" and (t.get("blocker") or {}).get("kind") == "deferred")
+
     def hermes_health(self, ttl=60):
         """`hermes --version` spawns a process; cache it so polling the status never spawns one per request."""
         now = time.time()
@@ -247,7 +252,7 @@ class Lab:
                 "data_lockout": bool(paper and paper["data_lockout"]),
                 "reconciled": paper["reconciled"] if paper else True,
                 "paper_clock": paper["last_processed"] if paper else None,
-                "hermes": {"available": h["available"], "detail": h["detail"],
+                "hermes": {"available": h["available"], "detail": h["detail"], "deferred": self.hermes_deferred(),
                            "fallback": "deterministic fallback active" if not h["available"] else "advisory only"},
                 "server_time": now_iso()}
 

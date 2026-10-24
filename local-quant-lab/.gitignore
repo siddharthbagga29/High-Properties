@@ -29,3 +29,7 @@ state/hermes_check.json
 
 # Local Node.js dependencies
 node_modules/
+
+# scheduled pass reports and lock (results, regenerated daily)
+state/reports/
+state/daily_run.lock

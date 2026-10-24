@@ -141,8 +141,11 @@ def data_sources(lab):
                 {"name": "synthetic", "status": "available", "detail": "generated locally, deterministic, not market data"},
                 {"name": "csv snapshot", "status": "available" if any(Path(lab.snapshot_dir or SNAPSHOT_DIR).glob("*.csv"))
                  else "empty", "detail": "local files with a SHA-256 manifest; raw files are git-ignored"},
-                {"name": "stooq", "status": "key configured" if os.environ.get("STOOQ_API_KEY") else "not configured",
-                 "detail": "never called by the server; founder-run script only; terms and adjustment unverified"}],
+                {"name": "massive", "status": "key configured" if os.environ.get("MASSIVE_API_KEY") else "not configured",
+                 "detail": "end-of-day US equities; founder-run importer or the scheduled pass (--refresh-data); "
+                           "imports stay PROVISIONAL until adjustment is verified"},
+                {"name": "stooq", "status": "quarantined",
+                 "detail": "never called by the server; terms and adjustment unverified (data-source-review.md)"}],
             "classes": {"synthetic": "generated fixture, not market data",
                         "provisional": "imported real data, split/dividend adjustment NOT verified: no evidence value",
                         "verified": "adjustment verified against an independent reference (still historical, not live)",
@@ -283,10 +286,11 @@ def system(lab, jobs=None):
                 {"name": "control room server", "status": "up", "detail": "127.0.0.1 only; host and CSRF guards"},
                 {"name": "job worker", "status": (jobs.health()["worker"]["state"] if jobs else "down"),
                  "detail": "1 worker thread, queue max 8; jobs persisted in state/jobs/"},
-                {"name": "hermes agent", "status": "available" if h["available"] else "not found",
-                 "detail": h["detail"]},
-                {"name": "ollama", "status": _ollama()["endpoint"], "detail":
-                 ("binary on PATH" if _ollama()["binary"] else "binary not on PATH")
+                {"name": "hermes agent", "status": _models(lab, h)["hermes"],
+                 "detail": "advisory only; the lab runs without it" if lab.hermes_deferred() else h["detail"]},
+                {"name": "ollama", "status": ("not used (Hermes deferred)" if lab.hermes_deferred() and not h["available"]
+                                              else _ollama()["endpoint"]), "detail":
+                 f"probe: {_ollama()['endpoint']}; " + ("binary on PATH" if _ollama()["binary"] else "binary not on PATH")
                  + (f", version {_ollama()['version']}" if _ollama()["version"] else "")},
                 {"name": "broker", "status": "none", "detail": "no broker adapter exists; live trading absent"}],
             "credentials": {f"{name} ({var})": ("configured" if os.environ.get(var) else "not configured")
@@ -302,6 +306,26 @@ def system(lab, jobs=None):
 PROVIDER_ENV = {"stooq api key": "STOOQ_API_KEY", "massive api key": "MASSIVE_API_KEY", "fred api key": "FRED_API_KEY",
                 "bea api userid": "BEA_API_USERID", "alpaca paper key id": "ALPACA_PAPER_KEY_ID",
                 "sec edgar user-agent": "SEC_USER_AGENT"}
+
+
+def _models(lab, h):
+    if h["available"]:
+        return {"hermes": "available", "ollama": _ollama()["endpoint"]}
+    if lab.hermes_deferred():                     # D-022: off by the founder's decision, not a fault to fix
+        return {"hermes": "off (deferred, D-022)", "ollama": "not used while Hermes is deferred"}
+    return {"hermes": "not found", "ollama": _ollama()["endpoint"]}
+
+
+def scheduled_pass(lab):
+    """The last scripts/daily_run.py pass, from its own report; never inferred."""
+    p = lab.state / "reports" / "daily" / "latest.json"
+    try:
+        r = json.loads(p.read_text())
+    except (OSError, ValueError):
+        return {"state": "never run", "detail": "no scheduled pass yet: see docs/engineering/runbook.md"}
+    steps = " · ".join(f"{s['step']} {s['status']}" for s in r.get("steps", []))
+    return {"state": "ok" if r.get("status") == "ok" else "failed", "date": r.get("date"),
+            "finished_at": r.get("finished_at"), "detail": f"{r.get('date')} · {steps}"}
 
 
 def health(lab, jobs, light=False):
@@ -333,7 +357,8 @@ def health(lab, jobs, light=False):
                                                 f"dataset(s)", "states": states},
                          "external": {name: ("key configured (not verified from here)" if os.environ.get(var)
                                              else "not configured") for name, var in PROVIDER_ENV.items()}},
-        "model_provider": {"hermes": "available" if h["available"] else "not found", "ollama": _ollama()["endpoint"]},
+        "model_provider": _models(lab, h),
+        "scheduled": scheduled_pass(lab),
         "last_research_run": ({k: exps[0][k] for k in ("id", "at", "strategy", "instrument", "source", "verdict")}
                               if exps else None),
         "strategies": [m["key"] for m in catalog()] if callable(catalog) else None,
@@ -597,8 +622,11 @@ def overview(lab, jobs=None):
     decisions = []
     for n in g["nodes"]:
         if n["status"] == "needs_human":
-            decisions.append({"kind": "task", "ref": n["id"], "title": n["goal"],
-                              "detail": (n["blocker"] or {}).get("question", ""), "severity": "warning"})
+            deferred = (n["blocker"] or {}).get("kind") == "deferred"
+            decisions.append({"kind": "deferred" if deferred else "task", "ref": n["id"],
+                              "title": f"Deferred: {n['goal']}" if deferred else n["goal"],
+                              "detail": (n["blocker"] or {}).get("question", ""),
+                              "severity": "info" if deferred else "warning"})
     for d in prov:
         decisions.append({"kind": "data", "ref": d["instrument"], "title": f"{d['instrument']}: price adjustment unverified",
                           "detail": "Run scripts/check_adjustment.py against an independent reference "
@@ -618,6 +646,9 @@ def overview(lab, jobs=None):
         if e["kind"] == "acceptance_regression":
             decisions.append({"kind": "regression", "ref": e.get("data", {}).get("task"), "title": e["message"],
                               "detail": "A re-run of a verified task's tests failed.", "severity": "critical"})
+    rank = {"critical": 0, "warning": 1, "info": 2}
+    decisions.sort(key=lambda d: (rank.get(d["severity"], 3), d["kind"] == "deferred"))   # stable: actionable first
+    open_decisions = [d for d in decisions if d["kind"] != "deferred"]
     job_list = jobs.list() if jobs else []
     active = [j for j in job_list if j["status"] in ("queued", "running")]
     hermes = status["hermes"]
@@ -652,9 +683,10 @@ def overview(lab, jobs=None):
                      "at": (g["last_checkpoint"] or {}).get("at")})
     fd = owner("founder")
     roles.append({"key": "founder", "name": "FOUNDER", "tagline": "the human gate",
-                  "status": f"{len(decisions)} decision(s) open" if decisions else "nothing waiting",
-                  "active": False, "metric": str(sum(1 for t in fd if t["status"] == "needs_human")),
-                  "metric_label": "tasks need you", "level": None, "attention": bool(decisions)})
+                  "status": f"{len(open_decisions)} decision(s) open" if open_decisions else "nothing waiting",
+                  "active": False, "metric": str(sum(1 for t in fd if t["status"] == "needs_human"
+                                                     and (t["blocker"] or {}).get("kind") != "deferred")),
+                  "metric_label": "tasks need you", "level": None, "attention": bool(open_decisions)})
     roles.append({"key": "critic", "name": "CRITIC", "tagline": "rejects weak evidence",
                   "status": (f"last: {last_exp['verdict']} on {last_exp['strategy']} {last_exp['instrument']}"
                              if last_exp else "no experiment yet"), "active": False,
@@ -670,7 +702,9 @@ def overview(lab, jobs=None):
                   "active": False, "metric": f"{len(data['datasets'])}", "metric_label": "datasets",
                   "level": None, "attention": bool(prov) or status["data_lockout"]})
     roles.append({"key": "hermes", "name": "HERMES", "tagline": "advisory memory layer",
-                  "status": "available (advisory only)" if hermes["available"] else "not found: deterministic fallback",
+                  "status": ("available (advisory only)" if hermes["available"] else
+                             "off by decision (D-022): deterministic fallback" if hermes.get("deferred") else
+                             "not found: deterministic fallback"),
                   "active": False, "metric": str(fallbacks), "metric_label": "fallbacks logged", "level": None})
     regs = res["registrations"]
     bt = running_task if running_task and running_task["kind"] == "backtest" else None
@@ -699,5 +733,5 @@ def overview(lab, jobs=None):
                       | {"equity": paper["equity"][-260:], "orders": len(paper["orders"]), "fills": len(paper["fills"])}
                       if paper else None),
             "risk_guards": _risk_guards(lab, paper), "events": events[-60:], "brain": brain, "desks": desk_list,
-            "ops": _ops(lab, job_list),
+            "ops": _ops(lab, job_list), "scheduled": scheduled_pass(lab),
             "last_job_event": last_of("job_finished", "job_failed", "job_cancelled", "job_started")}

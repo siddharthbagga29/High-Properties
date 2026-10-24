@@ -45,6 +45,9 @@ results.conditions = { chromium: browser.version(), viewport: "1440x900", host: 
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => results.errors.push(String(e)));
+// a page asset that fails to load (a missing favicon, script or stylesheet) is an error; API refusals are tested elsewhere
+page.on("response", (r) => r.status() >= 400 && !["fetch", "xhr", "eventsource"].includes(r.request().resourceType())
+  && results.errors.push(`${r.status()} ${r.url()}`));
 page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|ERR_CONNECTION_REFUSED/.test(m.text())) results.errors.push(m.text()); });
 await page.addInitScript(() => {
   try { if (!localStorage.getItem("lql.prefs.v1")) localStorage.setItem("lql.prefs.v1", JSON.stringify({ neurons: "low" })); } catch { /* storage blocked */ }
@@ -201,6 +204,11 @@ await page.keyboard.press("4");
 await page.waitForSelector("#mc-fan path", { timeout: 15000 }).catch(() => {});
 const rText = (await page.textContent("#v-research")) || "", fanPaths = await page.locator("#mc-fan path").count();
 check("results are still there after a browser refresh", fanPaths > 2 && /500 paths/.test(rText), `${fanPaths} fan paths; runs listed: ${(rText.match(/\d+ paths · block \d+/g) || []).join(", ")}; view ${await page.evaluate(() => window.__lql.view)}`);
+const smaShown = await page.isVisible("#bt-fast");
+await page.selectOption("#bt-strat", "buy_hold");
+const holdHidden = !(await page.isVisible("#bt-fast")) && !(await page.isVisible("#bt-slow"));
+await page.selectOption("#bt-strat", "sma_trend");
+check("fast/slow are offered only for the strategy that uses them", smaShown && holdHidden && await page.isVisible("#bt-fast"));
 await page.keyboard.press("1");
 
 // 6. command palette
@@ -226,6 +234,8 @@ check("OS reduced-motion is honoured", await page.evaluate(() => document.body.c
 await page.emulateMedia({ reducedMotion: "no-preference" });
 await page.keyboard.press("7");
 await page.waitForSelector("#pf-motion");
+check("System shows the scheduled pass and Hermes as off by decision, not as a fault",
+  /scheduled pass/.test(await page.textContent("#v-system")) && /HERMES: OFF/.test(await page.textContent("#posture")));
 await page.selectOption("#pf-motion", "reduced");
 await page.reload();
 await page.waitForSelector("#v-system:not([hidden]) #pf-motion");

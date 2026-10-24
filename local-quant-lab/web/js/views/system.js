@@ -2,7 +2,11 @@
 // policy ("what moves and why").
 import { esc, money, pct, duration } from "../format.js";
 
-const tone = (st) => (/^(up|available|ok|busy)/.test(st) ? "ok" : /^(down|failed|full|disabled|degraded)/.test(st) ? "bad" : "warn");
+const tone = (st) => (/^(up|available|ok|busy|configured)/.test(st) ? "ok" : /^(down|failed|full|disabled|degraded)/.test(st) ? "bad"
+  : /^(off|not used|optional|never run|none)/.test(st) ? "muted" : "warn");
+// Only the Massive key blocks real data (docs/audit/data-source-review.md); every other provider is optional.
+const cred = (k, v) => (v.startsWith("key") ? ["configured", v] : /massive/.test(k) ? ["needed for real data", "not configured"]
+  : ["optional: not set", "not configured"]);
 function health(h) {
   if (!h) return `<p class="empty">No health report.</p>`;
   const rows = [
@@ -12,12 +16,13 @@ function health(h) {
     ["research engine", h.research_engine.state, `engine ${h.research_engine.engine_version} · monte carlo ${h.research_engine.montecarlo_method} · walk-forward ${h.research_engine.walk_forward}`],
     ["data: synthetic", h.data_sources.synthetic.state, h.data_sources.synthetic.class],
     ["data: snapshots", h.data_sources.snapshots.state, "all datasets by state: " + (Object.entries(h.data_sources.snapshots.states || {}).map(([k, v]) => `${k} ${v}`).join(" · ") || "none")],
-    ...Object.entries(h.data_sources.external).map(([k, v]) => [k, v.startsWith("key") ? "configured" : "not configured", v]),
+    ...Object.entries(h.data_sources.external).map(([k, v]) => [k, ...cred(k, v)]),
     ["model: hermes", h.model_provider.hermes, "optional advisory layer"], ["model: ollama", h.model_provider.ollama, "optional local model"],
+    ["scheduled pass", (h.scheduled || {}).state || "never run", (h.scheduled || {}).detail || ""],
     ["last successful job", h.last_successful_job ? "ok" : "none yet", h.last_successful_job ? `${h.last_successful_job.id} ${h.last_successful_job.label} · ${h.last_successful_job.finished_at}` : "no job has succeeded on this state directory"],
     ["last research run", h.last_research_run ? "ok" : "none yet", h.last_research_run ? `${h.last_research_run.strategy} ${h.last_research_run.instrument} (${h.last_research_run.source}) · ${h.last_research_run.verdict} · ${h.last_research_run.at}` : "no experiment recorded"],
   ];
-  return `<table><tbody>${rows.map(([n, st, det]) => `<tr><td><b>${esc(n)}</b></td><td><span class="tag ${tone(String(st))}">${esc(String(st))}</span></td><td>${esc(det || "")}</td></tr>`).join("")}</tbody></table>`;
+  return `<table class="health"><tbody>${rows.map(([n, st, det]) => `<tr><td><b>${esc(n)}</b></td><td><span class="tag ${tone(String(st))}">${esc(String(st))}</span></td><td>${esc(det || "")}</td></tr>`).join("")}</tbody></table>`;
 }
 
 export default {
@@ -33,7 +38,7 @@ export default {
         <section class="panel"><header><h2>Health</h2><span class="src">/api/health · separate states: the server answering says nothing about the worker, data or models</span></header>
           ${health(s.health)}</section>
         <section class="panel"><header><h2>Services</h2><span class="src">probed by the server</span></header>
-          <table><tbody>${s.services.map((x) => `<tr><td><b>${esc(x.name)}</b></td><td><span class="tag ${/^(up|available|reachable)/.test(x.status) ? "ok" : x.status === "none" ? "muted" : "warn"}">${esc(x.status)}</span></td><td>${esc(x.detail)}</td></tr>`).join("")}</tbody></table>
+          <table><tbody>${s.services.map((x) => `<tr><td><b>${esc(x.name)}</b></td><td><span class="tag ${/^(up|available|reachable)/.test(x.status) ? "ok" : /^(none|off|not used)/.test(x.status) ? "muted" : "warn"}">${esc(x.status)}</span></td><td>${esc(x.detail)}</td></tr>`).join("")}</tbody></table>
           <p class="muted" style="font-size:var(--fs-xs)">Hermes and Ollama are optional. The intended HP host for local models is not configured from here; nothing listens beyond 127.0.0.1.</p></section>
         <section class="panel"><header><h2>Resources</h2><span class="src">this server process</span></header>
           <dl class="kv"><dt>python</dt><dd>${esc(s.python)} · ${esc(s.platform)} ${esc(s.machine)}</dd><dt>cpus</dt><dd>${esc(s.cpus)}</dd>

@@ -39,6 +39,40 @@ Restart the server and fetch `/api/jobs` again. The jobs, and their links to `st
 
 The browser checks (`make ui-check`) run all of this, plus the UI, against a temporary state directory.
 
+## Scheduled daily pass (no Hermes, no language model)
+
+`scripts/daily_run.py` runs one pass and writes `state/reports/daily/<date>.json`. It also writes a `scheduled_run` event, shown in Logs, and the jobs appear in the job history:
+1. **data** (`--refresh-data`): Massive end-of-day import for `--symbols` (default SPY, QQQ, IWM, TLT). Imports stay PROVISIONAL.
+2. **research:** two strategies × each instrument, then a seeded Monte Carlo on each. It uses default parameters, so nothing is ever tuned, and an unchanged dataset gives cached results.
+3. **forward** (`--forward`): one SIMULATED forward paper pass. It needs a snapshot for every symbol.
+4. **report.**
+
+A step that cannot run is recorded as `skipped` with the reason. The exit code is 0 (ok), 1 (a step failed) or 3 (another pass is running). If the control room is running, jobs go through it and you can watch them live.
+
+Try it once by hand: `make daily`, or `python3 scripts/daily_run.py --refresh-data --forward` once the key is set.
+
+**The key lives in the Keychain, never in a file.** Store it once with `security add-generic-password -s lql-massive -a "$USER" -w`; it prompts for the value, which keeps it out of your shell history.
+
+**launchd job.** It runs every day at 07:00 local time, after Massive publishes the previous session. If the Mac was asleep, it runs on wake. Save the following as `~/Library/LaunchAgents/com.localquantlab.daily.plist`, replace `/ABSOLUTE/PATH`, then run `launchctl load ~/Library/LaunchAgents/com.localquantlab.daily.plist`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.localquantlab.daily</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/sh</string><string>-c</string>
+    <string>cd /ABSOLUTE/PATH/local-quant-lab &amp;&amp; MASSIVE_API_KEY="$(security find-generic-password -s lql-massive -w)" LQL_MASSIVE_TERMS_OK=yes /usr/bin/python3 scripts/daily_run.py --refresh-data --forward</string>
+  </array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/tmp/localquantlab-daily.log</string>
+  <key>StandardErrorPath</key><string>/tmp/localquantlab-daily.log</string>
+</dict></plist>
+```
+- **Run it now:** `launchctl start com.localquantlab.daily`.
+- **Stop it:** `launchctl unload ~/Library/LaunchAgents/com.localquantlab.daily.plist`.
+- **cron instead:** cron skips any run while the Mac is asleep. The crontab line is `0 7 * * * cd /ABSOLUTE/PATH/local-quant-lab && /usr/bin/python3 scripts/daily_run.py >> /tmp/localquantlab-daily.log 2>&1`. Add the Keychain prefix above for `--refresh-data`.
+- **Older script:** `scripts/forward_daily.sh` uses Stooq, which is quarantined. It is kept for reference; `daily_run.py` replaces it.
+
 ## Where results live (all git-ignored)
 
 | Path | What |
@@ -48,6 +82,7 @@ The browser checks (`make ui-check`) run all of this, plus the UI, against a tem
 | `state/montecarlo/<hash>.json` | Monte Carlo artifacts (method, seed, paths, block, percentiles, fan, histogram, assumptions) |
 | `state/research/` | frozen walk-forward registrations, results, holdout registry (CLI only) |
 | `state/events.jsonl` | append-only audit log |
+| `state/reports/daily/` | one report per scheduled pass (`latest.json` = the most recent) |
 | `data/snapshots/` | imported price snapshots, manifests and raw responses |
 | `data/context/` | FRED, BEA and SEC context datasets |
 

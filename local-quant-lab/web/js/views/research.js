@@ -32,10 +32,10 @@ export default {
       <section class="panel"><header><h2>Run a backtest</h2><span class="src">background job · deterministic · identical runs are reused, never duplicated</span></header>
         <form class="form" id="bt-form">
           <label class="field">Instrument<select id="bt-inst" data-k="bt-inst">${insts.map((i) => `<option ${i === "DEMO-ETF-A" ? "selected" : ""}>${esc(i)}</option>`).join("")}</select></label>
-          <label class="field">Strategy<select id="bt-strat" data-k="bt-strat">${strategies.map((s) => `<option value="${esc(s.key)}">${esc(s.name)} ${esc(s.version)}</option>`).join("")}</select></label>
+          <label class="field">Strategy<select id="bt-strat" data-k="bt-strat">${strategies.map((s) => `<option value="${esc(s.key)}" ${s.key === "sma_trend" ? "selected" : ""}>${esc(s.name)} ${esc(s.version)}</option>`).join("")}</select></label>
           <label class="field">Source<select id="bt-src" data-k="bt-src"><option value="synthetic">synthetic (DEMO)</option><option value="snapshot">csv snapshot</option></select></label>
-          <label class="field">Fast<input id="bt-fast" type="number" min="2" max="400" value="50" data-k="bt-fast"></label>
-          <label class="field">Slow<input id="bt-slow" type="number" min="3" max="400" value="200" data-k="bt-slow"></label>
+          <label class="field sma-only">Fast<input id="bt-fast" type="number" min="2" max="400" value="50" data-k="bt-fast"></label>
+          <label class="field sma-only">Slow<input id="bt-slow" type="number" min="3" max="400" value="200" data-k="bt-slow"></label>
           <button class="btn primary" type="submit" data-k="bt-go">Queue backtest</button>
           ${running.map((j) => `<span class="tag ${jobS(j.status).tone}">${jobS(j.status).glyph} ${esc(j.id)} ${esc(j.kind)} ${esc(j.status)}${j.progress && j.status === "running" ? ` · ${j.progress.done}/${j.progress.total} ${esc(j.progress.unit)}` : ""}</span>`).join("")}
         </form>
@@ -49,6 +49,11 @@ export default {
     </div>`;
     if (rec) { charts(el, rec); diagnosticCharts(el, rec); if (d.mc) mcCharts(el, rec, d.mc); }
     d.registrations.forEach((r, i) => studyChart(el, r, i));
+    // Fast/slow belong to sma_trend only: show them only for it. Runs after main.js restores edited controls.
+    const strat = el.querySelector("#bt-strat");
+    const smaOnly = () => el.querySelectorAll(".sma-only").forEach((f) => { f.hidden = strat.value !== "sma_trend"; });
+    strat.addEventListener("change", smaOnly);
+    queueMicrotask(smaOnly);
     el.querySelector("#bt-form").addEventListener("submit", (e) => {
       e.preventDefault();
       const strat = el.querySelector("#bt-strat").value;

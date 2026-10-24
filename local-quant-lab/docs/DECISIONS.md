@@ -144,3 +144,10 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - **Decision:** `lql/execution/forward.py` runs idempotent passes over the SQLite ledger and writes `forward_log.jsonl` from the ledger, keyed by deterministic ids. Evidence class (`SYNTHETIC_REPLAY`, `SYNTHETIC_FORWARD`, `REAL_REPLAY`, `REAL_FORWARD`) is fixed at creation and cannot change. Only real data that arrives after the log started is `REAL_FORWARD`.
 - **Why:** a replay of history through the paper code path is a backtest, however it is described. The class makes that difference impossible to blur.
 - **Reverse if:** a different data source (broker paper account) is ever approved; the evidence classes would then need a new member, not a relaxed rule.
+
+## D-022 · 2026-10-24 · Hermes is deferred; scheduled Python jobs run the lab without it
+- **Decision (founder):** drop Hermes for now. Nothing in the lab depends on it: it is advisory only, every test passes with it absent, and the deterministic fallback is logged. `H1-hermes-mac` stays `needs_human` with the deferral as its question. It is not closed and no evidence is recorded for it.
+- **Why:** Hermes v0.22.2 refuses a context window below 64,000 tokens (`MINIMUM_CONTEXT_LENGTH`, `agent/model_metadata.py`). For `qwen3:4b-instruct` at 65,536 tokens the KV cache alone is about 9.7 GB at f16, 5.1 GB at q8_0 and 2.7 GB at q4_0 (calculated from 36 layers, 8 KV heads and head size 128, not measured), on top of about 2.5 GB of weights. On the founder's 8 GB Mac only the q4_0 cache could fit, and only at the edge of available memory. The founder had already seen swapping at 64K.
+- **Instead:** `scripts/daily_run.py` runs the routine work on a schedule (launchd or cron): optional data refresh, research jobs, the SIMULATED forward pass and a dated report. No language model is involved.
+- **Reverse if:** the lab moves to a 16 GB+ machine, or a q4_0 KV cache with flash attention is measured on this Mac without swapping (`ollama ps`, `sysctl vm.swapusage`). Then run `python3 scripts/hermes_check.py --memory-roundtrip` and close H1 only if `memory_roundtrip.ok` is true.
+

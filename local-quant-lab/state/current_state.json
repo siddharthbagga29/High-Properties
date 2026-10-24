@@ -2,8 +2,8 @@
   "app_version": "0.1.0",
   "execution_mode": "SIMULATED",
   "last_checkpoint": {
-    "at": "2026-10-21T20:09:26.640643Z",
-    "note": "M12-console -> done_verified"
+    "at": "2026-10-24T22:24:52.087327Z",
+    "note": "H1-hermes-mac -> needs_human"
   },
   "live_trading": "absent",
   "order": [
@@ -29,8 +29,8 @@
         "python3 scripts/hermes_check.py"
       ],
       "blocker": {
-        "kind": "human_gate",
-        "question": "Run on the Mac: install Hermes from the official installer, choose a local model with >=64K context, then python3 scripts/hermes_check.py --memory-roundtrip"
+        "kind": "deferred",
+        "question": "Deferred by the founder on 2026-10-24 (D-022): Hermes v0.22.2 requires at least 64K tokens of context, more than an 8 GB Mac holds without swapping at Ollama's default cache. The lab runs without it. To re-open: on a 16 GB+ Mac, or with a q4_0 KV cache measured not to swap, run python3 scripts/hermes_check.py --memory-roundtrip and check memory_roundtrip.ok in state/hermes_check.json"
       },
       "deps": [
         "M4-loop-hermes"
@@ -49,6 +49,12 @@
           "at": "2026-10-21T01:49:20.032731Z",
           "by": "orchestrator",
           "note": "Run on the Mac: install Hermes from the official installer, choose a local model with >=64K context, then python3 scripts/hermes_check.py --memory-roundtrip",
+          "to": "needs_human"
+        },
+        {
+          "at": "2026-10-24T22:24:52.087244Z",
+          "by": "orchestrator",
+          "note": "Deferred by the founder on 2026-10-24 (D-022): Hermes v0.22.2 requires at least 64K tokens of context, more than an 8 GB Mac holds without swapping at Ollama's default cache. The lab runs without it. To re-open: on a 16 GB+ Mac, or with a q4_0 KV cache measured not to swap, run python3 scripts/hermes_check.py --memory-roundtrip and check memory_roundtrip.ok in state/hermes_check.json",
           "to": "needs_human"
         }
       ],

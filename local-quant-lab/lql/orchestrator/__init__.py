@@ -116,8 +116,9 @@ class TaskGraph:
         self.get(tid)["evidence"].append({"at": now_iso(), "critic_findings": findings})
         self._set(tid, "rejected_by_critic", "critic", "; ".join(findings)[:500])
 
-    def needs_human(self, tid, question):
-        self.get(tid)["blocker"] = {"kind": "human_gate", "question": question}
+    def needs_human(self, tid, question, deferred=False):
+        """A human gate. `deferred`: the founder chose to postpone it; it stays open and is never closed by this."""
+        self.get(tid)["blocker"] = {"kind": "deferred" if deferred else "human_gate", "question": question}
         self._set(tid, "needs_human", "orchestrator", question)
 
     def verify(self, tid, role, evidence):
