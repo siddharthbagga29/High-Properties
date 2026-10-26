@@ -247,6 +247,8 @@ def main(argv=None):
     ap.add_argument("--state-dir", help="use another state directory (for demos and browser checks); default state/")
     ap.add_argument("--i-understand-public", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
+    from . import envfile
+    envfile.load()                      # credentials file, if any (names only; never printed)
     lab = Lab(state_dir=a.state_dir) if a.state_dir else None
     httpd = serve(a.host, a.port, lab=lab, allow_public=a.i_understand_public)
     print(f"Local Quant Lab on http://{a.host}:{httpd.server_address[1]}  (SIMULATED, no broker, Ctrl+C to stop)")

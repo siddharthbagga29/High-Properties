@@ -255,6 +255,9 @@ def main(argv=None, env=None, now=None):
     ap.add_argument("--snapshot-dir", help="default data/snapshots")
     a = ap.parse_args(argv)
     a.symbols = [x.strip().upper() for x in a.symbols.split(",") if x.strip()]
+    if env is None:                                     # scheduled runs: keys from the environment or the env file
+        from lql import envfile
+        print(envfile.describe(envfile.load()), file=sys.stderr)
     env = dict(os.environ if env is None else env)
     now = now or datetime.now(timezone.utc)
 

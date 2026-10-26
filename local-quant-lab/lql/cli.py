@@ -161,6 +161,8 @@ def main(argv=None):
     h = sub.add_parser("hermes", help="health check and one advisory call (falls back if Hermes is absent)")
     h.add_argument("--kind", default="propose_experiments")
     a = ap.parse_args(argv)
+    from . import envfile
+    envfile.load()                      # credentials file, if any (names only; never printed)
 
     from .lab import Lab, LabError
     lab = Lab()

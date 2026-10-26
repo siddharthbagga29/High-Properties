@@ -39,6 +39,25 @@ Restart the server and fetch `/api/jobs` again. The jobs, and their links to `st
 
 The browser checks (`make ui-check`) run all of this, plus the UI, against a temporary state directory.
 
+## Credentials file (optional)
+
+Scripts and the server read keys from environment variables only.
+- **What the loader reads:** `lql/envfile.py` can fill those variables from one file: `$LQL_ENV_FILE`, else `~/.config/lql/env` (preferred, outside the repository), else the repository's `.env`.
+- **Allowed names:** only the names in `.env.example`. A value already set in your shell, such as the Keychain one, wins.
+- **Permissions:** a file other users can read is refused until you run `chmod 600`.
+- **Git:** every `.env` is git-ignored at the repository root and in `local-quant-lab/`.
+
+Check it, and Massive, without printing any key: `python3 scripts/check_connectivity.py --signals`.
+
+**Alpaca paper account: a read-only check by hand.** Broker hosts are kept out of the code on purpose (`tests/test_security.py`). This command only reads the account:
+```bash
+set -a; . ~/HP-floor/.env; set +a
+printf 'APCA-API-KEY-ID: %s\nAPCA-API-SECRET-KEY: %s\n' "${ALPACA_PAPER_KEY_ID:-$APCA_API_KEY_ID}" "${ALPACA_PAPER_SECRET_KEY:-$APCA_API_SECRET_KEY}" \
+ | curl -s -H @- https://paper-api.alpaca.markets/v2/account \
+ | python3 -c "import sys,json;a=json.load(sys.stdin);print({k:a.get(k) for k in ('status','currency','trading_blocked','account_blocked')}, 'PAPER' if str(a.get('account_number','')).startswith('PA') else 'NOT A PAPER ACCOUNT', a.get('message',''))"
+unset ALPACA_PAPER_KEY_ID ALPACA_PAPER_SECRET_KEY APCA_API_KEY_ID APCA_API_SECRET_KEY MASSIVE_API_KEY
+```
+
 ## Scheduled daily pass (no Hermes, no language model)
 
 `scripts/daily_run.py` runs one pass and writes `state/reports/daily/<date>.json`. It also writes a `scheduled_run` event, shown in Logs, and the jobs appear in the job history:

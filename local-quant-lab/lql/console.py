@@ -305,6 +305,7 @@ def system(lab, jobs=None):
 # whether each is set, never its value. A key's provider is known only by the variable it is stored in.
 PROVIDER_ENV = {"stooq api key": "STOOQ_API_KEY", "massive api key": "MASSIVE_API_KEY", "fred api key": "FRED_API_KEY",
                 "bea api userid": "BEA_API_USERID", "alpaca paper key id": "ALPACA_PAPER_KEY_ID",
+                "alpaca paper secret": "ALPACA_PAPER_SECRET_KEY",
                 "sec edgar user-agent": "SEC_USER_AGENT"}
 
 

@@ -1,0 +1,7 @@
+# Secrets and machine-local files: never commit (this repository is public)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example

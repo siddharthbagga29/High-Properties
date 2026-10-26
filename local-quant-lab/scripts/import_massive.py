@@ -76,6 +76,8 @@ def main(argv=None):
     ap.add_argument("--with-dividends", action="store_true",
                     help="also fetch cash distributions and back-adjust for them (one extra call per symbol)")
     a = ap.parse_args(argv)
+    from lql import envfile
+    print(envfile.describe(envfile.load()))
     if not a.terms:
         print("Read Massive's current pricing/terms page first, then add --i-have-read-the-massive-terms.")
         return 2
