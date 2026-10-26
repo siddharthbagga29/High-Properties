@@ -135,7 +135,7 @@ def refresh_data(a, snap_dir, now, env):
     end = last_closed_session(now)
     start = (datetime.fromisoformat(end).date() - timedelta(days=a.history_days)).isoformat()
     cmd = [sys.executable, str(ROOT / "scripts" / "import_massive.py"), *a.symbols, "--from", start, "--to", end,
-           "--dir", str(snap_dir), "--i-have-read-the-massive-terms"]
+           "--dir", str(snap_dir), "--i-have-read-the-massive-terms", "--with-dividends"]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=a.import_timeout, env=env)
     s["status"] = "ran" if r.returncode == 0 else "failed"
     s["detail"] = f"import_massive {' '.join(a.symbols)} {start}..{end}: exit {r.returncode}"
@@ -148,6 +148,8 @@ def refresh_data(a, snap_dir, now, env):
             for suffix in (".csv", ".manifest.json"):
                 shutil.copy2(Path(snap_dir) / f"{sym}{suffix}", arch / f"{sym}{suffix}")
         s["archive"] = str(arch.relative_to(ROOT)) if arch.is_relative_to(ROOT) else str(arch)
+        s["adjustment"] = {sym: json.loads((Path(snap_dir) / f"{sym}.manifest.json").read_text()).get("adjusted")
+                           for sym in snapshot_symbols(snap_dir, a.symbols)}
     return s
 
 

@@ -206,6 +206,70 @@ class MassiveTests(unittest.TestCase):
         self.assertEqual(dataset_state(sp.info("SPY"), validate(sp.bars("SPY"))), PROVISIONAL)
         self.assertEqual(im.main(["SPY", "--from", "2024-10-01", "--to", "2024-10-02", "--dir", str(d)]), 2)  # terms flag
 
+    def test_dividends_back_adjust_only_earlier_bars(self):
+        from lql.data.adjustment import apply_dividends
+        from lql.data.schema import Bar
+        bars = [Bar("X", date(2024, 10, d), 100 + d, 101 + d, 99 + d, 100 + d, 1, "USD", "t", "") for d in (21, 22, 23, 24, 25)]
+        out, applied = apply_dividends(bars, [(date(2024, 10, 24), 1.23, "CD"), (date(2024, 9, 1), 1.0, "CD"),
+                                              (date(2024, 11, 5), 1.0, "CD")])
+        f = 1 - 1.23 / 123                                                    # close of the session before the ex-date
+        self.assertAlmostEqual(out[0].close, 121 * f)
+        self.assertAlmostEqual(out[2].open, 123 * f)
+        self.assertEqual((out[3].close, out[4].close), (124, 125))           # from the ex-date on: unchanged
+        self.assertEqual([a["factor"] is None for a in applied], [True, False, True])   # outside the series: listed, unused
+
+    def _div_body(self, *rows, status="OK"):
+        return {"status": status, "request_id": "x", "results": [
+            {"cash_amount": c, "currency": "USD", "dividend_type": "CD", "ex_dividend_date": d, "ticker": "SPY"} for d, c in rows]}
+
+    def test_dividend_records_are_parsed_and_bad_ones_refused(self):
+        seen = []
+        p, _ = self.provider([self._div_body(("2024-10-28", 1.04), ("2024-10-30", 1.06))], seen)
+        divs, pages = p.dividends("SPY", "2024-10-01", "2024-10-31")
+        self.assertEqual(divs, [(date(2024, 10, 28), 1.04, "CD"), (date(2024, 10, 30), 1.06, "CD")])
+        self.assertIn("ex_dividend_date.gte=2024-10-01", seen[0].full_url)
+        self.assertNotIn(KEY, seen[0].full_url)
+        bad = self._div_body(("2024-10-28", 1.04))
+        bad["results"][0]["currency"] = "EUR"
+        for body in (bad, self._div_body(status="ERROR"), dict(self._div_body(), next_url="https://evil.example/x")):
+            p, _ = self.provider([body], [])
+            with self.assertRaises(ProviderError):
+                p.dividends("SPY", "2024-10-01", "2024-10-31")
+
+    def test_dividend_adjusted_import_stays_provisional_until_a_persons_references_match(self):
+        import import_massive as im
+        from lql.data.adjustment import save_refs, REFS_MAX_AGE_DAYS
+        d, day = tmpdir(), date(2024, 11, 1)
+        one = self._div_body(("2024-10-28", 1.04))                         # factor 0.99 on the 10-25 close of 104
+        p, _ = self.provider([massive_page(8), one], [])
+        q, path, m = im.import_one(p, "SPY", "2024-10-22", "2024-10-31", d, with_dividends=True, today=day)
+        self.assertEqual((m["adjusted"], m["data_state"]), ("dividend_adjusted_unverified", PROVISIONAL))
+        self.assertIn("no saved references", m["adjustment_check"]["evidence"])
+        self.assertEqual(len(m["raw_dividend_sha256"]), 1)
+        self.assertAlmostEqual(SnapshotProvider(d).bars("SPY")[0].close, 101 * 0.99)
+        # a person typed raw and adjusted closes from an independent source and they matched: references saved
+        applied = m["dividends"]
+        save_refs(d, "SPY", [(date(2024, 10, 22), 101.0, 99.99), (date(2024, 10, 23), 102.0, 100.98)], 0.003, applied, day)
+        p, _ = self.provider([massive_page(8), one], [])
+        _, _, m = im.import_one(p, "SPY", "2024-10-22", "2024-10-31", d, with_dividends=True, today=day)
+        self.assertEqual((m["adjusted"], m["data_state"]), ("split_and_dividend_adjusted", "VERIFIED_HISTORICAL"))
+        # a later distribution is rolled into the references by the same factors: still verified, and said so
+        two = self._div_body(("2024-10-28", 1.04), ("2024-10-30", 1.06))
+        p, _ = self.provider([massive_page(8), two], [])
+        _, _, m = im.import_one(p, "SPY", "2024-10-22", "2024-10-31", d, with_dividends=True, today=day)
+        self.assertEqual(m["data_state"], "VERIFIED_HISTORICAL")
+        self.assertIn("1 later distribution(s)", m["adjustment_evidence"])
+        # a vendor revision that no longer matches the references, or references that are too old: provisional again
+        p, _ = self.provider([massive_page(8), self._div_body(("2024-10-28", 2.08))], [])
+        _, _, m = im.import_one(p, "SPY", "2024-10-22", "2024-10-31", d, with_dividends=True, today=day)
+        self.assertEqual(m["data_state"], PROVISIONAL)
+        self.assertIn("re-check", m["adjustment_check"]["evidence"])
+        p, _ = self.provider([massive_page(8), one], [])
+        late = date.fromordinal(day.toordinal() + REFS_MAX_AGE_DAYS + 1)
+        _, _, m = im.import_one(p, "SPY", "2024-10-22", "2024-10-31", d, with_dividends=True, today=late)
+        self.assertEqual(m["data_state"], PROVISIONAL)
+        self.assertIn("verify again", m["adjustment_check"]["evidence"])
+
     def test_http_errors_stop_without_retry_and_close_the_response(self):
         # An HTTPError carries the server's response; left open it holds the connection until garbage collection
         # (Python 3.14 reports it as a ResourceWarning). Rate limits still stop the import on the first 429.

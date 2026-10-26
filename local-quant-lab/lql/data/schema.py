@@ -4,7 +4,10 @@ from datetime import date
 
 
 ADJ_VERIFIED = "split_and_dividend_adjusted"   # total-return series, verified against an independent reference
-ADJ_STATUSES = (ADJ_VERIFIED, "adjusted_unspecified", "split_adjusted_only", "unadjusted", "unknown", "n/a")
+# split-adjusted vendor closes back-adjusted here for cash distributions; provisional until checked independently
+DIV_UNVERIFIED = "dividend_adjusted_unverified"
+ADJ_STATUSES = (ADJ_VERIFIED, DIV_UNVERIFIED, "adjusted_unspecified", "split_adjusted_only", "unadjusted", "unknown",
+                "n/a")
 
 
 @dataclass(frozen=True)

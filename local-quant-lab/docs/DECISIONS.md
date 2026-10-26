@@ -151,3 +151,9 @@ Licences verified from each repository's LICENSE file via shallow clone on 2026-
 - **Instead:** `scripts/daily_run.py` runs the routine work on a schedule (launchd or cron): optional data refresh, research jobs, the SIMULATED forward pass and a dated report. No language model is involved.
 - **Reverse if:** the lab moves to a 16 GB+ machine, or a q4_0 KV cache with flash attention is measured on this Mac without swapping (`ollama ps`, `sysctl vm.swapusage`). Then run `python3 scripts/hermes_check.py --memory-roundtrip` and close H1 only if `memory_roundtrip.ok` is true.
 
+## D-023 · 2026-10-26 · Dividend adjustment is computed locally and verified by a person, then re-checked daily
+- **Finding:** Massive's free `adjusted=true` series is split-adjusted only. Checked against a dividend-adjusted reference, it can never verify, so every result would stay PROVISIONAL for good.
+- **Decision:** `import_massive.py --with-dividends`, which the daily pass uses, fetches Massive's dividend records (`/v3/reference/dividends`; shape confirmed on the live API on 2026-10-25). It back-adjusts the closes multiplicatively: `factor = 1 - cash / previous close`, applied to every earlier bar. The series is labelled `dividend_adjusted_unverified`, which is PROVISIONAL.
+- **Verification:** a person compares the series with an independent source's raw and adjusted closes on two early dates: `check_adjustment.py --tol 0.003 --write`. Only a match marks it verified. The references are saved (git-ignored), and each daily import repeats the check. Distributions after the verification date are rolled into the references with the same factors; that part is not an independent check. So the references expire after 120 days, and a mismatch or expiry returns the data to PROVISIONAL.
+- **Reverse if:** a vendor with an independently verifiable total-return series becomes available.
+

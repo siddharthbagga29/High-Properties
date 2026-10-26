@@ -13,31 +13,54 @@ import hashlib
 import json
 import sys
 from dataclasses import replace
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lql.data.providers import MassiveProvider, ProviderError, write_snapshot, SNAPSHOT_DIR  # noqa: E402
 from lql.data.quality import validate  # noqa: E402
-from lql.data.schema import dataset_state  # noqa: E402
+from lql.data.schema import ADJ_VERIFIED, DIV_UNVERIFIED, dataset_state  # noqa: E402
+from lql.data.adjustment import apply_dividends, recheck  # noqa: E402
+from lql.events import now_iso  # noqa: E402
 
 IMPORTER_VERSION = "massive-import-1"
 
 
-def import_one(provider, symbol, start, end, directory):
+def import_one(provider, symbol, start, end, directory, with_dividends=False, today=None):
+    """`with_dividends`: also fetch cash distributions and back-adjust the series for them. The result is
+    `dividend_adjusted_unverified` (PROVISIONAL) unless references a person verified earlier still match it."""
     bars, info, pages, request = provider.fetch(symbol, start, end)
+    applied, div_pages = None, []
+    if with_dividends:
+        divs, div_pages = provider.dividends(symbol, start, end)
+        bars, applied = apply_dividends(bars, divs)
+        info = replace(info, adjusted=DIV_UNVERIFIED, description=info.description
+                       + "; cash distributions back-adjusted locally from Massive dividend records")
     raw_dir = Path(directory) / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
-    raw_hashes = []
+    raw_hashes, div_hashes = [], []
     for i, page in enumerate(pages):
         h = hashlib.sha256(page).hexdigest()
         (raw_dir / f"{symbol}-{info.retrieved_at[:10]}-{i}.json").write_bytes(page)
         raw_hashes.append(h)
+    for i, page in enumerate(div_pages):
+        (raw_dir / f"{symbol}-{info.retrieved_at[:10]}-dividends-{i}.json").write_bytes(page)
+        div_hashes.append(hashlib.sha256(page).hexdigest())
     q = validate(bars, symbol, calendar="XNYS")      # US equity sessions: missing sessions and holiday bars flagged
     extra = {"request": request, "raw_sha256": raw_hashes, "importer_version": IMPORTER_VERSION,
              "validation": q.to_dict(), "frequency": "1 day", "currency": "USD",
              "calendar": "US equity sessions as returned by the vendor"}
+    if with_dividends:
+        extra.update(dividends=applied, raw_dividend_sha256=div_hashes,
+                     price_basis="split-adjusted closes back-adjusted for cash distributions (multiplicative)")
     path, m = write_snapshot(symbol, bars, info, directory, extra=extra)
-    m["data_state"] = dataset_state(replace(info, content_sha256=m["sha256"]), q)   # frozen now: state from the hash
+    if with_dividends:                                  # repeat a person's earlier verification, if there is one
+        status, ev = recheck(directory, symbol, bars, applied, today or date.today())
+        m["adjustment_check"] = {"status": status, "evidence": ev, "at": now_iso(), "automatic": True}
+        if status == ADJ_VERIFIED:
+            m["adjusted"], m["adjustment_evidence"] = ADJ_VERIFIED, f"{ev}; csv sha256 {m['sha256'][:16]}"
+    m["data_state"] = dataset_state(replace(info, content_sha256=m["sha256"], adjusted=m["adjusted"],
+                                            adjustment_evidence=m["adjustment_evidence"]), q)   # frozen now
     Path(path).with_name(f"{symbol}.manifest.json").write_text(json.dumps(m, indent=2))
     return q, path, m
 
@@ -50,6 +73,8 @@ def main(argv=None):
     ap.add_argument("--dir", default=str(SNAPSHOT_DIR))
     ap.add_argument("--i-have-read-the-massive-terms", dest="terms", action="store_true",
                     help="confirm you read Massive's current plan and terms (personal use, no redistribution)")
+    ap.add_argument("--with-dividends", action="store_true",
+                    help="also fetch cash distributions and back-adjust for them (one extra call per symbol)")
     a = ap.parse_args(argv)
     if not a.terms:
         print("Read Massive's current pricing/terms page first, then add --i-have-read-the-massive-terms.")
@@ -57,14 +82,14 @@ def main(argv=None):
     provider, worst = MassiveProvider(), 0
     for sym in a.symbols:
         try:
-            q, path, m = import_one(provider, sym.upper(), a.start, a.end, a.dir)
+            q, path, m = import_one(provider, sym.upper(), a.start, a.end, a.dir, with_dividends=a.with_dividends)
         except ProviderError as e:
             print(f"{sym}: FAILED ({e})")
             if "rate limit" in str(e):
                 return 3
             worst = max(worst, 1)
             continue
-        print(f"{sym}: {m['rows']} bars {m['first']}..{m['last']} state={m['data_state']} "
+        print(f"{sym}: {m['rows']} bars {m['first']}..{m['last']} state={m['data_state']} adjusted={m['adjusted']} "
               f"issues={q.counts()} -> {path}")
         if not q.passes_validation:
             worst = max(worst, 2)

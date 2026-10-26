@@ -20,6 +20,7 @@ state/forward/*/run.lock
 # Raw vendor market data and everything derived row by row from it: never commit (public repository, vendor terms)
 data/snapshots/*.csv
 data/snapshots/*.manifest.json
+data/snapshots/*.adjustment_refs.json
 data/snapshots/archive/
 data/snapshots/raw/
 data/context/

@@ -12,7 +12,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from lql.data.adjustment import classify, attest, parse_ref  # noqa: E402
+from datetime import date  # noqa: E402
+import json  # noqa: E402
+from lql.data.adjustment import classify, attest, parse_ref, save_refs  # noqa: E402
+from lql.data.schema import ADJ_VERIFIED  # noqa: E402
 from lql.data.providers import SnapshotProvider, SNAPSHOT_DIR  # noqa: E402
 
 
@@ -25,7 +28,8 @@ def main():
     ap.add_argument("--write", action="store_true")
     a = ap.parse_args()
     bars = SnapshotProvider(a.dir).bars(a.symbol)
-    status, evidence, details = classify(bars, [parse_ref(r) for r in a.ref], a.tol)
+    refs = [parse_ref(r) for r in a.ref]
+    status, evidence, details = classify(bars, refs, a.tol)
     for d in details:
         print(d)
     print(f"\n{a.symbol}: {status} ({evidence})")
@@ -34,6 +38,10 @@ def main():
     if a.write:
         attest(a.dir, a.symbol, status, evidence, "references typed in by the operator")
         print("manifest updated")
+        applied = json.loads((Path(a.dir) / f"{a.symbol}.manifest.json").read_text()).get("dividends")
+        if status == ADJ_VERIFIED and applied is not None:   # daily imports repeat this check until it expires
+            save_refs(a.dir, a.symbol, refs, a.tol, applied, date.today())
+            print("references saved: each daily import re-checks against them")
     return 0
 
 

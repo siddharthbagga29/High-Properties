@@ -302,3 +302,34 @@ class MassiveProvider:
                    "timestamp_convention": "bar t = start of the session window in Unix ms; converted to the "
                                            "America/New_York calendar date", "symbol": sym}
         return bars, info, pages, request
+
+    def dividends(self, instrument, start, end):
+        """Cash distributions with an ex-dividend date in [start, end]: ([(ex_date, cash, type)], raw pages).
+        Response shape checked against the live API on 2026-10-25 (results[].cash_amount, ex_dividend_date,
+        dividend_type, currency; status OK). Non-USD or non-positive amounts are refused, not skipped."""
+        sym = instrument.upper()
+        url = (f"{self.BASE}/v3/reference/dividends?ticker={urllib.parse.quote(sym)}"
+               f"&ex_dividend_date.gte={start}&ex_dividend_date.lte={end}&order=asc&limit=1000")
+        pages, out = [], []
+        for _ in range(self.MAX_PAGES):
+            raw, body = self._get(url)
+            pages.append(raw)
+            if str(body.get("status", "")) != "OK":
+                raise ProviderError(f"Massive dividends returned status {body.get('status') or 'missing'} for {sym}")
+            for r in body.get("results") or []:
+                try:
+                    d, cash = date.fromisoformat(r["ex_dividend_date"]), float(r["cash_amount"])
+                except (KeyError, TypeError, ValueError) as e:
+                    raise ProviderError(f"unparseable Massive dividend for {sym}: {e}")
+                if r.get("currency", "USD") != "USD" or cash <= 0:
+                    raise ProviderError(f"Massive dividend for {sym} on {d} is {cash} {r.get('currency')}; refusing")
+                out.append((d, cash, str(r.get("dividend_type", ""))))
+            nxt = body.get("next_url")
+            if not nxt:
+                break
+            if not str(nxt).startswith(self.BASE + "/"):
+                raise ProviderError("Massive pagination pointed to another host; stopped")
+            url = nxt
+        else:
+            raise ProviderError(f"more than {self.MAX_PAGES} dividend pages for {sym}; narrow the date range")
+        return sorted(set(out)), pages
