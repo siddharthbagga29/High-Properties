@@ -216,7 +216,8 @@ def main(argv=None, env=None, now=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--symbols", default="SPY,QQQ,IWM,TLT", help="comma-separated; real data only when imported")
     ap.add_argument("--refresh-data", action="store_true")
-    ap.add_argument("--history-days", type=int, default=730, help="calendar days of history to request")
+    ap.add_argument("--history-days", type=int, default=700,
+                    help="calendar days of history; kept inside the Basic plan's 2-year window")
     ap.add_argument("--import-timeout", type=int, default=1800)
     ap.add_argument("--forward", action="store_true")
     ap.add_argument("--forward-strategy", default="sma_trend")
