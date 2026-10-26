@@ -7,6 +7,7 @@ guard). State-changing requests must be POST with Content-Type application/json 
 """
 import argparse
 import csv
+import errno
 import io
 import json
 import mimetypes
@@ -223,8 +224,17 @@ def serve(host="127.0.0.1", port=8765, lab=None, allow_public=False):
     if host not in ("127.0.0.1", "localhost", "::1") and not allow_public:
         raise SystemExit(f"refusing to bind {host}: this server is localhost-only")
     lab = lab or Lab()
+    # Claim the port before starting the job runner: its start-up recovery marks "running" jobs as interrupted, which
+    # must never happen to the jobs of a server that is still running on that port.
+    try:
+        httpd = ThreadingHTTPServer((host, port), BaseHTTPRequestHandler)
+    except OSError as e:
+        if e.errno in (errno.EADDRINUSE, errno.EACCES):
+            raise SystemExit(f"port {port} is busy: a control room is probably already running. Use that one, or stop "
+                             f"it first: kill $(lsof -tiTCP:{port} -sTCP:LISTEN)")
+        raise
     jobs = JobRunner(lab)
-    httpd = ThreadingHTTPServer((host, port), make_handler(lab, jobs))
+    httpd.RequestHandlerClass = make_handler(lab, jobs)
     httpd.jobs = jobs
     lab.events.emit("server_start", f"control room on http://{host}:{httpd.server_address[1]}")
     return httpd

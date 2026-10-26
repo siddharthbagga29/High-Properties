@@ -119,3 +119,22 @@ class ServerTests(unittest.TestCase):
     def test_refuses_public_bind(self):
         with self.assertRaises(SystemExit):
             serve("0.0.0.0", 0, self.lab)
+
+
+class SecondServerTests(unittest.TestCase):
+    def test_a_second_server_on_a_busy_port_exits_cleanly_and_leaves_the_first_ones_jobs_alone(self):
+        import socket
+        from lql.events import atomic_write_json
+        state = tmpdir()
+        lab = Lab(state_dir=state)
+        job = {"id": "j1", "kind": "backtest", "target": None, "params": {}, "label": "x", "status": "running",
+               "request_hash": "h", "created_at": "t", "started_at": "t", "finished_at": None, "progress": {},
+               "datasets": [], "artifacts": [], "interrupted": False, "result": None, "error": None, "log": []}
+        atomic_write_json(lab.state / "jobs" / "j1.json", job)        # the first server's job, mid-run
+        with socket.socket() as busy:
+            busy.bind(("127.0.0.1", 0))
+            busy.listen()
+            with self.assertRaises(SystemExit) as cm:
+                serve(port=busy.getsockname()[1], lab=lab)
+        self.assertIn("already running", str(cm.exception))
+        self.assertEqual(json.loads((lab.state / "jobs" / "j1.json").read_text())["status"], "running")
