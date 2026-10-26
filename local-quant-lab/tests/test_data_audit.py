@@ -186,6 +186,21 @@ class AdjustmentVerificationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_ref("2008-03-14")
 
+    def test_verifying_the_data_reruns_cached_experiments_instead_of_reusing_provisional_ones(self):
+        from lql.lab import Lab
+        d = tmpdir()
+        write_snapshot("SPY", self.series(), SourceInfo("massive", "HISTORICAL_DOWNLOADED", "t",
+                                                        adjusted="dividend_adjusted_unverified"), d)
+        lab = Lab(state_dir=tmpdir(), snapshot_dir=d)
+        first = lab.experiment("SPY", "sma_trend", {"fast": 20, "slow": 60}, "snapshot")
+        self.assertEqual(first["dataset"]["data_state"], "PROVISIONAL")
+        attest(d, "SPY", ADJ_VERIFIED, "matched independent adjusted closes at 2 dates")
+        again = lab.experiment("SPY", "sma_trend", {"fast": 20, "slow": 60}, "snapshot")
+        self.assertFalse(again["cached"])                                    # same prices, new evidence status
+        self.assertEqual(again["dataset"]["data_state"], "VERIFIED_HISTORICAL")
+        self.assertTrue(lab.experiment("SPY", "sma_trend", {"fast": 20, "slow": 60}, "snapshot")["cached"])
+        self.assertEqual(lab.experiment("DEMO-ETF-A", "sma_trend")["id"], "78bf2b7c3a7fbb8f")   # synthetic ids unchanged
+
 
 class ResearchProvisionalTests(unittest.TestCase):
     def test_provisional_study_is_labelled_cannot_be_a_candidate_and_cannot_spend_the_holdout(self):

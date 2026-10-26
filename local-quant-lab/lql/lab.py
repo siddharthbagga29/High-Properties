@@ -86,7 +86,11 @@ class Lab:
         key = config_hash({"instrument": instrument, "strategy": strategy, "version": strat.meta.version,
                            "params": strat.meta.params, "source": source, "data": data_sha,
                            "costs": config.as_dict(s)["costs"], "risk": config.as_dict(s)["risk"],
-                           "cash": s.initial_cash, "engine": ENGINE_VERSION})
+                           "cash": s.initial_cash, "engine": ENGINE_VERSION,
+                           # real data: verifying the adjustment changes the evidence, so it must not reuse a
+                           # provisional result (synthetic keys stay as they were)
+                           **({"adjustment": [info.adjusted, info.adjustment_verified]} if source != "synthetic"
+                              else {})})
         path = self.exp_dir / f"{key}.json"
         if path.exists():  # same inputs, same result: never rerun or duplicate an experiment
             rec = json.loads(path.read_text())
