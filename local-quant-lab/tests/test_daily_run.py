@@ -86,6 +86,27 @@ class DailyRunTests(unittest.TestCase):
             fcntl.flock(lock, fcntl.LOCK_UN)
             lock.close()
 
+    def test_g_a_control_room_running_older_code_is_not_used(self):
+        from lql import code_fingerprint
+        from lql.lab import Lab
+
+        class Server:
+            def __init__(self, fp):
+                self.fp = fp
+
+            def status(self):
+                return {"execution_mode": "SIMULATED", "code_fingerprint": self.fp}
+        lab = Lab(state_dir=self.tmp / "g")
+        jobs, via, problem = daily_run.pick_jobs(Server("0ld"), lab)
+        self.assertEqual((jobs, via), (None, "control room server"))
+        self.assertIn("restart it", problem)
+        current = Server(code_fingerprint())
+        self.assertIs(daily_run.pick_jobs(current, lab)[0], current)
+        down = type("Down", (), {"status": lambda self: None})()
+        jobs, via, problem = daily_run.pick_jobs(down, lab)
+        self.assertEqual((via, problem), ("this process", None))
+        jobs.close()
+
     def test_f_last_closed_session_is_yesterday_in_new_york(self):
         self.assertEqual(daily_run.last_closed_session(datetime(2026, 10, 24, 2, 0, tzinfo=timezone.utc)), "2026-10-22")
 

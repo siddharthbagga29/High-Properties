@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import ROOT, __version__, config
+from . import CODE_FINGERPRINT, ROOT, __version__, config
 from .agents.hermes_adapter import HermesAdapter
 from .backtest.engine import evaluate, ENGINE_VERSION, config_hash
 from .data.providers import SyntheticProvider, SnapshotProvider, ProviderError
@@ -258,7 +258,7 @@ class Lab:
                 "paper_clock": paper["last_processed"] if paper else None,
                 "hermes": {"available": h["available"], "detail": h["detail"], "deferred": self.hermes_deferred(),
                            "fallback": "deterministic fallback active" if not h["available"] else "advisory only"},
-                "server_time": now_iso()}
+                "server_time": now_iso(), "code_fingerprint": CODE_FINGERPRINT}
 
     def dashboard(self, eid=None):
         exps = self.experiments()

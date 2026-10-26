@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from lql import code_fingerprint  # noqa: E402
 from lql.data.providers import SNAPSHOT_DIR  # noqa: E402
 from lql.events import atomic_write_json, now_iso  # noqa: E402
 
@@ -63,11 +64,15 @@ class HttpJobs:
                 detail = e.read().decode("utf-8", "replace")[:300]
             raise RuntimeError(f"HTTP {e.code}: {detail}") from None
 
-    def alive(self):
+    def status(self):
         try:
-            return "execution_mode" in json.dumps(self._call("/api/status"))
+            s = self._call("/api/status")
+            return s if "execution_mode" in s else None
         except (OSError, RuntimeError, ValueError):
-            return False
+            return None
+
+    def alive(self):
+        return self.status() is not None
 
     def submit(self, kind, params):
         r = self._call("/api/jobs", {"kind": kind, "params": params})
@@ -106,6 +111,21 @@ class LocalJobs:
 
     def close(self):
         self.runner.stop(wait=True)
+
+
+STALE_SERVER = ("the running control room loaded older code than is now on disk (a git pull since it started), so its "
+                "results could be wrong: restart it (Ctrl+C in its window, then make run) and run this again")
+
+
+def pick_jobs(http, lab):
+    """(jobs, via, problem). Use the control room when it answers and runs the code on disk; when it runs older code,
+    run nothing: a second job runner on the same state directory would collide with its job ids."""
+    st = http.status() if http else None
+    if st is None:
+        return LocalJobs(lab), "this process", None
+    if st.get("code_fingerprint") != code_fingerprint():
+        return None, "control room server", STALE_SERVER
+    return http, "control room server", None
 
 
 def step(name):
@@ -249,12 +269,16 @@ def main(argv=None, env=None, now=None):
     try:
         report["steps"].append(refresh_data(a, snap_dir, now, env))
         http = None if (a.state_dir or a.no_server) else HttpJobs(a.server)
-        jobs = http if http and http.alive() else LocalJobs(lab)
-        report["jobs_via"] = "control room server" if jobs is http else "this process"
-        try:
-            report["steps"].append(research(jobs, snap_dir, a.symbols))
-        finally:
-            jobs.close()
+        jobs, report["jobs_via"], problem = pick_jobs(http, lab)
+        if problem:
+            s = step("research")
+            s.update(status="failed", detail=problem)
+            report["steps"].append(s)
+        else:
+            try:
+                report["steps"].append(research(jobs, snap_dir, a.symbols))
+            finally:
+                jobs.close()
         report["steps"].append(forward(a, lab, snap_dir))
     finally:
         report["finished_at"], report["elapsed_s"] = now_iso(), round(time.time() - t0, 1)
