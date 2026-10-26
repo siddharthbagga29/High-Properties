@@ -205,7 +205,13 @@ def research(jobs, snap_dir, symbols):
                 failures += 1
             s["results"].append(row)
     s["status"] = "failed" if failures else "ran"
-    s["detail"] = (f"{len(s['results'])} backtests on {'real snapshots (PROVISIONAL unless verified)' if real else 'the synthetic demo: no real data imported yet'}"
+    states = {}
+    for row in s["results"]:
+        if row.get("data_state"):
+            states[row["data_state"]] = states.get(row["data_state"], 0) + 1
+    on = (f"real snapshots ({', '.join(f'{n} {k}' for k, n in sorted(states.items())) or 'data state unknown'})"
+          if real else "the synthetic demo: no real data imported yet")
+    s["detail"] = (f"{len(s['results'])} backtests on {on}"
                    + (f"; {failures} failed" if failures else ""))
     return s
 
